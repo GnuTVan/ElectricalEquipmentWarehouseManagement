@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng nhập</title>
+    <style>
+        /* */
+        html, body { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif; }
+        .background-image { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -3; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0,0,0,0.3); z-index: -2; }
+        .container { height: 100vh; display: flex; justify-content: flex-start; align-items: center; padding-left: 5%; }
+        .company-name { position: absolute; top: 30px; width: 100%; text-align: center; font-size: 26px; font-weight: bold; color: white; text-shadow: 1px 1px 4px black; z-index: 1; }
+        .login-blur-wrapper { position: relative; z-index: 1; }
+        .blur-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backdrop-filter: blur(8px); background-color: rgba(255, 255, 255, 0.2); border-radius: 16px; z-index: -1; }
+        .login-box { width: 33vw; min-width: 300px; max-width: 600px; padding: 40px; border-radius: 16px; background-color: rgba(255, 255, 255, 0.85); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); }
+        .login-logo { display: flex; justify-content: center; margin-bottom: 10px; }
+        .login-logo img { width: 60px; height: 60px; }
+        .login-header { text-align: center; font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #333; }
+        form div { margin-bottom: 15px; }
+        label { font-weight: 500; display: block; margin-bottom: 5px; color: #333; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 14px; }
+        button { width: 100%; padding: 10px; background-color: #0078D4; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background-color 0.3s ease; }
+        button:hover { background-color: #005a9e; }
+        .message { margin-top: 10px; text-align: center; font-size: 14px; }
+        .error { color: red; }
+        .success { color: green; }
+        @media (max-width: 768px) {
+            .container { justify-content: center; padding-left: 0; }
+            .company-name { font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Background -->
+<img class="background-image" src="/images/background.jpg" alt="Background">
+<div class="overlay"></div>
+
+<!-- Tên công ty -->
+<div class="company-name">Công ty Thiết bị điện Hải Phòng</div>
+
+<!-- Khung đăng nhập -->
+<div class="container">
+    <div class="login-blur-wrapper">
+        <div class="blur-layer"></div>
+
+        <div class="login-box">
+            <div class="login-logo">
+                <img src="/images/logo.png" alt="Logo">
+            </div>
+            <div class="login-header">Đăng nhập</div>
+
+            <form th:action="@{/do-login}" method="post">
+                <div>
+                    <label for="username">Tên đăng nhập:</label>
+                    <input type="text" id="username" name="username" required />
+                </div>
+                <div>
+                    <label for="password">Mật khẩu:</label>
+                    <input type="password" id="password" name="password" required />
+                </div>
+                <div>
+                    <button type="submit">Đăng nhập</button>
+                </div>
+            </form>
+
+            <div th:if="${error}" class="message error" th:text="${error}"></div>
+            <div th:if="${message}" class="message success" th:text="${message}"></div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

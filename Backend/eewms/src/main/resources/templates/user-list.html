@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách người dùng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-[#1e293b] text-white flex flex-col fixed h-full">
+        <div class="p-6 text-center border-b border-gray-700">
+            <h1 class="text-2xl font-bold">Thiết Bị Điện</h1>
+            <h2 class="text-2xl font-bold">Hải Phòng</h2>
+            <p class="mt-2 text-sm text-gray-400">Role: <span th:text="${#authentication.principal.authorities[0].authority}">USER</span></p>
+        </div>
+        <nav class="flex-1 overflow-y-auto sidebar-nav px-4 py-4 space-y-2 text-sm font-medium">
+            <a th:href="@{/dashboard}" class="flex items-center px-4 py-2.5 rounded-md hover:bg-gray-700">
+                <i class="ri-home-5-line w-6 text-lg"></i> <span class="ml-2">Trang chủ</span>
+            </a>
+            <a th:href="@{/admin/users}" class="flex items-center px-4 py-2.5 rounded-md bg-blue-600">
+                <i class="ri-account-circle-line w-6 text-lg"></i> <span class="ml-2">Tài khoản</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 ml-64 p-6 overflow-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Danh sách người dùng</h1>
+            <div class="flex items-center space-x-2">
+                <a onclick="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer">+ Thêm</a>
+                <input type="text" placeholder="Tìm kiếm..." class="border px-3 py-2 rounded-md w-64" />
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded shadow overflow-x-auto">
+            <table class="min-w-full table-auto text-sm">
+                <thead class="bg-gray-200 text-gray-700">
+                <tr>
+                    <th class="px-4 py-3 text-left">ID</th>
+                    <th class="px-4 py-3 text-left">Họ và tên</th>
+                    <th class="px-4 py-3 text-left">Tên tài khoản</th>
+                    <th class="px-4 py-3 text-left">Chức vụ</th>
+                    <th class="px-4 py-3 text-left">Trạng thái</th>
+                    <th class="px-4 py-3 text-center">Hành động</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="user : ${users}" class="border-b hover:bg-gray-50"
+                    th:data-id="${user.id}"
+                    th:data-username="${user.username}"
+                    th:data-fullname="${user.fullName}"
+                    th:data-email="${user.email}"
+                    th:data-address="${user.address}"
+                    th:data-phone="${user.phone}"
+                    th:data-role="${user.roleIds[0]}">
+                    <td class="px-4 py-3" th:text="${user.id}"></td>
+                    <td class="px-4 py-3" th:text="${user.fullName}"></td>
+                    <td class="px-4 py-3" th:text="${user.username}"></td>
+                    <td class="px-4 py-3">
+                            <span th:each="role : ${user.roleNames}"
+                                  th:text="${role}"
+                                  class="inline-block mr-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs uppercase font-medium"></span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <form th:action="@{/admin/users/{id}/toggle-status(id=${user.id})}" method="post">
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="enabled" th:checked="${user.enabled}" onchange="this.form.submit()" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 relative transition duration-300">
+                                    <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                                </div>
+                                <span class="ml-2 text-gray-700 text-sm">Hoạt động</span>
+                            </label>
+                        </form>
+                    </td>
+                    <td class="px-4 py-3 text-center space-x-1">
+                        <a href="#" onclick="openEditModal(this)" class="text-blue-600 hover:text-blue-800">
+                            <i class="ri-pencil-line text-lg"></i>
+                        </a>
+                        <form th:action="@{/admin/users/delete/{id}(id=${user.id})}" method="post" class="inline">
+                            <button type="submit" onclick="return confirm('Bạn có chắc muốn xóa người dùng này không?')" class="text-red-600 hover:text-red-800">
+                                <i class="ri-delete-bin-line text-lg"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Modal Thêm User (giữ nguyên) -->
+        <div id="userModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white w-full max-w-md rounded shadow p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold">Thêm người dùng</h2>
+                    <button onclick="closeModal()"><i class="ri-close-line text-2xl"></i></button>
+                </div>
+                <form th:action="@{/admin/users}" th:object="${userDTO}" method="post">
+                    <div class="mb-4"><label class="block text-sm font-medium">Họ tên</label><input type="text" th:field="*{fullName}" required class="w-full border rounded px-3 py-2" /></div>
+                    <div class="mb-4"><label class="block text-sm font-medium">Tên đăng nhập</label><input type="text" th:field="*{username}" required class="w-full border rounded px-3 py-2" /></div>
+                    <div class="mb-4"><label class="block text-sm font-medium">Mật khẩu</label><input type="password" th:field="*{password}" required class="w-full border rounded px-3 py-2" /></div>
+                    <div class="mb-4"><label class="block text-sm font-medium">Chức vụ</label><select th:field="*{roleIds}" class="w-full border rounded px-3 py-2"><option th:each="role : ${allRoles}" th:value="${role.id}" th:text="${#strings.replace(role.name, 'ROLE_', '')}"></option></select></div>
+                    <div class="flex justify-end space-x-2">
+                        <button type="button" onclick="closeModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Hủy</button>
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Lưu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal Sửa User -->
+        <div id="editUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white w-full max-w-md rounded shadow p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold">Chỉnh sửa người dùng</h2>
+                    <button onclick="closeEditModal()"><i class="ri-close-line text-2xl"></i></button>
+                </div>
+                <form id="editUserForm" method="post">
+                    <input type="hidden" id="editUserId">
+                    <div class="mb-4"><label class="block text-sm font-medium">Tên đăng nhập</label><input type="text" id="editUsername" readonly class="w-full border bg-gray-100 px-3 py-2 rounded" /></div>
+                    <div class="mb-4"><label class="block text-sm font-medium">Họ và tên</label><input type="text" id="editFullName" name="fullName" class="w-full border px-3 py-2 rounded" /></div>
+                    <div class="mb-4"><label class="block text-sm font-medium">Email</label><input type="email" id="editEmail" name="email" class="w-full border px-3 py-2 rounded" /></div>
+                    <div class="mb-4"><label class="block text-sm font-medium">Địa chỉ</label><input type="text" id="editAddress" name="address" class="w-full border px-3 py-2 rounded" /></div>
+                    <div class="mb-4"><label class="block text-sm font-medium">Số điện thoại</label><input type="text" id="editPhone" name="phone" class="w-full border px-3 py-2 rounded" /></div>
+                    <div class="mb-4"><label class="block text-sm font-medium">Chức vụ</label><select id="editRoleIds" name="roleIds" class="w-full border px-3 py-2 rounded"><option th:each="role : ${allRoles}" th:value="${role.id}" th:text="${#strings.replace(role.name, 'ROLE_', '')}"></option></select></div>
+                    <div class="flex justify-end space-x-2">
+                        <button type="button" onclick="closeEditModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Hủy</button>
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Lưu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+    function openModal() {
+        document.getElementById('userModal').classList.remove('hidden');
+    }
+    function closeModal() {
+        document.getElementById('userModal').classList.add('hidden');
+    }
+
+    function openEditModal(anchor) {
+        const tr = anchor.closest('tr');
+        document.getElementById('editUserId').value = tr.dataset.id;
+        document.getElementById('editUsername').value = tr.dataset.username;
+        document.getElementById('editFullName').value = tr.dataset.fullname;
+        document.getElementById('editEmail').value = tr.dataset.email || "";
+        document.getElementById('editAddress').value = tr.dataset.address || "";
+        document.getElementById('editPhone').value = tr.dataset.phone || "";
+        document.getElementById('editRoleIds').value = tr.dataset.role;
+        document.getElementById('editUserForm').action = /admin/users/update/${tr.dataset.id};
+        document.getElementById('editUserModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editUserModal').classList.add('hidden');
+    }
+</script>
+</body>
+</html>
