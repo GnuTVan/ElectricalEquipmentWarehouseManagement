@@ -1,20 +1,14 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-<<<<<<< Updated upstream
-    <meta charset="UTF-8">
-    <title>Danh sách người dùng</title>
-=======
     <title>Dashboard | Thiết bị điện Hải Phòng</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Tailwind CSS -->
->>>>>>> Stashed changes
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Remix Icons -->
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
-<<<<<<< Updated upstream
-=======
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
         body {
@@ -28,49 +22,14 @@
             border-radius: 20px;
         }
     </style>
->>>>>>> Stashed changes
 </head>
-<body class="bg-gray-100 font-sans">
+<body class="bg-gray-100">
 <div class="flex h-screen">
-
     <!-- Sidebar -->
     <aside class="w-64 bg-[#1e293b] text-white flex flex-col fixed h-full">
         <div class="p-6 text-center border-b border-gray-700">
-            <h1 class="text-2xl font-bold">Thiết Bị Điện</h1>
+            <h1 class="text-2xl font-bold">Thiết bị điện</h1>
             <h2 class="text-2xl font-bold">Hải Phòng</h2>
-<<<<<<< Updated upstream
-            <p class="mt-2 text-sm text-gray-400">Role: <span th:text="${#authentication.principal.authorities[0].authority}">USER</span></p>
-        </div>
-
-        <nav class="flex-1 overflow-y-auto sidebar-nav px-4 py-4 space-y-2 text-sm font-medium">
-            <a th:href="@{/dashboard}" class="flex items-center px-4 py-2.5 rounded-md hover:bg-gray-700">
-                <i class="ri-home-5-line w-6 text-lg"></i> <span class="ml-2">Trang chủ</span>
-            </a>
-            <a th:href="@{/admin/users}" class="flex items-center px-4 py-2.5 rounded-md bg-blue-600">
-                <i class="ri-account-circle-line w-6 text-lg"></i> <span class="ml-2">Tài khoản</span>
-            </a>
-            <a href="#" class="flex items-center px-4 py-2.5 rounded-md hover:bg-gray-700">
-                <i class="ri-hard-drive-2-line w-6 text-lg"></i> <span class="ml-2">Kho</span>
-            </a>
-            <a href="#" class="flex items-center px-4 py-2.5 rounded-md hover:bg-gray-700">
-                <i class="ri-archive-line w-6 text-lg"></i> <span class="ml-2">Sản phẩm</span>
-            </a>
-            <a href="#" class="flex items-center px-4 py-2.5 rounded-md hover:bg-gray-700">
-                <i class="ri-price-tag-3-line w-6 text-lg"></i> <span class="ml-2">Bán hàng</span>
-            </a>
-            <a href="#" class="flex items-center px-4 py-2.5 rounded-md hover:bg-gray-700">
-                <i class="ri-shopping-cart-2-line w-6 text-lg"></i> <span class="ml-2">Mua hàng</span>
-            </a>
-            <a href="#" class="flex items-center px-4 py-2.5 rounded-md hover:bg-gray-700">
-                <i class="ri-refund-2-line w-6 text-lg"></i> <span class="ml-2">Trả hàng</span>
-            </a>
-            <a href="#" class="flex items-center px-4 py-2.5 rounded-md hover:bg-gray-700">
-                <i class="ri-file-list-3-line w-6 text-lg"></i> <span class="ml-2">Phiếu kho</span>
-            </a>
-            <a href="#" class="flex items-center px-4 py-2.5 rounded-md hover:bg-gray-700">
-                <i class="ri-bar-chart-2-line w-6 text-lg"></i> <span class="ml-2">Báo cáo</span>
-            </a>
-=======
             <p class="mt-2 text-sm text-gray-400">
                 Role:
                 <span th:each="auth : ${#authentication.authorities}"
@@ -95,39 +54,18 @@
                 <li><a href="#" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700"><i class="ri-building-4-line w-6 text-lg"></i><span>Tài sản cố định</span></a></li>
                 <li><a href="#" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700"><i class="ri-bar-chart-2-line w-6 text-lg"></i><span>Báo cáo</span></a></li>
             </ul>
->>>>>>> Stashed changes
         </nav>
     </aside>
 
     <!-- Main Content -->
-<<<<<<< Updated upstream
-    <main class="flex-1 ml-64 p-6 overflow-auto">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-gray-800">Danh sách người dùng</h1>
-
-            <div class="flex items-center space-x-2">
-                <a th:href="@{/admin/users/new}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">+ Thêm</a>
-                <input type="text" placeholder="Tìm kiếm..." class="border px-3 py-2 rounded-md w-64" />
-=======
     <main class="flex-1 ml-64">
         <!-- Header -->
         <header class="bg-white shadow-sm p-4 flex justify-between items-center">
             <div class="relative w-full max-w-md">
                 <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 <input type="text" placeholder="Tìm kiếm..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
->>>>>>> Stashed changes
             </div>
-        </div>
 
-<<<<<<< Updated upstream
-        <!-- Thông báo -->
-        <div th:if="${message}" class="bg-green-100 text-green-800 px-4 py-2 rounded mb-4">
-            <p th:text="${message}"></p>
-        </div>
-        <div th:if="${error}" class="bg-red-100 text-red-800 px-4 py-2 rounded mb-4">
-            <p th:text="${error}"></p>
-        </div>
-=======
             <div class="flex items-center space-x-4">
                 <button class="p-2 rounded-full hover:bg-gray-100"><i class="ri-notification-3-line text-xl text-gray-600"></i></button>
                 <button class="p-2 rounded-full hover:bg-gray-100"><img src="https://placehold.co/32x32/e2e8f0/e2e8f0" alt="Country Flag" class="w-6 h-6 rounded-full object-cover"></button>
@@ -142,73 +80,23 @@
                         <i class="ri-arrow-down-s-line text-gray-500 text-xl"></i>
                     </button>
                     <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded shadow-md z-50 hidden">
-                        <a th:href="@{/account/info}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><i class="ri-user-line mr-2"></i> Thông tin tài khoản</a>
+                        <a th:href="@{/account/info}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="ri-user-line mr-2"></i> Thông tin tài khoản
+                        </a>
                         <form th:action="@{/logout}" method="post">
-                            <button type="submit" class="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><i class="ri-logout-box-r-line mr-2"></i> Đăng xuất</button>
+                            <button type="submit" class="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="ri-logout-box-r-line mr-2"></i> Đăng xuất
+                            </button>
                         </form>
                     </div>
                 </div>
             </div>
         </header>
->>>>>>> Stashed changes
 
-        <!-- Table -->
-        <div class="bg-white rounded shadow overflow-x-auto">
-            <table class="min-w-full table-auto text-sm">
-                <thead class="bg-gray-200 text-gray-700">
-                <tr>
-                    <th class="px-4 py-3 text-left">ID</th>
-                    <th class="px-4 py-3 text-left">Họ và tên</th>
-                    <th class="px-4 py-3 text-left">Tên tài khoản</th>
-                    <th class="px-4 py-3 text-left">Chức vụ</th>
-                    <th class="px-4 py-3 text-left">Trạng thái</th>
-                    <th class="px-4 py-3 text-center">Hành động</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="user : ${users}" class="border-b hover:bg-gray-50">
-                    <td class="px-4 py-3" th:text="${user.id}"></td>
-                    <td class="px-4 py-3" th:text="${user.fullName}"></td>
-                    <td class="px-4 py-3" th:text="${user.username}"></td>
-                    <td class="px-4 py-3">
-                            <span th:each="role : ${user.roles}"
-                                  th:text="${#strings.replace(role.name, 'ROLE_', '')}"
-                                  class="inline-block mr-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs uppercase font-medium"></span>
-                    </td>
-                    <td class="px-4 py-3">
-                        <form th:action="@{/admin/users/{id}/toggle-status(id=${user.id})}" method="post">
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="checkbox" name="enabled" th:checked="${user.enabled}" onchange="this.form.submit()" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 relative transition duration-300">
-                                    <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
-                                </div>
-                                <span class="ml-2 text-gray-700 text-sm">Hoạt động</span>
-                            </label>
-                        </form>
-                    </td>
-                    <td class="px-4 py-3 text-center space-x-1">
-                        <a th:href="@{/admin/users/edit/{id}(id=${user.id})}" class="text-blue-600 hover:text-blue-800">
-                            <i class="ri-pencil-line text-lg"></i>
-                        </a>
-                        <form th:action="@{/admin/users/delete/{id}(id=${user.id})}" method="post" class="inline">
-                            <button type="submit" onclick="return confirm('Bạn có chắc muốn xóa người dùng này không?')" class="text-red-600 hover:text-red-800">
-                                <i class="ri-delete-bin-line text-lg"></i>
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
+        <!-- Page Content -->
+        <div class="p-6">
+            <h1 class="text-2xl font-bold text-gray-800 mb-6">Bảng điều khiển</h1>
 
-<<<<<<< Updated upstream
-        <!-- Pagination (nếu có sau này) -->
-        <div class="mt-4 flex justify-center space-x-2 text-sm text-gray-600">
-            <a href="#" class="px-3 py-1 rounded border">Previous</a>
-            <a href="#" class="px-3 py-1 rounded border bg-blue-600 text-white">1</a>
-            <a href="#" class="px-3 py-1 rounded border">2</a>
-            <a href="#" class="px-3 py-1 rounded border">Next</a>
-=======
             <!-- Stats Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-6">
                 <div class="bg-white p-5 rounded-lg shadow flex items-center space-x-4">
@@ -255,7 +143,6 @@
                     <img src="https://placehold.co/300x300/f1f5f9/a0aec0?text=Donut+Chart+Placeholder" alt="Doughnut chart" class="w-full h-auto rounded-md">
                 </div>
             </div>
->>>>>>> Stashed changes
         </div>
     </main>
 </div>
