@@ -1,17 +1,18 @@
 package com.eewms.controller;
 
 import com.eewms.dto.ChangePasswordDTO;
-import com.eewms.dto.UserDTO;
-import com.eewms.dto.UserMapper;
 import com.eewms.dto.UserProfileDTO;
 import com.eewms.entities.User;
 import com.eewms.services.IUserService;
+import com.eewms.services.ImageUploadService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -19,10 +20,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class AccountController {
 
-
     private final IUserService userService;
+    private final ImageUploadService imageUploadService;
 
-    // Hiển thị hồ sơ cá nhân
     @GetMapping("/info")
     public String showProfile(Model model, @AuthenticationPrincipal UserDetails userDetails) {
         User user = userService.findByUsername(userDetails.getUsername())
@@ -33,23 +33,31 @@ public class AccountController {
                 .email(user.getEmail())
                 .phone(user.getPhone())
                 .address(user.getAddress())
+                .avatarUrl(user.getAvatarUrl())
                 .build();
 
         model.addAttribute("profile", profileDTO);
         return "profile";
     }
 
-
-    // Cập nhật hồ sơ cá nhân
     @PostMapping("/update-profile")
-    public String updateProfile(@ModelAttribute("profile") UserProfileDTO dto,
+    public String updateProfile(@ModelAttribute("profile") UserProfileDTO profileDTO,
+                                @RequestParam("avatarFile") MultipartFile avatarFile,
                                 RedirectAttributes redirect,
-                                @AuthenticationPrincipal UserDetails userDetails) {
+                                @AuthenticationPrincipal UserDetails userDetails, HttpSession session) {
         try {
-            userService.updateUserProfile(userDetails.getUsername(), dto);
+            if (!avatarFile.isEmpty()) {
+                String imageUrl = imageUploadService.uploadImage(avatarFile);
+                profileDTO.setAvatarUrl(imageUrl);
+            }
 
-
+            userService.updateUserProfile(userDetails.getUsername(), profileDTO);
+            // ✅ Save timestamp vào session
+            long timestamp = System.currentTimeMillis();
+            session.setAttribute("avatarTimestamp", timestamp);
+            //
             redirect.addFlashAttribute("message", "Cập nhật hồ sơ thành công.");
+
         } catch (Exception e) {
             redirect.addFlashAttribute("error", "Lỗi khi cập nhật hồ sơ: " + e.getMessage());
         }
@@ -57,14 +65,12 @@ public class AccountController {
         return "redirect:/account/info";
     }
 
-    // Hiển thị form đổi mật khẩu
     @GetMapping("/change-password")
     public String showChangePasswordForm(Model model) {
         model.addAttribute("changePasswordDTO", new ChangePasswordDTO());
         return "change-password";
     }
 
-    // 2. Xử lý đổi mật khẩu
     @PostMapping("/change-password")
     public String changePassword(@ModelAttribute("changePasswordDTO") ChangePasswordDTO dto,
                                  @AuthenticationPrincipal UserDetails userDetails,
@@ -83,5 +89,18 @@ public class AccountController {
             return "redirect:/account/change-password";
         }
     }
+    @ModelAttribute("loggedInAvatarUrl")
+    public String getAvatarUrl(@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) return null;
+
+        return userService.findByUsername(userDetails.getUsername())
+                .map(User::getAvatarUrl)
+                .orElse(null);
+    }
+    @ModelAttribute("avatarTimestamp")
+    public long avatarTimestamp() {
+        return System.currentTimeMillis();
+    }
+
 
 }

@@ -28,11 +28,13 @@ public class UserMapper {
                 .phone(dto.getPhone())
                 .email(dto.getEmail())
                 .address(dto.getAddress())
+                .avatarUrl(dto.getAvatarUrl())
                 .roles(roles)
                 .build();
     }
 
     public static UserDTO toDTO(User user) {
+
         List<Long> roleIds = user.getRoles() != null
                 ? user.getRoles().stream().map(Role::getId).collect(Collectors.toList())
                 : List.of();
@@ -49,6 +51,7 @@ public class UserMapper {
                 .phone(user.getPhone())
                 .email(user.getEmail())
                 .address(user.getAddress())
+                .avatarUrl(user.getAvatarUrl())
                 .roleIds(roleIds)
                 .roleNames(roleNames)
                 .build();

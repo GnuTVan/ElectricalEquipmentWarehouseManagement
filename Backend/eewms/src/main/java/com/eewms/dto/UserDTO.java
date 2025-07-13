@@ -20,4 +20,5 @@ public class UserDTO {
     private boolean enabled;
     private List<Long> roleIds;
     private List<String> roleNames;
+    private String avatarUrl;
 }

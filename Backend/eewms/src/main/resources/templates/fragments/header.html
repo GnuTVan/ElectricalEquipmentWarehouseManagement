@@ -11,8 +11,14 @@
         <!-- Nút avatar -->
         <button id="userMenuBtn"
                 class="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 focus:outline-none">
-            <img src="https://placehold.co/40x40/7e2…=" alt="Avatar"
+            <img th:src="${(loggedInAvatarUrl != null and !#strings.isEmpty(loggedInAvatarUrl))
+                ? loggedInAvatarUrl + '?t=' + avatarTimestamp
+                : 'https://placehold.co/40x40?text=User'}"
+
+                 alt="Avatar"
                  class="w-10 h-10 rounded-full object-cover border-2 border-blue-500">
+
+
             <div class="hidden md:block text-left">
                 <p class="font-semibold text-sm" th:text="${#authentication.name}">Người dùng</p>
                 <p class="text-xs text-gray-500"

@@ -23,7 +23,7 @@ public class User {
     @Column(nullable = false, unique = true, length = 100)
     private String username;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = true)
     private String password;
 
     private String fullName;
@@ -36,6 +36,9 @@ public class User {
 
     @Column(length = 255)
     private String address;
+
+    @Column(length = 500)
+    private String avatarUrl;
 
     private boolean enabled = true;
 

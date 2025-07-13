@@ -7,6 +7,10 @@ import com.eewms.dto.UserProfileDTO;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+
 public interface IUserService {
 
     List<User> findAllUsers();
@@ -31,4 +35,8 @@ public interface IUserService {
 
 
     void updateUserProfile(String username, UserProfileDTO dto);
+
+
+    Page<User> findAllUsersPaginated(Pageable pageable);
+
 }

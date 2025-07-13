@@ -7,6 +7,8 @@ import com.eewms.repository.RoleRepository;
 import com.eewms.repository.UserRepository;
 import com.eewms.services.IUserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -33,9 +35,17 @@ public class    UserServiceImpl implements IUserService {
 
     @Override
     public User saveUser(User user) {
-        // Mã hóa mật khẩu trước khi lưu
-        String encodedPassword = passwordEncoder.encode(user.getPassword());
-        user.setPassword(encodedPassword);
+        // Nếu có mật khẩu mới thì mã hóa nếu chưa được mã hóa
+        if (user.getPassword() != null && !user.getPassword().isBlank()) {
+            String pwd = user.getPassword();
+            // Chỉ mã hóa nếu chưa bắt đầu bằng định dạng của BCrypt
+            if (!pwd.startsWith("$2a$") && !pwd.startsWith("$2b$") && !pwd.startsWith("$2y$")) {
+                String encodedPassword = passwordEncoder.encode(pwd);
+                user.setPassword(encodedPassword);
+            }
+        }
+
+        // Nếu không có mật khẩu thì giữ nguyên (dành cho trường hợp tạo user chưa active)
         return userRepository.save(user);
     }
 
@@ -115,8 +125,13 @@ public class    UserServiceImpl implements IUserService {
         user.setEmail(dto.getEmail());
         user.setPhone(dto.getPhone());
         user.setAddress(dto.getAddress());
+        user.setAvatarUrl(dto.getAvatarUrl());
 
-        // ❗Không update password, enabled, role, username
         userRepository.save(user);
     }
+    @Override
+    public Page<User> findAllUsersPaginated(Pageable pageable) {
+        return userRepository.findAll(pageable);
+    }
+
 }
