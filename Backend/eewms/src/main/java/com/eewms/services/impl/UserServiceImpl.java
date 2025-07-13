@@ -1,5 +1,6 @@
 package com.eewms.services.impl;
 
+import com.eewms.dto.UserProfileDTO;
 import com.eewms.entities.Role;
 import com.eewms.entities.User;
 import com.eewms.repository.RoleRepository;
@@ -102,6 +103,20 @@ public class    UserServiceImpl implements IUserService {
 
         String encodedNewPassword = passwordEncoder.encode(newPassword);
         user.setPassword(encodedNewPassword);
+        userRepository.save(user);
+    }
+
+    @Override
+    public void updateUserProfile(String username, UserProfileDTO dto) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
+
+        user.setFullName(dto.getFullName());
+        user.setEmail(dto.getEmail());
+        user.setPhone(dto.getPhone());
+        user.setAddress(dto.getAddress());
+
+        // ❗Không update password, enabled, role, username
         userRepository.save(user);
     }
 }

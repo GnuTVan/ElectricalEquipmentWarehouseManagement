@@ -1,7 +1,9 @@
 package com.eewms.controller;
 
+import com.eewms.dto.ChangePasswordDTO;
 import com.eewms.dto.UserDTO;
 import com.eewms.dto.UserMapper;
+import com.eewms.dto.UserProfileDTO;
 import com.eewms.entities.User;
 import com.eewms.services.IUserService;
 import lombok.RequiredArgsConstructor;
@@ -26,28 +28,26 @@ public class AccountController {
         User user = userService.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
 
-        UserDTO userDTO = UserMapper.toDTO(user);
-        model.addAttribute("userDTO", userDTO);
-        return "profile";
+        UserProfileDTO profileDTO = UserProfileDTO.builder()
+                .fullName(user.getFullName())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .address(user.getAddress())
+                .build();
 
+        model.addAttribute("profile", profileDTO);
+        return "profile";
     }
+
 
     // Cập nhật hồ sơ cá nhân
     @PostMapping("/update-profile")
-    public String updateProfile(@ModelAttribute("userDTO") UserDTO userDTO,
+    public String updateProfile(@ModelAttribute("profile") UserProfileDTO dto,
                                 RedirectAttributes redirect,
                                 @AuthenticationPrincipal UserDetails userDetails) {
         try {
-            User existingUser = userService.findByUsername(userDetails.getUsername())
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
+            userService.updateUserProfile(userDetails.getUsername(), dto);
 
-            // Chỉ cập nhật các trường cho phép người dùng thay đổi
-            existingUser.setFullName(userDTO.getFullName());
-            existingUser.setEmail(userDTO.getEmail());
-            existingUser.setPhone(userDTO.getPhone());
-            existingUser.setAddress(userDTO.getAddress());
-
-            userService.updateUser(existingUser.getId(), existingUser);
 
             redirect.addFlashAttribute("message", "Cập nhật hồ sơ thành công.");
         } catch (Exception e) {
@@ -56,26 +56,26 @@ public class AccountController {
 
         return "redirect:/account/info";
     }
-    // 1. Hiển thị form đổi mật khẩu
+
+    // Hiển thị form đổi mật khẩu
     @GetMapping("/change-password")
-    public String showChangePasswordForm() {
-        return "change-password"; // Trỏ đến file templates/change-password.html
+    public String showChangePasswordForm(Model model) {
+        model.addAttribute("changePasswordDTO", new ChangePasswordDTO());
+        return "change-password";
     }
 
     // 2. Xử lý đổi mật khẩu
     @PostMapping("/change-password")
-    public String changePassword(@RequestParam String oldPassword,
-                                 @RequestParam String newPassword,
-                                 @RequestParam String confirmPassword,
+    public String changePassword(@ModelAttribute("changePasswordDTO") ChangePasswordDTO dto,
                                  @AuthenticationPrincipal UserDetails userDetails,
                                  RedirectAttributes redirect) {
         try {
-            if (!newPassword.equals(confirmPassword)) {
+            if (!dto.getNewPassword().equals(dto.getConfirmPassword())) {
                 redirect.addFlashAttribute("error", "Mật khẩu mới và xác nhận không khớp.");
                 return "redirect:/account/change-password";
             }
 
-            userService.changePassword(userDetails.getUsername(), oldPassword, newPassword);
+            userService.changePassword(userDetails.getUsername(), dto.getOldPassword(), dto.getNewPassword());
             redirect.addFlashAttribute("message", "Đổi mật khẩu thành công.");
             return "redirect:/account/info";
         } catch (Exception e) {

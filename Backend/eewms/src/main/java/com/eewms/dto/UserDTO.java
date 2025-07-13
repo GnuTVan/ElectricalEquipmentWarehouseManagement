@@ -18,7 +18,6 @@ public class UserDTO {
     private String email;
     private String address;
     private boolean enabled;
-
-    private List<Long> roleIds;     // dùng để gửi id các role từ form
-    private List<String> roleNames; // dùng để hiển thị tên role ra HTML
+    private List<Long> roleIds;
+    private List<String> roleNames;
 }
