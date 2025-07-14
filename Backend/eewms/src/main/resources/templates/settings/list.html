@@ -62,7 +62,6 @@
                         <tr>
                             <th class="px-4 py-2">ID</th>
                             <th class="px-4 py-2">Tên</th>
-                            <th class="px-4 py-2">Ưu tiên</th>
                             <th class="px-4 py-2">Trạng thái</th>
                             <th class="px-4 py-2">Hành động</th>
                         </tr>
@@ -71,7 +70,6 @@
                         <tr th:each="s : ${settings}">
                             <td class="px-4 py-2" th:text="${s.id}"></td>
                             <td class="px-4 py-2" th:text="${s.name}"></td>
-                            <td class="px-4 py-2" th:text="${s.priority}"></td>
                             <td class="px-4 py-2" th:text="${s.status}"></td>
                             <td class="px-4 py-2">
                                 <a th:href="@{/settings/edit/{type}/{id}(type=${settingType},id=${s.id})}">Sửa</a> |
@@ -95,10 +93,6 @@
                             <div>
                                 <label class="block">Tên</label>
                                 <input type="text" th:field="*{name}" class="w-full border px-2 py-1" required/>
-                            </div>
-                            <div>
-                                <label class="block">Ưu tiên</label>
-                                <input type="number" th:field="*{priority}" class="w-full border px-2 py-1"/>
                             </div>
                             <div>
                                 <label class="block">Trạng thái</label>
@@ -126,7 +120,6 @@
                 document.getElementById('modalTitle').innerText = id? 'Sửa':'Thêm';
                 document.querySelector('[name="id"]').value = id||'';
                 document.querySelector('[name="name"]').value = name||'';
-                document.querySelector('[name="priority"]').value = pri||'';
                 document.querySelector('[name="status"]').value = status||'ACTIVE';
                 document.getElementById('settingModal').classList.remove('hidden');
             }

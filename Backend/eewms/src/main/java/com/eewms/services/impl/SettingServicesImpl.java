@@ -25,7 +25,6 @@ public class SettingServicesImpl implements ISettingServices {
         Setting s = Setting.builder()
                 .name(dto.getName())
                 .type(dto.getType())
-                .priority(dto.getPriority())
                 .description(dto.getDescription())
                 .status(dto.getStatus())
                 .build();
@@ -44,7 +43,6 @@ public class SettingServicesImpl implements ISettingServices {
         }
         s.setName(dto.getName());
         s.setType(dto.getType());
-        s.setPriority(dto.getPriority());
         s.setDescription(dto.getDescription());
         s.setStatus(dto.getStatus());
         Setting updated = settingRepository.save(s);
@@ -85,7 +83,6 @@ public class SettingServicesImpl implements ISettingServices {
                 .id(s.getId())
                 .name(s.getName())
                 .type(s.getType())
-                .priority(s.getPriority())
                 .description(s.getDescription())
                 .status(s.getStatus())
                 .build();

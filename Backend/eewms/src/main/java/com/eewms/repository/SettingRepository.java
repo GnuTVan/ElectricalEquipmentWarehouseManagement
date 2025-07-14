@@ -12,7 +12,6 @@ import java.util.List;
 public interface SettingRepository extends JpaRepository<Setting, Integer> {
     boolean existsByNameAndType(String name, SettingType type);
     List<Setting> findByType(SettingType type);
-    List<SettingDTO> getByType(SettingType type);
 
 
 }

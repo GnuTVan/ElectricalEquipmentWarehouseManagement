@@ -23,8 +23,6 @@ public class Setting {
     @Enumerated(EnumType.STRING)
     @Column(name = "type_id", nullable = false, columnDefinition = "VARCHAR(20)")
     private SettingType type;
-    @Column(name = "priority")
-    private Integer priority;
     @Column(columnDefinition = "TEXT")
     private String description;
     @Column(name = "status")

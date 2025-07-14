@@ -26,7 +26,6 @@ public class ProductServicesImpl implements IProductServices {
                 .id(s.getId())
                 .name(s.getName())
                 .type(s.getType())
-                .priority(s.getPriority())
                 .description(s.getDescription())
                 .status(s.getStatus())
                 .build();
