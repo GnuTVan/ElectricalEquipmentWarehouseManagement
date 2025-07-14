@@ -38,6 +38,8 @@ public interface IUserService {
 
     Page<UserDTO> searchUsers(int page, String keyword);
     boolean existsByEmail(String email);
+    Optional<User> findByEmail(String email);
+    Optional<User> findByPhone(String phone);
 
 
 }

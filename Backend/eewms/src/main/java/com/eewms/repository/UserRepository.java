@@ -26,5 +26,7 @@ WHERE
 """)
     Page<User> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
     boolean existsByEmail(String email);
+    Optional<User> findByEmail(String email);
+    Optional<User> findByPhone(String phone);
 
 }
