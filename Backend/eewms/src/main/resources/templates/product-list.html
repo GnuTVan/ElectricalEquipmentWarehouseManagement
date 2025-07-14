@@ -59,7 +59,7 @@
                     th:data-unit="${product.unit.name}"
                     th:data-unit-id="${product.unit.id}"
                     th:data-description="${product.description}"
-                    th:data-images="${#strings.join(product.images.*.imageUrl, ',')}">
+                    th:data-images="${#strings.join((product.images.![imageUrl]), ', ')}">
 
                     <td class="px-4 py-3">
                         <img th:if="${#lists.isNotEmpty(product.images)}"
