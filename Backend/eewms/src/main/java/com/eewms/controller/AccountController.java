@@ -114,35 +114,37 @@ public class AccountController {
     }
 
     @PostMapping("/change-password")
-    public String changePassword(@ModelAttribute("changePasswordDTO") ChangePasswordDTO dto,
+    public String changePassword(@Valid @ModelAttribute("changePasswordDTO") ChangePasswordDTO dto,
+                                 BindingResult result,
                                  @AuthenticationPrincipal UserDetails userDetails,
-                                 RedirectAttributes redirect) {
-        try {
-            if (!dto.getNewPassword().equals(dto.getConfirmPassword())) {
-                redirect.addFlashAttribute("error", "Mật khẩu mới và xác nhận không khớp.");
-                return "redirect:/account/change-password";
-            }
+                                 RedirectAttributes redirect,
+                                 Model model) {
 
+        // ✅ Kiểm tra không trùng mật khẩu cũ
+        if (dto.getOldPassword().equals(dto.getNewPassword())) {
+            result.rejectValue("newPassword", "error.newPassword", "Mật khẩu mới không được trùng với mật khẩu hiện tại");
+        }
+
+        // ✅ So sánh mật khẩu mới và xác nhận
+        if (!dto.getNewPassword().equals(dto.getConfirmPassword())) {
+            result.rejectValue("confirmPassword", "error.confirmPassword", "Mật khẩu xác nhận không khớp");
+        }
+
+        // ✅ Nếu có lỗi validate từ DTO hoặc confirm password
+        if (result.hasErrors()) {
+            model.addAttribute("changePasswordDTO", dto); // giữ lại dữ liệu
+            return "change-password";
+        }
+
+        try {
             userService.changePassword(userDetails.getUsername(), dto.getOldPassword(), dto.getNewPassword());
             redirect.addFlashAttribute("message", "Đổi mật khẩu thành công.");
             return "redirect:/account/info";
         } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Lỗi: " + e.getMessage());
-            return "redirect:/account/change-password";
+            // ✅ Xử lý lỗi sai mật khẩu cũ, gắn lỗi thủ công
+            result.rejectValue("oldPassword", "error.oldPassword", e.getMessage());
+            model.addAttribute("changePasswordDTO", dto);
+            return "change-password";
         }
     }
-    @ModelAttribute("loggedInAvatarUrl")
-    public String getAvatarUrl(@AuthenticationPrincipal UserDetails userDetails) {
-        if (userDetails == null) return null;
-
-        return userService.findByUsername(userDetails.getUsername())
-                .map(User::getAvatarUrl)
-                .orElse(null);
-    }
-    @ModelAttribute("avatarTimestamp")
-    public long avatarTimestamp() {
-        return System.currentTimeMillis();
-    }
-
-
 }
