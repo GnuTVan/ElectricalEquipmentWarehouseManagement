@@ -36,8 +36,18 @@ public class ProductController {
 
     // xử lý submit modal form
     @PostMapping
-    public String create(@ModelAttribute("productDTO") ProductFormDTO dto,
-                         RedirectAttributes ra) {
+    public String create(
+            @ModelAttribute("productDTO") ProductFormDTO dto,
+            BindingResult br,
+            Model model,
+            RedirectAttributes ra) {
+        if (br.hasErrors()) {
+            // repopulate dropdowns
+            model.addAttribute("units",      settingService.getByType(SettingType.UNIT));
+            model.addAttribute("brands",     settingService.getByType(SettingType.BRAND));
+            model.addAttribute("categories", settingService.getByType(SettingType.CATEGORY));
+            return "product-list";
+        }
         try {
             productService.create(dto);
             ra.addFlashAttribute("success", "Thêm sản phẩm thành công");
@@ -49,40 +59,57 @@ public class ProductController {
 
     @PostMapping("/save")
     public String save(
-            @ModelAttribute ProductFormDTO productForm,
+            @ModelAttribute("productDTO") ProductFormDTO dto,
             BindingResult br,
-            RedirectAttributes ra,
-            Model model) {
+            Model model,
+            RedirectAttributes ra) {
+
         if (br.hasErrors()) {
-            return "products/form";
+            model.addAttribute("units",      settingService.getByType(SettingType.UNIT));
+            model.addAttribute("brands",     settingService.getByType(SettingType.BRAND));
+            model.addAttribute("categories", settingService.getByType(SettingType.CATEGORY));
+            return "product-list";
         }
+
         try {
-            if (productForm.getId() == null)
-                productService.create(productForm);
-            else
-                productService.update(productForm.getId(), productForm);
-            ra.addFlashAttribute("success", "Lưu thành công");
-            return "redirect:/products";
+            // Nếu id == null thì tạo mới, ngược lại update
+            if (dto.getId() == null) {
+                productService.create(dto);
+                ra.addFlashAttribute("success", "Thêm thành công");
+            } else {
+                productService.update(dto.getId(), dto);
+                ra.addFlashAttribute("success", "Cập nhật thành công");
+            }
         } catch (InventoryException ex) {
             ra.addFlashAttribute("error", ex.getMessage());
-            return "products/form";
+            model.addAttribute("units",      settingService.getByType(SettingType.UNIT));
+            model.addAttribute("brands",     settingService.getByType(SettingType.BRAND));
+            model.addAttribute("categories", settingService.getByType(SettingType.CATEGORY));
+            return "product-list";
         }
+        return "redirect:/products";
     }
 
     // Xử lý cập nhật
     @PostMapping("/update/{id}")
-    public String updateProduct(@PathVariable Integer id,
-                             @ModelAttribute("userDTO") UserDTO userDTO,
-                                @ModelAttribute ProductFormDTO productForm,
-                             RedirectAttributes redirect) {
-        try {
-            productService.update(id, productForm);
-            redirect.addFlashAttribute("success", "Cập nhật sản phẩm thành công");
-            return "redirect:/products";
-        } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Lỗi khi cập nhật: " + e.getMessage());
+    public String updateProduct(
+            @PathVariable Integer id,
+            @ModelAttribute("productDTO") ProductFormDTO dto,
+            BindingResult br,
+            Model model,
+            RedirectAttributes ra) {
+        if (br.hasErrors()) {
+            model.addAttribute("units",      settingService.getByType(SettingType.UNIT));
+            model.addAttribute("brands",     settingService.getByType(SettingType.BRAND));
+            model.addAttribute("categories", settingService.getByType(SettingType.CATEGORY));
+            return "product-list";
         }
-
+        try {
+            productService.update(id, dto);
+            ra.addFlashAttribute("success", "Cập nhật sản phẩm thành công");
+        } catch (InventoryException ex) {
+            ra.addFlashAttribute("error", ex.getMessage());
+        }
         return "redirect:/products";
     }
     @GetMapping("/{id}")

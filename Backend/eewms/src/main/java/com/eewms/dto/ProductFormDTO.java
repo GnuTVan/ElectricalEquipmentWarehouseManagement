@@ -1,6 +1,8 @@
 package com.eewms.dto;
 
 import lombok.*;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -20,5 +22,5 @@ public class ProductFormDTO {
     private Integer unitId;
     private Integer categoryId;
     private Integer brandId;
-    private List<String> images;
+    private List<MultipartFile> imageFiles;
 }
