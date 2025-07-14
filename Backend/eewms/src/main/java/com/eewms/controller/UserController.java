@@ -7,9 +7,11 @@ import com.eewms.repository.RoleRepository;
 import com.eewms.services.IUserService;
 import com.eewms.services.IEmailService;
 import com.eewms.services.IVerificationTokenService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -33,16 +35,16 @@ public class UserController {
     @GetMapping
     public String listUsers(
             @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "keyword", required = false) String keyword,
             Model model) {
+        System.out.println("🔍 Từ khóa tìm kiếm: " + keyword); // THÊM DÒNG NÀY
 
-        Pageable pageable = PageRequest.of(page, size);
-        Page<User> userPage = userService.findAllUsersPaginated(pageable);
+        Page<UserDTO> userPage = userService.searchUsers(page, keyword);
+        model.addAttribute("users", userPage.getContent());
+        model.addAttribute("userPage", userPage);
+        model.addAttribute("keyword", keyword); // giữ lại từ khóa tìm kiếm
 
-        Page<UserDTO> userDTOPage = userPage.map(UserMapper::toDTO);
-
-        model.addAttribute("users", userDTOPage.getContent());
-        model.addAttribute("userPage", userDTOPage); // dùng cho phân trang
+        // ✅ Thêm dòng này:
         model.addAttribute("userDTO", new UserDTO());
         model.addAttribute("allRoles", userService.getAllRoles());
 
@@ -64,78 +66,50 @@ public class UserController {
 
     // 3. Xử lý tạo user và gửi mail kích hoạt
     @PostMapping
-    public String createUser(@ModelAttribute("userDTO") UserDTO userDTO,
+    public String createUser(@Valid @ModelAttribute("userDTO") UserDTO userDTO,
+                             BindingResult result,
+                             @RequestParam(value = "page", defaultValue = "0") int page,
+                             @RequestParam(value = "keyword", required = false) String keyword,
+                             Model model,
                              RedirectAttributes redirect) {
+
+        // Kiểm tra trùng username/email
+        if (userService.existsByUsername(userDTO.getUsername())) {
+            result.rejectValue("username", "error.userDTO", "Tên đăng nhập đã tồn tại");
+        }
+        if (userService.existsByEmail(userDTO.getEmail())) {
+            result.rejectValue("email", "error.userDTO", "Email đã tồn tại");
+        }
+
+        // Nếu có lỗi → trả về lại view kèm theo dữ liệu cần thiết
+        if (result.hasErrors()) {
+            Page<UserDTO> userPage = userService.searchUsers(page, keyword);
+
+            model.addAttribute("users", userPage.getContent());
+            model.addAttribute("userPage", userPage);
+            model.addAttribute("keyword", keyword);
+            model.addAttribute("allRoles", userService.getAllRoles());
+
+            return "user-list";
+        }
+
+        // Nếu không lỗi → tiếp tục xử lý tạo user
         try {
-            // Bắt buộc trạng thái ban đầu là chưa kích hoạt
             userDTO.setEnabled(false);
-
-            // Convert DTO → Entity
             User user = UserMapper.toEntity(userDTO, roleRepository);
-
-            // Lưu user (không có password)
             userService.saveUser(user);
 
-            // Tạo token kích hoạt
             String token = verificationTokenService.createVerificationToken(user);
-
-            // Gửi email xác thực
             emailService.sendActivationEmail(user, token);
 
             redirect.addFlashAttribute("message", "Tạo người dùng thành công. Đã gửi email kích hoạt.");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", "Lỗi khi tạo người dùng: " + e.getMessage());
         }
-        return "redirect:/admin/users";
-    }
-
-    // 4. Hiển thị form sửa
-    @GetMapping("/edit/{id}")
-    public String showEditForm(@PathVariable Long id, Model model, RedirectAttributes redirect) {
-        try {
-            User user = userService.findUserById(id)
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
-
-            UserDTO userDTO = UserMapper.toDTO(user);
-
-            model.addAttribute("userDTO", userDTO);
-            model.addAttribute("allRoles", userService.getAllRoles());
-
-            return "user-form";
-        } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Lỗi: " + e.getMessage());
-            return "redirect:/admin/users";
-        }
-    }
-
-    // 5. Xử lý cập nhật user
-    @PostMapping("/update/{id}")
-    public String updateUser(@PathVariable Long id,
-                             @ModelAttribute("userDTO") UserDTO userDTO,
-                             RedirectAttributes redirect) {
-        try {
-            User updatedUser = UserMapper.toEntity(userDTO, roleRepository);
-            userService.updateUser(id, updatedUser);
-            redirect.addFlashAttribute("message", "Cập nhật người dùng thành công.");
-        } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Lỗi khi cập nhật: " + e.getMessage());
-        }
 
         return "redirect:/admin/users";
     }
 
-    // 6. Xử lý xóa user
-    @PostMapping("/delete/{id}")
-    public String deleteUser(@PathVariable Long id, RedirectAttributes redirect) {
-        try {
-            userService.deleteUser(id);
-            redirect.addFlashAttribute("message", "Xóa người dùng thành công.");
-        } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Lỗi khi xóa: " + e.getMessage());
-        }
-
-        return "redirect:/admin/users";
-    }
 
     // 7. Bật / Tắt trạng thái
     @PostMapping("/{id}/toggle-status")
@@ -157,6 +131,27 @@ public class UserController {
             redirect.addFlashAttribute("message", "Cập nhật trạng thái thành công.");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", "Lỗi khi cập nhật trạng thái: " + e.getMessage());
+        }
+
+        return "redirect:/admin/users";
+    }
+
+    //8. reset password
+    @PostMapping("/reset-password/{id}")
+    public String resetPassword(@PathVariable Long id, RedirectAttributes redirect) {
+        try {
+            User user = userService.findUserById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng."));
+
+            // Tạo token mới
+            String token = verificationTokenService.createVerificationToken(user);
+
+            // Gửi email đặt lại mật khẩu
+            emailService.sendResetPasswordEmail(user, token);
+
+            redirect.addFlashAttribute("message", "Đã gửi email đặt lại mật khẩu cho người dùng.");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", "Lỗi khi gửi email đặt lại mật khẩu: " + e.getMessage());
         }
 
         return "redirect:/admin/users";

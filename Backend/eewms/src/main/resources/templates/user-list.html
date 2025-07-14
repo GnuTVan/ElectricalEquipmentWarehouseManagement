@@ -10,6 +10,13 @@
         body {
             font-family: 'Be Vietnam Pro', sans-serif;
         }
+        .sidebar-nav::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background-color: #4a5568;
+            border-radius: 20px;
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -18,16 +25,27 @@
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
     <!-- Main content -->
-    <main class="flex-1 ml-64 p-6">
+    <main class="flex-1 ml-64">
         <!-- Header -->
         <div th:replace="~{fragments/header :: header}"></div>
 
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex justify-between items-center mb-6 p-6">
             <h1 class="text-2xl font-bold text-gray-800">Danh sách người dùng</h1>
             <div class="flex items-center space-x-2">
                 <a onclick="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer">+ Thêm</a>
-                <input type="text" placeholder="Tìm kiếm..." class="border px-3 py-2 rounded-md w-64" />
+                <form th:action="@{/admin/users}" method="get" class="flex gap-2">
+
+                <input type="text" name="keyword" th:value="${keyword}" placeholder="Tìm kiếm..." class="border px-3 py-2 rounded-md w-64" />
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tìm</button>
+                </form>
+
             </div>
+        </div>
+        <div th:if="${message}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4">
+            <p th:text="${message}"></p>
+        </div>
+        <div th:if="${error}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
+            <p th:text="${error}"></p>
         </div>
 
         <!-- Table -->
@@ -97,39 +115,37 @@
                     <!-- Nút về đầu -->
                 <!-- Nút về đầu -->
                 <li th:if="${userPage.totalPages > 1}">
-                    <a th:href="@{/admin/users(page=0)}"
+                    <a th:href="@{/admin/users(page=0, keyword=${keyword})}"
                        class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">«</a>
                 </li>
 
-
                 <!-- Nút về trước -->
-                    <li>
-                        <a th:href="@{/admin/users(page=${userPage.number - 1})}"
-                           th:if="${userPage.hasPrevious()}"
-                           class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">‹</a>
-                    </li>
+                <li th:if="${userPage.hasPrevious()}">
+                    <a th:href="@{/admin/users(page=${userPage.number - 1}, keyword=${keyword})}"
+                       class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">‹</a>
+                </li>
 
-                    <!-- Các trang -->
-                    <li th:each="i : ${#numbers.sequence(0, userPage.totalPages - 1)}">
-                        <a th:href="@{/admin/users(page=${i})}"
-                           th:text="${i + 1}"
-                           th:classappend="${userPage.number == i} ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'"
-                           class="px-3 py-1 rounded text-sm font-medium"></a>
-                    </li>
+                <!-- Các số trang -->
+                <li th:each="i : ${#numbers.sequence(0, userPage.totalPages - 1)}">
+                    <a th:href="@{/admin/users(page=${i}, keyword=${keyword})}"
+                       th:text="${i + 1}"
+                       th:classappend="${userPage.number == i} ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'"
+                       class="px-3 py-1 rounded text-sm font-medium"></a>
+                </li>
 
-                    <!-- Nút tiếp theo -->
-                    <li>
-                        <a th:href="@{/admin/users(page=${userPage.number + 1})}"
-                           th:if="${userPage.hasNext()}"
-                           class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">›</a>
-                    </li>
+                <!-- Nút tiếp theo -->
+                <li th:if="${userPage.hasNext()}">
+                    <a th:href="@{/admin/users(page=${userPage.number + 1}, keyword=${keyword})}"
+                       class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">›</a>
+                </li>
 
-                    <!-- Nút đến cuối -->
-                    <li>
-                        <a th:href="@{/admin/users(page=${userPage.totalPages - 1})}"
-                           class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">»</a>
-                    </li>
-                </ul>
+                <!-- Nút đến cuối -->
+                <li>
+                    <a th:href="@{/admin/users(page=${userPage.totalPages - 1}, keyword=${keyword})}"
+                       class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">»</a>
+                </li>
+
+            </ul>
             </div>
 
         </div>
@@ -142,9 +158,25 @@
                     <button onclick="closeModal()"><i class="ri-close-line text-2xl"></i></button>
                 </div>
                 <form th:action="@{/admin/users}" th:object="${userDTO}" method="post">
-                    <div class="mb-4"><label class="block text-sm font-medium">Họ tên</label><input type="text" th:field="*{fullName}" required class="w-full border rounded px-3 py-2" /></div>
-                    <div class="mb-4"><label class="block text-sm font-medium">Tên đăng nhập</label><input type="text" th:field="*{username}" required class="w-full border rounded px-3 py-2" /></div>
-                    <div class="mb-4"><label class="block text-sm font-medium">Email</label><input type="email" th:field="*{email}" required class="w-full border rounded px-3 py-2" /></div>
+                    <!-- Họ tên -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium">Họ tên</label>
+                        <input type="text" th:field="*{fullName}" class="w-full border rounded px-3 py-2" />
+                        <p th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}" class="text-red-600 text-sm mt-1"></p>
+                    </div>
+
+                    <!-- Tên đăng nhập -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium">Tên đăng nhập</label>
+                        <input type="text" th:field="*{username}" class="w-full border rounded px-3 py-2" />
+                        <p th:if="${#fields.hasErrors('username')}" th:errors="*{username}" class="text-red-600 text-sm mt-1"></p>
+                    </div>
+                    <!-- Email -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium">Email</label>
+                        <input type="email" th:field="*{email}" class="w-full border rounded px-3 py-2" />
+                        <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-red-600 text-sm mt-1"></p>
+                    </div>
                     <div class="mb-4"><label class="block text-sm font-medium">Chức vụ</label><select th:field="*{roleIds}" class="w-full border rounded px-3 py-2"><option th:each="role : ${allRoles}" th:value="${role.id}" th:text="${#strings.replace(role.name, 'ROLE_', '')}"></option></select></div>
                     <div class="flex justify-end space-x-2">
                         <button type="button" onclick="closeModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Hủy</button>
@@ -169,22 +201,6 @@
         document.getElementById('userModal').classList.add('hidden');
     }
 
-    function openEditModal(anchor) {
-        const tr = anchor.closest('tr');
-        document.getElementById('editUserId').value = tr.dataset.id;
-        document.getElementById('editUsername').value = tr.dataset.username;
-        document.getElementById('editFullName').value = tr.dataset.fullname;
-        document.getElementById('editEmail').value = tr.dataset.email || "";
-        document.getElementById('editAddress').value = tr.dataset.address || "";
-        document.getElementById('editPhone').value = tr.dataset.phone || "";
-        document.getElementById('editRoleIds').value = tr.dataset.role;
-        document.getElementById('editUserForm').action = `/admin/users/update/${tr.dataset.id}`;
-        document.getElementById('editUserModal').classList.remove('hidden');
-    }
-
-    function closeEditModal() {
-        document.getElementById('editUserModal').classList.add('hidden');
-    }
     const btn = document.getElementById("userMenuBtn");
     const dropdown = document.getElementById("userMenuDropdown");
     btn?.addEventListener("click", () => {
@@ -195,6 +211,7 @@
             dropdown?.classList.add("hidden");
         }
     });
+
 </script>
 </body>
 </html>

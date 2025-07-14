@@ -19,16 +19,28 @@ public class VerificationTokenServiceImpl implements IVerificationTokenService {
 
     @Override
     public String createVerificationToken(User user) {
-        String token = UUID.randomUUID().toString();
+        // Nếu đã có token chưa dùng → tái sử dụng
+        Optional<VerificationToken> existingTokenOpt = tokenRepository.findByUser(user);
 
-        VerificationToken verificationToken = VerificationToken.builder()
+        if (existingTokenOpt.isPresent()) {
+            VerificationToken existingToken = existingTokenOpt.get();
+            if (!existingToken.isUsed() && existingToken.getExpiryDate().isAfter(LocalDateTime.now())) {
+                return existingToken.getToken(); // ✅ Tái sử dụng token
+            } else {
+                tokenRepository.delete(existingToken); // ✅ Token hết hạn hoặc đã dùng → xóa
+            }
+        }
+
+        // ✅ Tạo token mới
+        String token = UUID.randomUUID().toString();
+        VerificationToken newToken = VerificationToken.builder()
                 .token(token)
                 .user(user)
                 .expiryDate(LocalDateTime.now().plusHours(24))
                 .used(false)
                 .build();
 
-        tokenRepository.save(verificationToken);
+        tokenRepository.save(newToken);
         return token;
     }
 

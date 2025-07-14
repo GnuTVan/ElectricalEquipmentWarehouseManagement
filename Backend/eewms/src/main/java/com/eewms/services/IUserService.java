@@ -1,5 +1,6 @@
 package com.eewms.services;
 
+import com.eewms.dto.UserDTO;
 import com.eewms.entities.User;
 import com.eewms.entities.Role;
 import com.eewms.dto.UserProfileDTO;
@@ -19,10 +20,6 @@ public interface IUserService {
 
     User saveUser(User user);
 
-    User updateUser(Long id, User updatedUser);
-
-    void deleteUser(Long id);
-
     void toggleEnabledStatus(Long id);
 
     boolean existsByUsername(String username);
@@ -38,5 +35,11 @@ public interface IUserService {
 
 
     Page<User> findAllUsersPaginated(Pageable pageable);
+
+    Page<UserDTO> searchUsers(int page, String keyword);
+    boolean existsByEmail(String email);
+    Optional<User> findByEmail(String email);
+    Optional<User> findByPhone(String phone);
+
 
 }

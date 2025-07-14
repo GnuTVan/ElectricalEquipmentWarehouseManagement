@@ -16,6 +16,10 @@
 
     <!-- Form đổi mật khẩu -->
     <form th:action="@{/activate}" method="post">
+        <!-- ✅ CSRF token bắt buộc khi bật bảo mật -->
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+        <!-- Token từ link kích hoạt -->
         <input type="hidden" name="token" th:value="${token}" />
 
         <div class="mb-4">

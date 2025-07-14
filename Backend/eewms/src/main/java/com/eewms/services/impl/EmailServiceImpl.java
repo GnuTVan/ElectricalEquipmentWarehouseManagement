@@ -51,4 +51,34 @@ public class EmailServiceImpl implements IEmailService {
             throw new RuntimeException("Không thể gửi email: " + e.getMessage());
         }
     }
+
+    @Override
+    public void sendResetPasswordEmail(User user, String token) {
+        String to = user.getEmail();
+        String subject = "Đặt lại mật khẩu của bạn";
+        String resetLink = activationBaseUrl + "?token=" + token;
+
+        String content = """
+        <p>Xin chào <b>%s</b>,</p>
+        <p>Bạn đã được đặt lại mật khẩu trong hệ thống quản lý của Công Ty Thiết Bị Điện Hải Phòng.</p>
+        <p>Vui lòng nhấn vào đường dẫn dưới đây để đặt lại mật khẩu:</p>
+        <p><a href="%s">Đặt lại mật khẩu</a></p>
+        <br/>
+        <p>Link này sẽ hết hạn sau 24 giờ.</p>
+        """.formatted(user.getFullName(), resetLink);
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(content, true);
+
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Không thể gửi email đặt lại mật khẩu: " + e.getMessage());
+        }
+    }
 }
