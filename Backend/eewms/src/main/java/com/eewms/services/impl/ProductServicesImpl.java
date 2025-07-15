@@ -203,5 +203,20 @@ public class ProductServicesImpl implements IProductServices {
         product.setStatus(status);
         productRepo.save(product);
     }
+    // Tim kiếm sản phẩm theo keyword
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductDetailsDTO> searchByKeyword(String keyword) {
+        return productRepo.searchByKeyword(keyword).stream()
+                .map(p -> {
+                    try {
+                        return getById(p.getId());
+                    } catch (InventoryException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .collect(Collectors.toList());
+    }
+
 
 }

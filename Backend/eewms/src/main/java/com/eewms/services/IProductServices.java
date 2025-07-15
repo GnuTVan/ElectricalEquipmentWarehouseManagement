@@ -19,4 +19,8 @@ public interface IProductServices {
 
     // để lấy options trong dropdown
     List<SettingDTO> getSettingOptions(SettingType type);
+
+    // tìm kiếm sản phẩm theo từ khóa
+    List<ProductDetailsDTO> searchByKeyword(String keyword);
+
 }

@@ -36,7 +36,14 @@
         <!-- Tiêu đề + Nút Thêm -->
         <div class="flex justify-between items-center mb-4 px-6 py-6">
             <h1 class="text-2xl font-bold">Danh sách sản phẩm</h1>
+            <div class="flex gap-2">
             <a onclick="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer">+ Thêm</a>
+            <!-- Thanh tìm kiếm -->
+            <form th:action="@{/products}" method="get" class="flex gap-2">
+                <input type="text" name="keyword" th:value="${keyword}" placeholder="Tìm theo tên hoặc mã sản phẩm..." class="border px-3 py-2 rounded-md w-64" />
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tìm</button>
+            </form>
+            </div>
         </div>
 
         <!-- Bảng dữ liệu -->

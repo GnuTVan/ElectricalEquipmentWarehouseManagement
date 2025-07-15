@@ -32,8 +32,17 @@ public class ProductController {
     private final ImageUploadService imageUploadService;
 
     @GetMapping
-    public String list(Model model) throws InventoryException {
-        model.addAttribute("products", productService.getAll());
+    public String list( @RequestParam(value = "keyword",
+                        required = false) String keyword,
+                        Model model) throws InventoryException {
+
+        if (keyword != null && !keyword.isBlank()) {
+            model.addAttribute("products", productService.searchByKeyword(keyword));
+        } else {
+            model.addAttribute("products", productService.getAll());
+        }
+
+        model.addAttribute("keyword", keyword);
         model.addAttribute("productDTO", new ProductFormDTO());
         model.addAttribute("units",      settingService.getByType(SettingType.UNIT));
         model.addAttribute("brands",     settingService.getByType(SettingType.BRAND));
