@@ -122,6 +122,20 @@
 
             return users.map(UserMapper::toDTO);
         }
+        @Override
+        public boolean existsByEmail(String email) {
+            return userRepository.existsByEmail(email);
+        }
+
+        @Override
+        public Optional<User> findByEmail(String email) {
+            return userRepository.findByEmail(email);
+        }
+
+        @Override
+        public Optional<User> findByPhone(String phone) {
+            return userRepository.findByPhone(phone);
+        }
 
 
     }

@@ -1,5 +1,5 @@
-
-<aside id="sidebar" th:fragment="sidebar" class="w-64 bg-[#1e293b] text-white flex flex-col fixed h-full">
+<aside id="sidebar" th:fragment="sidebar" class="w-64 bg-[#1e293b] text-white flex flex-col fixed h-full"
+       xmlns:th="http://www.w3.org/1999/xhtml">
     <!-- Logo and Title -->
     <div class="p-6 text-center border-b border-gray-700">
         <h1 class="text-2xl font-bold">Thiết bị điện</h1>
@@ -49,26 +49,33 @@
                     <span>Quản lý chung</span>
                 </a>
             </li>
+            <!-- Đối tác -->
+            <li th:classappend="${activePage != null and activePage == 'suppliers'} ? 'bg-blue-600 text-white font-medium rounded-lg'">
+            <a th:href="@{/admin/suppliers}" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                    <i class="ri-group-line w-6 text-lg"></i>
+                    <span>Đối tác</span>
+                </a>
+            </li>
+
             <li>
                 <a href="#" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-price-tag-3-line w-6 text-lg"></i>
                     <span>Bán hàng</span>
                 </a>
+
             </li>
-            <li>
-                <a href="#" class="flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <div class="flex items-center">
-                        <i class="ri-shopping-basket-line w-6 text-lg"></i>
-                        <span>Mua hàng</span>
-                    </div>
-                    <i class="ri-arrow-up-s-line"></i>
-                </a>
-            </li>
+            <!-- Mua hàng -->
             <li>
                 <a href="#" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <i class="ri-shopping-cart-2-line w-6 text-lg"></i>
-                    <span>Trả hàng</span>
+                    <i class="ri-shopping-basket-line w-6 text-lg"></i>
+                    <span>Mua hàng</span>
                 </a>
+            </li>
+
+            <a href="#" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                <i class="ri-shopping-cart-2-line w-6 text-lg"></i>
+                <span>Trả hàng</span>
+            </a>
             </li>
             <li>
                 <a href="#" class="flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
@@ -83,15 +90,6 @@
                 <a href="#" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-tools-line w-6 text-lg"></i>
                     <span>Lệnh sản xuất</span>
-                </a>
-            </li>
-            <li>
-                <a href="#" class="flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <div class="flex items-center">
-                        <i class="ri-group-line w-6 text-lg"></i>
-                        <span>Đối tác</span>
-                    </div>
-                    <i class="ri-arrow-up-s-line"></i>
                 </a>
             </li>
             <li>
@@ -119,4 +117,3 @@
         </form>
     </div>
 </aside>
-

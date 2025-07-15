@@ -158,9 +158,25 @@
                     <button onclick="closeModal()"><i class="ri-close-line text-2xl"></i></button>
                 </div>
                 <form th:action="@{/admin/users}" th:object="${userDTO}" method="post">
-                    <div class="mb-4"><label class="block text-sm font-medium">Họ tên</label><input type="text" th:field="*{fullName}" required class="w-full border rounded px-3 py-2" /></div>
-                    <div class="mb-4"><label class="block text-sm font-medium">Tên đăng nhập</label><input type="text" th:field="*{username}" required class="w-full border rounded px-3 py-2" /></div>
-                    <div class="mb-4"><label class="block text-sm font-medium">Email</label><input type="email" th:field="*{email}" required class="w-full border rounded px-3 py-2" /></div>
+                    <!-- Họ tên -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium">Họ tên</label>
+                        <input type="text" th:field="*{fullName}" class="w-full border rounded px-3 py-2" />
+                        <p th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}" class="text-red-600 text-sm mt-1"></p>
+                    </div>
+
+                    <!-- Tên đăng nhập -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium">Tên đăng nhập</label>
+                        <input type="text" th:field="*{username}" class="w-full border rounded px-3 py-2" />
+                        <p th:if="${#fields.hasErrors('username')}" th:errors="*{username}" class="text-red-600 text-sm mt-1"></p>
+                    </div>
+                    <!-- Email -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium">Email</label>
+                        <input type="email" th:field="*{email}" class="w-full border rounded px-3 py-2" />
+                        <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-red-600 text-sm mt-1"></p>
+                    </div>
                     <div class="mb-4"><label class="block text-sm font-medium">Chức vụ</label><select th:field="*{roleIds}" class="w-full border rounded px-3 py-2"><option th:each="role : ${allRoles}" th:value="${role.id}" th:text="${#strings.replace(role.name, 'ROLE_', '')}"></option></select></div>
                     <div class="flex justify-end space-x-2">
                         <button type="button" onclick="closeModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Hủy</button>
@@ -193,6 +209,17 @@
     document.addEventListener("click", (event) => {
         if (!event.target.closest("#userMenuWrapper")) {
             dropdown?.classList.add("hidden");
+        }
+    });
+
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const alert = document.querySelector('.bg-green-100');
+        if (alert) {
+            setTimeout(() => {
+                alert.classList.add('hidden');
+            }, 3000);
         }
     });
 </script>
