@@ -22,12 +22,13 @@ public class SupplierController {
     // ✅ Hiển thị danh sách + form thêm mới
     @GetMapping
     public String showSupplierList(Model model) {
+        model.addAttribute("activePage", "suppliers"); // ✅ rất quan trọng để sidebar biết highlight mục này
         model.addAttribute("suppliers", supplierService.findAll());
-        model.addAttribute("newSupplier", new SupplierDTO()); // Cho form thêm mới
-        model.addAttribute("editSupplier", new SupplierDTO()); // Cho modal sửa
-        System.out.println("==> Danh sách NCC: " + supplierService.findAll().size());
+        model.addAttribute("newSupplier", new SupplierDTO());
+        model.addAttribute("editSupplier", new SupplierDTO());
         return "supplier-list";
     }
+
 
     // ✅ Xử lý tạo mới nhà cung cấp
     @PostMapping

@@ -50,12 +50,13 @@
                 </a>
             </li>
             <!-- Đối tác -->
-            <li>
-                <a th:href="@{/admin/suppliers}" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+            <li th:classappend="${activePage != null and activePage == 'suppliers'} ? 'bg-blue-600 text-white font-medium rounded-lg'">
+            <a th:href="@{/admin/suppliers}" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-group-line w-6 text-lg"></i>
                     <span>Đối tác</span>
                 </a>
             </li>
+
             <li>
                 <a href="#" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-price-tag-3-line w-6 text-lg"></i>
@@ -72,9 +73,9 @@
             </li>
 
             <a href="#" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <i class="ri-shopping-cart-2-line w-6 text-lg"></i>
-                    <span>Trả hàng</span>
-                </a>
+                <i class="ri-shopping-cart-2-line w-6 text-lg"></i>
+                <span>Trả hàng</span>
+            </a>
             </li>
             <li>
                 <a href="#" class="flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
@@ -89,15 +90,6 @@
                 <a href="#" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-tools-line w-6 text-lg"></i>
                     <span>Lệnh sản xuất</span>
-                </a>
-            </li>
-            <li>
-                <a href="#" class="flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <div class="flex items-center">
-                        <i class="ri-group-line w-6 text-lg"></i>
-                        <span>Đối tác</span>
-                    </div>
-                    <i class="ri-arrow-up-s-line"></i>
                 </a>
             </li>
             <li>
@@ -125,4 +117,3 @@
         </form>
     </div>
 </aside>
-

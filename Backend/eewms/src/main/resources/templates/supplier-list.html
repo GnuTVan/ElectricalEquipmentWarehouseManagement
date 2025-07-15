@@ -67,20 +67,28 @@
                         </span>
                     </td>
                     <td class="px-4 py-2" th:text="${supplier.description}"></td>
-                    <td class="px-4 py-2 text-center space-x-2">
-                        <button type="button"
-                                class="text-blue-600 hover:text-blue-800"
-                                th:onclick="'showEditModal(' + ${supplier.id} + ')'">
-                            <i class="ri-pencil-line"></i>
-                        </button>
-                        <form th:action="@{'/admin/suppliers/toggle/' + ${supplier.id}}" method="post" class="inline">
-                            <button type="submit"
-                                    th:title="${supplier.status} ? 'Vô hiệu hóa' : 'Kích hoạt'"
-                                    class="text-gray-600 hover:text-gray-800">
-                                <i class="ri-toggle-line"></i>
+                    <td class="px-4 py-2 text-center">
+                        <div class="flex justify-center items-center space-x-2">
+                            <button type="button"
+                                    class="w-9 h-9 flex items-center justify-center text-blue-600 hover:text-blue-800 text-xl"
+                                    th:onclick="'showEditModal(' + ${supplier.id} + ')'">
+                                <i class="ri-pencil-line"></i>
                             </button>
-                        </form>
+                            <form th:action="@{'/admin/suppliers/toggle/' + ${supplier.id}}" method="post">
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="status"
+                                           th:checked="${supplier.status}"
+                                           onchange="this.form.submit()" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 relative transition duration-300">
+                                        <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                                    </div>
+                                </label>
+                            </form>
+
+                        </div>
                     </td>
+
+
                 </tr>
                 </tbody>
             </table>
@@ -297,8 +305,24 @@
         document.getElementById('editSupplierModal').classList.add('hidden');
     }
 </script>
+</script>
 
-
+<!-- ✅ Script ẩn tự động alert sau 3 giây -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const alert = document.querySelector('.bg-green-100');
+        if (alert) {
+            setTimeout(() => {
+                alert.classList.add('hidden');
+            }, 3000);
+        }
+    });
+</script>
 
 </body>
 </html>
+
+
+
+
+
