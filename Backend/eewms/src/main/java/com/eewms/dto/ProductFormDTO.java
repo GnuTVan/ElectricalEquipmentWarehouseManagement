@@ -1,5 +1,6 @@
 package com.eewms.dto;
 
+import com.eewms.entities.Product;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,7 +18,7 @@ public class ProductFormDTO {
     private BigDecimal originPrice;
     private BigDecimal listingPrice;
     private String description;
-    private String status;
+    private Product.ProductStatus status;
     private Integer quantity;
     private Integer unitId;
     private Integer categoryId;

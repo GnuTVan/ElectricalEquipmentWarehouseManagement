@@ -1,5 +1,6 @@
 package com.eewms.dto;
 
+import com.eewms.entities.Product;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -18,7 +19,7 @@ public class ProductCreateDTO {
     private BigDecimal listingPrice;
 
     private String description;
-    private String status;
+    private Product.ProductStatus status;
 
     private Integer unitId;
     private Integer categoryId;

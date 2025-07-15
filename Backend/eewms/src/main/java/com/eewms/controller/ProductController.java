@@ -5,6 +5,7 @@ import com.eewms.dto.ProductDetailsDTO;
 import com.eewms.constant.SettingType;
 import com.eewms.dto.UserDTO;
 import com.eewms.dto.UserMapper;
+import com.eewms.entities.Product;
 import com.eewms.entities.User;
 import com.eewms.exception.InventoryException;
 import com.eewms.services.IProductServices;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping({"/products", "/product-list"})
@@ -122,4 +124,18 @@ public class ProductController {
             return "redirect:/products";
         }
     }
+
+    @PostMapping("/{id}/status")
+    @ResponseBody
+    public String updateStatus(@PathVariable Integer id, @RequestBody Map<String, String> payload) {
+        try {
+            String statusValue = payload.get("status");
+            productService.updateStatus(id, Product.ProductStatus.valueOf(statusValue));
+            return "OK";
+        } catch (Exception ex) {
+            return "ERROR: " + ex.getMessage();
+        }
+    }
+
+
 }

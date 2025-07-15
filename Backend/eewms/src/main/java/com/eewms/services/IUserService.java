@@ -37,6 +37,9 @@ public interface IUserService {
     Page<User> findAllUsersPaginated(Pageable pageable);
 
     Page<UserDTO> searchUsers(int page, String keyword);
+    boolean existsByEmail(String email);
+    Optional<User> findByEmail(String email);
+    Optional<User> findByPhone(String phone);
 
 
 }

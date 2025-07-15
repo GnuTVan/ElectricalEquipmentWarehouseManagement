@@ -11,7 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Product {
+public class        Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -31,8 +31,15 @@ public class Product {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status;
+    private ProductStatus status = ProductStatus.ACTIVE; // mặc định là hoạt động
+
+    public enum ProductStatus {
+        ACTIVE,     // Đang hoạt động
+        INACTIVE    // Ngưng hoạt động
+    }
+
 
     @Column(nullable = false)
     private Integer quantity;
@@ -52,3 +59,4 @@ public class Product {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Image> images;
 }
+

@@ -53,19 +53,23 @@
                             <div>
                                 <label class="font-medium">Họ và tên</label>
                                 <input th:field="*{fullName}" type="text" class="w-full border rounded px-3 py-2" />
+                                <p th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}" class="text-red-500 text-sm mt-1"></p>
                             </div>
                             <div>
                                 <label class="font-medium">Email</label>
                                 <input th:field="*{email}" type="email" class="w-full border rounded px-3 py-2" />
+                                <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-red-500 text-sm mt-1"></p>
                             </div>
                             <div>
                                 <label class="font-medium">Số điện thoại</label>
                                 <input th:field="*{phone}" type="text" class="w-full border rounded px-3 py-2" />
+                                <p th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}" class="text-red-500 text-sm mt-1"></p>
                             </div>
                             <div></div> <!-- để căn đều layout -->
                             <div class="md:col-span-2">
                                 <label class="font-medium">Địa chỉ</label>
                                 <input th:field="*{address}" type="text" class="w-full border rounded px-3 py-2" />
+                                <p th:if="${#fields.hasErrors('address')}" th:errors="*{address}" class="text-red-500 text-sm mt-1"></p>
                             </div>
                         </div>
                     </div>

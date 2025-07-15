@@ -36,6 +36,7 @@ public class SecurityConfig {
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/manager/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/staff/**").hasAnyRole("ADMIN", "MANAGER", "STAFF")
+                        .requestMatchers("/admin/suppliers/**").hasAnyRole("ADMIN", "MANAGER")
 
                         // Tất cả yêu cầu khác phải xác thực
                         .anyRequest().authenticated()

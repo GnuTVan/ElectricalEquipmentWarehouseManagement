@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Danh sách sản phẩm</title>
+
+    <!-- ✅ CSRF Token -->
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
     <style>
@@ -37,7 +42,7 @@
                     <th class="px-4 py-3">Tên</th>
                     <th class="px-4 py-3">Giá niêm yết</th>
                     <th class="px-4 py-3">Số lượng</th>
-                    <th class="px-4 py-3">Trạng thái</th>
+                    <th class="px-4 py-3 w-[250px]">Trạng thái</th>
                     <th class="px-4 py-3">Thương hiệu</th>
                     <th class="px-4 py-3">Danh mục</th>
                     <th class="px-4 py-3 text-center">Hành động</th>
@@ -71,7 +76,22 @@
                     <td class="px-4 py-3" th:text="${product.name}"></td>
                     <td class="px-4 py-3" th:text="${product.listingPrice}"></td>
                     <td class="px-4 py-3" th:text="${product.quantity}"></td>
-                    <td class="px-4 py-3" th:text="${product.status}"></td>
+<!--                    <td class="px-4 py-3" th:text="${product.status.name() == 'ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động'}"></td>-->
+                    <td class="px-4 py-3 flex items-center gap-2">
+                        <label class="inline-flex relative items-center cursor-pointer">
+                            <input type="checkbox"
+                                   th:checked="${product.status.name() == 'ACTIVE'}"
+                                   th:data-id="${product.id}"
+                                   class="sr-only peer"
+                                   onchange="toggleStatus(this)">
+                            <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition duration-300"></div>
+                            <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition duration-200 transform peer-checked:translate-x-5"></div>
+                        </label>
+                        <span class="text-sm font-medium text-gray-700"
+                              data-label
+                              th:text="${product.status.name() == 'ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động'}">
+  </span>
+                    </td>
                     <td class="px-4 py-3" th:text="${product.brand.name}"></td>
                     <td class="px-4 py-3" th:text="${product.category.name}"></td>
                     <td class="px-4 py-3 text-center space-x-2">
@@ -122,7 +142,13 @@
                         <div><label>Tên</label><input type="text" id="editName" name="name" class="w-full border rounded px-3 py-2" required/></div>
                         <div><label>Giá gốc</label><input type="number" id="editOriginPrice" name="originPrice" class="w-full border rounded px-3 py-2"/></div>
                         <div><label>Giá niêm yết</label><input type="number" id="editListingPrice" name="listingPrice" class="w-full border rounded px-3 py-2"/></div>
-                        <div><label>Trạng thái</label><input type="text" id="editStatus" name="status" class="w-full border rounded px-3 py-2"/></div>
+                        <div>
+                            <label>Trạng thái</label>
+                            <select id="editStatus" name="status" class="w-full border rounded px-3 py-2">
+                                <option value="ACTIVE">Đang hoạt động</option>
+                                <option value="INACTIVE">Ngưng hoạt động</option>
+                            </select>
+                        </div>
                         <div><label>Số lượng</label><input type="number" id="editQuantity" name="quantity" class="w-full border rounded px-3 py-2"/></div>
                         <div>
                             <label>Đơn vị</label>
@@ -172,7 +198,7 @@
                         <div><label>Tên</label><input type="text" th:field="*{name}" class="w-full border rounded px-3 py-2" required/></div>
                         <div><label>Giá gốc</label><input type="number" th:field="*{originPrice}" class="w-full border rounded px-3 py-2"/></div>
                         <div><label>Giá niêm yết</label><input type="number" th:field="*{listingPrice}" class="w-full border rounded px-3 py-2"/></div>
-                        <div><label>Trạng thái</label><input type="text" th:field="*{status}" class="w-full border rounded px-3 py-2"/></div>
+                        <input type="hidden" name="status" value="ACTIVE"/>
                         <div><label>Số lượng</label><input type="number" th:field="*{quantity}" class="w-full border rounded px-3 py-2"/></div>
                         <div>
                             <label>Đơn vị</label>
@@ -207,11 +233,12 @@
                 </form>
             </div>
         </div>
-
-        <!-- Footer -->
-        <div th:replace="~{fragments/footer :: footer}"></div>
     </main>
 </div>
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+
 <script>
     function openModal(){document.getElementById('productModal').classList.remove('hidden');}
     function closeModal(){document.getElementById('productModal').classList.add('hidden');}
@@ -277,6 +304,37 @@
             dropdown.classList.add('hidden');
         }
     });
+
+    function toggleStatus(checkbox) {
+        const productId = checkbox.dataset.id;
+        const newStatus = checkbox.checked ? 'ACTIVE' : 'INACTIVE';
+
+        const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+
+        fetch(`/products/${productId}/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                [csrfHeader]: csrfToken
+            },
+            body: JSON.stringify({ status: newStatus })
+        })
+            .then(res => {
+                if (!res.ok) throw new Error("Lỗi khi cập nhật trạng thái");
+                return res.text();
+            })
+            .then(msg => {
+                console.log("✅ Đã cập nhật trạng thái:", msg);
+                const label = checkbox.closest("td").querySelector("[data-label]");
+                if (label) label.innerText = checkbox.checked ? "Đang hoạt động" : "Ngưng hoạt động";
+            })
+            .catch(err => {
+                console.error("❌", err);
+                checkbox.checked = !checkbox.checked; // rollback lại trạng thái
+                alert("Cập nhật trạng thái thất bại.");
+            });
+    }
 </script>
 </body>
 </html>

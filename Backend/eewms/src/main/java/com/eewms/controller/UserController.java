@@ -7,9 +7,11 @@ import com.eewms.repository.RoleRepository;
 import com.eewms.services.IUserService;
 import com.eewms.services.IEmailService;
 import com.eewms.services.IVerificationTokenService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -64,30 +66,50 @@ public class UserController {
 
     // 3. Xử lý tạo user và gửi mail kích hoạt
     @PostMapping
-    public String createUser(@ModelAttribute("userDTO") UserDTO userDTO,
+    public String createUser(@Valid @ModelAttribute("userDTO") UserDTO userDTO,
+                             BindingResult result,
+                             @RequestParam(value = "page", defaultValue = "0") int page,
+                             @RequestParam(value = "keyword", required = false) String keyword,
+                             Model model,
                              RedirectAttributes redirect) {
+
+        // Kiểm tra trùng username/email
+        if (userService.existsByUsername(userDTO.getUsername())) {
+            result.rejectValue("username", "error.userDTO", "Tên đăng nhập đã tồn tại");
+        }
+        if (userService.existsByEmail(userDTO.getEmail())) {
+            result.rejectValue("email", "error.userDTO", "Email đã tồn tại");
+        }
+
+        // Nếu có lỗi → trả về lại view kèm theo dữ liệu cần thiết
+        if (result.hasErrors()) {
+            Page<UserDTO> userPage = userService.searchUsers(page, keyword);
+
+            model.addAttribute("users", userPage.getContent());
+            model.addAttribute("userPage", userPage);
+            model.addAttribute("keyword", keyword);
+            model.addAttribute("allRoles", userService.getAllRoles());
+
+            return "user-list";
+        }
+
+        // Nếu không lỗi → tiếp tục xử lý tạo user
         try {
-            // Bắt buộc trạng thái ban đầu là chưa kích hoạt
             userDTO.setEnabled(false);
-
-            // Convert DTO → Entity
             User user = UserMapper.toEntity(userDTO, roleRepository);
-
-            // Lưu user (không có password)
             userService.saveUser(user);
 
-            // Tạo token kích hoạt
             String token = verificationTokenService.createVerificationToken(user);
-
-            // Gửi email xác thực
             emailService.sendActivationEmail(user, token);
 
             redirect.addFlashAttribute("message", "Tạo người dùng thành công. Đã gửi email kích hoạt.");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", "Lỗi khi tạo người dùng: " + e.getMessage());
         }
+
         return "redirect:/admin/users";
     }
+
 
     // 7. Bật / Tắt trạng thái
     @PostMapping("/{id}/toggle-status")

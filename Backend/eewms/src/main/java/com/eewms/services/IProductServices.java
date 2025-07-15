@@ -4,6 +4,7 @@ import com.eewms.constant.SettingType;
 import com.eewms.dto.ProductFormDTO;
 import com.eewms.dto.ProductDetailsDTO;
 import com.eewms.dto.SettingDTO;
+import com.eewms.entities.Product;
 import com.eewms.exception.InventoryException;
 import java.util.List;
 
@@ -13,6 +14,8 @@ public interface IProductServices {
     void delete(Integer id) throws InventoryException;
     ProductDetailsDTO getById(Integer id) throws InventoryException;
     List<ProductDetailsDTO> getAll() throws InventoryException;
+    //toggle status
+    void updateStatus(Integer id, Product.ProductStatus status) throws InventoryException;
 
     // để lấy options trong dropdown
     List<SettingDTO> getSettingOptions(SettingType type);
