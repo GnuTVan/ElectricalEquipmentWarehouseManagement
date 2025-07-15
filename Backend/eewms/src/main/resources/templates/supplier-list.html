@@ -22,6 +22,10 @@
         <!-- Header -->
         <div th:replace="~{fragments/header :: header}"></div>
 
+        <div th:if="${message}" class="mb-4 bg-green-100 text-green-800 px-4 py-2 rounded">
+            <p th:text="${message}"></p>
+        </div>
+
         <!-- Page Title + Button -->
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-2xl font-bold text-gray-800">Danh sách nhà cung cấp</h1>
@@ -35,7 +39,7 @@
             <table class="min-w-full table-auto text-sm">
                 <thead class="bg-gray-100 text-left">
                 <tr>
-                    <th class="px-4 py-3 font-semibold">#</th>
+                    <th class="px-4 py-3 font-semibold">ID</th>
                     <th class="px-4 py-3 font-semibold">Tên NCC</th>
                     <th class="px-4 py-3 font-semibold">Mã số thuế</th>
                     <th class="px-4 py-3 font-semibold">Ngân hàng</th>
@@ -48,28 +52,26 @@
                 </thead>
                 <tbody>
                 <tr th:each="supplier, iterStat : ${suppliers}" class="border-t">
-                    <td class="px-4 py-2" th:text="${iterStat.index + 1}">1</td>
-                    <td class="px-4 py-2" th:text="${supplier.name}">Công ty A</td>
-                    <td class="px-4 py-2" th:text="${supplier.taxCode}">123456789</td>
-                    <td class="px-4 py-2" th:text="${supplier.bankName}">Vietcombank</td>
-                    <td class="px-4 py-2" th:text="${supplier.bankAccount}">0123456789</td>
-                    <td class="px-4 py-2" th:text="${supplier.contactName}">Nguyễn Văn B</td>
-                    <td class="px-4 py-2" th:text="${supplier.contactMobile}">0987654321</td>
+                    <td class="px-4 py-2" th:text="${iterStat.index + 1}"></td>
+                    <td class="px-4 py-2" th:text="${supplier.name}"></td>
+                    <td class="px-4 py-2" th:text="${supplier.taxCode}"></td>
+                    <td class="px-4 py-2" th:text="${supplier.bankName}"></td>
+                    <td class="px-4 py-2" th:text="${supplier.bankAccount}"></td>
+                    <td class="px-4 py-2" th:text="${supplier.contactName}"></td>
+                    <td class="px-4 py-2" th:text="${supplier.contactMobile}"></td>
                     <td class="px-4 py-2">
-        <span th:classappend="${supplier.status} ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
-              class="px-2 py-1 rounded text-xs font-medium">
-            <span th:text="${supplier.status} ? 'Đang hoạt động' : 'Ngưng hoạt động'"></span>
-        </span>
+                        <span th:classappend="${supplier.status} ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+                              class="px-2 py-1 rounded text-xs font-medium">
+                            <span th:text="${supplier.status} ? 'Đang hoạt động' : 'Ngưng hoạt động'"></span>
+                        </span>
                     </td>
                     <td class="px-4 py-2 text-center space-x-2">
-                        <!-- Sửa -->
                         <button type="button"
                                 class="text-blue-600 hover:text-blue-800"
-                                th:onclick="'showEditModal(' + \'' + ${supplier.id} + '\'' + ')'"
+                                th:onclick="'showEditModal(' + '\'' + ${supplier.id} + '\'' + ')'"
                                 title="Chỉnh sửa">
                             <i class="ri-pencil-line"></i>
                         </button>
-                        <!-- Xóa / Tắt -->
                         <form th:action="@{'/admin/suppliers/toggle/' + ${supplier.id}}" method="post" class="inline">
                             <button type="submit"
                                     th:title="${supplier.status} ? 'Vô hiệu hóa' : 'Kích hoạt'"
@@ -80,10 +82,10 @@
                     </td>
                 </tr>
                 </tbody>
-
             </table>
         </div>
-        <!-- Modal Thêm mới nhà cung cấp -->
+
+        <!-- Modal thêm nhà cung cấp -->
         <div id="addSupplierModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-30 flex items-center justify-center">
             <div class="bg-white rounded-lg shadow-md w-full max-w-2xl">
                 <!-- Header -->
@@ -97,30 +99,37 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Tên nhà cung cấp</label>
                             <input type="text" th:field="*{name}" class="mt-1 w-full border rounded px-3 py-2 text-sm" required>
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Mã số thuế</label>
                             <input type="text" th:field="*{taxCode}" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('taxCode')}" th:errors="*{taxCode}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Ngân hàng</label>
                             <input type="text" th:field="*{bankName}" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankName')}" th:errors="*{bankName}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Số tài khoản</label>
                             <input type="text" th:field="*{bankAccount}" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankAccount')}" th:errors="*{bankAccount}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Người liên hệ</label>
                             <input type="text" th:field="*{contactName}" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('contactName')}" th:errors="*{contactName}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Số điện thoại</label>
                             <input type="text" th:field="*{contactMobile}" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('contactMobile')}" th:errors="*{contactMobile}"></p>
                         </div>
                         <div class="col-span-2">
                             <label class="block text-sm font-medium text-gray-700">Địa chỉ</label>
                             <input type="text" th:field="*{address}" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Trạng thái</label>
@@ -128,12 +137,15 @@
                                 <option th:value="true">Đang hoạt động</option>
                                 <option th:value="false">Ngưng hoạt động</option>
                             </select>
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('status')}" th:errors="*{status}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Ghi chú</label>
                             <input type="text" th:field="*{description}" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></p>
                         </div>
                     </div>
+
                     <!-- Buttons -->
                     <div class="flex justify-end mt-4 space-x-2">
                         <button type="button" onclick="closeAddModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded text-sm">
@@ -147,9 +159,25 @@
             </div>
         </div>
 
+
     </main>
 </div>
+
+
 <script>
+    const openAddBtn = document.getElementById('openAddModal');
+    const addModal = document.getElementById('addSupplierModal');
+
+    if (openAddBtn && addModal) {
+        openAddBtn.addEventListener('click', function () {
+            addModal.classList.remove('hidden');
+        });
+    }
+
+    function closeAddModal() {
+        document.getElementById('addSupplierModal').classList.add('hidden');
+    }
+
     const userBtn = document.getElementById('userMenuBtn');
     const dropdown = document.getElementById('userMenuDropdown');
 
@@ -158,7 +186,6 @@
             dropdown.classList.toggle('hidden');
         });
 
-        // Ẩn dropdown khi click ra ngoài
         document.addEventListener('click', function (event) {
             if (!userBtn.contains(event.target) && !dropdown.contains(event.target)) {
                 dropdown.classList.add('hidden');
@@ -166,8 +193,7 @@
         });
     }
 </script>
-</body>
-</html>
+
 
 </body>
 </html>

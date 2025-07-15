@@ -6,5 +6,12 @@ import java.util.List;
 
 public interface ISupplierService {
     List<SupplierDTO> findAll();
-    void createSupplier(SupplierDTO dto);
+
+    SupplierDTO findById(Long id);
+
+    void create(SupplierDTO dto);
+
+    void update(SupplierDTO dto);
+
+    void toggleStatus(Long id);
 }
