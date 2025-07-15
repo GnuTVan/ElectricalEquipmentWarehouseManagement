@@ -125,31 +125,39 @@
 
         <!-- Modal Chi tiết sản phẩm -->
         <div id="detailProductModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-            <div class="bg-white w-full max-w-md rounded shadow p-6">
+            <div class="bg-white w-full max-w-xl rounded shadow p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-semibold">Chi tiết sản phẩm</h2>
                     <button onclick="closeDetailModal()"><i class="ri-close-line text-2xl"></i></button>
                 </div>
-                <div class="space-y-2 text-sm">
-                    <p><strong>Mã SP:</strong> <span    id="d_code"></span></p>
-                    <p><strong>Tên:</strong> <span id="d_name"></span></p>
-                    <p><strong>Giá gốc:</strong> <span id="d_originPrice"></span></p>
-                    <p><strong>Giá niêm yết:</strong> <span id="d_listingPrice"></span></p>
-                    <p><strong>Số lượng:</strong> <span id="d_quantity"></span></p>
-                    <p><strong>Trạng thái:</strong> <span id="d_status"></span></p>
-                    <p><strong>Thương hiệu:</strong> <span id="d_brand"></span></p>
-                    <p><strong>Danh mục:</strong> <span id="d_category"></span></p>
-                    <p><strong>Đơn vị:</strong> <span id="d_unit"></span></p>
-                    <p><strong>Mô tả:</strong> <span id="d_description"></span></p>
-                </div>
-                <div class="mt-4">
-                    <p class="font-semibold mb-2">Ảnh sản phẩm:</p>
-                    <div id="d_images" class="grid grid-cols-3 gap-2"></div>
+
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div><strong>Mã SP:</strong> <span id="d_code"></span></div>
+                    <div><strong>Tên:</strong> <span id="d_name"></span></div>
+                    <div><strong>Giá gốc:</strong> <span id="d_originPrice"></span></div>
+                    <div><strong>Giá niêm yết:</strong> <span id="d_listingPrice"></span></div>
+                    <div><strong>Số lượng:</strong> <span id="d_quantity"></span></div>
+                    <div><strong>Trạng thái:</strong> <span id="d_status"></span></div>
+                    <div><strong>Thương hiệu:</strong> <span id="d_brand"></span></div>
+                    <div><strong>Danh mục:</strong> <span id="d_category"></span></div>
+                    <div><strong>Đơn vị:</strong> <span id="d_unit"></span></div>
+                    <div class="col-span-2">
+                        <strong>Mô tả:</strong>
+                        <p id="d_description" class="text-gray-700 whitespace-pre-line"></p>
+                    </div>
+                    <div class="col-span-2">
+                        <strong>Ảnh sản phẩm:</strong>
+                        <div id="d_images" class="grid grid-cols-2 gap-2 mt-2">
+                            <!-- ảnh sẽ được JS render -->
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex justify-end mt-4">
-                    <a id="d_editBtn" href="#" class="bg-blue-600 text-white px-4 py-2 rounded">Chỉnh sửa</a>
+                    <button onclick="openEditFromDetail()" class="bg-blue-600 text-white px-4 py-2 rounded">Chỉnh sửa</button>
                 </div>
+                <!-- Ẩn nút lưu id để JS dùng -->
+                <button id="d_editBtn" class="hidden" data-id=""></button>
             </div>
         </div>
 
@@ -279,7 +287,6 @@
         const tr = anchor.closest('tr');
         document.getElementById('d_code').innerText = tr.dataset.code;
         document.getElementById('d_name').innerText = tr.dataset.name;
-        document.getElementById('d_description').innerText = tr.dataset.description;
         document.getElementById('d_originPrice').innerText = tr.dataset.originprice;
         document.getElementById('d_listingPrice').innerText = tr.dataset.listingprice;
         document.getElementById('d_quantity').innerText = tr.dataset.quantity;
@@ -287,25 +294,26 @@
         document.getElementById('d_brand').innerText = tr.dataset.brand;
         document.getElementById('d_category').innerText = tr.dataset.category;
         document.getElementById('d_unit').innerText = tr.dataset.unit;
-        document.getElementById('d_editBtn').href = `/products/${tr.dataset.id}/edit`;
-        document.getElementById('detailProductModal').classList.remove('hidden');
+        document.getElementById('d_description').innerText = tr.dataset.description;
 
-        // Xử lý ảnh sản phẩm
-        const imagesRaw = tr.dataset.images;
+        // ID dùng cho xử lý mở edit từ modal này
+        const btn = document.getElementById('d_editBtn');
+        btn.dataset.id = tr.dataset.id;
+
+        // Render ảnh (chỉ 1)
         const container = document.getElementById('d_images');
         container.innerHTML = '';
-
-        if (imagesRaw && imagesRaw.length > 0) {
-            const urls = imagesRaw.split(',');
+        const urls = tr.dataset.images?.split(',') || [];
+        if (urls.length > 0 && urls[0]) {
             const img = document.createElement('img');
-            img.src = urls[0]; // chỉ lấy ảnh đầu tiên
-            img.className = 'w-full h-24 object-cover rounded border';
+            img.src = urls[0];
+            img.className = 'w-full h-32 object-cover rounded border';
             container.appendChild(img);
         } else {
             container.innerHTML = '<p class="text-sm italic text-gray-500">Không có ảnh sản phẩm</p>';
         }
 
-
+        document.getElementById('detailProductModal').classList.remove('hidden');
     }
 
     function closeDetailModal() {
@@ -384,6 +392,14 @@
                 alert("Cập nhật trạng thái thất bại.");
             });
     }
+
+    function openEditFromDetail() {
+        const id = document.getElementById('d_editBtn').dataset.id;
+        const row = document.querySelector(`tr[data-id='${id}']`);
+        closeDetailModal();
+        openEditModal(row.querySelector("a[onclick*='openEditModal']"));
+    }
+
 </script>
 </body>
 </html>
