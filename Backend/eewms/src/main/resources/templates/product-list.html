@@ -46,6 +46,7 @@
                 <tr>
                     <th class="px-4 py-3">Mã SP</th>
                     <th class="px-4 py-3">Tên</th>
+                    <th class="px-4 py-3">Ảnh</th>
                     <th class="px-4 py-3">Giá niêm yết</th>
                     <th class="px-4 py-3">Số lượng</th>
                     <th class="px-4 py-3 w-[250px]">Trạng thái</th>
@@ -56,7 +57,8 @@
 
                 </thead>
                 <tbody>
-                <tr th:each="product : ${products}" class="border-b hover:bg-gray-50"
+                <tr th:each="product : ${products}"
+                    class="border-b hover:bg-gray-50"
                     th:data-id="${product.id}"
                     th:data-code="${product.code}"
                     th:data-name="${product.name}"
@@ -70,15 +72,27 @@
                     th:data-category-id="${product.category.id}"
                     th:data-unit="${product.unit.name}"
                     th:data-unit-id="${product.unit.id}"
-                    th:data-description="${product.description}">
+                    th:data-description="${product.description}"
+                    th:data-images="${#strings.arrayJoin(imageUrls, ',')}">
+
 
                 <td class="px-4 py-3" th:text="${product.code}"></td>
                     <td class="px-4 py-3" th:text="${product.name}"></td>
+                    <td class="px-4 py-3">
+                        <div th:if="${#lists.isEmpty(product.images)}">
+                            <span class="text-gray-500 italic text-center">Không có ảnh</span>
+                        </div>
+                        <div th:unless="${#lists.isEmpty(product.images)}">
+                            <img th:src="${product.images[0].imageUrl}"
+                                 alt="Ảnh đại diện"
+                                 class="w-20 h-15 object-cover rounded border" />
+                        </div>
+                    </td>
                     <td class="px-4 py-3" th:text="${product.listingPrice}"></td>
                     <td class="px-4 py-3" th:text="${product.quantity}"></td>
-<!--                    <td class="px-4 py-3" th:text="${product.status.name() == 'ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động'}"></td>-->
-                    <td class="px-4 py-3 flex items-center gap-2">
-                        <label class="inline-flex relative items-center cursor-pointer">
+                    <td class="px-4 py-3 h-full">
+                        <div class="flex items-center justify-center gap-2">
+                            <label class="inline-flex relative items-center cursor-pointer align-center">
                             <input type="checkbox"
                                    th:checked="${product.status.name() == 'ACTIVE'}"
                                    th:data-id="${product.id}"
@@ -90,7 +104,8 @@
                         <span class="text-sm font-medium text-gray-700"
                               data-label
                               th:text="${product.status.name() == 'ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động'}">
-  </span>
+                        </span>
+                        </div>
                     </td>
                     <td class="px-4 py-3" th:text="${product.brand.name}"></td>
                     <td class="px-4 py-3" th:text="${product.category.name}"></td>
@@ -116,7 +131,7 @@
                     <button onclick="closeDetailModal()"><i class="ri-close-line text-2xl"></i></button>
                 </div>
                 <div class="space-y-2 text-sm">
-                    <p><strong>Mã SP:</strong> <span id="d_code"></span></p>
+                    <p><strong>Mã SP:</strong> <span    id="d_code"></span></p>
                     <p><strong>Tên:</strong> <span id="d_name"></span></p>
                     <p><strong>Giá gốc:</strong> <span id="d_originPrice"></span></p>
                     <p><strong>Giá niêm yết:</strong> <span id="d_listingPrice"></span></p>
@@ -127,6 +142,11 @@
                     <p><strong>Đơn vị:</strong> <span id="d_unit"></span></p>
                     <p><strong>Mô tả:</strong> <span id="d_description"></span></p>
                 </div>
+                <div class="mt-4">
+                    <p class="font-semibold mb-2">Ảnh sản phẩm:</p>
+                    <div id="d_images" class="grid grid-cols-3 gap-2"></div>
+                </div>
+
                 <div class="flex justify-end mt-4">
                     <a id="d_editBtn" href="#" class="bg-blue-600 text-white px-4 py-2 rounded">Chỉnh sửa</a>
                 </div>
@@ -140,7 +160,10 @@
                     <h2 class="text-lg font-semibold">Chỉnh sửa sản phẩm</h2>
                     <button onclick="closeEditModal()"><i class="ri-close-line text-2xl"></i></button>
                 </div>
-                <form id="editProductForm" method="post">
+                <form id="editProductForm" method="post" enctype="multipart/form-data">
+                    <!-- Truyền token csrf -->
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
                     <input type="hidden" id="editId" name="id">
                     <div class="grid grid-cols-2 gap-4">
                         <div><label>Mã SP</label><input type="text" id="editCode" name="code" class="w-full border rounded px-3 py-2" required/></div>
@@ -175,6 +198,12 @@
                         </div>
 
                         <div class="col-span-2">
+                            <label>Ảnh sản phẩm (mới)</label>
+                            <input type="file" name="images" accept="image/*" class="w-full border rounded px-3 py-2"/>
+                            <p class="text-xs text-gray-500 mt-1">Nếu không chọn ảnh mới, ảnh hiện tại sẽ được giữ nguyên.</p>
+                        </div>
+
+                        <div class="col-span-2">
                             <label>Mô tả</label>
                             <textarea id="editDescription" name="description" class="w-full border rounded px-3 py-2" rows="3"></textarea>
                         </div>
@@ -194,10 +223,14 @@
                     <h2 class="text-lg font-semibold">Thêm sản phẩm</h2>
                     <button onclick="closeModal()"><i class="ri-close-line text-2xl"></i></button>
                 </div>
-                <form th:action="@{/products}" th:object="${productDTO}" method="post">
+                <form th:action="@{/products}" th:object="${productDTO}" method="post" enctype="multipart/form-data">
                     <div class="grid grid-cols-2 gap-4">
                         <div><label>Mã SP</label><input type="text" th:field="*{code}" class="w-full border rounded px-3 py-2" required/></div>
                         <div><label>Tên</label><input type="text" th:field="*{name}" class="w-full border rounded px-3 py-2" required/></div>
+                        <div class="col-span-2">
+                            <label>Ảnh sản phẩm</label>
+                            <input type="file" name="images" accept="image/*" required class="w-full border rounded px-3 py-2"/>
+                        </div>
                         <div><label>Giá gốc</label><input type="number" th:field="*{originPrice}" class="w-full border rounded px-3 py-2"/></div>
                         <div><label>Giá niêm yết</label><input type="number" th:field="*{listingPrice}" class="w-full border rounded px-3 py-2"/></div>
                         <input type="hidden" name="status" value="ACTIVE"/>
@@ -256,6 +289,23 @@
         document.getElementById('d_unit').innerText = tr.dataset.unit;
         document.getElementById('d_editBtn').href = `/products/${tr.dataset.id}/edit`;
         document.getElementById('detailProductModal').classList.remove('hidden');
+
+        // Xử lý ảnh sản phẩm
+        const imagesRaw = tr.dataset.images;
+        const container = document.getElementById('d_images');
+        container.innerHTML = '';
+
+        if (imagesRaw && imagesRaw.length > 0) {
+            const urls = imagesRaw.split(',');
+            const img = document.createElement('img');
+            img.src = urls[0]; // chỉ lấy ảnh đầu tiên
+            img.className = 'w-full h-24 object-cover rounded border';
+            container.appendChild(img);
+        } else {
+            container.innerHTML = '<p class="text-sm italic text-gray-500">Không có ảnh sản phẩm</p>';
+        }
+
+
     }
 
     function closeDetailModal() {

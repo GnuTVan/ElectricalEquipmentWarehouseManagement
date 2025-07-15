@@ -1,6 +1,7 @@
 package com.eewms.dto;
 
 import com.eewms.entities.Product;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import java.math.BigDecimal;
 import java.util.List;
@@ -21,5 +22,7 @@ public class ProductFormDTO {
     private Integer unitId;
     private Integer categoryId;
     private Integer brandId;
-    private List<String> images;
+//    private List<String> images;
+    @JsonIgnore
+    private List<String> uploadedImageUrls;
 }

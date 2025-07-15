@@ -9,4 +9,5 @@ import lombok.*;
 public class ImageDTO {
     private Integer id;
     private String imageUrl;
+    private boolean isThumbnail; //check thumbnail
 }

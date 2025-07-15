@@ -36,6 +36,7 @@ public class ProductServicesImpl implements IProductServices {
         return imgs.stream().map(i -> ImageDTO.builder()
                         .id(i.getId())
                         .imageUrl(i.getImageUrl())
+                        .isThumbnail(i.isThumbnail())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -78,13 +79,30 @@ public class ProductServicesImpl implements IProductServices {
         // --- Lưu product ---
         Product saved = productRepo.save(product);
 
-        // --- Xóa ảnh cũ và lưu ảnh mới ---
-        imageRepo.deleteByProductId(saved.getId());
-        List<Image> imgs = Optional.ofNullable(dto.getImages()).orElse(List.of())
-                .stream()
-                .map(url -> Image.builder().imageUrl(url).product(saved).build())
-                .collect(Collectors.toList());
-        imageRepo.saveAll(imgs);
+        //Cập nhật hoặc giữ nguyên ảnh
+        List<Image> imgs = List.of();
+
+        if (dto.getUploadedImageUrls() != null && !dto.getUploadedImageUrls().isEmpty()) {
+            // Có ảnh mới → xoá ảnh cũ và lưu ảnh mới
+            imageRepo.deleteByProductId(saved.getId());
+
+            imgs = dto.getUploadedImageUrls().stream()
+                    .map(data -> {
+                        boolean isThumb = data.endsWith("|thumbnail");
+                        String cleanUrl = isThumb ? data.replace("|thumbnail", "") : data;
+                        return Image.builder()
+                                .imageUrl(cleanUrl)
+                                .isThumbnail(isThumb)
+                                .product(saved)
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+
+            imageRepo.saveAll(imgs);
+        } else {
+            // Không có ảnh mới → giữ nguyên ảnh cũ
+            imgs = imageRepo.findByProductId(saved.getId());
+        }
 
         // --- Build và trả về DTO chi tiết ---
         return ProductDetailsDTO.builder()
