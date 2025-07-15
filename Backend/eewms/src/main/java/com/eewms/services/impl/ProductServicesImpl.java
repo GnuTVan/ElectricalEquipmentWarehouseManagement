@@ -174,4 +174,16 @@ public class ProductServicesImpl implements IProductServices {
                 .map(this::mapSetting)
                 .collect(Collectors.toList());
     }
+
+    // Toggle trạng thái sản phẩm
+    @Override
+    @Transactional
+    public void updateStatus(Integer id, Product.ProductStatus status) throws InventoryException {
+        Product product = productRepo.findById(id)
+                .orElseThrow(() -> new InventoryException("Sản phẩm không tồn tại"));
+
+        product.setStatus(status);
+        productRepo.save(product);
+    }
+
 }
