@@ -54,6 +54,33 @@ public class SettingController {
         return "redirect:/settings/" + dto.getType();
     }
 
+    @GetMapping("/edit/{type}/{id}")
+    public String edit(@PathVariable SettingType type,
+                       @PathVariable Integer id,
+                       Model model) throws InventoryException {
+        // 1. Load lại danh sách để vẽ table
+        model.addAttribute("settingType", type);
+        model.addAttribute("settings", settingService.getByType(type));
+        // 2. Load bản ghi cần sửa vào form
+        SettingDTO dto = settingService.getById(id);
+        model.addAttribute("settingForm", dto);
+        return "settings/list";
+    }
+
+    @PostMapping("/update/{type}/{id}")
+    public String update(@PathVariable SettingType type,
+                         @PathVariable Integer id,
+                         @ModelAttribute("settingForm") SettingDTO dto,
+                         RedirectAttributes ra) {
+        try {
+            settingService.update(id, dto);
+            ra.addFlashAttribute("success", "Cập nhật thành công");
+        } catch (InventoryException ex) {
+            ra.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/settings/" + type;
+    }
+
     @GetMapping("/delete/{type}/{id}")
     public String delete(@PathVariable SettingType type,
                          @PathVariable Integer id,

@@ -87,7 +87,10 @@
                             <h2 id="modalTitle">Thêm</h2>
                             <button onclick="closeModal()"><i class="ri-close-line"></i></button>
                         </div>
-                        <form th:action="@{/settings/save}" th:object="${settingForm}" method="post" class="space-y-3">
+                        <form th:object="${settingForm}" method="post" th:action="${settingForm.id} == null
+                   ? @{/settings/save}
+                   : @{/settings/update/{type}/{id}(type=${settingForm.type},id=${settingForm.id})}"
+                              class="space-y-3">
                             <input type="hidden" th:field="*{type}" />
                             <input type="hidden" th:field="*{id}" />
                             <div>
@@ -127,7 +130,14 @@
                 document.getElementById('settingModal').classList.add('hidden');
             }
         </script>
-
+        <script th:if="${settingForm.id != null}">
+            document.addEventListener('DOMContentLoaded', function() {
+                // Đổi title cho đúng
+                document.getElementById('modalTitle').innerText = 'Sửa';
+                // Hiển thị modal
+                document.getElementById('settingModal').classList.remove('hidden');
+            });
+        </script>
     </main>
 </div>
 <!-- Footer -->
