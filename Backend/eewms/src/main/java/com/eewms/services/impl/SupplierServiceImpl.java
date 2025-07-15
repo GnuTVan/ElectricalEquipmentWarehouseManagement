@@ -6,6 +6,10 @@ import com.eewms.entities.Supplier;
 import com.eewms.repository.SupplierRepository;
 import com.eewms.services.ISupplierService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -77,4 +81,14 @@ public class SupplierServiceImpl implements ISupplierService {
                 .map(SupplierMapper::toDTO)
                 .orElse(null);
     }
+
+
+    @Override
+    public Page<SupplierDTO> searchSuppliers(int page, String keyword) {
+        Pageable pageable = PageRequest.of(page, 10, Sort.by("id").ascending());
+        Page<Supplier> pageResult = supplierRepository.findByNameContainingIgnoreCase(keyword, pageable);
+
+        return pageResult.map(SupplierMapper::toDTO);
+    }
+
 }

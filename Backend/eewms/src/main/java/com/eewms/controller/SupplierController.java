@@ -4,6 +4,7 @@ import com.eewms.dto.SupplierDTO;
 import com.eewms.services.ISupplierService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -21,21 +22,38 @@ public class SupplierController {
 
     // ✅ Hiển thị danh sách + form thêm mới
     @GetMapping
-    public String showSupplierList(Model model) {
-        model.addAttribute("activePage", "suppliers"); // ✅ rất quan trọng để sidebar biết highlight mục này
-        model.addAttribute("suppliers", supplierService.findAll());
+    public String showSupplierList(Model model,
+                                   @RequestParam(defaultValue = "0") int page,
+                                   @RequestParam(defaultValue = "") String keyword) {
+        model.addAttribute("activePage", "suppliers");
+
+        // Gọi service trả về phân trang
+        Page<SupplierDTO> supplierPage = supplierService.searchSuppliers(page, keyword);
+        model.addAttribute("supplierPage", supplierPage);
+        model.addAttribute("suppliers", supplierPage.getContent()); // dữ liệu thực tế để hiển thị bảng
+
+        // Để giữ lại tìm kiếm nếu có
+        model.addAttribute("keyword", keyword);
+
+        // Form thêm và sửa
         model.addAttribute("newSupplier", new SupplierDTO());
         model.addAttribute("editSupplier", new SupplierDTO());
+
         return "supplier-list";
     }
+
+    
+
 
 
     // ✅ Xử lý tạo mới nhà cung cấp
     @PostMapping
     public String createSupplier(@Valid @ModelAttribute("newSupplier") SupplierDTO dto,
                                  BindingResult result,
+                                 @RequestParam(defaultValue = "") String keyword,
                                  Model model,
                                  RedirectAttributes redirect) {
+
 
         // ✅ Kiểm tra trùng mã số thuế nếu có nhập
         if (dto.getTaxCode() != null && !dto.getTaxCode().isBlank()
@@ -53,9 +71,16 @@ public class SupplierController {
         }
 
         if (result.hasErrors()) {
-            model.addAttribute("suppliers", supplierService.findAll());
+            // ✅ Dữ liệu phân trang mặc định page=0, keyword=""
+            Page<SupplierDTO> supplierPage = supplierService.searchSuppliers(0, "");
+            model.addAttribute("supplierPage", supplierPage);
+            model.addAttribute("suppliers", supplierPage.getContent());
+            model.addAttribute("keyword", keyword);
+
+
+            // ✅ Giữ lại form dữ liệu
+            model.addAttribute("newSupplier", dto);
             model.addAttribute("editSupplier", new SupplierDTO());
-            model.addAttribute("newSupplier", dto); // giữ lại dữ liệu
             return "supplier-list";
         }
 
@@ -63,6 +88,7 @@ public class SupplierController {
         redirect.addFlashAttribute("message", "Thêm nhà cung cấp thành công");
         return "redirect:/admin/suppliers";
     }
+
 
     // ✅ Xử lý cập nhật nhà cung cấp
     @PostMapping("/update")
@@ -90,9 +116,13 @@ public class SupplierController {
         }
 
         if (result.hasErrors()) {
-            model.addAttribute("suppliers", supplierService.findAll());
-            model.addAttribute("newSupplier", new SupplierDTO()); // giữ form thêm trống
-            model.addAttribute("editSupplier", dto);              // giữ lại dữ liệu form sửa
+            Page<SupplierDTO> supplierPage = supplierService.searchSuppliers(0, "");
+            model.addAttribute("supplierPage", supplierPage);
+            model.addAttribute("suppliers", supplierPage.getContent());
+            model.addAttribute("keyword", "");
+
+            model.addAttribute("newSupplier", new SupplierDTO());
+            model.addAttribute("editSupplier", dto);
             return "supplier-list";
         }
 
@@ -100,6 +130,7 @@ public class SupplierController {
         redirect.addFlashAttribute("message", "Cập nhật nhà cung cấp thành công");
         return "redirect:/admin/suppliers";
     }
+
 
     // ✅ Bật / Tắt trạng thái
     @PostMapping("/toggle/{id}")

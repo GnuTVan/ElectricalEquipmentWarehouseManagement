@@ -1,6 +1,7 @@
 package com.eewms.services;
 
 import com.eewms.dto.SupplierDTO;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -17,4 +18,6 @@ public interface ISupplierService {
 
     boolean existsByTaxCode(String taxCode);
     SupplierDTO findByTaxCode(String taxCode);
+
+    Page<SupplierDTO> searchSuppliers(int page, String keyword);
 }
