@@ -46,8 +46,7 @@ public class SettingController {
     public String save(@ModelAttribute("settingForm") SettingDTO dto,
                        RedirectAttributes ra) {
         try {
-            if (dto.getId() == null) settingService.create(dto);
-            else settingService.update(dto.getId(), dto);
+            settingService.create(dto);
             ra.addFlashAttribute("success", "Lưu thành công");
         } catch (InventoryException ex) {
             ra.addFlashAttribute("error", ex.getMessage());
