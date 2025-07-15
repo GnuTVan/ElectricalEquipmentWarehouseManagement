@@ -10,6 +10,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 @Controller
 @RequestMapping("/admin/suppliers")
 @RequiredArgsConstructor
@@ -34,10 +36,25 @@ public class SupplierController {
                                  Model model,
                                  RedirectAttributes redirect) {
 
+        // ✅ Kiểm tra trùng mã số thuế nếu có nhập
+        if (dto.getTaxCode() != null && !dto.getTaxCode().isBlank()
+                && supplierService.existsByTaxCode(dto.getTaxCode())) {
+            result.rejectValue("taxCode", "error.taxCode", "Mã số thuế đã tồn tại");
+        }
+
+        // ✅ Kiểm tra tên ngân hàng có hợp lệ không
+        List<String> validBanks = List.of(
+                "Vietcombank", "BIDV", "Techcombank", "MB Bank", "TPBank", "VPBank", "ACB", "Sacombank"
+        );
+        if (dto.getBankName() != null && !dto.getBankName().isBlank()
+                && !validBanks.contains(dto.getBankName())) {
+            result.rejectValue("bankName", "error.bankName", "Ngân hàng không hợp lệ");
+        }
+
         if (result.hasErrors()) {
             model.addAttribute("suppliers", supplierService.findAll());
             model.addAttribute("editSupplier", new SupplierDTO());
-            model.addAttribute("newSupplier", dto); // ⚠️ PHẢI có dòng này
+            model.addAttribute("newSupplier", dto); // giữ lại dữ liệu
             return "supplier-list";
         }
 
@@ -53,9 +70,28 @@ public class SupplierController {
                                  Model model,
                                  RedirectAttributes redirect) {
 
+        // ✅ Kiểm tra trùng mã số thuế (nếu có nhập)
+        if (!result.hasFieldErrors("taxCode") &&
+                dto.getTaxCode() != null && !dto.getTaxCode().isBlank()) {
+            SupplierDTO existing = supplierService.findByTaxCode(dto.getTaxCode());
+            if (existing != null && !existing.getId().equals(dto.getId())) {
+                result.rejectValue("taxCode", "error.taxCode", "Mã số thuế đã tồn tại cho nhà cung cấp khác");
+            }
+        }
+
+        // ✅ Kiểm tra tên ngân hàng có hợp lệ không
+        List<String> validBanks = List.of(
+                "Vietcombank", "BIDV", "Techcombank", "MB Bank", "TPBank", "VPBank", "ACB", "Sacombank"
+        );
+        if (!result.hasFieldErrors("bankName") &&
+                (dto.getBankName() == null || !validBanks.contains(dto.getBankName()))) {
+            result.rejectValue("bankName", "error.bankName", "Ngân hàng không hợp lệ");
+        }
+
         if (result.hasErrors()) {
             model.addAttribute("suppliers", supplierService.findAll());
-            model.addAttribute("newSupplier", new SupplierDTO());
+            model.addAttribute("newSupplier", new SupplierDTO()); // giữ form thêm trống
+            model.addAttribute("editSupplier", dto);              // giữ lại dữ liệu form sửa
             return "supplier-list";
         }
 

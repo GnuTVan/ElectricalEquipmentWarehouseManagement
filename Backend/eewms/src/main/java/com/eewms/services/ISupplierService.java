@@ -14,4 +14,7 @@ public interface ISupplierService {
     void update(SupplierDTO dto);
 
     void toggleStatus(Long id);
+
+    boolean existsByTaxCode(String taxCode);
+    SupplierDTO findByTaxCode(String taxCode);
 }

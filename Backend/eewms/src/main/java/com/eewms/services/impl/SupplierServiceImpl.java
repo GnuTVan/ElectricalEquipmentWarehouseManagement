@@ -66,4 +66,15 @@ public class SupplierServiceImpl implements ISupplierService {
             supplierRepository.save(supplier);
         });
     }
+
+    @Override
+    public boolean existsByTaxCode(String taxCode) {
+        return supplierRepository.existsByTaxCode(taxCode);
+    }
+    @Override
+    public SupplierDTO findByTaxCode(String taxCode) {
+        return supplierRepository.findByTaxCode(taxCode)
+                .map(SupplierMapper::toDTO)
+                .orElse(null);
+    }
 }
