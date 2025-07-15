@@ -86,9 +86,10 @@ public class SupplierServiceImpl implements ISupplierService {
     @Override
     public Page<SupplierDTO> searchSuppliers(int page, String keyword) {
         Pageable pageable = PageRequest.of(page, 10, Sort.by("id").ascending());
-        Page<Supplier> pageResult = supplierRepository.findByNameContainingIgnoreCase(keyword, pageable);
-
+        Page<Supplier> pageResult = supplierRepository
+                .findByNameContainingIgnoreCaseOrTaxCodeContainingIgnoreCase(keyword, keyword, pageable);
         return pageResult.map(SupplierMapper::toDTO);
     }
+
 
 }

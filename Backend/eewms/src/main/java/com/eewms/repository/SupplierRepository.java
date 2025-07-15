@@ -12,5 +12,10 @@ public interface SupplierRepository extends JpaRepository<Supplier, Long> {
 
     Optional<Supplier> findByTaxCode(String taxCode);
 
-    Page<Supplier> findByNameContainingIgnoreCase(String keyword, Pageable pageable);
+    Page<Supplier> findByNameContainingIgnoreCaseOrTaxCodeContainingIgnoreCase(String name, String taxCode, Pageable pageable);
+
+
+
 }
+
+

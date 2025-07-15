@@ -29,10 +29,17 @@
         <!-- Page Title + Button -->
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-2xl font-bold text-gray-800">Danh sách nhà cung cấp</h1>
-            <button id="openAddModal" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm">
-                <i class="ri-add-line mr-1"></i> Thêm mới
-            </button>
+            <div class="flex items-center gap-2">
+                <form th:action="@{/admin/suppliers}" method="get" class="flex gap-2">
+                    <input type="text" name="keyword" th:value="${keyword}" placeholder="Tìm theo tên, mã số thuế..." class="border px-3 py-2 rounded-md w-64" />
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tìm</button>
+                </form>
+                <button id="openAddModal" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm">
+                    <i class="ri-add-line mr-1"></i> Thêm mới
+                </button>
+            </div>
         </div>
+
 
         <!-- Supplier Table -->
         <div class="overflow-x-auto bg-white rounded-lg shadow">
@@ -53,7 +60,7 @@
                 </thead>
                 <tbody>
                 <tr th:each="supplier, iterStat : ${suppliers}" class="border-t">
-                    <td class="px-4 py-2" th:text="${supplierPage.number * supplierPage.size + iterStat.index + 1}"></td>
+                    <td class="px-4 py-2" th:text="${supplier.id}"></td>
                     <td class="px-4 py-2" th:text="${supplier.name}"></td>
                     <td class="px-4 py-2" th:text="${supplier.taxCode}"></td>
                     <td class="px-4 py-2" th:text="${supplier.bankName}"></td>
