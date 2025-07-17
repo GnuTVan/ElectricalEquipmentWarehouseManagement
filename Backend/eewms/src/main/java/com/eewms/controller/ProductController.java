@@ -41,9 +41,9 @@ public class ProductController {
 
         model.addAttribute("keyword", keyword);
         model.addAttribute("productDTO", new ProductFormDTO());
-        model.addAttribute("units",      settingService.getByType(SettingType.UNIT));
-        model.addAttribute("brands",     settingService.getByType(SettingType.BRAND));
-        model.addAttribute("categories", settingService.getByType(SettingType.CATEGORY));
+        model.addAttribute("units",      settingService.findByTypeAndActive(SettingType.UNIT));
+        model.addAttribute("brands",     settingService.findByTypeAndActive(SettingType.BRAND));
+        model.addAttribute("categories", settingService.findByTypeAndActive(SettingType.CATEGORY));
         return "product/product-list";
     }
 

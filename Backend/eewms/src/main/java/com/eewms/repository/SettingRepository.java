@@ -13,5 +13,6 @@ public interface SettingRepository extends JpaRepository<Setting, Integer> {
     boolean existsByNameAndType(String name, SettingType type);
     List<Setting> findByType(SettingType type);
 
-
+    //lọc theo type và status active
+    List<Setting> findByTypeAndStatus(SettingType type, Setting.SettingStatus status);
 }

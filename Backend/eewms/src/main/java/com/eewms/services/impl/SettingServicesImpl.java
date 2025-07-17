@@ -101,4 +101,10 @@ public class SettingServicesImpl implements ISettingServices {
         setting.setStatus(status);
         settingRepository.saveAndFlush(setting);
     }
+
+    // Lọc theo trạng thái active của setting
+    @Override
+    public List<Setting> findByTypeAndActive(SettingType type) {
+        return settingRepository.findByTypeAndStatus(type, Setting.SettingStatus.ACTIVE);
+    }
 }

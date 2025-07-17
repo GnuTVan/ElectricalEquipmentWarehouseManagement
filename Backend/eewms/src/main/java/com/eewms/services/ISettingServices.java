@@ -18,4 +18,7 @@ public interface ISettingServices {
 
     //toggle status
     void updateStatus(Integer id, Setting.SettingStatus status) throws InventoryException;
+
+    //lọc theo trạng thái active của setting
+    List<Setting> findByTypeAndActive(SettingType type);
 }
