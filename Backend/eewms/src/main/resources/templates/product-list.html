@@ -26,25 +26,31 @@
 </head>
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
+    <!-- Sidebar fragment -->
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+    <!-- Main Content -->
     <main class="flex-1 ml-64">
+        <!-- Header -->
         <div th:replace="~{fragments/header :: header}"></div>
+
+        <!-- Tiêu đề + Nút Thêm -->
         <div class="flex justify-between items-center mb-4 px-6 py-6">
             <h1 class="text-2xl font-bold">Danh sách sản phẩm</h1>
             <div class="flex gap-2">
-            <a onclick="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer">+ Thêm</a>
-            <!-- Thanh tìm kiếm -->
-            <form th:action="@{/products}" method="get" class="flex gap-2">
-                <input type="text" name="keyword" th:value="${keyword}" placeholder="Tìm theo tên hoặc mã sản phẩm..." class="border px-3 py-2 rounded-md w-64" />
-                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tìm</button>
-            </form>
+                <a onclick="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer">+ Thêm</a>
+                <!-- Thanh tìm kiếm -->
+                <form th:action="@{/products}" method="get" class="flex gap-2">
+                    <input type="text" name="keyword" th:value="${keyword}" placeholder="Tìm theo tên hoặc mã sản phẩm..." class="border px-3 py-2 rounded-md w-64" />
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tìm</button>
+                </form>
             </div>
         </div>
+
+        <!-- Bảng dữ liệu -->
         <div class="overflow-x-auto bg-white rounded-lg shadow px-4">
             <table class="min-w-full text-sm text-left">
                 <thead class="bg-gray-200 text-xs uppercase font-semibold">
                 <tr>
-                    <th class="px-4 py-3">Ảnh</th>
                     <th class="px-4 py-3">Mã SP</th>
                     <th class="px-4 py-3">Tên</th>
                     <th class="px-4 py-3">Ảnh</th>
@@ -55,6 +61,7 @@
                     <th class="px-4 py-3">Danh mục</th>
                     <th class="px-4 py-3 text-center">Hành động</th>
                 </tr>
+
                 </thead>
                 <tbody>
                 <tr th:each="product : ${products}"
@@ -76,12 +83,6 @@
                     th:data-images="${#strings.arrayJoin(imageUrls, ',')}">
 
 
-                    <td class="px-4 py-3">
-                        <img th:if="${#lists.isNotEmpty(product.images)}"
-                             th:src="${product.images[0].imageUrl}"
-                             alt="Ảnh sản phẩm"
-                             class="w-12 h-12 object-cover rounded"/>
-                    </td>
                     <td class="px-4 py-3" th:text="${product.code}"></td>
                     <td class="px-4 py-3" th:text="${product.name}"></td>
                     <td class="px-4 py-3">
@@ -99,27 +100,32 @@
                     <td class="px-4 py-3 h-full">
                         <div class="flex items-center justify-center gap-2">
                             <label class="inline-flex relative items-center cursor-pointer align-center">
-                            <input type="checkbox"
-                                   th:checked="${product.status.name() == 'ACTIVE'}"
-                                   th:data-id="${product.id}"
-                                   class="sr-only peer"
-                                   onchange="toggleStatus(this)">
-                            <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition duration-300"></div>
-                            <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition duration-200 transform peer-checked:translate-x-5"></div>
-                        </label>
-                        <span class="text-sm font-medium text-gray-700"
-                              data-label
-                              th:text="${product.status.name() == 'ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động'}">
+                                <input type="checkbox"
+                                       th:checked="${product.status.name() == 'ACTIVE'}"
+                                       th:data-id="${product.id}"
+                                       class="sr-only peer"
+                                       onchange="toggleStatus(this)">
+                                <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition duration-300"></div>
+                                <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition duration-200 transform peer-checked:translate-x-5"></div>
+                            </label>
+                            <span class="text-sm font-medium text-gray-700"
+                                  data-label
+                                  th:text="${product.status.name() == 'ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động'}">
                         </span>
                         </div>
                     </td>
                     <td class="px-4 py-3" th:text="${product.brand.name}"></td>
                     <td class="px-4 py-3" th:text="${product.category.name}"></td>
-                    <td class="px-4 py-3 text-center space-x-2">
-                        <button onclick="openDetailModal(this)" class="text-gray-600 hover:text-gray-800"><i class="ri-eye-line text-lg"></i></button>
-                        <button onclick="openEditModal(this)" class="text-blue-600 hover:text-blue-800"><i class="ri-pencil-line text-lg"></i></button>
+                    <td class="px-4 py-3 text-center space-x-1">
+                        <a href="#" onclick="openDetailModal(this)" class="text-gray-600 hover:text-gray-800">
+                            <i class="ri-eye-line text-lg"></i>
+                        </a>
+                        <a href="#" onclick="openEditModal(this)" class="text-blue-600 hover:text-blue-800">
+                            <i class="ri-pencil-line text-lg"></i>
+                        </a>
                     </td>
                 </tr>
+
                 </tbody>
             </table>
         </div>
@@ -216,9 +222,6 @@
                             <label>Mô tả</label>
                             <textarea id="editDescription" name="description" class="w-full border rounded px-3 py-2" rows="3"></textarea>
                         </div>
-                        <div class="col-span-2">
-                            <label>Ảnh sản phẩm</label>
-                            <input type="file" name="imageFiles" multiple class="w-full border rounded px-3 py-2"/>                        </div>
                     </div>
                     <div class="flex justify-end space-x-2 mt-4">
                         <button type="button" onclick="closeEditModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Hủy</button>
@@ -237,7 +240,7 @@
                 </div>
                 <form th:action="@{/products}" th:object="${productDTO}" method="post" enctype="multipart/form-data">
                     <div class="grid grid-cols-2 gap-4">
-                        <div><label>Mã SP</label><input type    ="text" th:field="*{code}" class="w-full border rounded px-3 py-2" required/></div>
+                        <div><label>Mã SP</label><input type="text" th:field="*{code}" class="w-full border rounded px-3 py-2" required/></div>
                         <div><label>Tên</label><input type="text" th:field="*{name}" class="w-full border rounded px-3 py-2" required/></div>
                         <div class="col-span-2">
                             <label>Ảnh sản phẩm</label>
@@ -269,9 +272,6 @@
                             <label>Mô tả</label>
                             <textarea th:field="*{description}" class="w-full border rounded px-3 py-2" rows="3"></textarea>
                         </div>
-                        <div class="col-span-2">
-                            <label>Ảnh sản phẩm</label>
-                            <input type="file" th:field="*{imageFiles}" multiple class="w-full border rounded px-3 py-2"/>                        </div>
                     </div>
                     <div class="flex justify-end space-x-2 mt-4">
                         <button type="button" onclick="closeModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Hủy</button>
