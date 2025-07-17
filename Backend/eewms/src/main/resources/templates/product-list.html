@@ -297,7 +297,11 @@
         document.getElementById('d_originPrice').innerText = tr.dataset.originprice;
         document.getElementById('d_listingPrice').innerText = tr.dataset.listingprice;
         document.getElementById('d_quantity').innerText = tr.dataset.quantity;
-        document.getElementById('d_status').innerText = tr.dataset.status;
+
+        //đổi Enum trạng thái thành text teiesng việt
+        const statusCode = tr.dataset.status;
+        document.getElementById('d_status').innerText = statusCode === 'ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động';
+
         document.getElementById('d_brand').innerText = tr.dataset.brand;
         document.getElementById('d_category').innerText = tr.dataset.category;
         document.getElementById('d_unit').innerText = tr.dataset.unit;
