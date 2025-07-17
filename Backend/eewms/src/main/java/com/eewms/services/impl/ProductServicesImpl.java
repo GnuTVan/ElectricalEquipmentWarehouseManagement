@@ -36,6 +36,7 @@ public class ProductServicesImpl implements IProductServices {
         return imgs.stream().map(i -> ImageDTO.builder()
                         .id(i.getId())
                         .imageUrl(i.getImageUrl())
+                        .isThumbnail(i.isThumbnail())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -78,13 +79,30 @@ public class ProductServicesImpl implements IProductServices {
         // --- Lưu product ---
         Product saved = productRepo.save(product);
 
-        // --- Xóa ảnh cũ và lưu ảnh mới ---
-        imageRepo.deleteByProductId(saved.getId());
-        List<Image> imgs = Optional.ofNullable(dto.getImages()).orElse(List.of())
-                .stream()
-                .map(url -> Image.builder().imageUrl(url).product(saved).build())
-                .collect(Collectors.toList());
-        imageRepo.saveAll(imgs);
+        //Cập nhật hoặc giữ nguyên ảnh
+        List<Image> imgs = List.of();
+
+        if (dto.getUploadedImageUrls() != null && !dto.getUploadedImageUrls().isEmpty()) {
+            // Có ảnh mới → xoá ảnh cũ và lưu ảnh mới
+            imageRepo.deleteByProductId(saved.getId());
+
+            imgs = dto.getUploadedImageUrls().stream()
+                    .map(data -> {
+                        boolean isThumb = data.endsWith("|thumbnail");
+                        String cleanUrl = isThumb ? data.replace("|thumbnail", "") : data;
+                        return Image.builder()
+                                .imageUrl(cleanUrl)
+                                .isThumbnail(isThumb)
+                                .product(saved)
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+
+            imageRepo.saveAll(imgs);
+        } else {
+            // Không có ảnh mới → giữ nguyên ảnh cũ
+            imgs = imageRepo.findByProductId(saved.getId());
+        }
 
         // --- Build và trả về DTO chi tiết ---
         return ProductDetailsDTO.builder()
@@ -174,4 +192,31 @@ public class ProductServicesImpl implements IProductServices {
                 .map(this::mapSetting)
                 .collect(Collectors.toList());
     }
+
+    // Toggle trạng thái sản phẩm
+    @Override
+    @Transactional
+    public void updateStatus(Integer id, Product.ProductStatus status) throws InventoryException {
+        Product product = productRepo.findById(id)
+                .orElseThrow(() -> new InventoryException("Sản phẩm không tồn tại"));
+
+        product.setStatus(status);
+        productRepo.save(product);
+    }
+    // Tim kiếm sản phẩm theo keyword
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductDetailsDTO> searchByKeyword(String keyword) {
+        return productRepo.searchByKeyword(keyword).stream()
+                .map(p -> {
+                    try {
+                        return getById(p.getId());
+                    } catch (InventoryException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .collect(Collectors.toList());
+    }
+
+
 }
