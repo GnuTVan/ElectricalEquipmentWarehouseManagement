@@ -1,5 +1,6 @@
 package com.eewms.dto;
 
+import com.eewms.constant.SettingStatus;
 import com.eewms.constant.SettingType;
 import lombok.*;
 
@@ -12,5 +13,6 @@ public class SettingDTO {
     private String name;
     private SettingType type;
     private String description;
-    private String status;
+    private SettingStatus status;
 }
+

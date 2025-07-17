@@ -84,6 +84,7 @@ public class SettingServicesImpl implements ISettingServices {
                 .name(s.getName())
                 .type(s.getType())
                 .description(s.getDescription())
+                // enum sang DTO
                 .status(s.getStatus())
                 .build();
     }

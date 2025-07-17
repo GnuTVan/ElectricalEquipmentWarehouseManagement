@@ -73,8 +73,6 @@
                             <td class="px-4 py-2" th:text="${s.status}"></td>
                             <td class="px-4 py-2">
                                 <a th:href="@{/settings/edit/{type}/{id}(type=${settingType},id=${s.id})}">Sửa</a> |
-                                <a th:href="@{/settings/delete/{type}/{id}(type=${settingType},id=${s.id})}"
-                                   onclick="return confirm('Xác nhận xóa?')">Xóa</a>
                             </td>
                         </tr>
                         </tbody>
