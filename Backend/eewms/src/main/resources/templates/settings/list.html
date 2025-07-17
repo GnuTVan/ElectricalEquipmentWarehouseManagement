@@ -18,6 +18,8 @@
             border-radius: 20px;
         }
     </style>
+    <meta name="_csrf"       th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 </head>
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
@@ -67,10 +69,28 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr th:each="s, iter : ${settings}">
-                            <td class="px-4 py-2" th:text="${iter.count}"></td>
-                            <td class="px-4 py-2" th:text="${s.name}"></td>
-                            <td class="px-4 py-2" th:text="${s.status}"></td>
+                        <tr th:each="s, iter : ${settings}"
+                            th:data-id="${s.id}"
+                            th:data-type="${settingType}"
+                            th:data-name="${s.name}"
+                            th:data-description="${s.description}">
+                            <td class="px-4 py-2" th:text="${iter.count}">1</td>
+                            <td class="px-4 py-2" th:text="${s.name}">Tên</td>
+                            <td class="px-4 py-2 h-full">
+                                <div class="flex items-center gap-2">
+                                    <label class="inline-flex relative items-center cursor-pointer">
+                                        <input type="checkbox"
+                                               th:checked="${s.status=='ACTIVE'}"
+                                               class="sr-only peer"
+                                               onchange="toggleStatus(this)" />
+                                        <div class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-blue-600 transition"></div>
+                                        <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                                    </label>
+                                    <span data-label
+                                          th:text="${s.status=='ACTIVE'?'Đang hoạt động':'Ngưng hoạt động'}"
+                                          class="text-sm font-medium text-gray-700"></span>
+                                </div>
+                            </td>
                             <td class="px-4 py-2">
                                 <a th:href="@{/settings/edit/{type}/{id}(type=${settingType},id=${s.id})}">Sửa</a> |
                             </td>
@@ -136,6 +156,56 @@
                 document.getElementById('settingModal').classList.remove('hidden');
             });
         </script>
+        <script>
+        function toggleStatus(checkbox) {
+            // 1) Lấy <tr> chứa checkbox
+            const tr   = checkbox.closest('tr');
+            const id   = tr.dataset.id;
+            const type = tr.dataset.type;
+            const name = tr.dataset.name;
+            const desc = tr.dataset.description || '';
+            const newStatus = checkbox.checked ? 'ACTIVE' : 'INACTIVE';
+
+            // 2) Lấy CSRF
+            const csrfToken  = document.querySelector('meta[name="_csrf"]').content;
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+
+            // 3) Build body giống form-url-encoded
+            const body = new URLSearchParams();
+            body.append('id',          id);
+            body.append('type',        type);
+            body.append('name',        name);
+            body.append('description', desc);
+            body.append('status',      newStatus);
+
+            // 4) Gửi POST tới đúng endpoint update
+            fetch(`/settings/update/${type}/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    [csrfHeader]: csrfToken
+                },
+                body: body.toString()
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error('Cập nhật thất bại');
+                    return res.text();
+                })
+                .then(() => {
+                    // 5) Cập nhật label và dataset trên <tr>
+                    const label = tr.querySelector('[data-label]');
+                    label.innerText = newStatus==='ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động';
+                    tr.dataset.status = newStatus;
+                })
+                .catch(err => {
+                    console.error(err);
+                    // rollback UI
+                    checkbox.checked = !checkbox.checked;
+                    alert('Không thể cập nhật status');
+                });
+        }
+    </script>
+
     </main>
 </div>
 <!-- Footer -->

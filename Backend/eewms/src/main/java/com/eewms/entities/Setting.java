@@ -1,6 +1,5 @@
 package com.eewms.entities;
 
-import com.eewms.constant.SettingStatus;
 import com.eewms.constant.SettingType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -28,6 +27,11 @@ public class Setting {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, columnDefinition = "VARCHAR(20)")
     private SettingStatus status = SettingStatus.ACTIVE;
+
+    public enum SettingStatus {
+        ACTIVE,
+        INACTIVE
+    }
 
 
 }
