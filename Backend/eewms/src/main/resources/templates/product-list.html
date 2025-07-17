@@ -310,12 +310,13 @@
         // Render ảnh (chỉ 1)
         const container = document.getElementById('d_images');
         container.innerHTML = '';
-        const urls = tr.dataset.images?.split(',') || [];
-        if (urls.length > 0 && urls[0]) {
-            const img = document.createElement('img');
-            img.src = urls[0];
-            img.className = 'w-full h-32 object-cover rounded border';
-            container.appendChild(img);
+
+        // thay vì lấy ảnh từ data-images thì clone trực tiếp từ cột ảnh trong bảng
+        const imgInTable = tr.querySelector('td:nth-child(3) img'); // cột ảnh là cột thứ 3
+        if (imgInTable) {
+            const clonedImg = imgInTable.cloneNode(true);
+            clonedImg.className = 'w-full h-32 object-cover rounded border'; // nếu muốn resize lại
+            container.appendChild(clonedImg);
         } else {
             container.innerHTML = '<p class="text-sm italic text-gray-500">Không có ảnh sản phẩm</p>';
         }
@@ -392,7 +393,11 @@
                 console.log("✅ Đã cập nhật trạng thái:", msg);
                 const label = checkbox.closest("td").querySelector("[data-label]");
                 if (label) label.innerText = checkbox.checked ? "Đang hoạt động" : "Ngưng hoạt động";
-            })
+
+                // update dataset của <tr> chứa sản phẩm
+                const tr = checkbox.closest("tr");
+                tr.dataset.status = checkbox.checked ? "ACTIVE" : "INACTIVE";
+                })
             .catch(err => {
                 console.error("❌", err);
                 checkbox.checked = !checkbox.checked; // rollback lại trạng thái
