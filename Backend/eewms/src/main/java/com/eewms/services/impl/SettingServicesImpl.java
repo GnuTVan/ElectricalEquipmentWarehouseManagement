@@ -2,12 +2,14 @@ package com.eewms.services.impl;
 
 import com.eewms.constant.SettingType;
 import com.eewms.dto.SettingDTO;
+import com.eewms.entities.Product;
 import com.eewms.entities.Setting;
 import com.eewms.exception.InventoryException;
 import com.eewms.repository.SettingRepository;
 import com.eewms.services.ISettingServices;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -87,5 +89,16 @@ public class SettingServicesImpl implements ISettingServices {
                 // enum sang DTO
                 .status(s.getStatus())
                 .build();
+    }
+
+    // Toggle trạng thái setting
+    @Override
+    @Transactional
+    public void updateStatus(Integer id, Setting.SettingStatus status) throws InventoryException {
+        Setting setting = settingRepository.findById(id)
+                .orElseThrow(() -> new InventoryException("Sản phẩm không tồn tại"));
+
+        setting.setStatus(status);
+        settingRepository.saveAndFlush(setting);
     }
 }

@@ -1,5 +1,6 @@
 package com.eewms.controller;
 
+import com.eewms.entities.Setting;
 import com.eewms.constant.SettingType;
 import com.eewms.dto.SettingDTO;
 import com.eewms.exception.InventoryException;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/settings")
@@ -92,5 +94,17 @@ public class SettingController {
             ra.addFlashAttribute("error", ex.getMessage());
         }
         return "redirect:/settings/" + type;
+    }
+
+    @PostMapping("/{id}/status")
+    @ResponseBody
+    public String updateStatus(@PathVariable Integer id, @RequestBody Map<String, String> payload) {
+        try {
+            String statusValue = payload.get("status");
+            settingService.updateStatus(id, Setting.SettingStatus.valueOf(statusValue));
+            return "OK";
+        } catch (Exception ex) {
+            return "ERROR: " + ex.getMessage();
+        }
     }
 }

@@ -24,13 +24,13 @@
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
 
-    <!-- nhúng sidebar -->
-    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <!-- Sidebar fragment -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
     <!-- nội dung chính -->
     <main class="flex-1 ml-64">
-        <!-- nhúng header -->
-        <div th:replace="fragments/header :: header"></div>
+        <!-- Header -->
+        <div th:replace="~{fragments/header :: header}"></div>
 
         <div class="p-6">
             <!-- nếu chưa chọn type -->
@@ -73,6 +73,7 @@
                             th:data-id="${s.id}"
                             th:data-type="${settingType}"
                             th:data-name="${s.name}"
+                            th:data-status="${s.status}"
                             th:data-description="${s.description}">
                             <td class="px-4 py-2" th:text="${iter.count}">1</td>
                             <td class="px-4 py-2" th:text="${s.name}">Tên</td>
@@ -80,14 +81,14 @@
                                 <div class="flex items-center gap-2">
                                     <label class="inline-flex relative items-center cursor-pointer">
                                         <input type="checkbox"
-                                               th:checked="${s.status=='ACTIVE'}"
+                                               th:checked="${s.status.name()=='ACTIVE'}"
                                                class="sr-only peer"
                                                onchange="toggleStatus(this)" />
                                         <div class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-blue-600 transition"></div>
                                         <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
                                     </label>
                                     <span data-label
-                                          th:text="${s.status=='ACTIVE'?'Đang hoạt động':'Ngưng hoạt động'}"
+                                          th:text="${s.status.name()=='ACTIVE'?'Đang hoạt động':'Ngưng hoạt động'}"
                                           class="text-sm font-medium text-gray-700"></span>
                                 </div>
                             </td>
@@ -157,57 +158,40 @@
             });
         </script>
         <script>
-        function toggleStatus(checkbox) {
-            // 1) Lấy <tr> chứa checkbox
-            const tr   = checkbox.closest('tr');
-            const id   = tr.dataset.id;
-            const type = tr.dataset.type;
-            const name = tr.dataset.name;
-            const desc = tr.dataset.description || '';
-            const newStatus = checkbox.checked ? 'ACTIVE' : 'INACTIVE';
+            function toggleStatus(checkbox) {
+                const tr   = checkbox.closest('tr');
+                const id   = tr.dataset.id;
+                const newStatus = checkbox.checked ? 'ACTIVE' : 'INACTIVE';
 
-            // 2) Lấy CSRF
-            const csrfToken  = document.querySelector('meta[name="_csrf"]').content;
-            const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+                const csrfToken  = document.querySelector('meta[name="_csrf"]').content;
+                const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
 
-            // 3) Build body giống form-url-encoded
-            const body = new URLSearchParams();
-            body.append('id',          id);
-            body.append('type',        type);
-            body.append('name',        name);
-            body.append('description', desc);
-            body.append('status',      newStatus);
-
-            // 4) Gửi POST tới đúng endpoint update
-            fetch(`/settings/update/${type}/${id}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    [csrfHeader]: csrfToken
-                },
-                body: body.toString()
-            })
-                .then(res => {
-                    if (!res.ok) throw new Error('Cập nhật thất bại');
-                    return res.text();
+                fetch(`/settings/${id}/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        [csrfHeader]: csrfToken
+                    },
+                    body: JSON.stringify({ status: newStatus })
                 })
-                .then(() => {
-                    // 5) Cập nhật label và dataset trên <tr>
-                    const label = tr.querySelector('[data-label]');
-                    label.innerText = newStatus==='ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động';
-                    tr.dataset.status = newStatus;
-                })
-                .catch(err => {
-                    console.error(err);
-                    // rollback UI
-                    checkbox.checked = !checkbox.checked;
-                    alert('Không thể cập nhật status');
-                });
-        }
+                    .then(res => {
+                        if (!res.ok) throw new Error('Cập nhật thất bại');
+                        return res.text();
+                    })
+                    .then(() => {
+                        location.reload(); // ✅ reload lại trang để Thymeleaf load đúng status mới
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        checkbox.checked = !checkbox.checked; // rollback UI
+                        alert('Không thể cập nhật trạng thái');
+                    });
+            }
     </script>
 
     </main>
 </div>
+
 <!-- Footer -->
 <div th:replace="~{fragments/footer :: footer}"></div>
 </body>

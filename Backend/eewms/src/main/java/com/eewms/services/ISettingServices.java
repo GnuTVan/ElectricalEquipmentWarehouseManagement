@@ -2,6 +2,8 @@ package com.eewms.services;
 
 import com.eewms.constant.SettingType;
 import com.eewms.dto.SettingDTO;
+import com.eewms.entities.Product;
+import com.eewms.entities.Setting;
 import com.eewms.exception.InventoryException;
 
 import java.util.List;
@@ -13,4 +15,7 @@ public interface ISettingServices {
     SettingDTO getById(Integer id) throws InventoryException;
     List<SettingDTO> getAll();
     List<SettingDTO> getByType(SettingType type);
+
+    //toggle status
+    void updateStatus(Integer id, Setting.SettingStatus status) throws InventoryException;
 }
