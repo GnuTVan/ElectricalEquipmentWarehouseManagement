@@ -1,6 +1,7 @@
 package com.eewms.dto;
 
 import com.eewms.entities.Product;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,5 +24,7 @@ public class ProductFormDTO {
     private Integer unitId;
     private Integer categoryId;
     private Integer brandId;
-    private List<MultipartFile> imageFiles;
+//    private List<String> images;
+    @JsonIgnore
+    private List<String> uploadedImageUrls;
 }

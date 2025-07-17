@@ -41,6 +41,7 @@ public class ProductServicesImpl implements IProductServices {
                 .map(i -> ImageDTO.builder()
                         .id(i.getId())
                         .imageUrl(i.getImageUrl())
+                        .isThumbnail(i.isThumbnail())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -86,15 +87,30 @@ public class ProductServicesImpl implements IProductServices {
         // 5. LƯU PRODUCT để sinh ID (nếu mới) hoặc cập nhật
         Product saved = productRepo.save(product);
 
-        // 6. XÓA ẢNH CŨ và LƯU ẢNH MỚI
-        imageRepo.deleteByProductId(saved.getId());
-        List<Image> imgEntities = urls.stream()
-                .map(url -> Image.builder()
-                        .imageUrl(url)
-                        .product(saved)
-                        .build())
-                .collect(Collectors.toList());
-        imageRepo.saveAll(imgEntities);
+        //Cập nhật hoặc giữ nguyên ảnh
+        List<Image> imgs = List.of();
+
+        if (dto.getUploadedImageUrls() != null && !dto.getUploadedImageUrls().isEmpty()) {
+            // Có ảnh mới → xoá ảnh cũ và lưu ảnh mới
+            imageRepo.deleteByProductId(saved.getId());
+
+            imgs = dto.getUploadedImageUrls().stream()
+                    .map(data -> {
+                        boolean isThumb = data.endsWith("|thumbnail");
+                        String cleanUrl = isThumb ? data.replace("|thumbnail", "") : data;
+                        return Image.builder()
+                                .imageUrl(cleanUrl)
+                                .isThumbnail(isThumb)
+                                .product(saved)
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+
+            imageRepo.saveAll(imgs);
+        } else {
+            // Không có ảnh mới → giữ nguyên ảnh cũ
+            imgs = imageRepo.findByProductId(saved.getId());
+        }
 
         // 7. BUILD VÀ TRẢ VỀ DTO CHI TIẾT
         return ProductDetailsDTO.builder()
@@ -192,5 +208,20 @@ public class ProductServicesImpl implements IProductServices {
         product.setStatus(status);
         productRepo.save(product);
     }
+    // Tim kiếm sản phẩm theo keyword
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductDetailsDTO> searchByKeyword(String keyword) {
+        return productRepo.searchByKeyword(keyword).stream()
+                .map(p -> {
+                    try {
+                        return getById(p.getId());
+                    } catch (InventoryException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .collect(Collectors.toList());
+    }
+
 
 }

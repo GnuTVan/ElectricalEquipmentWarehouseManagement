@@ -37,8 +37,12 @@ public class Supplier {
     @Column(length = 250)
     private String address;
 
+    @Column(nullable = false)
     private Boolean status = true;
+
 
     @Column(length = 250)
     private String description;
+
+
 }

@@ -35,7 +35,7 @@ public class SupplierMapper {
         dto.setContactName(entity.getContactName());
         dto.setContactMobile(entity.getContactMobile());
         dto.setAddress(entity.getAddress());
-        dto.setStatus(entity.getStatus());
+        dto.setStatus(entity.getStatus() != null ? entity.getStatus() : Boolean.FALSE);
         dto.setDescription(entity.getDescription());
 
         return dto;
