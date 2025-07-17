@@ -19,6 +19,21 @@
     <script th:src="@{/assets/js/columnchart.init.js}"></script>
     <script th:src="@{/assets/js/feather.min.js}"></script>
     <script th:src="@{/assets/js/app.js}"></script>
+
+<!--    JS trượt sidebar -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const toggleBtn = document.getElementById("toggleSidebarBtn");
+            const sidebar = document.getElementById("sidebar");
+            const main = document.getElementById("mainContent");
+
+            toggleBtn?.addEventListener("click", () => {
+                const isHidden = sidebar.classList.toggle("-translate-x-full");
+                main.classList.toggle("ml-0", isHidden);
+                main.classList.toggle("ml-64", !isHidden);
+            });
+        });
+    </script>
 </div>
 
 

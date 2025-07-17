@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Thêm sản phẩm</title>
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+    <main class="flex-1 ml-64 px-6 py-6">
+        <div th:replace="~{fragments/header :: header}"></div>
+        <div class="bg-white p-6 rounded shadow max-w-4xl mx-auto">
+            <h2 class="text-xl font-semibold mb-4">Thêm sản phẩm</h2>
+            <form th:action="@{/products}" th:object="${productDTO}" method="post" enctype="multipart/form-data">
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label>Mã SP</label><input type="text" th:field="*{code}" class="w-full border rounded px-3 py-2" required/></div>
+                    <div><label>Tên</label><input type="text" th:field="*{name}" class="w-full border rounded px-3 py-2" required/></div>
+                    <div class="col-span-2">
+                        <label>Ảnh sản phẩm</label>
+                        <input type="file" name="images" accept="image/*" required class="w-full border rounded px-3 py-2"/>
+                    </div>
+                    <div><label>Giá gốc</label><input type="number" th:field="*{originPrice}" class="w-full border rounded px-3 py-2"/></div>
+                    <div><label>Giá niêm yết</label><input type="number" th:field="*{listingPrice}" class="w-full border rounded px-3 py-2"/></div>
+                    <input type="hidden" name="status" value="ACTIVE"/>
+                    <div><label>Số lượng</label><input type="number" th:field="*{quantity}" class="w-full border rounded px-3 py-2"/></div>
+
+                    <div>
+                        <label>Đơn vị</label>
+                        <select th:field="*{unitId}" class="w-full border rounded px-3 py-2" th:disabled="${#lists.isEmpty(units)}">
+                            <option th:if="${#lists.isEmpty(units)}" value=""></option>
+                            <option th:each="u : ${units}" th:value="${u.id}" th:text="${u.name}"></option>
+                        </select>
+                        <p th:if="${#lists.isEmpty(units)}" class="text-sm text-red-500 mt-1">Không có đơn vị nào đang hoạt động</p>
+                    </div>
+
+                    <div>
+                        <label>Thương hiệu</label>
+                        <select th:field="*{brandId}" class="w-full border rounded px-3 py-2" th:disabled="${#lists.isEmpty(brands)}">
+                            <option th:if="${#lists.isEmpty(brands)}" value=""></option>
+                            <option th:each="b : ${brands}" th:value="${b.id}" th:text="${b.name}"></option>
+                        </select>
+                        <p th:if="${#lists.isEmpty(brands)}" class="text-sm text-red-500 mt-1">Không có thương hiệu nào đang hoạt động</p>
+                    </div>
+
+                    <div class="col-span-2">
+                        <label>Danh mục</label>
+                        <select th:field="*{categoryId}" class="w-full border rounded px-3 py-2" th:disabled="${#lists.isEmpty(categories)}">
+                            <option th:if="${#lists.isEmpty(categories)}" value=""></option>
+                            <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}"></option>
+                        </select>
+                        <p th:if="${#lists.isEmpty(categories)}" class="text-sm text-red-500 mt-1">Không có danh mục nào đang hoạt động</p>
+                    </div>
+
+                    <div class="col-span-2">
+                        <label>Mô tả</label>
+                        <textarea th:field="*{description}" class="w-full border rounded px-3 py-2" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2 mt-6">
+                    <a th:href="@{/products}" class="bg-gray-500 text-white px-4 py-2 rounded">Hủy</a>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>
