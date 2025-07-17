@@ -14,6 +14,7 @@ public interface IProductServices {
     void delete(Integer id) throws InventoryException;
     ProductDetailsDTO getById(Integer id) throws InventoryException;
     List<ProductDetailsDTO> getAll() throws InventoryException;
+
     //toggle status
     void updateStatus(Integer id, Product.ProductStatus status) throws InventoryException;
 

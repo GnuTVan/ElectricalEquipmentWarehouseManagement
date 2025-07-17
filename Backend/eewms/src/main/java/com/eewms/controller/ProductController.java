@@ -3,10 +3,7 @@ package com.eewms.controller;
 import com.eewms.dto.ProductFormDTO;
 import com.eewms.dto.ProductDetailsDTO;
 import com.eewms.constant.SettingType;
-import com.eewms.dto.UserDTO;
-import com.eewms.dto.UserMapper;
 import com.eewms.entities.Product;
-import com.eewms.entities.User;
 import com.eewms.exception.InventoryException;
 import com.eewms.services.IProductServices;
 import com.eewms.services.ISettingServices;
@@ -47,7 +44,7 @@ public class ProductController {
         model.addAttribute("units",      settingService.getByType(SettingType.UNIT));
         model.addAttribute("brands",     settingService.getByType(SettingType.BRAND));
         model.addAttribute("categories", settingService.getByType(SettingType.CATEGORY));
-        return "product-list";
+        return "product/product-list";
     }
 
     // xử lý submit modal form thêm sản phẩm
