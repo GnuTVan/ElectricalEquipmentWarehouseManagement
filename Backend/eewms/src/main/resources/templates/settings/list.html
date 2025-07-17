@@ -55,7 +55,14 @@
             <!-- nếu đã chọn type -->
             <div th:if="${settingType} != null">
                 <div class="flex justify-between mb-4">
-                    <h1 class="text-2xl font-bold">Danh sách [[${settingType}]]</h1>
+                    <h1 class="text-2xl font-bold">
+                        <span th:switch="${settingType.name()}">
+                            <span th:case="'UNIT'">Danh sách đơn vị</span>
+                            <span th:case="'BRAND'">Danh sách thương hiệu</span>
+                            <span th:case="'CATEGORY'">Danh sách danh mục</span>
+                            <span th:case="*">Danh sách</span> <!-- fallback -->
+                        </span>
+                    </h1>
                     <button onclick="openModal()" class="bg-blue-600 …">+ Thêm</button>
                 </div>
                 <div class="overflow-x-auto bg-white rounded-lg shadow">
@@ -134,7 +141,7 @@
                         </form>
                     </div>
                 </div>
-            </div>
+
         </div>
 
         <script>
