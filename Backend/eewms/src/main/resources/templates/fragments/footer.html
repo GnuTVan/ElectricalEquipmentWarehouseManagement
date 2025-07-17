@@ -34,6 +34,49 @@
             });
         });
     </script>
+
+    <!-- JS toggle submenu trong sidebar -->
+    <script>
+        function toggleSubmenu() {
+            const submenu = document.getElementById("submenu");
+            const arrow = document.getElementById("submenu-arrow");
+            const isOpen = submenu.classList.contains("open");
+
+            if (isOpen) {
+                submenu.style.maxHeight = "0px";
+                submenu.classList.remove("open");
+                arrow.style.transform = "rotate(0deg)";
+                localStorage.setItem("submenuOpen", "false");
+            } else {
+                submenu.style.maxHeight = submenu.scrollHeight + "px";
+                submenu.classList.add("open");
+                arrow.style.transform = "rotate(-180deg)";
+                localStorage.setItem("submenuOpen", "true");
+            }
+        }
+        // load lại state đóng mở của button khi chuyển trang
+        document.addEventListener("DOMContentLoaded", function () {
+            const submenu = document.getElementById("submenu");
+            const arrow = document.getElementById("submenu-arrow");
+
+            if (localStorage.getItem("submenuOpen") === "true") {
+                // ✅ Tắt animation tạm thời
+                submenu.classList.add("open");
+                submenu.style.transition = "none";
+                submenu.style.maxHeight = submenu.scrollHeight + "px";
+
+                arrow.style.transition = "none";
+                arrow.style.transform = "rotate(-180deg)";
+
+                // ✅ Khôi phục animation sau 1 frame để dùng cho thao tác người dùng
+                requestAnimationFrame(() => {
+                    submenu.style.transition = ""; // sử dụng lại transition từ CSS
+                    arrow.style.transition = "";   // phục hồi xoay mượt
+                });
+            }
+        });
+    </script>
+
 </div>
 
 
