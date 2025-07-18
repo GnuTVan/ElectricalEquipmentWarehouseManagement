@@ -6,6 +6,8 @@ import com.eewms.dto.ProductDetailsDTO;
 import com.eewms.dto.SettingDTO;
 import com.eewms.entities.Product;
 import com.eewms.exception.InventoryException;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 public interface IProductServices {
@@ -24,4 +26,7 @@ public interface IProductServices {
     // tìm kiếm sản phẩm theo từ khóa
     List<ProductDetailsDTO> searchByKeyword(String keyword);
 
+    //chỉ xóa ảnh cũ
+    @Transactional
+    void removeImagesByUrls(Integer productId, List<String> urls) throws InventoryException;
 }
