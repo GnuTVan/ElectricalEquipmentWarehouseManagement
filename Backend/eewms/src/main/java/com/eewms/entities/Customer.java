@@ -14,22 +14,20 @@ public class Customer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     private String fullName;
-
-    private String storeName;
-
-    private String mobile;
-
-    private String email;
 
     private String address;
 
     private String taxCode;
 
-    private Boolean status;
+    private String bankName;
 
-    @Column(columnDefinition = "TEXT")
-    private String note;
+    private String phone;
+
+    private String email;
+
+//    private Boolean status;
+
 }
