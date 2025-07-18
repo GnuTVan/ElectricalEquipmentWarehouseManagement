@@ -36,5 +36,28 @@ public class ImageUploadServiceImpl implements ImageUploadService {
             throw new RuntimeException("Lỗi upload ảnh lên Cloudinary: " + e.getMessage(), e);
         }
     }
+
+    // Xoá ảnh theo URL
+    @Override
+    public void deleteImageByUrl(String imageUrl) {
+        try {
+            String publicId = extractPublicId(imageUrl);
+            if (publicId != null) {
+                cloudinary.uploader().destroy(publicId, Map.of("invalidate", true));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Không thể xoá ảnh trên Cloudinary: " + e.getMessage(), e);
+        }
+    }
+
+    // Trích xuất public_id từ URL để dùng cho delete
+    private String extractPublicId(String url) {
+        try {
+            String part = url.substring(url.indexOf("/upload/") + 8); // phần sau /upload/
+            return part.substring(0, part.lastIndexOf('.')); // bỏ phần mở rộng
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }
 

@@ -6,12 +6,12 @@ import com.eewms.entities.*;
 import com.eewms.exception.InventoryException;
 import com.eewms.repository.*;
 import com.eewms.services.IProductServices;
+import com.eewms.services.ImageUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,6 +20,8 @@ public class ProductServicesImpl implements IProductServices {
     private final ProductRepository productRepo;
     private final SettingRepository settingRepo;
     private final ImagesRepository imageRepo;
+
+    private final ImageUploadService imageUploadService;
 
     private SettingDTO mapSetting(Setting s) {
         return SettingDTO.builder()
@@ -82,9 +84,18 @@ public class ProductServicesImpl implements IProductServices {
         List<Image> imgs = List.of();
 
         if (dto.getUploadedImageUrls() != null && !dto.getUploadedImageUrls().isEmpty()) {
-            // Có ảnh mới → xoá ảnh cũ và lưu ảnh mới
-            imageRepo.deleteByProductId(saved.getId());
+            // Có ảnh mới → xoá ảnh cũ (Cloudinary + DB)
+            List<Image> oldImages = imageRepo.findByProductId(saved.getId());
+            for (Image img : oldImages) {
+                try {
+                    imageUploadService.deleteImageByUrl(img.getImageUrl());
+                } catch (Exception e) {
+                    System.err.println("Không thể xoá ảnh khỏi Cloudinary: " + img.getImageUrl());
+                }
+            }
+            imageRepo.deleteAll(oldImages);
 
+            // Tạo và lưu ảnh mới
             imgs = dto.getUploadedImageUrls().stream()
                     .map(data -> {
                         boolean isThumb = data.endsWith("|thumbnail");
@@ -218,5 +229,26 @@ public class ProductServicesImpl implements IProductServices {
                 .collect(Collectors.toList());
     }
 
+    //chỉ xóa ảnh cũ
+    @Transactional
+    @Override
+    public void removeImagesByUrls(Integer productId, List<String> urls) throws InventoryException {
+        List<Image> images = imageRepo.findByProductId(productId);
 
+        if (images == null || images.isEmpty()) return;
+
+        List<Image> toDelete = images.stream()
+                .filter(img -> urls.contains(img.getImageUrl()))
+                .toList();
+
+        for (Image img : toDelete) {
+            try {
+                imageUploadService.deleteImageByUrl(img.getImageUrl());
+            } catch (Exception e) {
+                System.err.println("Không thể xoá ảnh khỏi Cloudinary: " + img.getImageUrl());
+            }
+        }
+
+        imageRepo.deleteAll(toDelete);
+    }
 }

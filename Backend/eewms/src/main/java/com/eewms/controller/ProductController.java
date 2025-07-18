@@ -8,6 +8,7 @@ import com.eewms.exception.InventoryException;
 import com.eewms.services.IProductServices;
 import com.eewms.services.ISettingServices;
 import com.eewms.services.ImageUploadService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -49,38 +50,38 @@ public class ProductController {
 
     // xử lý submit modal form thêm sản phẩm
     @PostMapping
-    public String create(@ModelAttribute("productDTO") ProductFormDTO dto,
-                         @RequestParam("images") List<MultipartFile> images,
+    public String create(@ModelAttribute("productDTO") @Valid ProductFormDTO dto,
+                         BindingResult br,
+                         @RequestParam(value = "images",required = false) List<MultipartFile> images,
+                         Model model,
                          RedirectAttributes ra) {
-        try {
-            if (images == null || images.isEmpty()) {
-                ra.addFlashAttribute("error", "Vui lòng chọn ít nhất một ảnh.");
-                return "redirect:/products";
-            }
+        // Nếu có lỗi validate form
+        if (br.hasErrors()) {
+            model.addAttribute("productDTO", dto);// gán lại DTO để hiển thị lỗi
+            model.addAttribute("hasFormError", true);
+            model.addAttribute("products", productService.getAll());
+            model.addAttribute("units",      settingService.findByTypeAndActive(SettingType.UNIT));
+            model.addAttribute("brands",     settingService.findByTypeAndActive(SettingType.BRAND));
+            model.addAttribute("categories", settingService.findByTypeAndActive(SettingType.CATEGORY));
+            return "product/product-list";
+        }
 
-            // Validate ảnh
-            for (MultipartFile file : images) {
-                String contentType = file.getContentType();
-                if (file.getSize() > 5 * 1024 * 1024 ||
-                        contentType == null || !contentType.matches("image/(jpeg|jpg|png)")) {
-                    ra.addFlashAttribute("error", "Ảnh phải là JPG/PNG và nhỏ hơn 5MB");
+        // Nếu không có lỗi validate, tiến hành xử lý upload ảnh
+        try {
+            List<String> urls = new java.util.ArrayList<>();
+
+            // Nếu người dùng có upload ảnh
+            if (images != null && !images.isEmpty()) {
+                try {
+                    urls = validateAndUploadImages(images, ra);
+                    dto.setUploadedImageUrls(urls);
+                } catch (Exception e) {
+                    ra.addFlashAttribute("error", e.getMessage());
                     return "redirect:/products";
                 }
             }
 
-            // Upload ảnh và gán URL
-            List<String> urls = new java.util.ArrayList<>();
-            for (int i = 0; i < images.size(); i++) {
-                MultipartFile file = images.get(i);
-                String url = imageUploadService.uploadImage(file);
-                if (i == 0) {
-                    urls.add(url + "|thumbnail"); // ảnh đầu tiên là thumbnail
-                } else {
-                    urls.add(url);
-                }
-            }
-
-            dto.setUploadedImageUrls(urls); // gán URL đã xử lý vào DTO
+            dto.setUploadedImageUrls(urls); // gán URL đã xử lý vào DTO, có thể rỗng
             productService.create(dto);
             ra.addFlashAttribute("success", "Thêm sản phẩm thành công");
 
@@ -91,71 +92,87 @@ public class ProductController {
         return "redirect:/products";
     }
 
-    @PostMapping("/save")
-    public String save(
-            @ModelAttribute("productDTO") ProductFormDTO dto,
-            BindingResult br,
-            Model model,
-            RedirectAttributes ra) {
-
-        if (br.hasErrors()) {
-            model.addAttribute("units",      settingService.getByType(SettingType.UNIT));
-            model.addAttribute("brands",     settingService.getByType(SettingType.BRAND));
-            model.addAttribute("categories", settingService.getByType(SettingType.CATEGORY));
-            return "product-list";
-        }
-
-        try {
-            // Nếu id == null thì tạo mới, ngược lại update
-            if (dto.getId() == null) {
-                productService.create(dto);
-                ra.addFlashAttribute("success", "Thêm thành công");
-            } else {
-                productService.update(dto.getId(), dto);
-                ra.addFlashAttribute("success", "Cập nhật thành công");
-            }
-        } catch (InventoryException ex) {
-            ra.addFlashAttribute("error", ex.getMessage());
-            model.addAttribute("units",      settingService.getByType(SettingType.UNIT));
-            model.addAttribute("brands",     settingService.getByType(SettingType.BRAND));
-            model.addAttribute("categories", settingService.getByType(SettingType.CATEGORY));
-            return "product-list";
-        }
-        return "redirect:/products";
-    }
+//    @PostMapping("/save")
+//    public String save(
+//            @ModelAttribute("productDTO") ProductFormDTO dto,
+//            BindingResult br,
+//            Model model,
+//            RedirectAttributes ra) {
+//
+//        if (br.hasErrors()) {
+//            model.addAttribute("units",      settingService.getByType(SettingType.UNIT));
+//            model.addAttribute("brands",     settingService.getByType(SettingType.BRAND));
+//            model.addAttribute("categories", settingService.getByType(SettingType.CATEGORY));
+//            return "product-list";
+//        }
+//
+//        try {
+//            // Nếu id == null thì tạo mới, ngược lại update
+//            if (dto.getId() == null) {
+//                productService.create(dto);
+//                ra.addFlashAttribute( "success", "Thêm thành công");
+//            } else {
+//                productService.update(dto.getId(), dto);
+//                ra.addFlashAttribute("success", "Cập nhật thành công");
+//            }
+//        } catch (InventoryException ex) {
+//            ra.addFlashAttribute("error", ex.getMessage());
+//            model.addAttribute("units",      settingService.getByType(SettingType.UNIT));
+//            model.addAttribute("brands",     settingService.getByType(SettingType.BRAND));
+//            model.addAttribute("categories", settingService.getByType(SettingType.CATEGORY));
+//            return "product-list";
+//        }
+//        return "redirect:/products";
+//    }
 
     // Xử lý cập nhật
     @PostMapping("/update/{id}")
     public String updateProduct(@PathVariable Integer id,
                                 @RequestParam(value = "images", required = false) MultipartFile image,
-                                @ModelAttribute ProductFormDTO productForm,
+                                @RequestParam(value = "deletedImages", required = false) List<String> deletedImages,
+                                @ModelAttribute("productDTO") @Valid ProductFormDTO productForm,
+                                BindingResult br,
+                                Model model,
                                 RedirectAttributes redirect) {
+
+        if (br.hasErrors()) {
+            model.addAttribute("productDTO", productForm); // gán lại DTO để hiển thị lỗi
+            model.addAttribute("editError", true);
+            model.addAttribute("editId", id); // để biết đang sửa sản phẩm nào
+            model.addAttribute("products", productService.getAll());
+            model.addAttribute("units", settingService.findByTypeAndActive(SettingType.UNIT));
+            model.addAttribute("brands", settingService.findByTypeAndActive(SettingType.BRAND));
+            model.addAttribute("categories", settingService.findByTypeAndActive(SettingType.CATEGORY));
+            return "product/product-list";
+        }
+
         try {
             // Nếu có ảnh mới được upload
             if (image != null && !image.isEmpty()) {
-                String contentType = image.getContentType();
-                if (image.getSize() > 5 * 1024 * 1024 ||
-                        contentType == null || !contentType.matches("image/(jpeg|jpg|png)")) {
-                    redirect.addFlashAttribute("error", "Ảnh phải là JPG/PNG và nhỏ hơn 5MB");
+                try {
+                    List<String> urls = validateAndUploadImages(List.of(image), redirect);
+                    productForm.setUploadedImageUrls(urls);
+                } catch (Exception e) {
+                    redirect.addFlashAttribute("error", e.getMessage());
                     return "redirect:/products";
                 }
-
-                // Upload lên Cloudinary
-                String url = imageUploadService.uploadImage(image);
-
-                // Gán vào danh sách ảnh (chỉ 1 ảnh, đánh dấu thumbnail)
-                productForm.setUploadedImageUrls(List.of(url + "|thumbnail"));
             }
 
-            // Gọi service update
+            // Nếu có ảnh cần xóa
+            if (deletedImages != null && !deletedImages.isEmpty()) {
+                productService.removeImagesByUrls(id, deletedImages);  // service tự xử lý xóa
+            }
+
             productService.update(id, productForm);
             redirect.addFlashAttribute("success", "Cập nhật sản phẩm thành công");
 
         } catch (Exception e) {
             redirect.addFlashAttribute("error", "Lỗi khi cập nhật: " + e.getMessage());
         }
+
         return "redirect:/products";
     }
+
 
 
     @GetMapping("/{id}")
@@ -182,4 +199,21 @@ public class ProductController {
     }
 
 
+    //validate ảnh
+    private List<String> validateAndUploadImages(List<MultipartFile> images, RedirectAttributes redirect) throws Exception {
+        List<String> urls = new java.util.ArrayList<>();
+
+        for (int i = 0; i < images.size(); i++) {
+            MultipartFile file = images.get(i);
+            String contentType = file.getContentType();
+            if (file.getSize() > 5 * 1024 * 1024 ||
+                    contentType == null || !contentType.matches("image/(jpeg|jpg|png)")) {
+                throw new Exception("Ảnh phải là JPG/PNG và nhỏ hơn 5MB");
+            }
+            String url = imageUploadService.uploadImage(file);
+            urls.add(i == 0 ? url + "|thumbnail" : url);
+        }
+
+        return urls;
+    }
 }
