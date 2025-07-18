@@ -5,9 +5,11 @@ import com.eewms.constant.SettingType;
 import com.eewms.dto.SettingDTO;
 import com.eewms.exception.InventoryException;
 import com.eewms.services.ISettingServices;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -45,14 +47,23 @@ public class SettingController {
     }
 
     @PostMapping("/save")
-    public String save(@ModelAttribute("settingForm") SettingDTO dto,
+    public String save(@ModelAttribute("settingForm") @Valid SettingDTO dto,
+                       BindingResult result,
+                       Model model,
                        RedirectAttributes ra) {
+        if (result.hasErrors()) {
+            model.addAttribute("settingType", dto.getType());
+            model.addAttribute("settings", settingService.getByType(dto.getType()));
+            return "settings/list";
+        }
+
         try {
             settingService.create(dto);
             ra.addFlashAttribute("success", "Lưu thành công");
         } catch (InventoryException ex) {
             ra.addFlashAttribute("error", ex.getMessage());
         }
+
         return "redirect:/settings/" + dto.getType();
     }
 
@@ -72,14 +83,23 @@ public class SettingController {
     @PostMapping("/update/{type}/{id}")
     public String update(@PathVariable SettingType type,
                          @PathVariable Integer id,
-                         @ModelAttribute("settingForm") SettingDTO dto,
+                         @ModelAttribute("settingForm") @Valid SettingDTO dto,
+                         BindingResult result,
+                         Model model,
                          RedirectAttributes ra) {
+        if (result.hasErrors()) {
+            model.addAttribute("settingType", type);
+            model.addAttribute("settings", settingService.getByType(type));
+            return "settings/list";
+        }
+
         try {
             settingService.update(id, dto);
             ra.addFlashAttribute("success", "Cập nhật thành công");
         } catch (InventoryException ex) {
             ra.addFlashAttribute("error", ex.getMessage());
         }
+
         return "redirect:/settings/" + type;
     }
 
