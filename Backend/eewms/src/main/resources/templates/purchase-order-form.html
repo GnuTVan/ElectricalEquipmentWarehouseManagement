@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Tạo đơn hàng nhập</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <!-- Main content -->
+    <main class="flex-1 ml-64 p-6">
+        <!-- Header -->
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <!-- Form Title -->
+        <div class="mb-2">
+            <h1 class="text-2xl font-bold text-gray-800">Tạo đơn hàng nhập</h1>
+        </div>
+
+        <!-- Nút Quay lại -->
+        <div class="mb-6">
+            <a href="/admin/purchase-orders"
+               class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm font-medium rounded hover:bg-gray-100 hover:text-black transition-shadow shadow-sm">
+                <i class="ri-arrow-left-line mr-2"></i> Quay lại
+            </a>
+        </div>
+
+        <form th:action="@{/admin/purchase-orders}" method="post" enctype="multipart/form-data" th:object="${orderDTO}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <!-- ✅ Sửa: th:field cho supplierId -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nhà cung cấp</label>
+                    <select th:field="*{supplierId}" class="w-full border rounded px-3 py-2" required>
+                        <option value="">-- Chọn nhà cung cấp --</option>
+                        <option th:each="s : ${suppliers}" th:value="${s.id}" th:text="${s.name}"></option>
+                    </select>
+                </div>
+
+                <!-- ✅ Sửa: file chứng từ đổi thành attachmentFile -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Chứng từ</label>
+                    <input type="file" th:field="*{attachmentFile}" class="w-full border rounded px-3 py-2">
+                </div>
+
+                <!-- ✅ Sửa: ghi chú -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
+                    <textarea th:field="*{note}" rows="3" class="w-full border rounded px-3 py-2"></textarea>
+                </div>
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
+                    <select name="status" id="status" class="form-select w-full" th:field="*{status}">
+                        <option th:value="CHO_GIAO_HANG">Chờ giao hàng</option>
+                        <option th:value="DA_GIAO_MOT_PHAN">Đã giao một phần</option>
+                        <option th:value="HOAN_THANH">Hoàn thành</option>
+                        <option th:value="HUY">Hủy</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Product Items Table -->
+            <div class="mb-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-2">Danh sách sản phẩm</h2>
+                <table class="min-w-full table-auto text-sm bg-white rounded shadow">
+                    <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-3 py-2 text-left">Sản phẩm</th>
+                        <th class="px-3 py-2 text-left">Số lượng</th>
+                        <th class="px-3 py-2 text-left">Đơn giá</th>
+                        <th class="px-3 py-2 text-right">Thành tiền</th>
+                        <th class="px-3 py-2 text-center">Xóa</th>
+                    </tr>
+                    </thead>
+                    <tbody id="itemTableBody"></tbody>
+                    <tfoot>
+                    <tr>
+                        <td colspan="3" class="px-3 py-2 text-right font-semibold">Tổng tiền:</td>
+                        <td class="px-3 py-2 text-right font-bold" id="grandTotal">0</td>
+                        <td></td>
+                    </tr>
+                    </tfoot>
+                </table>
+                <button type="button" onclick="addItemRow()"
+                        class="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+                    <i class="ri-add-line mr-1"></i> Thêm sản phẩm
+                </button>
+            </div>
+
+            <div class="text-right">
+                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">Lưu đơn hàng</button>
+            </div>
+        </form>
+    </main>
+</div>
+
+<script th:inline="javascript">
+    const products = /*[[${products}]]*/ [];
+    let itemIndex = 0;
+
+    function addItemRow() {
+      const table = document.getElementById('itemTableBody');
+      const index = itemIndex++;
+
+      const row = document.createElement('tr');
+      const productOptions = products.map(p =>
+        <option value="${p.id}" data-price="${p.originPrice}">${p.name}</option>).join('');
+
+      row.innerHTML = `
+        <td class="border px-2 py-1">
+          <select name="items[${index}].productId" class="w-full border rounded px-1 py-1 product-select"
+                  onchange="updatePrice(this)">
+            ${productOptions}
+          </select>
+        </td>
+        <td class="border px-2 py-1">
+          <input type="number" name="items[${index}].contractQuantity" value="1" min="1"
+                 class="w-full border rounded px-1 py-1 quantity" oninput="calculateTotal(this)">
+        </td>
+        <td class="border px-2 py-1">
+          <input type="number" name="items[${index}].price" readonly class="w-full border rounded px-1 py-1 price">
+        </td>
+        <td class="border px-2 py-1 text-right">
+          <span class="lineTotal">0</span>
+        </td>
+        <td class="border px-2 py-1 text-center">
+          <button type="button" onclick="removeRow(this)" class="text-red-600 text-lg">
+            <i class="ri-close-line"></i>
+          </button>
+        </td>`;
+
+      table.appendChild(row);
+      updatePrice(row.querySelector('.product-select'));
+      recalculateTotal();
+    }
+
+    function removeRow(btn) {
+      btn.closest('tr').remove();
+      recalculateTotal();
+    }
+
+    function updatePrice(select) {
+      const selected = select.options[select.selectedIndex];
+      const price = parseFloat(selected.dataset.price || 0);
+      const row = select.closest('tr');
+      row.querySelector('.price').value = price.toFixed(0);
+      calculateTotal(row.querySelector('.quantity'));
+    }
+
+    function calculateTotal(input) {
+      const row = input.closest('tr');
+      const qty = parseFloat(row.querySelector('.quantity').value || 0);
+      const price = parseFloat(row.querySelector('.price').value || 0);
+      row.querySelector('.lineTotal').textContent = (qty * price).toFixed(0);
+      recalculateTotal();
+    }
+
+    function recalculateTotal() {
+      const rows = document.querySelectorAll('#itemTableBody tr');
+      let total = 0;
+      rows.forEach(row => {
+        total += parseFloat(row.querySelector('.lineTotal').textContent || 0);
+      });
+      document.getElementById('grandTotal').textContent = total.toFixed(0);
+    }
+
+      // Dropdown user menu (giữ nguyên)
+      const userBtn = document.getElementById('userMenuBtn');
+      const dropdown = document.getElementById('userMenuDropdown');
+      if (userBtn && dropdown) {
+          userBtn.addEventListener('click', function () {
+              dropdown.classList.toggle('hidden');
+          });
+
+          document.addEventListener('click', function (event) {
+              if (!userBtn.contains(event.target) && !dropdown.contains(event.target)) {
+                  dropdown.classList.add('hidden');
+              }
+          });
+      }
+</script>
+
+</body>
+</html>

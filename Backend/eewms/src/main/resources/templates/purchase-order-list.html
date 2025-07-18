@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách đơn hàng nhập</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <!-- Main content -->
+    <main class="flex-1 ml-64 p-6">
+        <!-- Header -->
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <div th:if="${message}" id="alertSuccess" class="mb-4 bg-green-100 text-green-800 px-4 py-2 rounded">
+            <p th:text="${message}"></p>
+        </div>
+
+        <!-- Page Title + Button -->
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-bold text-gray-800">Danh sách đơn hàng nhập</h1>
+            <a href="/admin/purchase-orders/create"
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center">
+                <i class="ri-add-line mr-1"></i> Thêm đơn hàng
+            </a>
+        </div>
+
+        <!-- Purchase Order Table -->
+        <div class="overflow-x-auto bg-white rounded-lg shadow">
+            <table class="min-w-full table-auto text-sm">
+                <thead class="bg-gray-100 text-left">
+                <tr>
+                    <th class="px-4 py-3 font-semibold">STT</th>
+                    <th class="px-4 py-3 font-semibold">Mã đơn</th>
+                    <th class="px-4 py-3 font-semibold">Nhà cung cấp</th>
+                    <th class="px-4 py-3 font-semibold">Ngày tạo</th>
+                    <th class="px-4 py-3 font-semibold">Người tạo</th>
+                    <th class="px-4 py-3 font-semibold">Thành tiền</th>
+                    <th class="px-4 py-3 font-semibold">Trạng thái</th>
+                    <th class="px-4 py-3 font-semibold text-center">Hành động</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="order, iStat : ${orders}" class="border-t">
+                    <td class="px-4 py-2" th:text="${iStat.index + 1}"></td>
+                    <td class="px-4 py-2 font-medium text-blue-600" th:text="${order.code}"></td>
+                    <td class="px-4 py-2" th:text="${order.supplierName}"></td>
+                    <td class="px-4 py-2" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                    <!-- ✅ Sửa: dùng createdByName -->
+                    <td class="px-4 py-2" th:text="${order.createdByName}"></td>
+                    <!-- ✅ Sửa: dùng totalAmount -->
+                    <td class="px-4 py-2" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+                    <!-- ✅ Sửa: dùng status (nếu không có statusLabel) -->
+                    <td class="px-4 py-2">
+            <span class="px-2 py-1 rounded text-xs font-medium"
+                  th:classappend="${order.status == 'HUY'} ? 'bg-red-100 text-red-700' :
+                     (${order.status == 'DA_GIAO_MOT_PHAN'} ? 'bg-yellow-100 text-yellow-700' :
+                     (${order.status == 'HOAN_THANH'} ? 'bg-green-100 text-green-700' :
+                     'bg-gray-100 text-gray-700'))"
+                  th:text="${order.status}"></span>
+                    </td>
+                    <td class="px-4 py-2 text-center">
+                        <div class="flex justify-center items-center space-x-2">
+                            <a th:href="@{'/admin/purchase-orders/edit/' + ${order.id}}"
+                               class="text-blue-600 hover:text-blue-800 text-xl">
+                                <i class="ri-pencil-line"></i>
+                            </a>
+                            <form th:action="@{'/admin/purchase-orders/cancel/' + ${order.id}}" method="post">
+                                <button type="submit" onclick="return confirm('Bạn có chắc muốn hủy đơn này?')"
+                                        class="text-red-600 hover:text-red-800 text-xl">
+                                    <i class="ri-close-line"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </main>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const alert = document.getElementById('alertSuccess');
+        if (alert) {
+            setTimeout(() => {
+                alert.classList.add('hidden');
+            }, 3000);
+        }
+    });
+
+    const userBtn = document.getElementById('userMenuBtn');
+    const dropdown = document.getElementById('userMenuDropdown');
+    if (userBtn && dropdown) {
+        userBtn.addEventListener('click', function () {
+            dropdown.classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!userBtn.contains(event.target) && !dropdown.contains(event.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    }
+</script>
+</body>
+</html>
