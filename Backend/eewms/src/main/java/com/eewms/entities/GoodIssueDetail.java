@@ -20,9 +20,6 @@
 //    @JoinColumn(name = "gin_id", nullable = false)
 //    private GoodIssueNote goodIssueNote;
 //
-////    @ManyToOne
-////    @JoinColumn(name = "warehouse_id", nullable = false)
-////    private Warehouse warehouse;
 //
 //    @ManyToOne
 //    @JoinColumn(name = "product_id", nullable = true)

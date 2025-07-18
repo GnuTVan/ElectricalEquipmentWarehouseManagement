@@ -24,16 +24,12 @@
 //    @Column(name = "gin_code", length = 50, unique = true, nullable = false)
 //    @NotBlank(message = "GIN code cannot be blank")
 //    private String ginCode;
-//
-//
+
 //    @Column(columnDefinition = "TEXT")
 //    private String description;
 //
 //    private LocalDateTime issueDate;
 //
-//    @ManyToOne
-//    @JoinColumn(name = "supplier_id")
-//    private Supplier supplier;
 //
 //    @ManyToOne
 //    @JoinColumn(name = "customer", nullable = true)
