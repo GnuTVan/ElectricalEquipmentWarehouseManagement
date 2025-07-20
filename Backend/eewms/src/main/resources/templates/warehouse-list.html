@@ -1,0 +1,170 @@
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi" th:inline="javascript">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý kho</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+        }
+        .sidebar-nav::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background-color: #4a5568;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <!-- Main content -->
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <!-- Header -->
+        <div th:replace="~{fragments/header :: header}"></div>
+
+
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-xl font-semibold text-gray-800">Danh sách kho</h1>
+            <button id="openAddModal" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm rounded">
+                <i class="ri-add-line mr-1"></i> Thêm kho
+            </button>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white shadow-sm rounded-md overflow-x-auto">
+            <table class="min-w-full text-sm text-gray-700">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-4 py-2 text-left">ID</th>
+                    <th class="px-4 py-2 text-left">Tên kho</th>
+                    <th class="px-4 py-2 text-left">Mô tả</th>
+                    <th class="px-4 py-2 text-center">Trạng thái</th>
+                    <th class="px-4 py-2 text-center">Hành động</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="w, stat : ${warehouses}" class="hover:bg-gray-50 border-b">
+                    <td class="px-4 py-2" th:text="${stat.count}">1</td>
+                    <td class="px-4 py-2" th:text="${w.name}">Tên kho</td>
+                    <td class="px-4 py-2" th:text="${w.description} ?: 'Không có mô tả'">Mô tả</td>
+                    <td class="px-4 py-2 text-center">
+                        <span th:if="${w.status}" class="text-green-700 bg-green-100 px-2 py-1 rounded-full text-xs">Hoạt động</span>
+                        <span th:if="${!w.status}" class="text-red-700 bg-red-100 px-2 py-1 rounded-full text-xs">Ngừng</span>
+                    </td>
+                    <td class="px-4 py-2 text-center">
+                        <div class="flex justify-center items-center gap-2">
+                            <form th:action="@{/admin/warehouses/toggle/{id}(id=${w.id})}" method="post">
+                                <button type="submit"
+                                        class="px-3 py-1 text-xs rounded text-white"
+                                        th:classappend="${w.status} ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'">
+                                    <span th:text="${w.status} ? 'Tắt' : 'Bật'"></span>
+                                </button>
+                            </form>
+                            <button type="button"
+                                    class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded"
+                                    th:onclick="|showEditModal(${w.id}, '__${#strings.escapeJavaScript(w.name)}__', '__${#strings.escapeJavaScript(w.description)}__')|">
+                                Sửa
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(warehouses)}">
+                    <td colspan="5" class="text-center text-gray-500 py-6">Không có kho nào.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal thêm kho -->
+<div id="addModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow w-full max-w-md">
+        <h2 class="text-lg font-semibold mb-4">Thêm kho mới</h2>
+        <form th:action="@{/admin/warehouses}" method="post">
+            <div class="mb-4">
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Tên kho</label>
+                <input type="text" name="name" id="name" class="w-full px-3 py-2 border rounded" required maxlength="100" />
+            </div>
+            <div class="mb-4">
+                <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
+                <textarea name="description" id="description" rows="3" class="w-full px-3 py-2 border rounded" maxlength="250"></textarea>
+            </div>
+            <div class="flex justify-end">
+                <button type="button" onclick="closeAddModal()" class="mr-2 px-4 py-2 bg-gray-300 rounded">Huỷ</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Lưu</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal sửa kho -->
+<div id="editModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow w-full max-w-md">
+        <h2 class="text-lg font-semibold mb-4">Chỉnh sửa kho</h2>
+        <form th:action="@{/admin/warehouses/update}" method="post">
+            <input type="hidden" name="id" id="editId">
+            <div class="mb-4">
+                <label for="editName" class="block text-sm font-medium text-gray-700 mb-1">Tên kho</label>
+                <input type="text" name="name" id="editName" class="w-full px-3 py-2 border rounded" required maxlength="100"/>
+            </div>
+            <div class="mb-4">
+                <label for="editDescription" class="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
+                <textarea name="description" id="editDescription" rows="3" class="w-full px-3 py-2 border rounded" maxlength="250"></textarea>
+            </div>
+            <div class="flex justify-end">
+                <button type="button" onclick="closeEditModal()" class="mr-2 px-4 py-2 bg-gray-300 rounded">Huỷ</button>
+                <button type="submit" class="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700">Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Script modal -->
+<script>
+    const addModal = document.getElementById("addModal");
+    document.getElementById("openAddModal").addEventListener("click", () => {
+        addModal.classList.remove("hidden");
+        addModal.classList.add("flex");
+    });
+    function closeAddModal() {
+        addModal.classList.add("hidden");
+        addModal.classList.remove("flex");
+    }
+
+    const editModal = document.getElementById("editModal");
+
+    function showEditModal(id, name, description) {
+    document.getElementById("editId").value = id;
+    document.getElementById("editName").value = name;
+    document.getElementById("editDescription").value = description;
+    editModal.classList.remove("hidden");
+    editModal.classList.add("flex");
+}
+
+    function closeEditModal() {
+        editModal.classList.add("hidden");
+        editModal.classList.remove("flex");
+    }
+
+    const btn = document.getElementById("userMenuBtn");
+    const dropdown = document.getElementById("userMenuDropdown");
+        btn?.addEventListener("click", () => {
+        dropdown?.classList.toggle("hidden");
+        });
+        document.addEventListener("click", (event) => {
+        if (!event.target.closest("#userMenuWrapper")) {
+        dropdown?.classList.add("hidden");
+        }
+        });
+</script>
+</body>
+</html>
