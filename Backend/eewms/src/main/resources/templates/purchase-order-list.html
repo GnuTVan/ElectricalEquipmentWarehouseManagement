@@ -68,20 +68,17 @@
                      (${order.status == 'DA_GIAO_MOT_PHAN'} ? 'bg-yellow-100 text-yellow-700' :
                      (${order.status == 'HOAN_THANH'} ? 'bg-green-100 text-green-700' :
                      'bg-gray-100 text-gray-700'))"
-                  th:text="${order.status}"></span>
+                  th:text="${order.status}">
+
+            </span>
           </td>
           <td class="px-4 py-2 text-center">
             <div class="flex justify-center items-center space-x-2">
-              <a th:href="@{'/admin/purchase-orders/edit/' + ${order.id}}"
-                 class="text-blue-600 hover:text-blue-800 text-xl">
-                <i class="ri-pencil-line"></i>
+              <a th:href="@{/admin/purchase-orders/edit/{id}(id=${order.id})}"
+                 class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded shadow transition duration-200">
+                <i class="ri-edit-line text-base"></i>
+                Sửa
               </a>
-              <form th:action="@{'/admin/purchase-orders/cancel/' + ${order.id}}" method="post">
-                <button type="submit" onclick="return confirm('Bạn có chắc muốn hủy đơn này?')"
-                        class="text-red-600 hover:text-red-800 text-xl">
-                  <i class="ri-close-line"></i>
-                </button>
-              </form>
             </div>
           </td>
         </tr>

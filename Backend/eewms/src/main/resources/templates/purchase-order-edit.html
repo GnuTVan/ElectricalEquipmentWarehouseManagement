@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Sửa đơn hàng nhập</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+</head>
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <!-- Main -->
+    <main class="flex-1 ml-64 p-6">
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <div class="mb-2">
+            <h1 class="text-2xl font-bold text-gray-800">Sửa đơn hàng nhập</h1>
+        </div>
+
+        <!-- Thông báo đơn đã hoàn tất -->
+        <!--  Thông báo thành công (màu xanh) -->
+        <div th:if="${message}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4">
+            <span th:text="${message}"></span>
+        </div>
+
+        <!-- Thông báo lỗi (màu đỏ) -->
+        <div th:if="${error}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
+            <span th:text="${error}"></span>
+        </div>
+
+        <form th:action="@{/admin/purchase-orders/update}" method="post" enctype="multipart/form-data"
+              th:object="${orderDTO}">
+            <input type="hidden" th:field="*{id}"/>
+
+            <!-- Thông tin đơn -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="text-sm font-medium">Nhà cung cấp</label>
+                    <input type="text" th:value="${orderDTO.supplierName}" readonly
+                           class="w-full border rounded px-3 py-2 bg-gray-100"/>
+                </div>
+                <div>
+                    <label class="text-sm font-medium">Tệp chứng từ (nếu cần cập nhật)</label>
+                    <input type="file" th:field="*{attachmentFile}" class="w-full border rounded px-3 py-2"
+                           th:disabled="${readOnly}"/>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-sm font-medium">Ghi chú</label>
+                    <textarea th:field="*{note}" rows="3"
+                              class="w-full border rounded px-3 py-2"
+                              th:disabled="${readOnly}"></textarea>
+                </div>
+                <div>
+                    <label class="text-sm font-medium">Trạng thái</label>
+                    <select th:field="*{status}" class="w-full border rounded px-3 py-2"
+                            th:disabled="${readOnly}">
+                        <option th:value="CHO_GIAO_HANG">Chờ giao hàng</option>
+                        <option th:value="DA_GIAO_MOT_PHAN">Đã giao một phần</option>
+                        <option th:value="HOAN_THANH">Hoàn thành</option>
+                        <option th:value="HUY">Huỷ</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Danh sách sản phẩm -->
+            <div class="mb-6">
+                <h2 class="text-lg font-semibold mb-2">Danh sách sản phẩm</h2>
+                <table class="min-w-full bg-white rounded shadow text-sm">
+                    <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-3 py-2 text-left">Sản phẩm</th>
+                        <th class="px-3 py-2 text-center">SL hợp đồng</th>
+                        <th class="px-3 py-2 text-center">Đơn giá</th>
+                        <th class="px-3 py-2 text-center">Đã giao</th>
+                        <th class="px-3 py-2 text-center">Giao lần này</th>
+                        <th class="px-3 py-2 text-center">Còn thiếu</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item, iStat : *{items}" class="border-t">
+                        <!-- Tên sản phẩm -->
+                        <td class="px-3 py-2">
+        <span th:each="p : ${products}"
+              th:if="${p.id == item.productId}"
+              th:text="${p.name}"></span>
+                            <input type="hidden" th:name="'items[' + ${iStat.index} + '].productId'"
+                                   th:value="${item.productId}"/>
+                        </td>
+
+                        <!-- SL hợp đồng -->
+                        <td class="text-center">
+                            <input type="number" th:name="'items[' + ${iStat.index} + '].contractQuantity'"
+                                   th:value="${item.contractQuantity}" readonly
+                                   class="text-center w-16 border px-1 bg-gray-100"/>
+                        </td>
+
+                        <!-- Giá -->
+                        <td class="text-center">
+                            <span th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
+                            <input type="hidden" th:name="'items[' + ${iStat.index} + '].price'" th:value="${item.price}" />
+                        </td>
+
+                        <!-- SL đã giao (readonly) -->
+                        <td class="text-center">
+                            <span th:text="${item.actualQuantity != null ? item.actualQuantity : 0}">0</span>
+                            <input type="hidden" th:name="'items[' + ${iStat.index} + '].actualQuantity'" th:value="${item.actualQuantity}" />
+                        </td>
+
+                        <!-- SL giao thêm lần này -->
+                        <td class="text-center">
+                            <input type="number"
+                                   th:name="'items[' + ${iStat.index} + '].deliveryQuantity'"
+                                   th:value="0"
+                                   th:readonly="${readOnly or (orderDTO.status != T(com.eewms.constant.PurchaseOrderStatus).DA_GIAO_MOT_PHAN and orderDTO.status != T(com.eewms.constant.PurchaseOrderStatus).HOAN_THANH)}"
+
+                                   class="text-center w-24 border px-1"
+                                   min="0"/>
+                        </td>
+
+                        <!-- Còn thiếu -->
+                        <td class="text-center text-red-600 font-medium">
+                            <span th:text="${item.contractQuantity - (item.actualQuantity != null ? item.actualQuantity : 0)}"></span>
+                        </td>
+                    </tr>
+
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Nút lưu -->
+            <div class="text-right">
+                <button type="submit"
+                        th:disabled="${readOnly}"
+                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">
+                    <i class="ri-save-line mr-1"></i> Lưu cập nhật
+                </button>
+            </div>
+        </form>
+    </main>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+       const statusSelect = document.querySelector('[name="status"]');
+
+       // Cập nhật lại selector để lấy đúng input giao hàng mới
+       const deliveryInputs = document.querySelectorAll('input[name^="items"][name$=".deliveryQuantity"]');
+
+       function updateReadonlyState() {
+           const selected = statusSelect.value;
+
+           deliveryInputs.forEach(input => {
+               if (selected === 'DA_GIAO_MOT_PHAN' || selected === 'HOAN_THANH') {
+                   input.removeAttribute('readonly');
+               } else {
+                   input.setAttribute('readonly', 'readonly');
+               }
+           });
+       }
+
+       statusSelect.addEventListener('change', updateReadonlyState);
+       updateReadonlyState(); // chạy lần đầu để khớp trạng thái hiện tại
+   });
+
+       const userBtn = document.getElementById('userMenuBtn');
+       const dropdown = document.getElementById('userMenuDropdown');
+       if (userBtn && dropdown) {
+           userBtn.addEventListener('click', function () {
+               dropdown.classList.toggle('hidden');
+           });
+
+           document.addEventListener('click', function (event) {
+               if (!userBtn.contains(event.target) && !dropdown.contains(event.target)) {
+                   dropdown.classList.add('hidden');
+               }
+           });
+
+       }
+</script>
+</body>
+</html>
