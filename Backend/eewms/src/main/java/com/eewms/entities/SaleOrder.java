@@ -1,7 +1,6 @@
 package com.eewms.entities;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import java.math.BigDecimal;
@@ -15,16 +14,16 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "orders")
-public class Order {
+@Table(name = "sale_orders")
+public class SaleOrder {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "po_id")
-    private Integer poId;
+    @Column(name = "so_id")
+    private Integer soId;
 
-    @Column(name = "po_code", unique = true, length = 10, updatable = false, nullable = false)
-    private String poCode;
+    @Column(name = "so_code", unique = true, length = 10, updatable = false, nullable = false)
+    private String soCode;
 
     @ManyToOne
     @JoinColumn(name = "customer", nullable = true)
@@ -36,7 +35,7 @@ public class Order {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private OrderStatus status = OrderStatus.PENDING; // Mặc định là "Chờ nhận"
+    private SaleOrderStatus status = SaleOrderStatus.PENDING; // Mặc định là "Chờ nhận"
 
     @Column(columnDefinition = "TEXT")
     private String description; // ✅ Thêm ghi chú đơn hàng
@@ -44,14 +43,14 @@ public class Order {
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
-    public enum OrderStatus {
+    public enum SaleOrderStatus {
         PENDING("Chờ nhận"),
         COMPLETED("Hoàn thành"),
         CANCELLED("Hủy");
 
         private final String label;
 
-        OrderStatus(String label) {
+        SaleOrderStatus(String label) {
             this.label = label;
         }
 
@@ -64,8 +63,8 @@ public class Order {
     @JoinColumn(name = "created_by")
     private User createdByUser;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "sale_order", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
-    private List<OrderDetail> details;
+    private List<SaleOrderDetail> details;
 
 }

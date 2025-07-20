@@ -13,17 +13,17 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "purchase_order_details")
-public class OrderDetail {
+@Table(name = "sale_order_details")
+public class SaleOrderDetail {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "po_detail_id")
-    private Long oDetailId;
+    @Column(name = "so_detail_id")
+    private Long soDetailId;
 
     @ManyToOne
-    @JoinColumn(name = "po_id", nullable = false)
-    private Order order; // order link
+    @JoinColumn(name = "so_id", nullable = false)
+    private SaleOrder sale_order; // order link
 
     @ManyToOne
     @JoinColumn(name = "product", nullable = false)

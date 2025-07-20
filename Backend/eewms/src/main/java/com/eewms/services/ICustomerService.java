@@ -5,7 +5,8 @@ import java.util.List;
 public interface ICustomerService {
     CustomerDTO create(CustomerDTO dto);
     CustomerDTO update(CustomerDTO dto);
-    CustomerDTO findById(Long id);
+    CustomerDTO getById(Long id);
     List<CustomerDTO> findAll();
     void delete(Long id);
+    List<CustomerDTO> searchByKeyword(String keyword); // THÊM
 }

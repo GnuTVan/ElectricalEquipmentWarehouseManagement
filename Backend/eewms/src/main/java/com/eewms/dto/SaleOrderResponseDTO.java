@@ -1,6 +1,6 @@
 package com.eewms.dto;
 
-import com.eewms.entities.Order;
+import com.eewms.entities.SaleOrder;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -11,13 +11,13 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OrderResponseDTO {
+public class SaleOrderResponseDTO {
     private Integer orderId;
     private String orderCode;
     private String customerName;
     private String description;
-    private Order.OrderStatus status;
+    private SaleOrder.SaleOrderStatus status;
     private LocalDateTime orderDate;
     private BigDecimal totalAmount; // tổng tiền đơn hàng
-    private List<OrderDetailDTO> details;
+    private List<SaleOrderDetailDTO> details;
 }

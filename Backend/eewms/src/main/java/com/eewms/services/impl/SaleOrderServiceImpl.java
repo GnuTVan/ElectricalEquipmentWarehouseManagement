@@ -1,23 +1,26 @@
 package com.eewms.services.impl;
 
-import com.eewms.dto.*;
+import com.eewms.dto.SaleOrderItemDTO;
+import com.eewms.dto.SaleOrderMapper;
+import com.eewms.dto.SaleOrderRequestDTO;
+import com.eewms.dto.SaleOrderResponseDTO;
 import com.eewms.entities.*;
-import com.eewms.dto.OrderMapper;
 import com.eewms.repository.*;
 import com.eewms.services.IGoodIssueService;
-import com.eewms.services.IOrderService;
-import jakarta.transaction.Transactional;
+import com.eewms.services.ISaleOrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class OrderServiceImpl implements IOrderService {
+public class SaleOrderServiceImpl implements ISaleOrderService {
 
-    private final OrderRepository orderRepo;
+    private final SaleOrderRepository orderRepo;
     private final ProductRepository productRepo;
     private final CustomerRepository customerRepo;
     private final UserRepository userRepo;
@@ -26,24 +29,24 @@ public class OrderServiceImpl implements IOrderService {
 
     @Override
     @Transactional
-    public OrderResponseDTO createOrder(OrderRequestDTO dto, String createdByUsername) {
+    public SaleOrderResponseDTO createOrder(SaleOrderRequestDTO dto, String createdByUsername) {
         Customer customer = customerRepo.findById(dto.getCustomerId())
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
         User user = userRepo.findByUsername(createdByUsername)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         String orderCode = generateOrderCode();
-        Order order = new Order();
-        order.setPoCode(orderCode);
-        order.setCustomer(customer);
-        order.setCreatedByUser(user);
-        order.setStatus(Order.OrderStatus.PENDING);
-        order.setDescription(dto.getDescription());
+        SaleOrder saleOrder = new SaleOrder();
+        saleOrder.setSoCode(orderCode);
+        saleOrder.setCustomer(customer);
+        saleOrder.setCreatedByUser(user);
+        saleOrder.setStatus(SaleOrder.SaleOrderStatus.PENDING);
+        saleOrder.setDescription(dto.getDescription());
 
-        List<OrderDetail> detailList = new ArrayList<>();
+        List<SaleOrderDetail> detailList = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
 
-        for (OrderItemDTO item : dto.getItems()) {
+        for (SaleOrderItemDTO item : dto.getItems()) {
             Product product = productRepo.findById(item.getProductId())
                     .orElseThrow(() -> new RuntimeException("Product not found"));
 
@@ -54,66 +57,66 @@ public class OrderServiceImpl implements IOrderService {
             product.setQuantity(product.getQuantity() - item.getOrderedQuantity());
             productRepo.save(product);
 
-            OrderDetail detail = OrderMapper.toOrderDetail(item, product);
-            detail.setOrder(order);
+            SaleOrderDetail detail = SaleOrderMapper.toOrderDetail(item, product);
+            detail.setSale_order(saleOrder);
             detailList.add(detail);
 
             BigDecimal lineTotal = item.getPrice().multiply(BigDecimal.valueOf(item.getOrderedQuantity()));
             totalAmount = totalAmount.add(lineTotal);
         }
 
-        order.setDetails(detailList);
-        order.setTotalAmount(totalAmount);
-        orderRepo.save(order);
+        saleOrder.setDetails(detailList);
+        saleOrder.setTotalAmount(totalAmount);
+        orderRepo.save(saleOrder);
 
-        goodIssueService.createFromOrder(order);
+        goodIssueService.createFromOrder(saleOrder);
 
-        return OrderMapper.toOrderResponseDTO(order);
+        return SaleOrderMapper.toOrderResponseDTO(saleOrder);
     }
 
     @Override
-    public List<OrderResponseDTO> getAllOrders() {
+    public List<SaleOrderResponseDTO> getAllOrders() {
         return orderRepo.findAll().stream()
-                .map(OrderMapper::toOrderResponseDTO)
+                .map(SaleOrderMapper::toOrderResponseDTO)
                 .toList();
     }
 
     @Override
-    public OrderResponseDTO getById(Integer orderId) {
-        Order order = orderRepo.findById(orderId)
+    public SaleOrderResponseDTO getById(Integer orderId) {
+        SaleOrder saleOrder = orderRepo.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
-        return OrderMapper.toOrderResponseDTO(order);
+        return SaleOrderMapper.toOrderResponseDTO(saleOrder);
     }
 
     @Override
     public void cancelOrder(Integer orderId) {
-        Order order = orderRepo.findById(orderId)
+        SaleOrder saleOrder = orderRepo.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
-        if (order.getStatus() == Order.OrderStatus.COMPLETED) {
+        if (saleOrder.getStatus() == SaleOrder.SaleOrderStatus.COMPLETED) {
             throw new RuntimeException("Không thể hủy đơn đã hoàn thành");
         }
-        order.setStatus(Order.OrderStatus.CANCELLED);
-        orderRepo.save(order);
+        saleOrder.setStatus(SaleOrder.SaleOrderStatus.CANCELLED);
+        orderRepo.save(saleOrder);
     }
 
     @Override
     public boolean canApprove(Integer orderId) {
-        Order order = orderRepo.findById(orderId)
+        SaleOrder saleOrder = orderRepo.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
-        return order.getStatus() == Order.OrderStatus.PENDING;
+        return saleOrder.getStatus() == SaleOrder.SaleOrderStatus.PENDING;
     }
 
     @Transactional
     @Override
-    public void updateOrderStatus(Integer orderId, Order.OrderStatus newStatus, String username) {
-        Order order = orderRepo.findById(orderId)
+    public void updateOrderStatus(Integer orderId, SaleOrder.SaleOrderStatus newStatus, String username) {
+        SaleOrder saleOrder = orderRepo.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        if (order.getStatus() == Order.OrderStatus.CANCELLED) {
+        if (saleOrder.getStatus() == SaleOrder.SaleOrderStatus.CANCELLED) {
             throw new RuntimeException("Không thể cập nhật đơn đã hủy.");
         }
 
-        if (order.getStatus() == Order.OrderStatus.COMPLETED) {
+        if (saleOrder.getStatus() == SaleOrder.SaleOrderStatus.COMPLETED) {
             throw new RuntimeException("Không thể cập nhật đơn đã hoàn thành.");
         }
 
@@ -121,12 +124,19 @@ public class OrderServiceImpl implements IOrderService {
         User user = userRepo.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (newStatus == Order.OrderStatus.COMPLETED && !user.getRoles().contains("ROLE_MANAGER")) {
+        if (newStatus == SaleOrder.SaleOrderStatus.COMPLETED && !user.getRoles().contains("ROLE_MANAGER")) {
             throw new RuntimeException("Chỉ MANAGER mới có thể duyệt hoàn thành đơn.");
         }
 
-        order.setStatus(newStatus);
-        orderRepo.save(order);
+        saleOrder.setStatus(newStatus);
+        orderRepo.save(saleOrder);
+    }
+
+    @Override
+    public List<SaleOrderResponseDTO> searchByKeyword(String keyword) {
+        return orderRepo.searchByKeyword(keyword).stream()
+                .map(SaleOrderMapper::toOrderResponseDTO)
+                .collect(Collectors.toList());
     }
 
 

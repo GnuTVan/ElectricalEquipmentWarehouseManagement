@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +23,7 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
 //    private final GoodIssueDetailRepository goodIssueDetailRepo;
 
     @Override
-    public GoodIssueNote createFromOrder(Order order) {
+    public GoodIssueNote createFromOrder(SaleOrder order) {
         // Lấy user hiện tại
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();

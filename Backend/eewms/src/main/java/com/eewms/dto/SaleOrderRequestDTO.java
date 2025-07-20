@@ -10,7 +10,7 @@ import jakarta.validation.constraints.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OrderRequestDTO {
+public class SaleOrderRequestDTO {
 
     @NotNull(message = "Vui lòng chọn khách hàng")
     private Long customerId;
@@ -19,5 +19,5 @@ public class OrderRequestDTO {
     private String description;
 
     @NotEmpty(message = "Cần có ít nhất 1 sản phẩm")
-    private List<@Valid OrderItemDTO> items;
+    private List<@Valid SaleOrderItemDTO> items;
 }

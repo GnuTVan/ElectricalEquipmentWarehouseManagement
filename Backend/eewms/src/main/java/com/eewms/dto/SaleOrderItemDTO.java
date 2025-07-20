@@ -9,7 +9,7 @@ import jakarta.validation.constraints.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OrderItemDTO {
+public class SaleOrderItemDTO {
 
     @NotNull
     private Integer productId;

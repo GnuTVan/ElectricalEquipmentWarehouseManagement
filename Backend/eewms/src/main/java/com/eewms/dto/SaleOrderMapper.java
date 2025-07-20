@@ -1,23 +1,22 @@
 package com.eewms.dto;
 
-import com.eewms.dto.*;
 import com.eewms.entities.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class OrderMapper {
+public class SaleOrderMapper {
 
-    public static OrderDetail toOrderDetail(OrderItemDTO dto, Product product) {
-        return OrderDetail.builder()
+    public static SaleOrderDetail toOrderDetail(SaleOrderItemDTO dto, Product product) {
+        return SaleOrderDetail.builder()
                 .product(product)
                 .orderedQuantity(dto.getOrderedQuantity())
                 .price(dto.getPrice()) // giá tại thời điểm đặt hàng
                 .build();
     }
 
-    public static OrderDetailDTO toOrderDetailDTO(OrderDetail entity) {
-        return OrderDetailDTO.builder()
+    public static SaleOrderDetailDTO toOrderDetailDTO(SaleOrderDetail entity) {
+        return SaleOrderDetailDTO.builder()
                 .productCode(entity.getProduct().getCode())
                 .productName(entity.getProduct().getName())
                 .price(entity.getPrice())
@@ -25,14 +24,14 @@ public class OrderMapper {
                 .build();
     }
 
-    public static OrderResponseDTO toOrderResponseDTO(Order order) {
-        List<OrderDetailDTO> detailDTOs = order.getDetails().stream()
-                .map(OrderMapper::toOrderDetailDTO)
+    public static SaleOrderResponseDTO toOrderResponseDTO(SaleOrder order) {
+        List<SaleOrderDetailDTO> detailDTOs = order.getDetails().stream()
+                .map(SaleOrderMapper::toOrderDetailDTO)
                 .collect(Collectors.toList());
 
-        return OrderResponseDTO.builder()
-                .orderId(order.getPoId())
-                .orderCode(order.getPoCode())
+        return SaleOrderResponseDTO.builder()
+                .orderId(order.getSoId())
+                .orderCode(order.getSoCode())
                 .customerName(order.getCustomer() != null ? order.getCustomer().getFullName() : "")
                 .description(order.getDescription())
                 .status(order.getStatus())

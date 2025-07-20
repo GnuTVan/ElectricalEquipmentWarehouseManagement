@@ -8,6 +8,7 @@ import com.eewms.entities.Customer;
 import com.eewms.dto.CustomerDTO;
 import com.eewms.dto.CustomerMapper;
 import com.eewms.services.ICustomerService;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,7 +42,7 @@ public class CustomerServiceImpl implements ICustomerService {
     }
 
     @Override
-    public CustomerDTO findById(Long id) {
+    public CustomerDTO getById(Long id) {
         return repo.findById(id)
                 .map(mapper::toDTO)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với id = " + id));
@@ -59,4 +60,13 @@ public class CustomerServiceImpl implements ICustomerService {
     public void delete(Long id) {
         repo.deleteById(id);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CustomerDTO> searchByKeyword(String keyword) {
+        return repo.searchByKeyword(keyword).stream()
+                .map(mapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
 }

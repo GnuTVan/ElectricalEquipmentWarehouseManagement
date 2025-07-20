@@ -18,8 +18,16 @@ public class CustomerController {
     private final ICustomerService service;
 
     @GetMapping
-    public String list(Model model) {
-        model.addAttribute("customers", service.findAll());
+    public String list(@RequestParam(value = "keyword", required = false) String keyword, Model model) {
+        if (!model.containsAttribute("customer")) {
+            model.addAttribute("customer", new CustomerDTO());
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            model.addAttribute("customers", service.searchByKeyword(keyword));
+        } else {
+            model.addAttribute("customers", service.findAll());
+        }
+        model.addAttribute("keyword", keyword);
         return "customer/list";
     }
 
@@ -30,41 +38,61 @@ public class CustomerController {
     }
 
     @PostMapping("/save")
-    public String save(@ModelAttribute("customer") @Valid CustomerDTO dto,
-                       BindingResult result,
-                       RedirectAttributes redirect,
-                       Model model) {
+    public String createCustomer (@ModelAttribute("customer") @Valid CustomerDTO dto,
+                                  BindingResult result,
+                                  RedirectAttributes redirect,
+                                  Model model) {
         if (result.hasErrors()) {
             model.addAttribute("customer", dto);
-            return "customer/form"; // quay lại form nếu có lỗi
+            model.addAttribute("hasFormError", true);
+            model.addAttribute("customers", service.findAll());
+            return "customer/list";
         }
 
-        service.create(dto);
-        redirect.addFlashAttribute("success", "Thêm khách hàng thành công");
+        try {
+            service.create(dto);
+            redirect.addFlashAttribute("success", "Thêm khách hàng thành công");
+        } catch (Exception ex) {
+            redirect.addFlashAttribute("error", "Lỗi khi thêm khách hàng: " + ex.getMessage());
+        }
+
         return "redirect:/customers";
     }
+
 
 
     @GetMapping("/edit/{id}")
     public String edit(@PathVariable Long id, Model model) {
-        model.addAttribute("customer", service.findById(id));
+        model.addAttribute("customer", service.getById(id));
         return "customer/form";
     }
 
 
-    @PostMapping("/update")
-    public String update(@ModelAttribute("customer") @Valid CustomerDTO dto,
+    @PostMapping("/update/{id}")
+    public String update(@PathVariable Long id,
+                         @ModelAttribute("customer") @Valid CustomerDTO dto,
                          BindingResult result,
                          RedirectAttributes redirect,
                          Model model) {
+//        dto.setId(id); // Gán id từ đường dẫn vào DTO khi k có hidden id
         if (result.hasErrors()) {
             model.addAttribute("customer", dto);
-            return "customer/form";
+            model.addAttribute("editId", id);
+            model.addAttribute("hasFormError", true);
+            model.addAttribute("customers", service.findAll());
+            return "customer/list";
         }
-        service.update(dto);
-        redirect.addFlashAttribute("success", "Cập nhật thành công");
+
+        try {
+            service.update(dto);
+            redirect.addFlashAttribute("success", "Cập nhật thành công");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", "Lỗi khi cập nhật: " + e.getMessage());
+        }
+
         return "redirect:/customers";
     }
+
 
     @GetMapping("/delete/{id}")
     public String delete(@PathVariable Long id, RedirectAttributes redirect) {
