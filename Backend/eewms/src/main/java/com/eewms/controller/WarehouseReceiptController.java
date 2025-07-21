@@ -5,6 +5,7 @@ import com.eewms.entities.*;
 import com.eewms.repository.PurchaseOrderItemRepository;
 import com.eewms.repository.PurchaseOrderRepository;
 import com.eewms.repository.WarehouseRepository;
+import com.eewms.repository.warehouseReceipt.WarehouseReceiptItemRepository;
 import com.eewms.repository.warehouseReceipt.WarehouseReceiptRepository;
 import com.eewms.repository.UserRepository;
 import com.eewms.services.IWarehouseReceiptService;
@@ -32,6 +33,7 @@ public class WarehouseReceiptController {
     private final WarehouseRepository warehouseRepository;
     private final UserRepository userRepository;
     private final IWarehouseReceiptService warehouseReceiptService;
+    private final WarehouseReceiptItemRepository warehouseReceiptItemRepository;
 
     @GetMapping
     public String listReceipts(Model model) {
@@ -79,6 +81,19 @@ public class WarehouseReceiptController {
         // Chuyển hướng + thông báo
         redirectAttributes.addFlashAttribute("message", "Tạo phiếu nhập kho thành công!");
         return "redirect:/admin/warehouse-receipts";
+    }
+
+
+    @GetMapping("/view/{id}")
+    public String viewReceipt(@PathVariable Long id, Model model) {
+        WarehouseReceipt receipt = warehouseReceiptRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu nhập"));
+
+        List<WarehouseReceiptItem> items = warehouseReceiptItemRepository.findByWarehouseReceipt(receipt);
+
+        model.addAttribute("receipt", receipt);
+        model.addAttribute("items", items);
+        return "warehouse-receipt-view";
     }
 
 }

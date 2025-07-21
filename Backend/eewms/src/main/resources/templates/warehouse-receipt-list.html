@@ -31,6 +31,7 @@
                     <th class="px-6 py-3">Kho</th>
                     <th class="px-6 py-3">Người tạo</th>
                     <th class="px-6 py-3">Thời gian</th>
+                    <th class="px-4 py-2 text-center">Hành động</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -40,6 +41,10 @@
                     <td class="px-6 py-3" th:text="${r.warehouse.name}"></td>
                     <td class="px-6 py-3" th:text="${r.createdBy}"></td>
                     <td class="px-6 py-3" th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                    <td class="px-4 py-2 text-center">
+                        <a th:href="@{'/admin/warehouse-receipts/view/' + ${r.id}}"
+                           class="text-blue-600 hover:underline">Xem</a>
+                    </td>
                 </tr>
                 </tbody>
             </table>
