@@ -10,7 +10,7 @@ import java.util.List;
 
 @Repository
 public interface SaleOrderRepository extends JpaRepository<SaleOrder, Integer> {
-    boolean existsByPoCode(String poCode);
+    boolean existsBySoCode(String soCode);
 
     @Query("SELECT o FROM SaleOrder o WHERE LOWER(o.soCode) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     List<SaleOrder> searchByKeyword(@Param("keyword") String keyword);

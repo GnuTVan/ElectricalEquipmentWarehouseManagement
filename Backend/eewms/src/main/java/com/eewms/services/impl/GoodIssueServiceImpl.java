@@ -35,7 +35,7 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
         GoodIssueNote note = new GoodIssueNote();
         note.setGinCode(generateGINCode());
         note.setCustomer(order.getCustomer());
-        note.setDescription("Phiếu xuất từ đơn hàng #" + order.getPoCode());
+        note.setDescription("Phiếu xuất từ đơn hàng #" + order.getSoCode());
         note.setIssueDate(LocalDateTime.now());
         note.setStatus(GoodIssueNote.GinStatus.PENDING);
         note.setCreatedBy(currentUser);
