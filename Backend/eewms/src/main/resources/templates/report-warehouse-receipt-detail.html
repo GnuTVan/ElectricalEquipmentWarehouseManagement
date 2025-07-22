@@ -28,6 +28,10 @@
           <i class="ri-file-list-3-line text-xl"></i>
           Chi tiết phiếu nhập kho
         </h1>
+        <a th:href="@{/admin/reports/warehouse-receipt/export-detail/{code}(code=${receipt.code})}"
+           class="inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mb-4">
+          <i class="ri-file-excel-2-line"></i> Xuất Excel
+        </a>
         <p class="mt-1 text-sm text-gray-600">
           <strong class="text-gray-800">Mã phiếu:</strong> <span th:text="${receipt.code}"></span>
         </p>
@@ -85,5 +89,17 @@
 
   </div>
 </div>
+<script>
+  const btn = document.getElementById("userMenuBtn");
+    const dropdown = document.getElementById("userMenuDropdown");
+        btn?.addEventListener("click", () => {
+        dropdown?.classList.toggle("hidden");
+        });
+        document.addEventListener("click", (event) => {
+        if (!event.target.closest("#userMenuWrapper")) {
+        dropdown?.classList.add("hidden");
+        }
+        });
+</script>
 </body>
 </html>

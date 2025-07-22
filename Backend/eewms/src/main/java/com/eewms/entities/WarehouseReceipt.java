@@ -27,5 +27,6 @@ public class WarehouseReceipt {
     private Warehouse warehouse;
 
     private String note;
+
 }
 
