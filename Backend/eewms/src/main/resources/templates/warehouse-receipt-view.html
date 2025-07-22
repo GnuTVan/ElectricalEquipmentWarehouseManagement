@@ -5,6 +5,7 @@
     <title>Chi tiết phiếu nhập kho</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+
 </head>
 <body class="bg-gray-100 font-sans">
 <div class="flex min-h-screen">
@@ -20,6 +21,24 @@
         <div class="mb-6">
             <h1 class="text-2xl font-bold text-gray-800">Chi tiết phiếu nhập kho</h1>
         </div>
+
+        <div class="flex justify-between items-center mb-6">
+            <!-- Nút Quay lại (bên trái) -->
+            <a href="/admin/warehouse-receipts"
+               class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded inline-flex items-center">
+                <i class="ri-arrow-left-line mr-2"></i>
+                Quay lại
+            </a>
+
+            <!-- Nút In PDF (bên phải) -->
+            <a th:href="@{'/admin/warehouse-receipts/export/' + ${receipt.id}}"
+               class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded inline-flex items-center"
+               target="_blank">
+                <i class="ri-printer-line mr-2"></i>
+                In phiếu (PDF)
+            </a>
+        </div>
+
 
         <!-- Thông tin chung -->
         <div class="bg-white p-6 rounded shadow mb-8">

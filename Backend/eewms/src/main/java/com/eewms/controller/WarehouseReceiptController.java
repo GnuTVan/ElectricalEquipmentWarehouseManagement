@@ -9,9 +9,15 @@ import com.eewms.repository.warehouseReceipt.WarehouseReceiptItemRepository;
 import com.eewms.repository.warehouseReceipt.WarehouseReceiptRepository;
 import com.eewms.repository.UserRepository;
 import com.eewms.services.IWarehouseReceiptService;
+
+import java.io.IOException;
 import java.security.Principal;
 import java.time.LocalDateTime;
 
+import com.lowagie.text.*;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -95,5 +101,61 @@ public class WarehouseReceiptController {
         model.addAttribute("items", items);
         return "warehouse-receipt-view";
     }
+
+    @GetMapping("/export/{id}")
+    public void exportReceiptToPDF(@PathVariable Long id, HttpServletResponse response) throws IOException, DocumentException {
+
+
+        WarehouseReceipt receipt = warehouseReceiptRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu nhập"));
+        List<WarehouseReceiptItem> items = warehouseReceiptItemRepository.findByWarehouseReceipt(receipt);
+        PurchaseOrder order = receipt.getPurchaseOrder();
+        Supplier supplier = order.getSupplier();
+
+        response.setContentType("application/pdf");
+        response.setHeader("Content-Disposition", "attachment; filename=phieu-nhap-" + receipt.getCode() + ".pdf");
+
+        Document document = new Document(PageSize.A4);
+        PdfWriter.getInstance(document, response.getOutputStream());
+        document.open();
+
+        Font headerFont = new Font(Font.HELVETICA, 16, Font.BOLD);
+        Font normalFont = new Font(Font.HELVETICA, 12);
+
+        document.add(new Paragraph("Công Ty Thiết Bị Điện Hải Phòng", headerFont));
+        document.add(new Paragraph("\n"));
+        document.add(new Paragraph("PHIẾU NHẬP KHO", headerFont));
+        document.add(new Paragraph("Mã phiếu: " + receipt.getCode(), normalFont));
+        document.add(new Paragraph("Kho: " + receipt.getWarehouse().getName(), normalFont));
+        document.add(new Paragraph("Ngày tạo: " + receipt.getCreatedAt(), normalFont));
+        document.add(new Paragraph("Người tạo: " + receipt.getCreatedBy(), normalFont));
+        document.add(new Paragraph("Ghi chú: " + (receipt.getNote() == null ? "" : receipt.getNote()), normalFont));
+        document.add(new Paragraph("\n"));
+
+        document.add(new Paragraph("Nhà cung cấp: " + supplier.getName(), normalFont));
+        document.add(new Paragraph("Người đại diện: " + supplier.getContactName(), normalFont));
+        document.add(new Paragraph("Số điện thoại: " + supplier.getContactMobile(), normalFont));
+        document.add(new Paragraph("\n"));
+
+        // Bảng sản phẩm
+        PdfPTable table = new PdfPTable(3);
+        table.setWidthPercentage(100f);
+        table.setSpacingBefore(10);
+
+        table.addCell("STT");
+        table.addCell("Tên sản phẩm");
+        table.addCell("Số lượng");
+
+        int index = 1;
+        for (WarehouseReceiptItem item : items) {
+            table.addCell(String.valueOf(index++));
+            table.addCell(item.getProduct().getName());
+            table.addCell(String.valueOf(item.getQuantity()));
+        }
+
+        document.add(table);
+        document.close();
+    }
+
 
 }
