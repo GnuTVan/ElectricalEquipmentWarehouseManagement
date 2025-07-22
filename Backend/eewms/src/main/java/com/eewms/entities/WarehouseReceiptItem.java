@@ -3,6 +3,8 @@ package com.eewms.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "warehouse_receipt_items")
 @Getter @Setter
@@ -18,4 +20,9 @@ public class WarehouseReceiptItem {
     private Product product;
 
     private Integer quantity;
+    @Column(nullable = false)
+    private BigDecimal price; // đơn giá nhập
+
+    @Column(nullable = false)
+    private Integer actualQuantity; // số lượng thực nhập kho
 }

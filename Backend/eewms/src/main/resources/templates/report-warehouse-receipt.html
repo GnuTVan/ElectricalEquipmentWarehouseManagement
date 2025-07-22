@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi" th:inline="javascript">
+<head>
+    <meta charset="UTF-8">
+    <title>Báo cáo nhập kho</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600&display=swap');
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <div class="w-64 bg-white shadow-md" th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <!-- Main content -->
+    <div class="flex-1 p-6 overflow-y-auto bg-gray-100 ml-64">
+        <!-- Header -->
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <!-- Nội dung -->
+        <div class="max-w-full bg-white p-6 rounded shadow">
+            <h1 class="text-2xl font-bold text-blue-700 mb-6 border-b pb-2">📦 Báo cáo nhập kho</h1>
+
+            <!-- Form lọc -->
+            <form method="get" th:action="@{/admin/reports/warehouse-receipt}" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div>
+                    <label class="block mb-1 text-sm font-medium text-gray-700">Từ ngày</label>
+                    <input type="date" name="fromDate" class="w-full border rounded px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm font-medium text-gray-700">Đến ngày</label>
+                    <input type="date" name="toDate" class="w-full border rounded px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm font-medium text-gray-700">Kho</label>
+                    <select name="warehouseId" class="w-full border rounded px-3 py-2 text-sm">
+                        <option value="">-- Tất cả --</option>
+                        <option th:each="w : ${warehouses}" th:value="${w.id}" th:text="${w.name}"></option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm font-medium text-gray-700">Nhà cung cấp</label>
+                    <select name="supplierId" class="w-full border rounded px-3 py-2 text-sm">
+                        <option value="">-- Tất cả --</option>
+                        <option th:each="s : ${suppliers}" th:value="${s.id}" th:text="${s.name}"></option>
+                    </select>
+                </div>
+                <div class="md:col-span-4 flex justify-end mt-2">
+                    <button type="submit" class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 text-sm">
+                        🔍 Lọc dữ liệu
+                    </button>
+                </div>
+
+            </form>
+
+            <!-- Bảng dữ liệu -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm text-left border border-gray-200 rounded">
+                    <thead class="bg-gray-100 text-gray-800">
+                    <tr>
+                        <th class="p-3 border">Mã phiếu</th>
+                        <th class="p-3 border">Ngày tạo</th>
+                        <th class="p-3 border">Kho</th>
+                        <th class="p-3 border">Nhà cung cấp</th>
+                        <th class="p-3 border text-right">Tổng SL</th>
+                        <th class="p-3 border text-right">Tổng tiền</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="r : ${reportList}" class="hover:bg-gray-50 transition">
+                        <td class="p-3 border" th:text="${r.receiptCode}">RN00001</td>
+                        <td class="p-3 border" th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy')}">22/07/2025</td>
+                        <td class="p-3 border" th:text="${r.warehouseName}">Kho A</td>
+                        <td class="p-3 border" th:text="${r.supplierName}">cty A</td>
+                        <td class="p-3 border text-right" th:text="${r.totalQuantity}">10</td>
+                        <td class="p-3 border text-right text-green-600 font-semibold"
+                            th:text="${#numbers.formatDecimal(r.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'">100,000 ₫</td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(reportList)}">
+                        <td colspan="6" class="p-4 text-center text-gray-500">Không có dữ liệu</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+<script>
+    const btn = document.getElementById("userMenuBtn");
+    const dropdown = document.getElementById("userMenuDropdown");
+    btn?.addEventListener("click", () => {
+        dropdown?.classList.toggle("hidden");
+    });
+    document.addEventListener("click", (event) => {
+        if (!event.target.closest("#userMenuWrapper")) {
+            dropdown?.classList.add("hidden");
+        }
+    });
+</script>
+</body>
+</html>
