@@ -1,209 +1,205 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8">
-  <title>Danh sách khách hàng</title>
-  <meta name="_csrf" th:content="${_csrf.token}" />
-  <meta name="_csrf_header" th:content="${_csrf.headerName}" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
-    body {
-      font-family: 'Be Vietnam Pro', sans-serif;
-    }
-    .sidebar-nav::-webkit-scrollbar {
-      width: 4px;
-    }
-    .sidebar-nav::-webkit-scrollbar-thumb {
-      background-color: #4a5568;
-      border-radius: 20px;
-    }
-  </style>
-</head>
+
+<!--Common Head-->
+<head th:replace="~{fragments/common-head :: commonHead('Danh sách khách hàng')}"></head>
+
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
-  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
-  <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
-    <div th:replace="~{fragments/header :: header}"></div>
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <div th:replace="~{fragments/header :: header}"></div>
 
-    <div class="flex justify-between items-center mb-4 px-6 py-6">
-      <h1 class="text-2xl font-bold">Danh sách khách hàng</h1>
-      <div class="flex gap-2">
-        <a onclick="openAddModal()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer">+ Thêm</a>
-        <form th:action="@{/customers}" method="get" class="flex gap-2">
-          <input type="text" name="keyword" th:value="${keyword}" placeholder="Tìm theo tên, email..." class="border px-3 py-2 rounded-md w-64" />
-          <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tìm</button>
-        </form>
-      </div>
-    </div>
-
-    <div class="overflow-x-auto bg-white rounded-lg shadow px-4">
-      <table class="min-w-full text-sm text-left">
-        <thead class="bg-gray-200 text-xs uppercase font-semibold">
-        <tr>
-          <th class="px-4 py-3">Họ tên</th>
-          <th class="px-4 py-3">Email</th>
-          <th class="px-4 py-3">SĐT</th>
-          <th class="px-4 py-3">Địa chỉ</th>
-          <th class="px-4 py-3">Mã số thuế</th>
-          <th class="px-4 py-3">Ngân hàng</th>
-          <th class="px-4 py-3">Trạng thái</th>
-          <th class="px-4 py-3 text-center">Hành động</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="c : ${customers}"
-            class="border-b hover:bg-gray-50"
-            th:data-id="${c.id}"
-            th:data-fullname="${c.fullName}"
-            th:data-email="${c.email}"
-            th:data-phone="${c.phone}"
-            th:data-address="${c.address}"
-            th:data-taxcode="${c.taxCode}"
-            th:data-bankname="${c.bankName}"
-            th:data-status="${c.status}">
-
-          <td class="px-4 py-3" th:text="${c.fullName}"></td>
-          <td class="px-4 py-3" th:text="${c.email}"></td>
-          <td class="px-4 py-3" th:text="${c.phone}"></td>
-          <td class="px-4 py-3" th:text="${c.address}"></td>
-          <td class="px-4 py-3" th:text="${c.taxCode}"></td>
-          <td class="px-4 py-3" th:text="${c.bankName}"></td>
-          <td class="px-4 py-3">
-            <div class="flex items-center gap-2">
-              <label class="inline-flex relative items-center cursor-pointer">
-                <input type="checkbox" th:checked="${c.status.name() == 'ACTIVE'}"
-                       th:data-id="${c.id}" class="sr-only peer" onchange="toggleStatus(this)">
-                <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition duration-300"></div>
-                <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition duration-200 transform peer-checked:translate-x-5"></div>
-              </label>
-              <span class="text-sm font-medium text-gray-700"
-                    th:text="${c.status.name() == 'ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động'}">
-              </span>
+        <div class="flex justify-between items-center mb-4 px-6 py-6">
+            <h1 class="text-2xl font-bold">Danh sách khách hàng</h1>
+            <div class="flex gap-2">
+                <a onclick="openAddModal()"
+                   class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer">+ Thêm</a>
+                <form th:action="@{/customers}" method="get" class="flex gap-2">
+                    <input type="text" name="keyword" th:value="${keyword}" placeholder="Tìm theo tên, email..."
+                           class="border px-3 py-2 rounded-md w-64"/>
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tìm
+                    </button>
+                </form>
             </div>
-          </td>
-          <td class="px-4 py-3 text-center space-x-1">
-            <a href="#" onclick="openEditModal(this)" class="text-blue-600 hover:text-blue-800">
-              <i class="ri-pencil-line text-lg"></i>
-            </a>
-          </td>
-        </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Modal Thêm/Sửa khách hàng -->
-    <div id="customerModal" class="absolute top-[88px] left-0 right-0 bottom-0 bg-white z-30 overflow-auto hidden"
-         th:classappend="${hasFormError} ? '' : ' hidden'">
-      <div class="max-w-4xl mx-auto px-6 py-6">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg font-semibold" id="modalTitle">Thêm khách hàng</h2>
-          <button onclick="closeAddModal()"><i class="ri-close-line text-2xl"></i></button>
         </div>
-        <form id="addCustomerForm" th:action="@{/customers/save}" th:object="${customer}" method="post">
-          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-          <input type="hidden" th:field="*{id}" id="customerId"/>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label>Họ tên</label>
-              <input type="text" th:field="*{fullName}" class="w-full border rounded px-3 py-2" id="fullName"/>
-              <p th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}" class="text-sm text-red-500 mt-1"></p>
+
+        <div class="overflow-x-auto bg-white rounded-lg shadow px-4">
+            <table class="min-w-full text-sm text-left">
+                <thead class="bg-gray-200 text-xs uppercase font-semibold">
+                <tr>
+                    <th class="px-4 py-3">Họ tên</th>
+                    <th class="px-4 py-3">Email</th>
+                    <th class="px-4 py-3">SĐT</th>
+                    <th class="px-4 py-3">Địa chỉ</th>
+                    <th class="px-4 py-3">Mã số thuế</th>
+                    <th class="px-4 py-3">Ngân hàng</th>
+                    <th class="px-4 py-3">Trạng thái</th>
+                    <th class="px-4 py-3 text-center">Hành động</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="c : ${customers}"
+                    class="border-b hover:bg-gray-50"
+                    th:data-id="${c.id}"
+                    th:data-fullname="${c.fullName}"
+                    th:data-email="${c.email}"
+                    th:data-phone="${c.phone}"
+                    th:data-address="${c.address}"
+                    th:data-taxcode="${c.taxCode}"
+                    th:data-bankname="${c.bankName}"
+                    th:data-status="${c.status}">
+
+                    <td class="px-4 py-3" th:text="${c.fullName}"></td>
+                    <td class="px-4 py-3" th:text="${c.email}"></td>
+                    <td class="px-4 py-3" th:text="${c.phone}"></td>
+                    <td class="px-4 py-3" th:text="${c.address}"></td>
+                    <td class="px-4 py-3" th:text="${c.taxCode}"></td>
+                    <td class="px-4 py-3" th:text="${c.bankName}"></td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <label class="inline-flex relative items-center cursor-pointer">
+                                <input type="checkbox" th:checked="${c.status.name() == 'ACTIVE'}"
+                                       th:data-id="${c.id}" class="sr-only peer" onchange="toggleStatus(this)">
+                                <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition duration-300"></div>
+                                <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition duration-200 transform peer-checked:translate-x-5"></div>
+                            </label>
+                            <span class="text-sm font-medium text-gray-700"
+                                  th:text="${c.status.name() == 'ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động'}">
+              </span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 text-center space-x-1">
+                        <a href="#" onclick="openEditModal(this)" class="text-blue-600 hover:text-blue-800">
+                            <i class="ri-pencil-line text-lg"></i>
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Modal Thêm/Sửa khách hàng -->
+        <div id="customerModal" class="absolute top-[88px] left-0 right-0 bottom-0 bg-white z-30 overflow-auto hidden"
+             th:classappend="${hasFormError} ? '' : ' hidden'">
+            <div class="max-w-4xl mx-auto px-6 py-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold" id="modalTitle">Thêm khách hàng</h2>
+                    <button onclick="closeAddModal()"><i class="ri-close-line text-2xl"></i></button>
+                </div>
+                <form id="addCustomerForm" th:action="@{/customers/save}" th:object="${customer}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <input type="hidden" th:field="*{id}" id="customerId"/>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label>Họ tên</label>
+                            <input type="text" th:field="*{fullName}" class="w-full border rounded px-3 py-2"
+                                   id="fullName"/>
+                            <p th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"
+                               class="text-sm text-red-500 mt-1"></p>
+                        </div>
+                        <div>
+                            <label>Email</label>
+                            <input type="email" th:field="*{email}" class="w-full border rounded px-3 py-2" id="email"/>
+                            <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}"
+                               class="text-sm text-red-500 mt-1"></p>
+                        </div>
+                        <div>
+                            <label>SĐT</label>
+                            <input type="text" th:field="*{phone}" class="w-full border rounded px-3 py-2" id="phone"/>
+                            <p th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"
+                               class="text-sm text-red-500 mt-1"></p>
+                        </div>
+                        <div>
+                            <label>Địa chỉ</label>
+                            <input type="text" th:field="*{address}" class="w-full border rounded px-3 py-2"
+                                   id="address"/>
+                            <p th:if="${#fields.hasErrors('address')}" th:errors="*{address}"
+                               class="text-sm text-red-500 mt-1"></p>
+                        </div>
+                        <div>
+                            <label>Mã số thuế</label>
+                            <input type="text" th:field="*{taxCode}" class="w-full border rounded px-3 py-2"
+                                   id="taxCode"/>
+                        </div>
+                        <div>
+                            <label>Ngân hàng</label>
+                            <input type="text" th:field="*{bankName}" class="w-full border rounded px-3 py-2"
+                                   id="bankName"/>
+                        </div>
+                        <input type="hidden" name="status" value="ACTIVE" id="status"/>
+                    </div>
+                    <div class="flex justify-end space-x-2 mt-4">
+                        <button type="button" onclick="closeAddModal()"
+                                class="bg-gray-500 text-white px-4 py-2 rounded">Hủy
+                        </button>
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Lưu</button>
+                    </div>
+                </form>
             </div>
-            <div>
-              <label>Email</label>
-              <input type="email" th:field="*{email}" class="w-full border rounded px-3 py-2" id="email"/>
-              <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-sm text-red-500 mt-1"></p>
-            </div>
-            <div>
-              <label>SĐT</label>
-              <input type="text" th:field="*{phone}" class="w-full border rounded px-3 py-2" id="phone"/>
-              <p th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}" class="text-sm text-red-500 mt-1"></p>
-            </div>
-            <div>
-              <label>Địa chỉ</label>
-              <input type="text" th:field="*{address}" class="w-full border rounded px-3 py-2" id="address"/>
-              <p th:if="${#fields.hasErrors('address')}" th:errors="*{address}" class="text-sm text-red-500 mt-1"></p>
-            </div>
-            <div>
-              <label>Mã số thuế</label>
-              <input type="text" th:field="*{taxCode}" class="w-full border rounded px-3 py-2" id="taxCode"/>
-            </div>
-            <div>
-              <label>Ngân hàng</label>
-              <input type="text" th:field="*{bankName}" class="w-full border rounded px-3 py-2" id="bankName"/>
-            </div>
-            <input type="hidden" name="status" value="ACTIVE" id="status"/>
-          </div>
-          <div class="flex justify-end space-x-2 mt-4">
-            <button type="button" onclick="closeAddModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Hủy</button>
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Lưu</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </main>
+        </div>
+    </main>
 </div>
 <div th:replace="~{fragments/footer :: footer}"></div>
 <script>
-  function openAddModal() {
-    document.getElementById('customerModal').classList.remove('hidden');
-    document.getElementById('modalTitle').innerText = 'Thêm khách hàng';
-    document.getElementById('addCustomerForm').action = '/customers/save';
-    clearForm();
-  }
+    function openAddModal() {
+        document.getElementById('customerModal').classList.remove('hidden');
+        document.getElementById('modalTitle').innerText = 'Thêm khách hàng';
+        document.getElementById('addCustomerForm').action = '/customers/save';
+        clearForm();
+    }
 
-  function openEditModal(element) {
-    const row = element.closest('tr');
-    document.getElementById('modalTitle').innerText = 'Cập nhật khách hàng';
-    document.getElementById('customerId').value = row.dataset.id;
-    document.getElementById('fullName').value = row.dataset.fullname;
-    document.getElementById('email').value = row.dataset.email;
-    document.getElementById('phone').value = row.dataset.phone;
-    document.getElementById('address').value = row.dataset.address;
-    document.getElementById('taxCode').value = row.dataset.taxcode;
-    document.getElementById('bankName').value = row.dataset.bankname;
-    document.getElementById('status').value = row.dataset.status;
-    document.getElementById('addCustomerForm').action = '/customers/update/' + row.dataset.id;
-    document.getElementById('customerModal').classList.remove('hidden');
-  }
+    function openEditModal(element) {
+        const row = element.closest('tr');
+        document.getElementById('modalTitle').innerText = 'Cập nhật khách hàng';
+        document.getElementById('customerId').value = row.dataset.id;
+        document.getElementById('fullName').value = row.dataset.fullname;
+        document.getElementById('email').value = row.dataset.email;
+        document.getElementById('phone').value = row.dataset.phone;
+        document.getElementById('address').value = row.dataset.address;
+        document.getElementById('taxCode').value = row.dataset.taxcode;
+        document.getElementById('bankName').value = row.dataset.bankname;
+        document.getElementById('status').value = row.dataset.status;
+        document.getElementById('addCustomerForm').action = '/customers/update/' + row.dataset.id;
+        document.getElementById('customerModal').classList.remove('hidden');
+    }
 
-  function clearForm() {
-    document.querySelectorAll('#addCustomerForm input').forEach(el => {
-      if (el.type !== 'hidden') el.value = '';
-    });
-    document.querySelectorAll('.text-red-500').forEach(el => el.innerText = '');
-  }
+    function clearForm() {
+        document.querySelectorAll('#addCustomerForm input').forEach(el => {
+            if (el.type !== 'hidden') el.value = '';
+        });
+        document.querySelectorAll('.text-red-500').forEach(el => el.innerText = '');
+    }
 
-  function closeAddModal() {
-    document.getElementById('customerModal').classList.add('hidden');
-    window.location.href = '/customers';
-  }
+    function closeAddModal() {
+        document.getElementById('customerModal').classList.add('hidden');
+        window.location.href = '/customers';
+    }
 
-  function toggleStatus(checkbox) {
-    const customerId = checkbox.dataset.id;
-    const newStatus = checkbox.checked ? 'ACTIVE' : 'INACTIVE';
-    const csrfToken = document.querySelector('meta[name="_csrf"]').content;
-    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
-    fetch(`/customers/${customerId}/status`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        [csrfHeader]: csrfToken
-      },
-      body: JSON.stringify({ status: newStatus })
-    })
+    function toggleStatus(checkbox) {
+        const customerId = checkbox.dataset.id;
+        const newStatus = checkbox.checked ? 'ACTIVE' : 'INACTIVE';
+        const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+        fetch(`/customers/${customerId}/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                [csrfHeader]: csrfToken
+            },
+            body: JSON.stringify({status: newStatus})
+        })
             .then(res => res.ok ? res.text() : Promise.reject("Lỗi cập nhật"))
             .then(() => {
-              const label = checkbox.closest("td").querySelector("span");
-              label.innerText = newStatus === 'ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động';
-              checkbox.closest('tr').dataset.status = newStatus;
+                const label = checkbox.closest("td").querySelector("span");
+                label.innerText = newStatus === 'ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động';
+                checkbox.closest('tr').dataset.status = newStatus;
             })
             .catch(() => {
-              checkbox.checked = !checkbox.checked;
-              alert("Cập nhật trạng thái thất bại.");
+                checkbox.checked = !checkbox.checked;
+                alert("Cập nhật trạng thái thất bại.");
             });
-  }
+    }
 </script>
 </body>
 </html>
