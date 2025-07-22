@@ -28,6 +28,12 @@ public class Customer {
 
     private String email;
 
-//    private Boolean status;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Customer.CustomerStatus status = Customer.CustomerStatus.ACTIVE; // mặc định là hoạt động
 
+    public enum CustomerStatus {
+        ACTIVE,     // Đang hoạt động
+        INACTIVE    // Ngưng hoạt động
+    }
 }

@@ -1,6 +1,7 @@
 package com.eewms.controller;
 
 import com.eewms.dto.CustomerDTO;
+import com.eewms.entities.Customer;
 import com.eewms.services.ICustomerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,8 +11,10 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.Map;
+
 @Controller
-@RequestMapping("/customers")
+@RequestMapping({"/customers", "/customer-list"})
 @RequiredArgsConstructor
 public class CustomerController {
 
@@ -20,7 +23,9 @@ public class CustomerController {
     @GetMapping
     public String list(@RequestParam(value = "keyword", required = false) String keyword, Model model) {
         if (!model.containsAttribute("customer")) {
-            model.addAttribute("customer", new CustomerDTO());
+            CustomerDTO dto = new CustomerDTO();
+            dto.setStatus(Customer.CustomerStatus.ACTIVE);  // Gán mặc định
+            model.addAttribute("customer", dto);
         }
         if (keyword != null && !keyword.isBlank()) {
             model.addAttribute("customers", service.searchByKeyword(keyword));
@@ -28,7 +33,7 @@ public class CustomerController {
             model.addAttribute("customers", service.findAll());
         }
         model.addAttribute("keyword", keyword);
-        return "customer/list";
+        return "customer/customer-list";
     }
 
     @GetMapping("/create")
@@ -46,13 +51,14 @@ public class CustomerController {
             model.addAttribute("customer", dto);
             model.addAttribute("hasFormError", true);
             model.addAttribute("customers", service.findAll());
-            return "customer/list";
+            return "customer/customer-list";
         }
 
         try {
             service.create(dto);
             redirect.addFlashAttribute("success", "Thêm khách hàng thành công");
         } catch (Exception ex) {
+            ex.printStackTrace();
             redirect.addFlashAttribute("error", "Lỗi khi thêm khách hàng: " + ex.getMessage());
         }
 
@@ -80,7 +86,7 @@ public class CustomerController {
             model.addAttribute("editId", id);
             model.addAttribute("hasFormError", true);
             model.addAttribute("customers", service.findAll());
-            return "customer/list";
+            return "customer/customer-list";
         }
 
         try {
@@ -93,6 +99,18 @@ public class CustomerController {
         return "redirect:/customers";
     }
 
+    @PostMapping("/{id}/status")
+    @ResponseBody
+    public String updateStatus(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+        try {
+            String statusStr = payload.get("status");
+            Customer.CustomerStatus status = Customer.CustomerStatus.valueOf(statusStr);
+            service.updateStatus(id, status);
+            return "OK";
+        } catch (Exception e) {
+            return "ERROR: " + e.getMessage();
+        }
+    }
 
     @GetMapping("/delete/{id}")
     public String delete(@PathVariable Long id, RedirectAttributes redirect) {

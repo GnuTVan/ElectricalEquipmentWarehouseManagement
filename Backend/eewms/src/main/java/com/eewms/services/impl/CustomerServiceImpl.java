@@ -15,13 +15,21 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class CustomerServiceImpl implements ICustomerService {
     private final CustomerRepository repo;
     private final CustomerMapper mapper;
 
     @Override
     public CustomerDTO create(CustomerDTO dto) {
+        System.out.println("DTO nhận vào: " + dto); // Debug DTO
+        if (dto.getStatus() == null) {
+            dto.setStatus(Customer.CustomerStatus.ACTIVE);
+        }
+
         Customer entity = mapper.toEntity(dto);
+        System.out.println("Entity sau toEntity: " + entity); // Debug entity
+
         Customer saved = repo.save(entity);
         return mapper.toDTO(saved);
     }
@@ -31,7 +39,7 @@ public class CustomerServiceImpl implements ICustomerService {
         Customer entity = repo.findById(dto.getId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với id = " + dto.getId()));
         // cập nhật
-        entity.setFullName(dto.getName());
+        entity.setFullName(dto.getFullName());
         entity.setAddress(dto.getAddress());
         entity.setTaxCode(dto.getTaxCode());
         entity.setBankName(dto.getBankName());
@@ -59,6 +67,14 @@ public class CustomerServiceImpl implements ICustomerService {
     @Override
     public void delete(Long id) {
         repo.deleteById(id);
+    }
+    @Override
+    @Transactional
+    public void updateStatus(Long id, Customer.CustomerStatus status) {
+        Customer customer = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với id = " + id));
+        customer.setStatus(status);
+        repo.save(customer);
     }
 
     @Override
