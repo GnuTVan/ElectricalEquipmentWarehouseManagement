@@ -76,6 +76,7 @@
                         <th class="p-3 border">Nhà cung cấp</th>
                         <th class="p-3 border text-right">Tổng SL</th>
                         <th class="p-3 border text-right">Tổng tiền</th>
+                        <th class="p-3 border">Chi tiết</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -87,9 +88,14 @@
                         <td class="p-3 border text-right" th:text="${r.totalQuantity}">10</td>
                         <td class="p-3 border text-right text-green-600 font-semibold"
                             th:text="${#numbers.formatDecimal(r.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'">100,000 ₫</td>
+                        <td class="p-3 border text-center">
+                            <a th:href="@{'/admin/reports/warehouse-receipt/' + ${r.receiptCode}}"
+                               class="text-blue-600 hover:underline text-sm">Xem</a>
+                        </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(reportList)}">
                         <td colspan="6" class="p-4 text-center text-gray-500">Không có dữ liệu</td>
+
                     </tr>
                     </tbody>
                 </table>

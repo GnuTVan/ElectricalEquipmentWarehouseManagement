@@ -3,6 +3,10 @@ package com.eewms.controller;
 import com.eewms.dto.report.WarehouseReceiptReportDTO;
 import com.eewms.entities.Supplier;
 import com.eewms.entities.Warehouse;
+import com.eewms.entities.WarehouseReceipt;
+import com.eewms.entities.WarehouseReceiptItem;
+import com.eewms.repository.warehouseReceipt.WarehouseReceiptItemRepository;
+import com.eewms.repository.warehouseReceipt.WarehouseReceiptRepository;
 import com.eewms.services.IWarehouseReceiptService;
 import com.eewms.repository.SupplierRepository;
 import com.eewms.repository.WarehouseRepository;
@@ -13,6 +17,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.InputStream;
@@ -26,6 +31,8 @@ public class StatisticReceiptController {
     private final IWarehouseReceiptService warehouseReceiptService;
     private final SupplierRepository supplierRepository;
     private final WarehouseRepository warehouseRepository;
+    private final WarehouseReceiptRepository warehouseReceiptRepository;
+    private final WarehouseReceiptItemRepository warehouseReceiptItemRepository;
 
     @GetMapping("/admin/reports/warehouse-receipt")
     public String showReportPage(
@@ -79,5 +86,15 @@ public class StatisticReceiptController {
         excel.transferTo(response.getOutputStream());
     }
 
+    @GetMapping("/admin/reports/warehouse-receipt/{code}")
+    public String viewReceiptDetail(@PathVariable String code, Model model) {
+        WarehouseReceipt receipt = warehouseReceiptRepository.findByCode(code)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu nhập"));
+        List<WarehouseReceiptItem> items = warehouseReceiptItemRepository.findByWarehouseReceipt(receipt);
+
+        model.addAttribute("receipt", receipt);
+        model.addAttribute("items", items);
+        return "report-warehouse-receipt-detail";
+    }
 
 }
