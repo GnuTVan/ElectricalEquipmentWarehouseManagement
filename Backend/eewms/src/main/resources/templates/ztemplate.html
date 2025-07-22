@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/common-head :: commonHead('Danh sách sản phẩm')}"></head>
+
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <!-- Sidebar fragment -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+    <!-- Main Content -->
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <!-- Header -->
+        <div th:replace="~{fragments/header :: header}"></div>
+    </main>
+</div>
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+
+</body>
+</html>

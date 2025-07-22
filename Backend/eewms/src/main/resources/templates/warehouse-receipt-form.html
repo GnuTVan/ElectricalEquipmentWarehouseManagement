@@ -1,11 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Tạo phiếu nhập kho</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
-</head>
+<head th:replace="~{fragments/common-head :: commonHead('Danh sách sản phẩm')}"></head>
+
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
     <!-- Sidebar -->
@@ -95,5 +91,7 @@
         </form>
     </main>
 </div>
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer}" class="hidden"></div>
 </body>
 </html>

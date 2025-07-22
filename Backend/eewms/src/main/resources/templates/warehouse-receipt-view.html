@@ -1,12 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Chi tiết phiếu nhập kho</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+<head th:replace="~{fragments/common-head :: commonHead('Chi tiết phiếu nhập kho')}"></head>
 
-</head>
 <body class="bg-gray-100 font-sans">
 <div class="flex min-h-screen">
     <!-- Sidebar -->
@@ -92,6 +87,9 @@
         </div>
     </main>
 </div>
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
+
 <script>
     const btn = document.getElementById("userMenuBtn");
     const dropdown = document.getElementById("userMenuDropdown");
