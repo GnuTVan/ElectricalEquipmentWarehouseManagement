@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="commonHead(title)">
+    <meta charset="UTF-8">
+    <title th:text="${title}">EEWMS</title>
+
+    <!-- ✅ CSRF Token -->
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+
+    <!-- ✅ Tailwind (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- ✅ Remix Icon (local) -->
+    <link th:href="@{/assets/css/remixicon.css}" rel="stylesheet" />
+
+    <!-- ✅ Google Fonts + Custom scrollbar -->
+    <link th:href="@{/assets/css/app.css}" rel="stylesheet" />
+</head>
+</html>
