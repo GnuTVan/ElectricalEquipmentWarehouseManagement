@@ -10,6 +10,13 @@
         body {
             font-family: 'Be Vietnam Pro', sans-serif;
         }
+        .sidebar-nav::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background-color: #4a5568;
+            border-radius: 20px;
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -311,7 +318,8 @@
 
     </main>
 </div>
-
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
 
 <script>
     const openAddBtn = document.getElementById('openAddModal');

@@ -4,9 +4,14 @@
     <footer class="bg-white shadow py-3">
         <div class="container-fluid">
             <div class="row align-items-center">
-                <div class="col">           
+                <div class="col">
                     <div class="text-sm-start text-center">
-                        <p class="mb-0 text-muted"><script>document.write(new Date().getFullYear())</script> © EEWMS. Design <i class="mdi mdi-heart text-danger"></i> by <a href="../../../index.html" target="_blank" class="text-reset">G87</a>.</p>
+                        <p class="mb-0 text-muted">
+                            <script>document.write(new Date().getFullYear())</script>
+                            © EEWMS. Design <i class="mdi mdi-heart text-danger"></i> by <a href="../../../index.html"
+                                                                                            target="_blank"
+                                                                                            class="text-reset">G87</a>.
+                        </p>
                     </div>
                 </div><!--end col-->
             </div><!--end row-->
@@ -14,69 +19,15 @@
     </footer><!--end footer-->
     <!-- End -->
     <script th:src="@{/assets/js/bootstrap.bundle.min.js}"></script>
+    <!--Custom scroll bar-->
     <script th:src="@{/assets/js/simplebar.min.js}"></script>
+    <!--Biểu đồ(giữ lại)-->
     <script th:src="@{/assets/js/apexcharts.min.js}"></script>
     <script th:src="@{/assets/js/columnchart.init.js}"></script>
+
     <script th:src="@{/assets/js/feather.min.js}"></script>
     <script th:src="@{/assets/js/app.js}"></script>
-
-<!--    JS trượt sidebar -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const toggleBtn = document.getElementById("toggleSidebarBtn");
-            const sidebar = document.getElementById("sidebar");
-            const main = document.getElementById("mainContent");
-
-            toggleBtn?.addEventListener("click", () => {
-                const isHidden = sidebar.classList.toggle("-translate-x-full");
-                main.classList.toggle("ml-0", isHidden);
-                main.classList.toggle("ml-64", !isHidden);
-            });
-        });
-    </script>
-
-    <!-- JS toggle submenu trong sidebar -->
-    <script>
-        function toggleSubmenu() {
-            const submenu = document.getElementById("submenu");
-            const arrow = document.getElementById("submenu-arrow");
-            const isOpen = submenu.classList.contains("open");
-
-            if (isOpen) {
-                submenu.style.maxHeight = "0px";
-                submenu.classList.remove("open");
-                arrow.style.transform = "rotate(0deg)";
-                localStorage.setItem("submenuOpen", "false");
-            } else {
-                submenu.style.maxHeight = submenu.scrollHeight + "px";
-                submenu.classList.add("open");
-                arrow.style.transform = "rotate(-180deg)";
-                localStorage.setItem("submenuOpen", "true");
-            }
-        }
-        // load lại state đóng mở của button khi chuyển trang
-        document.addEventListener("DOMContentLoaded", function () {
-            const submenu = document.getElementById("submenu");
-            const arrow = document.getElementById("submenu-arrow");
-
-            if (localStorage.getItem("submenuOpen") === "true") {
-                // ✅ Tắt animation tạm thời
-                submenu.classList.add("open");
-                submenu.style.transition = "none";
-                submenu.style.maxHeight = submenu.scrollHeight + "px";
-
-                arrow.style.transition = "none";
-                arrow.style.transform = "rotate(-180deg)";
-
-                // ✅ Khôi phục animation sau 1 frame để dùng cho thao tác người dùng
-                requestAnimationFrame(() => {
-                    submenu.style.transition = ""; // sử dụng lại transition từ CSS
-                    arrow.style.transition = "";   // phục hồi xoay mượt
-                });
-            }
-        });
-    </script>
-
+    <script th:src="@{/assets/js/sidebar.js}"></script>
 </div>
 
 

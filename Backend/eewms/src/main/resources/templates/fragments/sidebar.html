@@ -47,15 +47,16 @@
             <li>
                 <div class="flex flex-col">
                     <button type="button"
+                            data-submenu-id="setting-submenu"
                             class="flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700 w-full"
-                            onclick="toggleSubmenu('setting-submenu')">
+                            onclick="toggleSubmenu(this)">
                         <div class="flex items-center">
                             <i class="ri-apps-line w-6 text-lg"></i>
                             <span>Quản lý chung</span>
                         </div>
                         <i id="submenu-arrow" class="ri-arrow-down-s-line transform transition-transform duration-300 ease-in-out origin-center"></i>
                     </button>
-                    <ul id="submenu" class="ml-8 mt-1 space-y-1 overflow-hidden transition-all duration-300 max-h-0">
+                    <ul id="setting-submenu" class="ml-8 mt-1 space-y-1 overflow-hidden transition-all duration-300 max-h-0">
                         <li>
                             <a th:href="@{/settings/UNIT}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Đơn vị</a>
                         </li>
@@ -69,19 +70,28 @@
                 </div>
             </li>
 
-            <!-- Đối tác -->
-            <li th:classappend="${activePage != null and activePage == 'suppliers'} ? 'bg-blue-600 text-white font-medium rounded-lg'">
-                <a th:href="@{/admin/suppliers}" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <i class="ri-group-line w-6 text-lg"></i>
-                    <span>Đối tác</span>
-                </a>
-            </li>
-
+            <!-- Đối tác (dropdown) -->
             <li>
-                <a href="#" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <i class="ri-price-tag-3-line w-6 text-lg"></i>
-                    <span>Bán hàng</span>
-                </a>
+                <div class="flex flex-col">
+                    <button type="button"
+                            data-submenu-id="partner-submenu"
+                            class="flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700 w-full"
+                            onclick="toggleSubmenu(this)">
+                        <div class="flex items-center">
+                            <i class="ri-group-line w-6 text-lg"></i>
+                            <span>Đối tác</span>
+                        </div>
+                        <i class="ri-arrow-down-s-line transform transition-transform duration-300 ease-in-out origin-center"></i>
+                    </button>
+                    <ul id="partner-submenu" class="ml-8 mt-1 space-y-1 overflow-hidden transition-all duration-300 max-h-0">
+                        <li>
+                            <a th:href="@{/admin/suppliers}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Nhà cung cấp</a>
+                        </li>
+                        <li>
+                            <a th:href="@{/customers}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Khách hàng</a>
+                        </li>
+                    </ul>
+                </div>
             </li>
             <!-- Mua hàng -->
             <li>

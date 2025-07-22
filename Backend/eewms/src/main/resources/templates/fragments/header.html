@@ -1,4 +1,3 @@
-
 <header th:fragment="header" class="bg-white shadow-sm p-4 flex justify-between items-center">
     <!-- Nút toggle sidebar -->
     <button id="toggleSidebarBtn" class="mr-4 text-gray-700 focus:outline-none">
@@ -8,7 +7,8 @@
     <!-- Search Bar -->
     <div class="relative w-full max-w-md">
         <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-        <input type="text" placeholder="Tìm kiếm..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input type="text" placeholder="Tìm kiếm..."
+               class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
     </div>
 
     <!-- User Menu -->
@@ -42,7 +42,7 @@
              class="hidden absolute right-0 mt-2 w-44 bg-white rounded-md shadow-lg z-20">
             <a th:href="@{/account/info}"
                class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-               Thông tin tài khoản
+                Thông tin tài khoản
             </a>
             <div class="border-t border-gray-200"></div>
             <form th:action="@{/logout}" method="post" th:csrf="true">
