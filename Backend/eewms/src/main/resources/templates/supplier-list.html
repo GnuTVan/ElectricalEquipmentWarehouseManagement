@@ -104,16 +104,16 @@
                                 <i class="ri-pencil-line"></i>
                             </button>
 
-                            <form th:action="@{'/admin/suppliers/toggle/' + ${supplier.id}}" method="post">
-                                <label class="inline-flex items-center cursor-pointer">
+                            <form th:action="@{'/admin/suppliers/toggle/' + ${supplier.id}}" method="post" class="status-toggle-form" th:data-id="${supplier.id}">
+                            <label class="inline-flex items-center cursor-pointer relative">
                                     <input type="checkbox" name="status"
                                            th:checked="${supplier.status}"
                                            onchange="this.form.submit()" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 relative transition duration-300">
-                                        <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
-                                    </div>
+                                    <div class="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors duration-300"></div>
+                                    <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 peer-checked:translate-x-5"></div>
                                 </label>
                             </form>
+
 
                         </div>
                     </td>
@@ -384,6 +384,35 @@
 
 
 </script>
+
+<script>
+    function toggleStatus(checkbox) {
+        const form = checkbox.closest('form');
+        const supplierId = form.dataset.id;
+
+        const isChecked = checkbox.checked;
+
+        fetch(`/admin/suppliers/toggle/${supplierId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').getAttribute("content")
+            },
+            body: `status=${isChecked}`
+        })
+        .then(res => {
+            if (!res.ok) {
+                alert("Cập nhật trạng thái thất bại.");
+                checkbox.checked = !isChecked; // revert nếu fail
+            }
+        })
+        .catch(err => {
+            alert("Có lỗi xảy ra.");
+            checkbox.checked = !isChecked;
+        });
+    }
+</script>
+
 
 
 
