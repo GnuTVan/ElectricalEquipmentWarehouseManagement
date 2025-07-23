@@ -18,6 +18,8 @@
             border-radius: 20px;
         }
     </style>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 </head>
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
@@ -86,16 +88,20 @@
                               class="inline-block mr-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs uppercase font-medium"></span>
                     </td>
                     <td class="px-4 py-3">
-                        <form th:action="@{/admin/users/{id}/toggle-status(id=${user.id})}" method="post">
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="checkbox" name="enabled" th:checked="${user.enabled}" onchange="this.form.submit()" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 relative transition duration-300">
-                                    <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
-                                </div>
-                                <span class="ml-2 text-gray-700 text-sm">Hoạt động</span>
+                        <div class="flex items-center gap-2">
+                            <label class="inline-flex relative items-center cursor-pointer">
+                                <input type="checkbox" th:checked="${user.enabled}"
+                                       th:data-id="${user.id}" class="sr-only peer" onchange="toggleUserStatus(this, event)">
+                                <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-green-500 transition duration-300"></div>
+                                <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition duration-200 transform peer-checked:translate-x-5"></div>
                             </label>
-                        </form>
+                            <span class="text-sm font-medium text-gray-700 min-w-[120px] inline-block"
+                                  th:text="${user.enabled ? 'Đang hoạt động' : 'Ngưng hoạt động'}">
+                            </span>
+
+                        </div>
                     </td>
+
                     <td class="px-4 py-3 text-center">
                         <form th:action="@{/admin/users/reset-password/{id}(id=${user.id})}" method="post">
                             <button type="submit"
@@ -211,8 +217,36 @@
             dropdown?.classList.add("hidden");
         }
     });
+    function toggleUserStatus(checkbox, event) {
+    event.preventDefault(); // CHẶN hành vi mặc định gây nhảy
+
+    const userId = checkbox.dataset.id;
+    const newStatus = checkbox.checked;
+    const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+
+    fetch(`/admin/users/${userId}/toggle-status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            [csrfHeader]: csrfToken
+        },
+        body: JSON.stringify({ enabled: newStatus })
+    })
+    .then(res => res.ok ? res.text() : Promise.reject("Lỗi cập nhật"))
+    .then(() => {
+        const label = checkbox.closest("td").querySelector("span");
+        label.innerText = newStatus ? "Đang hoạt động" : "Ngưng hoạt động";
+    })
+    .catch(() => {
+        checkbox.checked = !checkbox.checked;
+        alert("Cập nhật trạng thái thất bại.");
+    });
+}
+
 
 </script>
+
 </body>
 </html>
 
