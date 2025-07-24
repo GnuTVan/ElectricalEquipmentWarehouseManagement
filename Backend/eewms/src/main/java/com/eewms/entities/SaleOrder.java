@@ -35,18 +35,27 @@ public class SaleOrder {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private SaleOrderStatus status = SaleOrderStatus.PENDING; // Mặc định là "Chờ nhận"
+    private SaleOrderStatus status = SaleOrderStatus.PENDING;
 
     @Column(columnDefinition = "TEXT")
-    private String description; // ✅ Thêm ghi chú đơn hàng
+    private String description;
 
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
+    @ManyToOne
+    @JoinColumn(name = "created_by")
+    private User createdByUser;
+
+    @OneToMany(mappedBy = "sale_order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    private List<SaleOrderDetail> details;
+
+
     public enum SaleOrderStatus {
-        PENDING("Chờ nhận"),
-        COMPLETED("Hoàn thành"),
-        CANCELLED("Hủy");
+        PENDING("Chờ lấy hàng"),
+        DELIVERIED("Đã giao hàng"),
+        COMPLETED("Hoàn thành");
 
         private final String label;
 
@@ -58,13 +67,5 @@ public class SaleOrder {
             return label;
         }
     }
-
-    @ManyToOne
-    @JoinColumn(name = "created_by")
-    private User createdByUser;
-
-    @OneToMany(mappedBy = "sale_order", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude
-    private List<SaleOrderDetail> details;
 
 }

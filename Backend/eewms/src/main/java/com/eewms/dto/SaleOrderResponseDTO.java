@@ -20,4 +20,5 @@ public class SaleOrderResponseDTO {
     private LocalDateTime orderDate;
     private BigDecimal totalAmount; // tổng tiền đơn hàng
     private List<SaleOrderDetailDTO> details;
+    private String createdBy;
 }

@@ -11,10 +11,7 @@ public interface ISaleOrderService {
     SaleOrderResponseDTO createOrder(SaleOrderRequestDTO dto, String createdByUsername);
     List<SaleOrderResponseDTO> getAllOrders();
     SaleOrderResponseDTO getById(Integer orderId);
-    void cancelOrder(Integer orderId);
-    boolean canApprove(Integer orderId);
-    @Transactional
-    void updateOrderStatus(Integer orderId, SaleOrder.SaleOrderStatus newStatus, String username);
-    List<SaleOrderResponseDTO> searchByKeyword(String keyword); // THÊM
-
+    void updateOrderStatus(Integer orderId, SaleOrder.SaleOrderStatus newStatus);
+    List<SaleOrderResponseDTO> searchByKeyword(String keyword);
+    SaleOrder getOrderEntityById(Integer id); // thêm để dùng tạo phiếu
 }

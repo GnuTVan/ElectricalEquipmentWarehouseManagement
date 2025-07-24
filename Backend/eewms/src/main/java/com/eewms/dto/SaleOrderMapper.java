@@ -37,7 +37,9 @@ public class SaleOrderMapper {
                 .status(order.getStatus())
                 .orderDate(order.getOrderDate())
                 .details(detailDTOs)
-                .totalAmount(order.getTotalAmount()) // lấy từ entity
+                .totalAmount(order.getTotalAmount())
+                .createdBy(order.getCreatedByUser() != null ? order.getCreatedByUser().getUsername() : "") // 🆕 thêm
                 .build();
     }
+
 }

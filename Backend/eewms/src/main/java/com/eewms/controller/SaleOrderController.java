@@ -4,6 +4,7 @@ import com.eewms.dto.SaleOrderRequestDTO;
 import com.eewms.dto.SaleOrderResponseDTO;
 import com.eewms.entities.SaleOrder;
 import com.eewms.services.ICustomerService;
+import com.eewms.services.IGoodIssueService;
 import com.eewms.services.IProductServices;
 import com.eewms.services.ISaleOrderService;
 import jakarta.validation.Valid;
@@ -26,6 +27,7 @@ public class SaleOrderController {
     private final ISaleOrderService saleOrderService;
     private final ICustomerService customerService;
     private final IProductServices productService;
+    private final IGoodIssueService goodIssueService;
 
     // --- HIỂN THỊ TẤT CẢ ĐƠN ---
     @GetMapping
@@ -48,14 +50,13 @@ public class SaleOrderController {
     }
 
 
-
     // --- TẠO MỚI (nếu bạn dùng form tạo đơn) ---
+    // Tạo đơn
     @PostMapping("/create")
     public String createOrder(@ModelAttribute("orderForm") @Valid SaleOrderRequestDTO dto,
                               BindingResult result,
                               Model model,
                               RedirectAttributes ra) {
-
         if (result.hasErrors()) {
             model.addAttribute("saleOrderForm", dto);
             model.addAttribute("hasFormError", true);
@@ -76,32 +77,56 @@ public class SaleOrderController {
         return "redirect:/sale_orders";
     }
 
-    // --- DUYỆT ĐƠN (MANAGER Duyệt: Pending → Completed) ---
-    @PostMapping("/{id}/approve")
-    public String approveOrder(@PathVariable Integer id,
-                               Principal principal,
-                               RedirectAttributes ra) {
-        try {
-            String username = principal.getName();
-            saleOrderService.updateOrderStatus(id, SaleOrder.SaleOrderStatus.COMPLETED, username);
-            ra.addFlashAttribute("success", "Duyệt đơn thành công.");
-        } catch (Exception e) {
-            ra.addFlashAttribute("error", e.getMessage());
+    // GET – hiển thị form sửa
+    @GetMapping("/{id}/edit")
+    public String editOrder(@PathVariable Integer id, Model model) {
+        SaleOrderResponseDTO dto = saleOrderService.getById(id);
+        if (dto.getStatus() != SaleOrder.SaleOrderStatus.PENDING) {
+            model.addAttribute("error", "Chỉ đơn hàng ở trạng thái 'Chờ lấy hàng' mới được sửa.");
+            return "redirect:/orders";
         }
-        return "redirect:/sale_orders";
+        model.addAttribute("saleOrder", dto);
+        return "sale_orders/edit";
     }
 
-    // --- HỦY ĐƠN ---
-    @PostMapping("/{id}/cancel")
-    public String cancelOrder(@PathVariable Integer id,
+    // POST – xử lý form
+    @PostMapping("/{id}/edit")
+    public String updateOrder(@PathVariable Integer id,
+                              @RequestParam SaleOrder.SaleOrderStatus status,
                               RedirectAttributes ra) {
         try {
-            saleOrderService.cancelOrder(id);
-            ra.addFlashAttribute("success", "Hủy đơn thành công.");
+            saleOrderService.updateOrderStatus(id, status);
+            ra.addFlashAttribute("success", "Cập nhật đơn hàng thành công.");
         } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());
         }
-        return "redirect:/sale_orders";
+        return "redirect:/orders";
+    }
+
+//    // --- HỦY ĐƠN ---
+//    @PostMapping("/{id}/cancel")
+//    public String cancelOrder(@PathVariable Integer id,
+//                              RedirectAttributes ra) {
+//        try {
+//            saleOrderService.cancelOrder(id);
+//            ra.addFlashAttribute("success", "Hủy đơn thành công.");
+//        } catch (Exception e) {
+//            ra.addFlashAttribute("error", e.getMessage());
+//        }
+//        return "redirect:/sale_orders";
+//    }
+
+    @PostMapping("/{id}/create-gin")
+    public String createGIN(@PathVariable Integer id, RedirectAttributes ra) {
+        try {
+            SaleOrder order = saleOrderService.getOrderEntityById(id);
+            goodIssueService.createFromOrder(order);
+            saleOrderService.updateOrderStatus(id, SaleOrder.SaleOrderStatus.DELIVERIED);
+            ra.addFlashAttribute("success", "Tạo phiếu xuất kho thành công.");
+        } catch (Exception e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/orders";
     }
 
     // --- XEM CHI TIẾT 1 ĐƠN ---
@@ -111,4 +136,6 @@ public class SaleOrderController {
         model.addAttribute("saleOrder", saleOrder);
         return "sale_orders/detail"; // Thymeleaf view
     }
+
+
 }

@@ -17,8 +17,8 @@ public class GoodIssueNoteDTO {
     private String customerName;
     private String createdBy;
     private LocalDateTime issueDate;
-    private GoodIssueNote.GinStatus status;
     private String description;
-    private BigDecimal totalAmount; // Tổng tiền phiếu xuất
+    private BigDecimal totalAmount;
     private List<GoodIssueDetailDTO> details;
 }
+

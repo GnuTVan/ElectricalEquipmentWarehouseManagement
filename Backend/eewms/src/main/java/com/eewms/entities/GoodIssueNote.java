@@ -23,7 +23,6 @@ public class GoodIssueNote {
     private Long ginId;
 
     @Column(name = "gin_code", length = 50, unique = true, nullable = false)
-    @NotBlank(message = "GIN code cannot be blank")
     private String ginCode;
 
     @Column(columnDefinition = "TEXT")
@@ -32,12 +31,11 @@ public class GoodIssueNote {
     private LocalDateTime issueDate;
 
     @ManyToOne
-    @JoinColumn(name = "customer", nullable = true)
+    @JoinColumn(name = "customer")
     private Customer customer;
 
     @ManyToOne
     @JoinColumn(name = "created_by", nullable = false)
-    @NotNull(message = "Created by is required")
     private User createdBy;
 
     @OneToMany(mappedBy = "goodIssueNote", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -45,27 +43,5 @@ public class GoodIssueNote {
 
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount = BigDecimal.ZERO;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = true)
-    private GinStatus status = GinStatus.PENDING;
-
-    public enum GinStatus {
-        PENDING("Chờ nhận"),
-        IN_PROGRESS("Đã nhập một phần"),
-        COMPLETED("Hoàn thành"),
-        CANCELED("Hủy");
-
-        private final String label;
-
-        GinStatus(String label) {
-            this.label = label;
-        }
-
-        public String getLabel() {
-            return label;
-        }
-    }
-
 }
 

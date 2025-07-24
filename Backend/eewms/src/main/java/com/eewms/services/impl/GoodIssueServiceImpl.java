@@ -20,7 +20,6 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
 
     private final GoodIssueNoteRepository goodIssueRepository;
     private final UserRepository userRepository;
-//    private final GoodIssueDetailRepository goodIssueDetailRepo;
 
     @Override
     public GoodIssueNote createFromOrder(SaleOrder order) {
@@ -37,10 +36,9 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
         note.setCustomer(order.getCustomer());
         note.setDescription("Phiếu xuất từ đơn hàng #" + order.getSoCode());
         note.setIssueDate(LocalDateTime.now());
-        note.setStatus(GoodIssueNote.GinStatus.PENDING);
         note.setCreatedBy(currentUser);
 
-        // Tạo danh sách chi tiết từ OrderDetail
+        // Tạo danh sách chi tiết
         List<GoodIssueDetail> details = order.getDetails().stream().map(orderDetail -> {
             return GoodIssueDetail.builder()
                     .goodIssueNote(note)
@@ -50,7 +48,6 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
                     .build();
         }).toList();
 
-        // Gán và tính tổng tiền
         note.setDetails(details);
         BigDecimal total = details.stream()
                 .map(d -> d.getPrice().multiply(BigDecimal.valueOf(d.getQuantity())))
@@ -65,3 +62,4 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
         return String.format("GIN%05d", count);
     }
 }
+

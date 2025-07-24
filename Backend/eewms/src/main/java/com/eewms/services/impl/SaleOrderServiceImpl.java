@@ -54,9 +54,6 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
                 throw new RuntimeException("Không đủ tồn kho cho sản phẩm: " + product.getName());
             }
 
-            product.setQuantity(product.getQuantity() - item.getOrderedQuantity());
-            productRepo.save(product);
-
             SaleOrderDetail detail = SaleOrderMapper.toOrderDetail(item, product);
             detail.setSale_order(saleOrder);
             detailList.add(detail);
@@ -69,10 +66,9 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         saleOrder.setTotalAmount(totalAmount);
         orderRepo.save(saleOrder);
 
-        goodIssueService.createFromOrder(saleOrder);
-
         return SaleOrderMapper.toOrderResponseDTO(saleOrder);
     }
+
 
     @Override
     public List<SaleOrderResponseDTO> getAllOrders() {
@@ -88,49 +84,20 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         return SaleOrderMapper.toOrderResponseDTO(saleOrder);
     }
 
-    @Override
-    public void cancelOrder(Integer orderId) {
-        SaleOrder saleOrder = orderRepo.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
-        if (saleOrder.getStatus() == SaleOrder.SaleOrderStatus.COMPLETED) {
-            throw new RuntimeException("Không thể hủy đơn đã hoàn thành");
-        }
-        saleOrder.setStatus(SaleOrder.SaleOrderStatus.CANCELLED);
-        orderRepo.save(saleOrder);
-    }
-
-    @Override
-    public boolean canApprove(Integer orderId) {
-        SaleOrder saleOrder = orderRepo.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
-        return saleOrder.getStatus() == SaleOrder.SaleOrderStatus.PENDING;
-    }
-
     @Transactional
     @Override
-    public void updateOrderStatus(Integer orderId, SaleOrder.SaleOrderStatus newStatus, String username) {
+    public void updateOrderStatus(Integer orderId, SaleOrder.SaleOrderStatus newStatus) {
         SaleOrder saleOrder = orderRepo.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        if (saleOrder.getStatus() == SaleOrder.SaleOrderStatus.CANCELLED) {
-            throw new RuntimeException("Không thể cập nhật đơn đã hủy.");
-        }
-
-        if (saleOrder.getStatus() == SaleOrder.SaleOrderStatus.COMPLETED) {
-            throw new RuntimeException("Không thể cập nhật đơn đã hoàn thành.");
-        }
-
-        // Giả sử bạn kiểm tra quyền MANAGER bằng role của User
-        User user = userRepo.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if (newStatus == SaleOrder.SaleOrderStatus.COMPLETED && !user.getRoles().contains("ROLE_MANAGER")) {
-            throw new RuntimeException("Chỉ MANAGER mới có thể duyệt hoàn thành đơn.");
+        if (saleOrder.getStatus() != SaleOrder.SaleOrderStatus.PENDING) {
+            throw new RuntimeException("Chỉ đơn hàng ở trạng thái 'Chờ lấy hàng' mới được sửa.");
         }
 
         saleOrder.setStatus(newStatus);
         orderRepo.save(saleOrder);
     }
+
 
     @Override
     public List<SaleOrderResponseDTO> searchByKeyword(String keyword) {
@@ -144,4 +111,10 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         long count = orderRepo.count() + 1;
         return String.format("ORD%05d", count);
     }
+
+    @Override
+    public SaleOrder getOrderEntityById(Integer id) {
+        return orderRepo.findById(id).orElseThrow(() -> new RuntimeException("Order not found"));
+    }
+
 }

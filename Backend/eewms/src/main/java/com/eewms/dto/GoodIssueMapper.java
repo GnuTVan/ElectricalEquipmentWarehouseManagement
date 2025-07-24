@@ -30,9 +30,10 @@ public class GoodIssueMapper {
                 .customerName(gin.getCustomer() != null ? gin.getCustomer().getFullName() : "")
                 .createdBy(gin.getCreatedBy().getUsername())
                 .issueDate(gin.getIssueDate())
-                .status(gin.getStatus())
                 .description(gin.getDescription())
                 .details(detailDTOs)
+                .totalAmount(gin.getTotalAmount())
                 .build();
     }
 }
+
