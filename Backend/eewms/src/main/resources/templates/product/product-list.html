@@ -605,21 +605,6 @@
     }
 </script>
 
-<!--<script th:inline="javascript">-->
-<!--    const message = /*[[${message}]]*/ null;-->
-<!--    const messageType = /*[[${messageType}]]*/ null;-->
-
-<!--    if (message && messageType) {-->
-<!--        toastr.options.closeButton = true;-->
-<!--        toastr.options.positionClass = "toast-top-right";-->
-<!--        toastr[messageType](message);-->
-<!--    }-->
-<!--</script>-->
-<!-- Debug hiển thị flash attribute -->
-<div style="display:none">
-    <span id="debug-message" th:text="${message}">[message null]</span>
-    <span id="debug-type" th:text="${messageType}">[type null]</span>
-</div>
 <div th:replace="fragments/toast-script :: toast-script"></div>
 
 </body>
