@@ -83,10 +83,11 @@ public class ProductController {
 
             dto.setUploadedImageUrls(urls); // gán URL đã xử lý vào DTO, có thể rỗng
             productService.create(dto);
-            ra.addFlashAttribute("success", "Thêm sản phẩm thành công");
-
+            ra.addFlashAttribute("message", "Tạo thành công!");
+            ra.addFlashAttribute("messageType", "success");
         } catch (Exception ex) {
-            ra.addFlashAttribute("error", "Lỗi khi tạo sản phẩm: " + ex.getMessage());
+            ra.addFlashAttribute("message", "Lỗi khi tạo sản phẩm: " + ex.getMessage());
+            ra.addFlashAttribute("messageType", "error");
         }
 
         return "redirect:/products";
@@ -153,7 +154,8 @@ public class ProductController {
                     List<String> urls = validateAndUploadImages(List.of(image), redirect);
                     productForm.setUploadedImageUrls(urls);
                 } catch (Exception e) {
-                    redirect.addFlashAttribute("error", e.getMessage());
+                    redirect.addFlashAttribute("message", e.getMessage());
+                    redirect.addFlashAttribute("messageType", "error");
                     return "redirect:/products";
                 }
             }
@@ -164,10 +166,11 @@ public class ProductController {
             }
 
             productService.update(id, productForm);
-            redirect.addFlashAttribute("success", "Cập nhật sản phẩm thành công");
-
+            redirect.addFlashAttribute("message", "Cập nhật sản phẩm thành công");
+            redirect.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Lỗi khi cập nhật: " + e.getMessage());
+            redirect.addFlashAttribute("message", "Lỗi khi cập nhật: " + e.getMessage());
+            redirect.addFlashAttribute("messageType", "error");
         }
 
         return "redirect:/products";

@@ -4,17 +4,23 @@
     <meta charset="UTF-8">
     <title th:text="${title}">EEWMS</title>
 
-    <!-- ✅ CSRF Token -->
+    <!-- CSRF Token -->
     <meta name="_csrf" th:content="${_csrf.token}" />
     <meta name="_csrf_header" th:content="${_csrf.headerName}" />
 
-    <!-- ✅ Tailwind (CDN) -->
+    <!-- Tailwind (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- ✅ Remix Icon (local) -->
+    <!-- Remix Icon (local) -->
     <link th:href="@{/assets/css/remixicon.css}" rel="stylesheet" />
 
-    <!-- ✅ Google Fonts + Custom scrollbar -->
+    <!-- Google Fonts + Custom scrollbar -->
     <link th:href="@{/assets/css/app.css}" rel="stylesheet" />
+
+    <!-- Toastr CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet"/>
+
+    <!-- Toastr JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 </head>
 </html>
