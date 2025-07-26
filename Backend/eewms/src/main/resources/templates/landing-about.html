@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Giới thiệu công ty</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+<!-- Dùng fragment header -->
+<div th:replace="~{fragments/landing-header :: landingHeader}"></div>
+
+<!-- Nội dung giới thiệu -->
+<section class="max-w-4xl mx-auto px-6 py-12 bg-white shadow rounded my-8">
+  <h2 class="text-2xl font-bold mb-4">Giới thiệu về công ty</h2>
+  <p class="mb-2"><strong>CÔNG TY TNHH XÂY DỰNG THƯƠNG MẠI THIẾT BỊ ĐIỆN HẢI PHÒNG</strong></p>
+  <p class="mb-2">Địa chỉ: Số 46, Phố chợ Đôn, Nghĩa Xá, Quận Lê Chân, Tp Hải Phòng</p>
+  <p class="mb-2">Người đại diện: Lại Văn Khanh</p>
+  <p class="mb-2">Số ĐKKD: 0201624632 do Sở KHĐT Tp. Hải Phòng cấp ngày 09/03/2015</p>
+  <p class="mb-2">Hotline: 0936.841.799</p>
+  <p class="mb-2">Email: sale@thietbidienhp.com</p>
+
+  <hr class="my-6">
+
+  <h3 class="text-xl font-semibold mb-4">Cam kết dịch vụ</h3>
+  <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+    <div>
+      <img src="https://thietbivesinhroyal.vn/wp-content/uploads/2018/10/ft-icon-01.png" alt="Chất lượng" class="mx-auto mb-2 w-12">
+      <p class="font-semibold">Cam kết chất lượng</p>
+      <p class="text-sm text-gray-600">Sản phẩm chính hãng, uy tín lâu năm</p>
+    </div>
+    <div>
+      <img src="https://thietbivesinhroyal.vn/wp-content/uploads/2018/10/ft-icon-02.png" alt="Giao hàng" class="mx-auto mb-2 w-12">
+      <p class="font-semibold">Giao hàng miễn phí</p>
+      <p class="text-sm text-gray-600">Trong nội thành Hải Phòng</p>
+    </div>
+    <div>
+      <img src="https://thietbivesinhroyal.vn/wp-content/uploads/2018/10/ft-icon-03.png" alt="Hỗ trợ" class="mx-auto mb-2 w-12">
+      <p class="font-semibold">Tư vấn kỹ thuật</p>
+      <p class="text-sm text-gray-600">Hỗ trợ lắp đặt và sử dụng</p>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
