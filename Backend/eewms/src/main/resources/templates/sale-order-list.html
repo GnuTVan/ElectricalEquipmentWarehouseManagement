@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head th:replace="~{fragments/common-head :: commonHead('Đơn hàng bán')}"></head>
+
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <!-- Main content -->
+    <main class="flex-1 ml-64 p-6">
+        <!-- Header -->
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <div th:if="${success}" id="alertSuccess" class="mb-4 bg-green-100 text-green-800 px-4 py-2 rounded">
+            <p th:text="${success}"></p>
+        </div>
+
+        <div th:if="${error}" class="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">
+            <i class="ri-error-warning-line mr-1"></i> <span th:text="${error}"></span>
+        </div>
+        <div th:if="${info}" class="bg-blue-100 text-blue-800 p-3 rounded mb-3">
+            <i class="ri-information-line mr-1"></i> <span th:text="${info}"></span>
+        </div>
+        <div th:if="${success}" class="bg-green-100 text-green-700 px-4 py-2 rounded mb-4">
+            <i class="ri-checkbox-circle-line mr-1"></i> <span th:text="${success}"></span>
+        </div>
+
+        <!-- Page Title + Button -->
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-bold text-gray-800">Danh sách đơn hàng bán</h1>
+            <a href="/sale-orders/create"
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center">
+                <i class="ri-add-line mr-1"></i> Thêm đơn hàng
+            </a>
+        </div>
+
+        <!-- Sale Order Table -->
+        <div class="overflow-x-auto bg-white rounded-lg shadow">
+            <table class="min-w-full table-auto text-sm">
+                <thead class="bg-gray-100 text-left">
+                <tr>
+                    <th class="px-4 py-3 font-semibold">STT</th>
+                    <th class="px-4 py-3 font-semibold">Mã đơn</th>
+                    <th class="px-4 py-3 font-semibold">Khách hàng</th>
+                    <th class="px-4 py-3 font-semibold">Ngày tạo</th>
+                    <th class="px-4 py-3 font-semibold">Người tạo</th>
+                    <th class="px-4 py-3 font-semibold">Tổng tiền</th>
+                    <th class="px-4 py-3 font-semibold">Trạng thái</th>
+                    <th class="px-4 py-3 font-semibold text-center">Hành động</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="order, iStat : ${sale_orders}" class="border-t">
+                    <td class="px-4 py-2" th:text="${iStat.index + 1}"></td>
+                    <td class="px-4 py-2 font-medium text-blue-600" th:text="${order.orderCode}"></td>
+                    <td class="px-4 py-2" th:text="${order.customerName}"></td>
+                    <td class="px-4 py-2" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
+                    <td class="px-4 py-2" th:text="${order.createdBy}"></td>
+                    <td class="px-4 py-2" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+                    <td class="px-4 py-2">
+            <span class="px-2 py-1 rounded text-xs font-medium"
+                  th:classappend="${order.status == 'CANCELLED'} ? 'bg-red-100 text-red-700' :
+                                 (${order.status == 'DELIVERIED'} ? 'bg-yellow-100 text-yellow-700' :
+                                 (${order.status == 'COMPLETED'} ? 'bg-green-100 text-green-700' :
+                                 'bg-gray-100 text-gray-700'))"
+                  th:text="${order.status}">
+            </span>
+                    </td>
+                    <td class="px-4 py-2 text-center">
+                        <div class="flex justify-center items-center space-x-2">
+                            <a th:href="@{/sale-orders/{id}/edit(id=${order.orderId})}"
+                               class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded shadow">
+                                <i class="ri-edit-line text-base"></i>
+                                Sửa
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const alert = document.getElementById('alertSuccess');
+        if (alert) {
+            setTimeout(() => {
+                alert.classList.add('hidden');
+            }, 3000);
+        }
+    });
+</script>
+</body>
+</html>

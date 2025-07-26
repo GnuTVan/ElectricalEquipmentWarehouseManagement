@@ -19,6 +19,6 @@ public class GoodIssueNoteDTO {
     private LocalDateTime issueDate;
     private String description;
     private BigDecimal totalAmount;
+    private String saleOrderCode; // <== thêm dòng này
     private List<GoodIssueDetailDTO> details;
 }
-

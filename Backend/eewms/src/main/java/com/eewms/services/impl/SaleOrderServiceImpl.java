@@ -1,6 +1,6 @@
 package com.eewms.services.impl;
 
-import com.eewms.dto.SaleOrderItemDTO;
+import com.eewms.dto.SaleOrderDetailDTO;
 import com.eewms.dto.SaleOrderMapper;
 import com.eewms.dto.SaleOrderRequestDTO;
 import com.eewms.dto.SaleOrderResponseDTO;
@@ -24,14 +24,13 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
     private final ProductRepository productRepo;
     private final CustomerRepository customerRepo;
     private final UserRepository userRepo;
-    private final GoodIssueNoteRepository goodIssueNoteRepo;
-    private final IGoodIssueService goodIssueService;
 
     @Override
     @Transactional
     public SaleOrderResponseDTO createOrder(SaleOrderRequestDTO dto, String createdByUsername) {
         Customer customer = customerRepo.findById(dto.getCustomerId())
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
+
         User user = userRepo.findByUsername(createdByUsername)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -46,7 +45,7 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         List<SaleOrderDetail> detailList = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
 
-        for (SaleOrderItemDTO item : dto.getItems()) {
+        for (SaleOrderDetailDTO item : dto.getDetails()) {
             Product product = productRepo.findById(item.getProductId())
                     .orElseThrow(() -> new RuntimeException("Product not found"));
 
@@ -69,12 +68,11 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         return SaleOrderMapper.toOrderResponseDTO(saleOrder);
     }
 
-
     @Override
     public List<SaleOrderResponseDTO> getAllOrders() {
         return orderRepo.findAll().stream()
                 .map(SaleOrderMapper::toOrderResponseDTO)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -90,14 +88,24 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         SaleOrder saleOrder = orderRepo.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        if (saleOrder.getStatus() != SaleOrder.SaleOrderStatus.PENDING) {
-            throw new RuntimeException("Chỉ đơn hàng ở trạng thái 'Chờ lấy hàng' mới được sửa.");
+        SaleOrder.SaleOrderStatus currentStatus = saleOrder.getStatus();
+
+        if (currentStatus == SaleOrder.SaleOrderStatus.COMPLETED) {
+            throw new RuntimeException("Đơn hàng đã hoàn thành không thể cập nhật.");
         }
 
-        saleOrder.setStatus(newStatus);
+        if (currentStatus == SaleOrder.SaleOrderStatus.PENDING && newStatus == SaleOrder.SaleOrderStatus.DELIVERIED) {
+            // Trạng thái hợp lệ
+            saleOrder.setStatus(SaleOrder.SaleOrderStatus.DELIVERIED);
+        } else if (currentStatus == SaleOrder.SaleOrderStatus.DELIVERIED && newStatus == SaleOrder.SaleOrderStatus.COMPLETED) {
+            // Trạng thái hợp lệ
+            saleOrder.setStatus(SaleOrder.SaleOrderStatus.COMPLETED);
+        } else {
+            throw new RuntimeException("Không thể cập nhật từ " + currentStatus + " sang " + newStatus);
+        }
+
         orderRepo.save(saleOrder);
     }
-
 
     @Override
     public List<SaleOrderResponseDTO> searchByKeyword(String keyword) {
@@ -106,7 +114,6 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
                 .collect(Collectors.toList());
     }
 
-
     private String generateOrderCode() {
         long count = orderRepo.count() + 1;
         return String.format("ORD%05d", count);
@@ -114,7 +121,7 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
 
     @Override
     public SaleOrder getOrderEntityById(Integer id) {
-        return orderRepo.findById(id).orElseThrow(() -> new RuntimeException("Order not found"));
+        return orderRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
     }
-
 }

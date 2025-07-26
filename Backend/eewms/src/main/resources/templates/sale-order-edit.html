@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Chi tiết đơn hàng bán</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+</head>
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+  <!-- Sidebar -->
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+  <!-- Main -->
+  <main class="flex-1 ml-64 p-6">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div class="mb-2">
+      <h1 class="text-2xl font-bold text-gray-800">Chi tiết đơn hàng bán</h1>
+    </div>
+
+    <!-- Thông báo -->
+    <div th:if="${message}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4">
+      <span th:text="${message}"></span>
+    </div>
+
+    <div th:if="${error}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
+      <span th:text="${error}"></span>
+    </div>
+
+    <!-- Thông tin đơn -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div>
+        <label class="text-sm font-medium">Khách hàng</label>
+        <input type="text" th:value="${saleOrder.customerName}" readonly class="w-full border rounded px-3 py-2 bg-gray-100"/>
+      </div>
+      <div>
+        <label class="text-sm font-medium">Trạng thái</label>
+        <div th:if="${saleOrder.status.name() == 'DELIVERIED'}">
+          <form th:action="@{'/sale-orders/' + ${saleOrder.orderId} + '/edit'}" method="post" class="flex gap-2">
+            <select name="status"
+                    class="w-full border rounded px-3 py-2 bg-white text-gray-800">
+              <option th:each="opt : ${statusOptions}"
+                      th:value="${opt}"
+                      th:text="${opt}"
+                      th:selected="${opt == saleOrder.status}">
+              </option>
+            </select>
+            <button type="submit"
+                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+              Cập nhật
+            </button>
+          </form>
+        </div>
+        <div th:if="${saleOrder.status.name() != 'DELIVERIED'}">
+          <input type="text"
+                 th:value="${saleOrder.status}"
+                 readonly
+                 class="w-full border rounded px-3 py-2 bg-gray-100"/>
+        </div>
+      </div>
+      <div class="md:col-span-2">
+        <label class="text-sm font-medium">Ghi chú</label>
+        <textarea readonly class="w-full border rounded px-3 py-2 bg-gray-100" th:text="${saleOrder.description}"></textarea>
+      </div>
+    </div>
+
+    <!-- Danh sách sản phẩm -->
+    <div class="mb-6">
+      <h2 class="text-lg font-semibold mb-2">Danh sách sản phẩm</h2>
+      <table class="min-w-full bg-white rounded shadow text-sm">
+        <thead class="bg-gray-100">
+        <tr>
+          <th class="px-3 py-2 text-left">Sản phẩm</th>
+          <th class="px-3 py-2 text-center">Số lượng</th>
+          <th class="px-3 py-2 text-center">Tồn kho</th>
+          <th class="px-3 py-2 text-center">Đơn giá</th>
+          <th class="px-3 py-2 text-center">Thành tiền</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="item : ${saleOrder.details}" class="border-t product-row">
+          <td class="px-3 py-2" th:text="${item.productName}"></td>
+          <td class="text-center quantity-cell" th:text="${item.orderedQuantity}">0</td>
+          <td class="text-center" th:text="${item.availableQuantity}">0</td>
+          <td class="text-center price-cell" th:text="${item.price}">0</td>
+          <td class="text-right line-total-cell">0</td>
+        </tr>
+        </tbody>
+        <tfoot>
+        <tr>
+          <td colspan="4" class="text-right font-semibold px-3 py-2">Tổng tiền:</td>
+          <td id="grandTotalCell" class="text-right font-bold px-3 py-2">0</td>
+        </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- Hành động -->
+    <div class="text-right mt-4 space-x-2">
+      <a th:href="@{/sale-orders}" class="inline-block bg-gray-500 hover:bg-gray-600 text-white px-5 py-2 rounded">
+        <i class="ri-arrow-go-back-line mr-1"></i> Hủy & Quay lại
+      </a>
+
+      <a th:if="${saleOrder.status.name() == 'PENDING'}" th:href="@{'/good-issue/create-from-order/' + ${saleOrder.orderId}}"
+         class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded" id="createDeliveryBtn">
+        <i class="ri-truck-line mr-1"></i> Tạo phiếu xuất
+      </a>
+
+
+      <span th:if="${saleOrder.status.name() == 'COMPLETED'}" class="bg-green-100 text-green-800 px-4 py-2 rounded">
+    Đơn hàng đã hoàn tất
+  </span>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    calculateAllLineTotals();
+  });
+
+  function calculateAllLineTotals() {
+    const rows = document.querySelectorAll(".product-row");
+    let total = 0;
+
+    rows.forEach(row => {
+      const quantity = parseInt(row.querySelector(".quantity-cell").textContent) || 0;
+      const price = parseFloat(row.querySelector(".price-cell").textContent) || 0;
+      const lineTotal = quantity * price;
+
+      row.querySelector(".line-total-cell").textContent = lineTotal.toLocaleString("vi-VN");
+      total += lineTotal;
+    });
+
+    const totalCell = document.getElementById("grandTotalCell");
+    if (totalCell) {
+      totalCell.textContent = total.toLocaleString("vi-VN");
+    }
+  }
+</script>
+</body>
+</html>

@@ -27,12 +27,13 @@ public class GoodIssueMapper {
         return GoodIssueNoteDTO.builder()
                 .id(gin.getGinId())
                 .code(gin.getGinCode())
-                .customerName(gin.getCustomer() != null ? gin.getCustomer().getFullName() : "")
+                .customerName(gin.getCustomer().getFullName())
                 .createdBy(gin.getCreatedBy().getUsername())
                 .issueDate(gin.getIssueDate())
                 .description(gin.getDescription())
                 .details(detailDTOs)
                 .totalAmount(gin.getTotalAmount())
+                .saleOrderCode(gin.getSaleOrder().getSoCode())
                 .build();
     }
 }

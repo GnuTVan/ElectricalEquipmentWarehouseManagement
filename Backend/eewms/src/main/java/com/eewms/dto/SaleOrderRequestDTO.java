@@ -19,5 +19,5 @@ public class SaleOrderRequestDTO {
     private String description;
 
     @NotEmpty(message = "Cần có ít nhất 1 sản phẩm")
-    private List<@Valid SaleOrderItemDTO> items;
+    private List<@Valid SaleOrderDetailDTO> details;
 }

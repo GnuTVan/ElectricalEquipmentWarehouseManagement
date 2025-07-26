@@ -7,39 +7,46 @@ import java.util.stream.Collectors;
 
 public class SaleOrderMapper {
 
-    public static SaleOrderDetail toOrderDetail(SaleOrderItemDTO dto, Product product) {
-        return SaleOrderDetail.builder()
-                .product(product)
-                .orderedQuantity(dto.getOrderedQuantity())
-                .price(dto.getPrice()) // giá tại thời điểm đặt hàng
-                .build();
+    // Tạo SaleOrderDetail từ DTO + Product
+    public static SaleOrderDetail toOrderDetail(SaleOrderDetailDTO dto, Product product) {
+        SaleOrderDetail detail = new SaleOrderDetail();
+        detail.setProduct(product);
+        detail.setOrderedQuantity(dto.getOrderedQuantity());
+        detail.setPrice(dto.getPrice());
+        return detail;
     }
 
-    public static SaleOrderDetailDTO toOrderDetailDTO(SaleOrderDetail entity) {
+    // Tạo DTO sản phẩm từ chi tiết đơn hàng
+    public static SaleOrderDetailDTO toDetailDTO(SaleOrderDetail detail) {
+        Product product = detail.getProduct();
         return SaleOrderDetailDTO.builder()
-                .productCode(entity.getProduct().getCode())
-                .productName(entity.getProduct().getName())
-                .price(entity.getPrice())
-                .quantity(entity.getOrderedQuantity())
+                .productId(product.getId())
+                .productCode(product.getCode())
+                .productName(product.getName())
+                .price(detail.getPrice())
+                .orderedQuantity(detail.getOrderedQuantity())
+                .availableQuantity(product.getQuantity())
                 .build();
     }
 
+    // Map SaleOrder → SaleOrderResponseDTO
     public static SaleOrderResponseDTO toOrderResponseDTO(SaleOrder order) {
-        List<SaleOrderDetailDTO> detailDTOs = order.getDetails().stream()
-                .map(SaleOrderMapper::toOrderDetailDTO)
+        List<SaleOrderDetailDTO> detailsDTOs = order.getDetails().stream()
+                .map(SaleOrderMapper::toDetailDTO)
                 .collect(Collectors.toList());
 
         return SaleOrderResponseDTO.builder()
                 .orderId(order.getSoId())
                 .orderCode(order.getSoCode())
-                .customerName(order.getCustomer() != null ? order.getCustomer().getFullName() : "")
+                .customerName(order.getCustomer().getFullName())
                 .description(order.getDescription())
                 .status(order.getStatus())
                 .orderDate(order.getOrderDate())
-                .details(detailDTOs)
                 .totalAmount(order.getTotalAmount())
-                .createdBy(order.getCreatedByUser() != null ? order.getCreatedByUser().getUsername() : "") // 🆕 thêm
+                .createdBy(order.getCreatedByUser().getFullName())
+                .details(detailsDTOs)
                 .build();
     }
-
 }
+
+

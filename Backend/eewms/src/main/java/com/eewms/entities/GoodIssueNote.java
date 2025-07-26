@@ -38,6 +38,11 @@ public class GoodIssueNote {
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "so_id", nullable = false)
+    private SaleOrder saleOrder;
+
+
     @OneToMany(mappedBy = "goodIssueNote", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GoodIssueDetail> details;
 

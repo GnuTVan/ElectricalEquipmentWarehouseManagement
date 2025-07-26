@@ -24,4 +24,7 @@ public class Warehouse {
 
     @Column(nullable = false)
     private Boolean status = true;
+
+
 }
+

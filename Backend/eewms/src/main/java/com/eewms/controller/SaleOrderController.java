@@ -16,11 +16,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.security.Principal;
-import java.util.List;
-
 @Controller
-@RequestMapping("/orders")
+@RequestMapping("/sale-orders")
 @RequiredArgsConstructor
 public class SaleOrderController {
 
@@ -29,7 +26,7 @@ public class SaleOrderController {
     private final IProductServices productService;
     private final IGoodIssueService goodIssueService;
 
-    // --- HIỂN THỊ TẤT CẢ ĐƠN ---
+    // --- HIỂN THỊ DANH SÁCH ĐƠN ---
     @GetMapping
     public String listOrders(@RequestParam(value = "keyword", required = false) String keyword,
                              Model model) {
@@ -46,50 +43,58 @@ public class SaleOrderController {
         model.addAttribute("customers", customerService.findAll());
         model.addAttribute("products", productService.getAll());
         model.addAttribute("keyword", keyword);
-        return "sale_orders/list";
+        return "sale-order-list";
     }
 
+    // --- HIỂN THỊ FORM TẠO ĐƠN ---
+    @GetMapping("/create")
+    public String showCreateForm(Model model) {
+        model.addAttribute("saleOrderForm", new SaleOrderRequestDTO());
+        model.addAttribute("customers", customerService.findAll());
+        model.addAttribute("products", productService.getAll());
+        return "sale-order-form";
+    }
 
-    // --- TẠO MỚI (nếu bạn dùng form tạo đơn) ---
-    // Tạo đơn
+    // --- XỬ LÝ TẠO ĐƠN ---
     @PostMapping("/create")
-    public String createOrder(@ModelAttribute("orderForm") @Valid SaleOrderRequestDTO dto,
+    public String createOrder(@ModelAttribute("saleOrderForm") @Valid SaleOrderRequestDTO dto,
                               BindingResult result,
                               Model model,
                               RedirectAttributes ra) {
         if (result.hasErrors()) {
             model.addAttribute("saleOrderForm", dto);
-            model.addAttribute("hasFormError", true);
-            model.addAttribute("sale_orders", saleOrderService.getAllOrders());
             model.addAttribute("customers", customerService.findAll());
             model.addAttribute("products", productService.getAll());
-            return "sale_orders/list";
+            return "sale-order-form";
         }
 
         try {
             String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
-            saleOrderService.createOrder(dto, currentUsername);
-            ra.addFlashAttribute("success", "Tạo đơn hàng thành công");
+            SaleOrderResponseDTO createdOrder = saleOrderService.createOrder(dto, currentUsername);
+            ra.addFlashAttribute("success", "Tạo đơn hàng thành công. Mã đơn: " + createdOrder.getOrderCode());
         } catch (Exception ex) {
             ra.addFlashAttribute("error", "Lỗi khi tạo đơn hàng: " + ex.getMessage());
         }
 
-        return "redirect:/sale_orders";
+        return "redirect:/sale-orders";
     }
 
-    // GET – hiển thị form sửa
+    // --- HIỂN THỊ FORM SỬA ĐƠN ---
     @GetMapping("/{id}/edit")
     public String editOrder(@PathVariable Integer id, Model model) {
         SaleOrderResponseDTO dto = saleOrderService.getById(id);
-        if (dto.getStatus() != SaleOrder.SaleOrderStatus.PENDING) {
-            model.addAttribute("error", "Chỉ đơn hàng ở trạng thái 'Chờ lấy hàng' mới được sửa.");
-            return "redirect:/orders";
+        if (dto.getStatus() == SaleOrder.SaleOrderStatus.COMPLETED) {
+            model.addAttribute("error", "Đơn hàng đã hoàn thành, không thể chỉnh sửa.");
+            return "redirect:/sale-orders";
         }
         model.addAttribute("saleOrder", dto);
-        return "sale_orders/edit";
+        model.addAttribute("statusOptions", SaleOrder.SaleOrderStatus.values());
+        model.addAttribute("customers", customerService.findAll());
+        model.addAttribute("products", productService.getAll());
+        return "sale-order-edit";
     }
 
-    // POST – xử lý form
+    // --- XỬ LÝ FORM SỬA ĐƠN ---
     @PostMapping("/{id}/edit")
     public String updateOrder(@PathVariable Integer id,
                               @RequestParam SaleOrder.SaleOrderStatus status,
@@ -100,42 +105,6 @@ public class SaleOrderController {
         } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());
         }
-        return "redirect:/orders";
+        return "redirect:/sale-orders";
     }
-
-//    // --- HỦY ĐƠN ---
-//    @PostMapping("/{id}/cancel")
-//    public String cancelOrder(@PathVariable Integer id,
-//                              RedirectAttributes ra) {
-//        try {
-//            saleOrderService.cancelOrder(id);
-//            ra.addFlashAttribute("success", "Hủy đơn thành công.");
-//        } catch (Exception e) {
-//            ra.addFlashAttribute("error", e.getMessage());
-//        }
-//        return "redirect:/sale_orders";
-//    }
-
-    @PostMapping("/{id}/create-gin")
-    public String createGIN(@PathVariable Integer id, RedirectAttributes ra) {
-        try {
-            SaleOrder order = saleOrderService.getOrderEntityById(id);
-            goodIssueService.createFromOrder(order);
-            saleOrderService.updateOrderStatus(id, SaleOrder.SaleOrderStatus.DELIVERIED);
-            ra.addFlashAttribute("success", "Tạo phiếu xuất kho thành công.");
-        } catch (Exception e) {
-            ra.addFlashAttribute("error", e.getMessage());
-        }
-        return "redirect:/orders";
-    }
-
-    // --- XEM CHI TIẾT 1 ĐƠN ---
-    @GetMapping("/{id}")
-    public String viewOrder(@PathVariable Integer id, Model model) {
-        SaleOrderResponseDTO saleOrder = saleOrderService.getById(id);
-        model.addAttribute("saleOrder", saleOrder);
-        return "sale_orders/detail"; // Thymeleaf view
-    }
-
-
 }
