@@ -36,28 +36,8 @@
       </div>
       <div>
         <label class="text-sm font-medium">Trạng thái</label>
-        <div th:if="${saleOrder.status.name() == 'DELIVERIED'}">
-          <form th:action="@{'/sale-orders/' + ${saleOrder.orderId} + '/edit'}" method="post" class="flex gap-2">
-            <select name="status"
-                    class="w-full border rounded px-3 py-2 bg-white text-gray-800">
-              <option th:each="opt : ${statusOptions}"
-                      th:value="${opt}"
-                      th:text="${opt}"
-                      th:selected="${opt == saleOrder.status}">
-              </option>
-            </select>
-            <button type="submit"
-                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-              Cập nhật
-            </button>
-          </form>
-        </div>
-        <div th:if="${saleOrder.status.name() != 'DELIVERIED'}">
-          <input type="text"
-                 th:value="${saleOrder.status}"
-                 readonly
-                 class="w-full border rounded px-3 py-2 bg-gray-100"/>
-        </div>
+        <input type="hidden" id="orderStatus" th:value="${saleOrder.status}" />
+        <input type="text" th:value="${saleOrder.status}" readonly class="w-full border rounded px-3 py-2 bg-gray-100"/>
       </div>
       <div class="md:col-span-2">
         <label class="text-sm font-medium">Ghi chú</label>
@@ -107,6 +87,15 @@
         <i class="ri-truck-line mr-1"></i> Tạo phiếu xuất
       </a>
 
+      <div th:if="${saleOrder.status.name() == 'DELIVERIED'}">
+        <form th:action="@{'/sale-orders/' + ${saleOrder.orderId} + '/edit'}" method="post">
+          <input type="hidden" name="status" value="COMPLETED"/>
+          <button type="submit"
+                  class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded mt-1">
+            <i class="ri-truck-line mr-1"></i> Hoàn tất đơn hàng
+          </button>
+        </form>
+      </div>
 
       <span th:if="${saleOrder.status.name() == 'COMPLETED'}" class="bg-green-100 text-green-800 px-4 py-2 rounded">
     Đơn hàng đã hoàn tất
