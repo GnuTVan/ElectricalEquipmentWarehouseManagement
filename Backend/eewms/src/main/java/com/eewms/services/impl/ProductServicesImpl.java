@@ -20,6 +20,9 @@ public class ProductServicesImpl implements IProductServices {
     private final ProductRepository productRepo;
     private final SettingRepository settingRepo;
     private final ImagesRepository imageRepo;
+    private final ProductRepository productRepository;
+
+
 
     private final ImageUploadService imageUploadService;
 
@@ -251,4 +254,53 @@ public class ProductServicesImpl implements IProductServices {
 
         imageRepo.deleteAll(toDelete);
     }
+
+    @Override
+    public List<ProductDetailsDTO> getAllActiveProducts() {
+        List<Product> products = productRepository.findByStatus(Product.ProductStatus.ACTIVE);
+
+        return products.stream().map(product -> {
+            ProductDetailsDTO dto = new ProductDetailsDTO();
+            dto.setId(product.getId());
+            dto.setCode(product.getCode());
+            dto.setName(product.getName());
+            dto.setOriginPrice(product.getOriginPrice());
+            dto.setListingPrice(product.getListingPrice());
+            dto.setDescription(product.getDescription());
+            dto.setStatus(product.getStatus());
+            dto.setQuantity(product.getQuantity());
+
+            // Tự gán tên danh mục, đơn vị, thương hiệu nếu cần
+            dto.setCategory(SettingDTO.builder()
+                    .id(product.getCategory().getId())
+                    .name(product.getCategory().getName())
+                    .build());
+
+            dto.setBrand(SettingDTO.builder()
+                    .id(product.getBrand().getId())
+                    .name(product.getBrand().getName())
+                    .build());
+
+            dto.setUnit(SettingDTO.builder()
+                    .id(product.getUnit().getId())
+                    .name(product.getUnit().getName())
+                    .build());
+
+            // Nếu có ảnh, lấy ảnh đầu tiên hoặc toàn bộ
+            if (product.getImages() != null && !product.getImages().isEmpty()) {
+                List<ImageDTO> imageDTOs = product.getImages().stream().map(img ->
+                        ImageDTO.builder()
+                                .id(img.getId())
+                                .imageUrl(img.getImageUrl())
+                                .build()
+                ).toList();
+
+                dto.setImages(imageDTOs);
+            }
+
+            return dto;
+        }).toList();
+    }
+
+
 }

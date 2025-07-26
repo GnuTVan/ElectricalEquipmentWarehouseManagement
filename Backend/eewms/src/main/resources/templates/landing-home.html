@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Thiết Bị Điện Hải Phòng</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-100 font-sans">
+
+<!-- Header: dùng fragment -->
+<div th:replace="~{fragments/landing-header :: landingHeader}"></div>
+
+<!-- Banner / Slogan -->
+<section class="bg-blue-600 text-white text-center py-20">
+  <h2 class="text-4xl font-bold mb-4">Chuyên cung cấp thiết bị điện chính hãng, giá tốt</h2>
+  <p class="text-lg">Đối tác tin cậy của các công trình điện tại Hải Phòng và toàn quốc</p>
+</section>
+
+<!-- Thông tin công ty -->
+<section class="bg-white py-12 px-6 max-w-5xl mx-auto text-gray-800">
+  <h3 class="text-xl font-bold mb-2">CÔNG TY TNHH XÂY DỰNG THƯƠNG MẠI THIẾT BỊ ĐIỆN HẢI PHÒNG</h3>
+  <p>Địa chỉ: Số 46, Phố chợ Đôn, Nghĩa Xá, Quận Lê Chân, Tp Hải Phòng</p>
+  <p>Người đại diện: Lại Văn Khanh</p>
+  <p>Số ĐKKD: 0201624632 do Sở KHĐT Tp. Hải Phòng cấp ngày 09/03/2015</p>
+  <p>Hotline: 0936.841.799</p>
+  <p>Email: sale@thietbidienhp.com</p>
+
+  <!-- Cam kết -->
+  <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+    <div>
+      <img src="https://thietbivesinhroyal.vn/wp-content/uploads/2018/10/ft-icon-01.png" alt="Chất lượng" class="mx-auto mb-2 w-12">
+      <p class="font-semibold">Cam kết chất lượng</p>
+      <p class="text-sm text-gray-600">Sản phẩm chính hãng, uy tín lâu năm</p>
+    </div>
+    <div>
+      <img src="https://thietbivesinhroyal.vn/wp-content/uploads/2018/10/ft-icon-02.png" alt="Giao hàng" class="mx-auto mb-2 w-12">
+      <p class="font-semibold">Giao hàng miễn phí</p>
+      <p class="text-sm text-gray-600">Trong nội thành Hải Phòng</p>
+    </div>
+    <div>
+      <img src="https://thietbivesinhroyal.vn/wp-content/uploads/2018/10/ft-icon-03.png" alt="Hỗ trợ" class="mx-auto mb-2 w-12">
+      <p class="font-semibold">Tư vấn kỹ thuật</p>
+      <p class="text-sm text-gray-600">Hỗ trợ lắp đặt và sử dụng</p>
+    </div>
+  </div>
+</section>
+
+<!-- Nút back-to-top -->
+<button onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+        class="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700">
+  ↑
+</button>
+
+<!-- Footer -->
+<footer class="bg-gray-200 py-4 text-center text-sm text-gray-600">
+  &copy; 2025 Thiết Bị Điện Hải Phòng. All rights reserved.
+</footer>
+</body>
+</html>

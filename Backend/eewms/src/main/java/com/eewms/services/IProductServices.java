@@ -29,4 +29,7 @@ public interface IProductServices {
     //chỉ xóa ảnh cũ
     @Transactional
     void removeImagesByUrls(Integer productId, List<String> urls) throws InventoryException;
+
+    //landing-page
+    List<ProductDetailsDTO> getAllActiveProducts();
 }
