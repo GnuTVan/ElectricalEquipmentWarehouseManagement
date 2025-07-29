@@ -30,6 +30,9 @@ public class WarehouseReceiptServiceImpl implements IWarehouseReceiptService {
     @Override
     public void saveReceipt(WarehouseReceiptDTO dto, PurchaseOrder order, User user) {
         // 1. Tạo phiếu nhập kho
+        if (warehouseReceiptRepository.existsByPurchaseOrder(order)) {
+            throw new RuntimeException("Đơn hàng đã được nhập kho trước đó.");
+        }
         String newCode = generateCode();
         Warehouse warehouse = warehouseRepository.findById(dto.getWarehouseId())
                 .orElseThrow();
