@@ -19,7 +19,7 @@ public class LoginController {
         if (logout != null) {
             model.addAttribute("message", "Bạn đã đăng xuất thành công.");
         }
-        return "login";
+        return "auth/login";
     }
     @GetMapping("/dashboard")
     public String dashboard() {

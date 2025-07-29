@@ -45,7 +45,7 @@ public class WarehouseReceiptController {
     public String listReceipts(Model model) {
         List<WarehouseReceipt> receipts = warehouseReceiptRepository.findAll();
         model.addAttribute("receipts", receipts);
-        return "warehouse-receipt-list";
+        return "warehouse/warehouse-receipt-list";
     }
 
     @GetMapping("/form")
@@ -66,7 +66,7 @@ public class WarehouseReceiptController {
         model.addAttribute("warehouses", warehouses);
         model.addAttribute("warehouseReceiptDTO", new WarehouseReceiptDTO());
 
-        return "warehouse-receipt-form"; // trỏ đến templates/warehouse-receipt-form.html
+        return "warehouse/warehouse-receipt-form"; // trỏ đến templates/warehouse-receipt-form.html
     }
 
     @PostMapping("/save")
@@ -104,7 +104,7 @@ public class WarehouseReceiptController {
 
         model.addAttribute("receipt", receipt);
         model.addAttribute("items", items);
-        return "warehouse-receipt-view";
+        return "warehouse/warehouse-receipt-view";
     }
 
     @GetMapping("/export/{id}")

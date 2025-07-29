@@ -1,17 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="vi" th:inline="javascript">
-<head>
-    <meta charset="UTF-8">
-    <title>Báo cáo nhập kho</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600&display=swap');
-        body {
-            font-family: 'Be Vietnam Pro', sans-serif;
-        }
-    </style>
-</head>
+<head th:replace="~{fragments/common-head :: commonHead('Báo cáo nhập kho')}"></head>
+
 <body class="bg-gray-100 min-h-screen">
 
 <div class="flex min-h-screen">

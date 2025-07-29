@@ -23,13 +23,13 @@ public class LandingController {
     // Trang chủ
     @GetMapping("/landing-page")
     public String showHome() {
-        return "landing-home";
+        return "landing/landing-home";
     }
 
     // Trang giới thiệu
     @GetMapping("/gioi-thieu")
     public String showAboutPage() {
-        return "landing-about";
+        return "landing/landing-about";
     }
 
     // Trang sản phẩm (landing), hỗ trợ lọc
@@ -56,6 +56,6 @@ public class LandingController {
         model.addAttribute("keyword", keyword);
         model.addAttribute("selectedCategoryId", categoryId);
 
-        return "landing-products";
+        return "landing/landing-products";
     }
 }

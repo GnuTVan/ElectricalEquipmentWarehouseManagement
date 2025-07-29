@@ -43,7 +43,7 @@ public class SaleOrderController {
         model.addAttribute("customers", customerService.findAll());
         model.addAttribute("products", productService.getAll());
         model.addAttribute("keyword", keyword);
-        return "sale-order-list";
+        return "sale-order/sale-order-list";
     }
 
     // --- HIỂN THỊ FORM TẠO ĐƠN ---
@@ -52,7 +52,7 @@ public class SaleOrderController {
         model.addAttribute("saleOrderForm", new SaleOrderRequestDTO());
         model.addAttribute("customers", customerService.findAll());
         model.addAttribute("products", productService.getAllActiveProducts());
-        return "sale-order-form";
+        return "sale-order/sale-order-form";
     }
 
     // --- XỬ LÝ TẠO ĐƠN ---
@@ -65,7 +65,7 @@ public class SaleOrderController {
             model.addAttribute("saleOrderForm", dto);
             model.addAttribute("customers", customerService.findAll());
             model.addAttribute("products", productService.getAllActiveProducts());
-            return "sale-order-form";
+            return "sale-order/sale-order-form";
         }
 
         try {
@@ -94,7 +94,7 @@ public class SaleOrderController {
         model.addAttribute("statusOptions", SaleOrder.SaleOrderStatus.values());
         model.addAttribute("customers", customerService.findAll());
         model.addAttribute("products", productService.getAll());
-        return "sale-order-edit";
+        return "sale-order/sale-order-edit";
     }
 
     // --- XỬ LÝ FORM SỬA ĐƠN ---

@@ -35,7 +35,7 @@ public class ActivateController {
         }
 
         model.addAttribute("token", token);
-        return "activation-form";
+        return "auth/activation-form";
     }
 
     // Xử lý đổi mật khẩu và kích hoạt tài khoản

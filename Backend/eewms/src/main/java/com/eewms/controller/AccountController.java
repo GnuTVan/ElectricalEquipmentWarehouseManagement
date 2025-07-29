@@ -41,7 +41,7 @@ public class AccountController {
                 .build();
 
         model.addAttribute("profile", profileDTO);
-        return "profile";
+        return "auth/profile";
     }
 
     @PostMapping("/update-profile")
@@ -75,7 +75,7 @@ public class AccountController {
         // 🔍 Kiểm tra lỗi validate từ annotation
         if (result.hasErrors()) {
             model.addAttribute("profile", profileDTO);
-            return "profile"; // quay lại form
+            return "auth/profile"; // quay lại form
         }
 
         try {
@@ -85,7 +85,7 @@ public class AccountController {
                 if (!avatarFile.getContentType().startsWith("image/")) {
                     result.rejectValue("avatarUrl", "error.profileDTO", "File avatar phải là ảnh");
                     model.addAttribute("profile", profileDTO);
-                    return "profile";
+                    return "auth/profile";
                 }
 
                 String imageUrl = imageUploadService.uploadImage(avatarFile);
@@ -110,7 +110,7 @@ public class AccountController {
     @GetMapping("/change-password")
     public String showChangePasswordForm(Model model) {
         model.addAttribute("changePasswordDTO", new ChangePasswordDTO());
-        return "change-password";
+        return "auth/change-password";
     }
 
     @PostMapping("/change-password")
@@ -133,7 +133,7 @@ public class AccountController {
         // ✅ Nếu có lỗi validate từ DTO hoặc confirm password
         if (result.hasErrors()) {
             model.addAttribute("changePasswordDTO", dto); // giữ lại dữ liệu
-            return "change-password";
+            return "auth/change-password";
         }
 
         try {
@@ -144,7 +144,7 @@ public class AccountController {
             // ✅ Xử lý lỗi sai mật khẩu cũ, gắn lỗi thủ công
             result.rejectValue("oldPassword", "error.oldPassword", e.getMessage());
             model.addAttribute("changePasswordDTO", dto);
-            return "change-password";
+            return "auth/change-password";
         }
     }
 }
