@@ -49,9 +49,14 @@ public class WarehouseReceiptController {
     }
 
     @GetMapping("/form")
-    public String showCreateForm(@RequestParam("purchaseOrderId") Long purchaseOrderId, Model model) {
+    public String showCreateForm(@RequestParam("purchaseOrderId") Long purchaseOrderId, Model model,RedirectAttributes redirectAttributes) {
         PurchaseOrder order = purchaseOrderRepository.findById(purchaseOrderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        if (warehouseReceiptRepository.existsByPurchaseOrder(order)) {
+            redirectAttributes.addFlashAttribute("error", "Đơn hàng này đã được nhập kho!");
+            return "redirect:/admin/purchase-orders";
+        }
 
         List<PurchaseOrderItem> orderItems = purchaseOrderItemRepository.findByPurchaseOrderId(purchaseOrderId);
         List<Warehouse> warehouses = warehouseRepository.findAll();

@@ -12,6 +12,10 @@
   <main class="flex-1 ml-64 p-6">
     <!-- Header -->
     <div th:replace="~{fragments/header :: header}"></div>
+    <!-- thong bao loi -->
+    <div th:if="${error}" id="alertError" class="mb-4 bg-red-100 text-red-800 px-4 py-2 rounded">
+      <p th:text="${error}"></p>
+    </div>
 
     <div th:if="${message}" id="alertSuccess" class="mb-4 bg-green-100 text-green-800 px-4 py-2 rounded">
       <p th:text="${message}"></p>
@@ -124,6 +128,22 @@
   function closeModal() {
     document.getElementById('confirmModal').classList.add('hidden');
   }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const alert = document.getElementById('alertSuccess');
+    if (alert) {
+        setTimeout(() => {
+            alert.classList.add('hidden');
+        }, 3000);
+    }
+
+    const error = document.getElementById('alertError');
+    if (error) {
+        setTimeout(() => {
+            error.classList.add('hidden');
+        }, 3000);
+    }
+});
 
   const userBtn = document.getElementById('userMenuBtn');
   const dropdown = document.getElementById('userMenuDropdown');
