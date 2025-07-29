@@ -9,9 +9,11 @@
   <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
   <!-- Main content -->
-  <main class="flex-1 ml-64 p-6">
+  <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
     <!-- Header -->
     <div th:replace="~{fragments/header :: header}"></div>
+
+<!--    Bỏ cái này đi-->
     <!-- thong bao loi -->
     <div th:if="${error}" id="alertError" class="mb-4 bg-red-100 text-red-800 px-4 py-2 rounded">
       <p th:text="${error}"></p>
@@ -20,7 +22,7 @@
     <div th:if="${message}" id="alertSuccess" class="mb-4 bg-green-100 text-green-800 px-4 py-2 rounded">
       <p th:text="${message}"></p>
     </div>
-
+<div class="px-6 py-6">
     <!-- Page Title + Button -->
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-bold text-gray-800">Danh sách đơn hàng nhập</h1>
@@ -29,7 +31,7 @@
         <i class="ri-add-line mr-1"></i> Thêm đơn hàng
       </a>
     </div>
-
+</div>
     <!-- Purchase Order Table -->
     <div class="overflow-x-auto bg-white rounded-lg shadow">
       <table class="min-w-full table-auto text-sm">

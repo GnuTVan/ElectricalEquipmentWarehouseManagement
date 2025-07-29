@@ -9,16 +9,17 @@
     <div class="w-64 bg-white shadow-md" th:replace="~{fragments/sidebar :: sidebar}"></div>
 
     <!-- Main content -->
-    <div class="flex-1 p-6 overflow-y-auto bg-gray-100 ml-64">
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
         <!-- Header -->
         <div th:replace="~{fragments/header :: header}"></div>
 
         <!-- Nội dung -->
         <div class="max-w-full bg-white p-6 rounded shadow">
-            <h1 class="text-2xl font-bold text-blue-700 mb-6 border-b pb-2">Báo cáo nhập kho</h1>
+            <h1 class="text-2xl font-bold mb-6 border-b pb-2">Báo cáo nhập kho</h1>
 
             <!-- Form lọc -->
-            <form method="get" th:action="@{/admin/reports/warehouse-receipt}" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <form method="get" th:action="@{/admin/reports/warehouse-receipt}"
+                  class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                 <div>
                     <label class="block mb-1 text-sm font-medium text-gray-700">Từ ngày</label>
                     <input type="date" name="fromDate" class="w-full border rounded px-3 py-2 text-sm">
@@ -77,7 +78,8 @@
                         <td class="p-3 border" th:text="${r.supplierName}">cty A</td>
                         <td class="p-3 border text-right" th:text="${r.totalQuantity}">10</td>
                         <td class="p-3 border text-right text-green-600 font-semibold"
-                            th:text="${#numbers.formatDecimal(r.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'">100,000 ₫</td>
+                            th:text="${#numbers.formatDecimal(r.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'">100,000 ₫
+                        </td>
                         <td class="p-3 border text-center">
                             <a th:href="@{'/admin/reports/warehouse-receipt/' + ${r.receiptCode}}"
                                class="text-blue-600 hover:underline text-sm">Xem</a>
@@ -92,8 +94,10 @@
             </div>
         </div>
 
-    </div>
+    </main>
 </div>
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
 <script>
     const btn = document.getElementById("userMenuBtn");
     const dropdown = document.getElementById("userMenuDropdown");
