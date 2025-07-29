@@ -1,32 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title>Dashboard | Thiết bị điện Hải Phòng</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<head th:replace="~{fragments/common-head :: commonHead('Dashboard | Thiết bị điện Hải Phòng')}"></head>
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Css -->
-    <link href="../assets/css/style.min.css" rel="stylesheet" type="text/css" id="theme-opt" />
-
-    <!-- Remix Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
-        body {
-            font-family: 'Be Vietnam Pro', sans-serif;
-        }
-        .sidebar-nav::-webkit-scrollbar {
-            width: 4px;
-        }
-        .sidebar-nav::-webkit-scrollbar-thumb {
-            background-color: #4a5568;
-            border-radius: 20px;
-        }
-    </style>
-</head>
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
     <!-- Sidebar fragment -->
