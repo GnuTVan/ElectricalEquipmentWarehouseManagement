@@ -75,6 +75,19 @@
 </div>
 
 <script th:inline="javascript">
+    // cập nhật lại từng phần tử mỗi khi xóa hoặc thêm
+    function reindexAllRows() {
+        const rows = document.querySelectorAll('#itemTableBody tr');
+        rows.forEach((row, index) => {
+            row.querySelectorAll('select, input').forEach(input => {
+                if (input.name.includes('details')) {
+                    const name = input.name.replace(/\[\d+\]/, `[${index}]`);
+                    input.name = name;
+                }
+            });
+        });
+    }
+
     function getSelectedProductIds() {
         const selects = document.querySelectorAll('.product-select');
         return Array.from(selects)
@@ -95,13 +108,23 @@
 
     function refreshAllProductOptions() {
         const selects = document.querySelectorAll('.product-select');
+        const selectedValues = Array.from(selects)
+            .map(select => select.value)
+            .filter(val => val !== "");
 
-        selects.forEach(select => {
-            const currentValue = select.value;
-            select.innerHTML = getFilteredOptions(currentValue); // truyền id đang chọn vào để giữ lại
-            select.value = currentValue;
+        selects.forEach(currentSelect => {
+            const currentValue = currentSelect.value;
+            const allowedIds = selectedValues.filter(id => id !== currentValue);
+            // Render lại toàn bộ option
+            currentSelect.innerHTML = products
+                .filter(p => !allowedIds.includes(p.id.toString()))
+                .map(p => `<option value="${p.id}" data-price="${p.listingPrice}" data-stock="${p.quantity}">${p.name}</option>`)
+                .join('');
+
+            currentSelect.value = currentValue;
         });
     }
+
     const products = /*[[${products}]]*/ [];
 
     function addItemRow() {
@@ -145,8 +168,8 @@
             <span class="lineTotal">0</span>
         </td>
         <td class="px-3 py-2 text-center">
-            <button type="button" onclick="this.closest('tr').remove(); recalculateTotal(); refreshAllProductOptions();" class="text-red-600 text-lg">
-                <i class="ri-close-line"></i>
+            <button type="button" onclick="removeRow(this)" class="text-red-600 text-lg">
+            <i class="ri-close-line"></i>
             </button>
         </td>`;
 
@@ -156,6 +179,7 @@
         const select = row.querySelector('.product-select');
         updatePrice(select);
         recalculateTotal();
+        reindexAllRows();
     }
 
 
@@ -179,8 +203,16 @@
             warningBox.classList.add('hidden');
         }
         calculateTotal(priceInput);
+        refreshAllProductOptions();
     }
 
+    function removeRow(button) {
+        const row = button.closest('tr');
+        row.remove(); // xóa khỏi DOM
+        recalculateTotal();          // cập nhật tổng tiền
+        refreshAllProductOptions();  // cập nhật lại dropdown các dòng còn lại
+        reindexAllRows();
+    }
 
     function calculateTotal(inputElement) {
         const row = inputElement.closest('tr');
