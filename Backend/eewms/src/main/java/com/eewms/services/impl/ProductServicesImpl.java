@@ -301,6 +301,20 @@ public class ProductServicesImpl implements IProductServices {
             return dto;
         }).toList();
     }
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductDetailsDTO> searchByKeywordAndCategory(String keyword, Long categoryId) {
+        List<Product> products = productRepo.searchByKeywordAndCategory(keyword, categoryId);
+        return products.stream()
+                .map(p -> {
+                    try {
+                        return getById(p.getId());
+                    } catch (InventoryException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .collect(Collectors.toList());
+    }
 
 
 }

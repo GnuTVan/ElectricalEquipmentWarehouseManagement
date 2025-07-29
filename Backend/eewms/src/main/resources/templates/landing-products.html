@@ -13,18 +13,43 @@
 
 <!-- Nội dung -->
 <div class="flex px-6 py-8 gap-6">
+
   <!-- Sidebar: Danh mục -->
   <aside class="w-64 bg-white p-4 shadow rounded h-fit">
-    <h2 class="font-bold text-lg mb-3">DANH MỤC SẢN PHẨM</h2>
+    <a th:href="@{/san-pham}" class="font-bold text-lg mb-3 block text-blue-700 hover:underline">
+      DANH MỤC SẢN PHẨM
+    </a>
+
     <ul class="space-y-2 text-gray-700 text-sm">
       <li th:each="c : ${categories}">
-        <a href="#" th:text="${c.name}" class="block hover:underline">Tên danh mục</a>
+        <a href="#"
+           th:data-category-id="${c.id}"
+           th:text="${c.name}"
+           class="category-link block hover:underline"
+           th:classappend="${selectedCategoryId} == ${c.id} ? 'font-semibold text-blue-700 underline' : ''">
+        </a>
       </li>
     </ul>
   </aside>
 
   <!-- Danh sách sản phẩm -->
   <section class="flex-1">
+
+    <!-- Form tìm kiếm -->
+    <form method="get" th:action="@{/san-pham}" class="mb-6 flex gap-3 items-center">
+      <input type="text" name="keyword" id="keywordInput" placeholder="Tìm sản phẩm..."
+             th:value="${keyword}"
+             class="border border-gray-300 px-3 py-1 rounded w-64" />
+
+      <!-- Ẩn categoryId nếu đang lọc danh mục -->
+      <input type="hidden" name="filterCategory" th:value="${selectedCategoryId}" />
+
+      <button type="submit" class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700">
+        <i class="ri-search-line mr-1"></i> Tìm kiếm
+      </button>
+    </form>
+
+    <!-- Grid sản phẩm -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       <div th:each="p : ${products}" class="bg-white rounded shadow p-3">
         <!-- Ảnh đầu tiên -->
@@ -58,5 +83,32 @@
 <footer class="bg-gray-200 py-4 text-center text-sm text-gray-600 mt-8">
   &copy; 2025 Thiết Bị Điện Hải Phòng. All rights reserved.
 </footer>
+
+<!-- JavaScript cập nhật href khi click danh mục -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const keywordInput = document.getElementById("keywordInput");
+    const categoryLinks = document.querySelectorAll(".category-link");
+
+    categoryLinks.forEach(link => {
+      link.addEventListener("click", function (e) {
+        e.preventDefault(); // Ngăn điều hướng mặc định
+
+        const categoryId = this.getAttribute("data-category-id");
+        const keyword = keywordInput.value.trim();
+
+        // Tạo URL mới
+        let url = `/san-pham?filterCategory=${categoryId}`;
+        if (keyword !== "") {
+          url += `&keyword=${encodeURIComponent(keyword)}`;
+        }
+
+        // Điều hướng
+        window.location.href = url;
+      });
+    });
+  });
+</script>
+
 </body>
 </html>

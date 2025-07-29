@@ -17,7 +17,7 @@ public interface IProductServices {
     ProductDetailsDTO getById(Integer id) throws InventoryException;
     List<ProductDetailsDTO> getAll() throws InventoryException;
 
-    //toggle status
+    // toggle status
     void updateStatus(Integer id, Product.ProductStatus status) throws InventoryException;
 
     // để lấy options trong dropdown
@@ -26,10 +26,13 @@ public interface IProductServices {
     // tìm kiếm sản phẩm theo từ khóa
     List<ProductDetailsDTO> searchByKeyword(String keyword);
 
-    //chỉ xóa ảnh cũ
+    // tìm kiếm theo từ khóa kết hợp danh mục
+    List<ProductDetailsDTO> searchByKeywordAndCategory(String keyword, Long categoryId);
+
+    // chỉ xóa ảnh cũ
     @Transactional
     void removeImagesByUrls(Integer productId, List<String> urls) throws InventoryException;
 
-    //landing-page
+    // landing-page
     List<ProductDetailsDTO> getAllActiveProducts();
 }
