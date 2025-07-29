@@ -39,18 +39,21 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         saleOrder.setSoCode(orderCode);
         saleOrder.setCustomer(customer);
         saleOrder.setCreatedByUser(user);
-        saleOrder.setStatus(SaleOrder.SaleOrderStatus.PENDING);
-        saleOrder.setDescription(dto.getDescription());
+        saleOrder.setStatus(SaleOrder.SaleOrderStatus.PENDING); // luôn là pending ban đầu
 
         List<SaleOrderDetail> detailList = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
+        StringBuilder warningNote = new StringBuilder();
+        boolean hasInsufficientStock = false;
 
         for (SaleOrderDetailDTO item : dto.getDetails()) {
             Product product = productRepo.findById(item.getProductId())
                     .orElseThrow(() -> new RuntimeException("Product not found"));
 
             if (product.getQuantity() < item.getOrderedQuantity()) {
-                throw new RuntimeException("Không đủ tồn kho cho sản phẩm: " + product.getName());
+                hasInsufficientStock = true;
+                warningNote.append(String.format("- Sản phẩm %s thiếu hàng (YC: %d / Tồn: %d)\n",
+                        product.getName(), item.getOrderedQuantity(), product.getQuantity()));
             }
 
             SaleOrderDetail detail = SaleOrderMapper.toOrderDetail(item, product);
@@ -59,6 +62,13 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
 
             BigDecimal lineTotal = item.getPrice().multiply(BigDecimal.valueOf(item.getOrderedQuantity()));
             totalAmount = totalAmount.add(lineTotal);
+        }
+        // Gán mô tả nếu thiếu hàng
+
+        if (hasInsufficientStock) {
+            saleOrder.setDescription("Đơn hàng thiếu hàng, cần nhập thêm để hoàn thành:\n" + warningNote.toString().trim());
+        } else {
+            saleOrder.setDescription(dto.getDescription()); // nếu không thiếu, dùng mô tả gốc
         }
 
         saleOrder.setDetails(detailList);

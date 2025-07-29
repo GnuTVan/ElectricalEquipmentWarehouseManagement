@@ -20,4 +20,6 @@ public class SaleOrderRequestDTO {
 
     @NotEmpty(message = "Cần có ít nhất 1 sản phẩm")
     private List<@Valid SaleOrderDetailDTO> details;
+
+    private List<Long> comboIds;
 }

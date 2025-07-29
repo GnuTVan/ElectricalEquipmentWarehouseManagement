@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="vi">
-
 <head th:replace="~{fragments/common-head :: commonHead('Đơn hàng bán')}"></head>
 
 <body class="bg-gray-100 font-sans">
@@ -13,6 +12,7 @@
         <!-- Header -->
         <div th:replace="~{fragments/header :: header}"></div>
 
+        <!-- Flash Messages -->
         <div th:if="${success}" id="alertSuccess" class="mb-4 bg-green-100 text-green-800 px-4 py-2 rounded">
             <p th:text="${success}"></p>
         </div>
@@ -20,11 +20,13 @@
         <div th:if="${error}" class="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">
             <i class="ri-error-warning-line mr-1"></i> <span th:text="${error}"></span>
         </div>
+
+        <div th:if="${warning}" id="alertWarning" class="bg-yellow-100 text-yellow-800 px-4 py-2 rounded mb-4 border-l-4 border-yellow-500 shadow">
+            <i class="ri-alert-line mr-1"></i> <span th:text="${warning}"></span>
+        </div>
+
         <div th:if="${info}" class="bg-blue-100 text-blue-800 p-3 rounded mb-3">
             <i class="ri-information-line mr-1"></i> <span th:text="${info}"></span>
-        </div>
-        <div th:if="${success}" class="bg-green-100 text-green-700 px-4 py-2 rounded mb-4">
-            <i class="ri-checkbox-circle-line mr-1"></i> <span th:text="${success}"></span>
         </div>
 
         <!-- Page Title + Button -->
@@ -60,13 +62,13 @@
                     <td class="px-4 py-2" th:text="${order.createdBy}"></td>
                     <td class="px-4 py-2" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
                     <td class="px-4 py-2">
-            <span class="px-2 py-1 rounded text-xs font-medium"
-                  th:classappend="${order.status == 'CANCELLED'} ? 'bg-red-100 text-red-700' :
+                        <span class="px-2 py-1 rounded text-xs font-medium"
+                              th:classappend="${order.status == 'CANCELLED'} ? 'bg-red-100 text-red-700' :
                                  (${order.status == 'DELIVERIED'} ? 'bg-yellow-100 text-yellow-700' :
                                  (${order.status == 'COMPLETED'} ? 'bg-green-100 text-green-700' :
                                  'bg-gray-100 text-gray-700'))"
-                  th:text="${order.status}">
-            </span>
+                              th:text="${order.status}">
+                        </span>
                     </td>
                     <td class="px-4 py-2 text-center">
                         <div class="flex justify-center items-center space-x-2">
@@ -87,14 +89,19 @@
 <!-- Footer -->
 <div th:replace="~{fragments/footer :: footer}"></div>
 
+<!-- Auto-hide flash messages -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        const alert = document.getElementById('alertSuccess');
-        if (alert) {
-            setTimeout(() => {
-                alert.classList.add('hidden');
-            }, 3000);
-        }
+        const successAlert = document.getElementById('alertSuccess');
+        const warningAlert = document.getElementById('alertWarning');
+
+        [successAlert, warningAlert].forEach(alert => {
+            if (alert) {
+                setTimeout(() => {
+                    alert.classList.add('hidden');
+                }, 3000);
+            }
+        });
     });
 </script>
 </body>

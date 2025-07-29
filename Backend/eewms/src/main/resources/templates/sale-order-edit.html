@@ -31,6 +31,10 @@
     <!-- Thông tin đơn -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       <div>
+        <label class="text-sm font-medium">Mã đơn hàng</label>
+        <input type="text" th:value="${saleOrder.orderCode}" readonly class="w-full border rounded px-3 py-2 bg-gray-100"/>
+      </div>
+      <div>
         <label class="text-sm font-medium">Khách hàng</label>
         <input type="text" th:value="${saleOrder.customerName}" readonly class="w-full border rounded px-3 py-2 bg-gray-100"/>
       </div>
@@ -52,7 +56,7 @@
         <thead class="bg-gray-100">
         <tr>
           <th class="px-3 py-2 text-left">Sản phẩm</th>
-          <th class="px-3 py-2 text-center">Số lượng</th>
+          <th class="px-3 py-2 text-center">Số lượng bán ra</th>
           <th class="px-3 py-2 text-center">Tồn kho</th>
           <th class="px-3 py-2 text-center">Đơn giá</th>
           <th class="px-3 py-2 text-center">Thành tiền</th>
@@ -79,7 +83,7 @@
     <!-- Hành động -->
     <div class="text-right mt-4 space-x-2">
       <a th:href="@{/sale-orders}" class="inline-block bg-gray-500 hover:bg-gray-600 text-white px-5 py-2 rounded">
-        <i class="ri-arrow-go-back-line mr-1"></i> Hủy & Quay lại
+        <i class="ri-arrow-go-back-line mr-1"></i> Quay lại
       </a>
 
       <a th:if="${saleOrder.status.name() == 'PENDING'}" th:href="@{'/good-issue/create-from-order/' + ${saleOrder.orderId}}"

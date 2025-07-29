@@ -51,7 +51,7 @@ public class SaleOrderController {
     public String showCreateForm(Model model) {
         model.addAttribute("saleOrderForm", new SaleOrderRequestDTO());
         model.addAttribute("customers", customerService.findAll());
-        model.addAttribute("products", productService.getAll());
+        model.addAttribute("products", productService.getAllActiveProducts());
         return "sale-order-form";
     }
 
@@ -64,18 +64,21 @@ public class SaleOrderController {
         if (result.hasErrors()) {
             model.addAttribute("saleOrderForm", dto);
             model.addAttribute("customers", customerService.findAll());
-            model.addAttribute("products", productService.getAll());
+            model.addAttribute("products", productService.getAllActiveProducts());
             return "sale-order-form";
         }
 
         try {
             String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
             SaleOrderResponseDTO createdOrder = saleOrderService.createOrder(dto, currentUsername);
-            ra.addFlashAttribute("success", "Tạo đơn hàng thành công. Mã đơn: " + createdOrder.getOrderCode());
+            if (createdOrder.getDescription() != null && createdOrder.getDescription().contains("thiếu hàng")) {
+                ra.addFlashAttribute("warning", "Đơn hàng đã tạo, tuy nhiên có sản phẩm thiếu hàng. Vui lòng nhập thêm để hoàn thành.");
+            } else {
+                ra.addFlashAttribute("success", "Tạo đơn hàng thành công. Mã đơn: " + createdOrder.getOrderCode());
+            }
         } catch (Exception ex) {
             ra.addFlashAttribute("error", "Lỗi khi tạo đơn hàng: " + ex.getMessage());
         }
-
         return "redirect:/sale-orders";
     }
 
