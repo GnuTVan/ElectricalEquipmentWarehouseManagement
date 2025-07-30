@@ -38,9 +38,9 @@
                     <th class="px-4 py-3">Ảnh</th>
                     <th class="px-4 py-3">Giá niêm yết</th>
                     <th class="px-4 py-3">Số lượng</th>
-                    <th class="px-4 py-3 w-[250px]">Trạng thái</th>
                     <th class="px-4 py-3">Thương hiệu</th>
                     <th class="px-4 py-3">Danh mục</th>
+                    <th class="px-4 py-3 w-[250px]">Trạng thái</th>
                     <th class="px-4 py-3 text-center">Hành động</th>
                 </tr>
 
@@ -79,6 +79,8 @@
                     </td>
                     <td class="px-4 py-3" th:text="${product.listingPrice}"></td>
                     <td class="px-4 py-3" th:text="${product.quantity}"></td>
+                    <td class="px-4 py-3" th:text="${product.brand.name}"></td>
+                    <td class="px-4 py-3" th:text="${product.category.name}"></td>
                     <td class="px-4 py-3 h-full">
                         <div class="flex items-center justify-center gap-2">
                             <label class="inline-flex relative items-center cursor-pointer align-center">
@@ -96,8 +98,6 @@
                             </span>
                         </div>
                     </td>
-                    <td class="px-4 py-3" th:text="${product.brand.name}"></td>
-                    <td class="px-4 py-3" th:text="${product.category.name}"></td>
                     <td class="px-4 py-3 text-center space-x-1">
                         <a href="#" onclick="openDetailModal(this)" class="text-gray-600 hover:text-gray-800">
                             <i class="ri-eye-line text-lg"></i>
@@ -388,7 +388,7 @@
     </main>
 </div>
 <!-- Footer -->
-<div th:replace="~{fragments/footer :: footer}"></div>
+<div class="hidden" th:insert="~{fragments/footer :: footer}"></div>
 
 
 <script th:inline="javascript">

@@ -140,7 +140,7 @@
         </div>
     </main>
 </div>
-<div th:replace="~{fragments/footer :: footer}"></div>
+<div class="hidden" th:insert="~{fragments/footer :: footer}"></div>
 <script>
     function openAddModal() {
         document.getElementById('customerModal').classList.remove('hidden');

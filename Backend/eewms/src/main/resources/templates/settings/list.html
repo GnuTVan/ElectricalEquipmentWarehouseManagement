@@ -7,18 +7,21 @@
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
+
         body {
             font-family: 'Be Vietnam Pro', sans-serif;
         }
+
         .sidebar-nav::-webkit-scrollbar {
             width: 4px;
         }
+
         .sidebar-nav::-webkit-scrollbar-thumb {
             background-color: #4a5568;
             border-radius: 20px;
         }
     </style>
-    <meta name="_csrf"       th:content="${_csrf.token}"/>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -63,7 +66,9 @@
                             <span th:case="*">Danh sách</span> <!-- fallback -->
                         </span>
                     </h1>
-                    <button onclick="openModal()" class="bg-blue-600 …">+ Thêm</button>
+                    <button onclick="openModal()"
+                            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer">+ Thêm
+                    </button>
                 </div>
                 <div class="overflow-x-auto bg-white rounded-lg shadow">
                     <table class="min-w-full text-left">
@@ -72,7 +77,7 @@
                             <th class="px-4 py-2">ID</th>
                             <th class="px-4 py-2">Tên</th>
                             <th class="px-4 py-2">Trạng thái</th>
-                            <th class="px-4 py-2">Hành động</th>
+                            <th class="px-4 py-2 text-center">Hành động</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -90,7 +95,7 @@
                                         <input type="checkbox"
                                                th:checked="${s.status.name()=='ACTIVE'}"
                                                class="sr-only peer"
-                                               onchange="toggleStatus(this)" />
+                                               onchange="toggleStatus(this)"/>
                                         <div class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-blue-600 transition"></div>
                                         <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
                                     </label>
@@ -99,8 +104,11 @@
                                           class="text-sm font-medium text-gray-700"></span>
                                 </div>
                             </td>
-                            <td class="px-4 py-2">
-                                <a th:href="@{/settings/edit/{type}/{id}(type=${settingType},id=${s.id})}">Sửa</a> |
+                            <td class="px-4 py-2 text-center">
+                                <a th:href="@{/settings/edit/{type}/{id}(type=${settingType},id=${s.id})}"
+                                   class="text-blue-600 hover:text-blue-800">
+                                    <i class="ri-pencil-line text-lg"></i>
+                                </a>
                             </td>
                         </tr>
                         </tbody>
@@ -117,8 +125,8 @@
                    ? @{/settings/save}
                    : @{/settings/update/{type}/{id}(type=${settingForm.type},id=${settingForm.id})}"
                               class="space-y-3">
-                            <input type="hidden" th:field="*{type}" />
-                            <input type="hidden" th:field="*{id}" />
+                            <input type="hidden" th:field="*{type}"/>
+                            <input type="hidden" th:field="*{id}"/>
                             <div>
                                 <label class="block">Tên</label>
                                 <input type="text" th:field="*{name}" class="w-full border px-2 py-1" required/>
@@ -135,66 +143,68 @@
                                 <textarea th:field="*{description}" class="w-full border px-2 py-1" rows="3"></textarea>
                             </div>
                             <div class="text-right">
-                                <button type="button" onclick="closeModal()" class="px-4 py-1 border rounded mr-2">Hủy</button>
+                                <button type="button" onclick="closeModal()" class="px-4 py-1 border rounded mr-2">Hủy
+                                </button>
                                 <button type="submit" class="px-4 py-1 bg-green-600 text-white rounded">Lưu</button>
                             </div>
                         </form>
                     </div>
                 </div>
 
-        </div>
+            </div>
 
-        <script>
-            function openModal(id,name,pri,status) {
-                document.getElementById('modalTitle').innerText = id? 'Sửa':'Thêm';
-                document.querySelector('[name="id"]').value = id||'';
-                document.querySelector('[name="name"]').value = name||'';
-                document.querySelector('[name="status"]').value = status||'ACTIVE';
-                document.getElementById('settingModal').classList.remove('hidden');
-            }
-            function closeModal() {
-                document.getElementById('settingModal').classList.add('hidden');
-            }
-        </script>
-        <script th:if="${settingForm.id != null}">
-            document.addEventListener('DOMContentLoaded', function() {
-                // Đổi title cho đúng
-                document.getElementById('modalTitle').innerText = 'Sửa';
-                // Hiển thị modal
-                document.getElementById('settingModal').classList.remove('hidden');
-            });
-        </script>
-        <script>
-            function toggleStatus(checkbox) {
-                const tr   = checkbox.closest('tr');
-                const id   = tr.dataset.id;
-                const newStatus = checkbox.checked ? 'ACTIVE' : 'INACTIVE';
+            <script>
+                function openModal(id, name, pri, status) {
+                    document.getElementById('modalTitle').innerText = id ? 'Sửa' : 'Thêm';
+                    document.querySelector('[name="id"]').value = id || '';
+                    document.querySelector('[name="name"]').value = name || '';
+                    document.querySelector('[name="status"]').value = status || 'ACTIVE';
+                    document.getElementById('settingModal').classList.remove('hidden');
+                }
 
-                const csrfToken  = document.querySelector('meta[name="_csrf"]').content;
-                const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+                function closeModal() {
+                    document.getElementById('settingModal').classList.add('hidden');
+                }
+            </script>
+            <script th:if="${settingForm.id != null}">
+                document.addEventListener('DOMContentLoaded', function () {
+                    // Đổi title cho đúng
+                    document.getElementById('modalTitle').innerText = 'Sửa';
+                    // Hiển thị modal
+                    document.getElementById('settingModal').classList.remove('hidden');
+                });
+            </script>
+            <script>
+                function toggleStatus(checkbox) {
+                    const tr = checkbox.closest('tr');
+                    const id = tr.dataset.id;
+                    const newStatus = checkbox.checked ? 'ACTIVE' : 'INACTIVE';
 
-                fetch(`/settings/${id}/status`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        [csrfHeader]: csrfToken
-                    },
-                    body: JSON.stringify({ status: newStatus })
-                })
-                    .then(res => {
-                        if (!res.ok) throw new Error('Cập nhật thất bại');
-                        return res.text();
+                    const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+                    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+
+                    fetch(`/settings/${id}/status`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            [csrfHeader]: csrfToken
+                        },
+                        body: JSON.stringify({status: newStatus})
                     })
-                    .then(() => {
-                        location.reload(); // ✅ reload lại trang để Thymeleaf load đúng status mới
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        checkbox.checked = !checkbox.checked; // rollback UI
-                        alert('Không thể cập nhật trạng thái');
-                    });
-            }
-    </script>
+                        .then(res => {
+                            if (!res.ok) throw new Error('Cập nhật thất bại');
+                            return res.text();
+                        })
+                        .then(() => {
+                            location.reload(); // ✅ reload lại trang để Thymeleaf load đúng status mới
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            checkbox.checked = !checkbox.checked; // rollback UI
+                            alert('Không thể cập nhật trạng thái');
+                        });
+                }
+            </script>
 
     </main>
 </div>

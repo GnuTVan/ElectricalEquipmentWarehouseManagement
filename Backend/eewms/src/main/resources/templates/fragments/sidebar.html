@@ -3,7 +3,7 @@
        xmlns:th="http://www.w3.org/1999/xhtml">
     <!-- Logo and Title -->
     <div class="p-6 text-center border-b border-gray-700">
-        <a th:href="@{/landing-page }" class="flex items-center justify-center">
+        <a th:href="@{/landing-page}" class="flex items-center justify-center">
             <img th:src="@{/images/logo1.jpg}" alt="Logo"
                  class="w-20 h-20 object-cover rounded hover:opacity-80 transition" />
         </a>
@@ -25,13 +25,13 @@
     <!-- Navigation Links -->
     <nav class="flex-1 overflow-y-auto sidebar-nav px-4 py-4">
         <ul class="space-y-2">
-            <li>
-                <a href="/landing-page"
-                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <i class="ri-home-5-line w-6 text-lg"></i>
-                    <span>Landing Page</span>
-                </a>
-            </li>
+<!--            <li>-->
+<!--                <a href="/landing-page"-->
+<!--                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">-->
+<!--                    <i class="ri-home-5-line w-6 text-lg"></i>-->
+<!--                    <span>Landing Page</span>-->
+<!--                </a>-->
+<!--            </li>-->
             <li>
                 <a th:href="@{/dashboard}"
                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
@@ -44,13 +44,6 @@
                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-account-circle-line w-6 text-lg"></i>
                     <span>Tài khoản</span>
-                </a>
-            </li>
-            <li>
-                <a th:href="@{/admin/warehouses}"
-                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <i class="ri-hard-drive-2-line w-6 text-lg"></i>
-                    <span>Kho</span>
                 </a>
             </li>
             <li>
@@ -148,18 +141,35 @@
                     <i class="ri-arrow-up-s-line"></i>
                 </a>
             </li>
+            <!-- Phiếu xuất nhập kho (dropdown) -->
             <li>
-                <a href="/admin/warehouse-receipts"
-                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <i class="ri-tools-line w-6 text-lg"></i>
-                    <span>Phiếu nhập kho</span>
-                </a>
+                <div class="flex flex-col">
+                    <button type="button"
+                            data-submenu-id="inventory-submenu"
+                            class="flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700 w-full"
+                            onclick="toggleSubmenu(this)">
+                        <div class="flex items-center">
+                            <i class="ri-truck-line w-6 text-lg"></i>
+                            <span>Phiếu xuất nhập kho</span>
+                        </div>
+                        <i class="ri-arrow-down-s-line transform transition-transform duration-300 ease-in-out origin-center"></i>
+                    </button>
+                    <ul id="inventory-submenu"
+                        class="ml-8 mt-1 space-y-1 overflow-hidden transition-all duration-300 max-h-0">
+                        <li>
+                            <a th:href="@{/admin/warehouse-receipts}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Nhập kho</a>
+                        </li>
+                        <li>
+                            <a th:href="@{/good-issue}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Xuất kho</a>
+                        </li>
+                    </ul>
+                </div>
             </li>
             <li>
-                <a th:href="@{/good-issue}"
+                <a th:href="@{/admin/warehouses}"
                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <i class="ri-truck-line w-6 text-lg"></i>
-                    <span>Phiếu xuất kho</span>
+                    <i class="ri-home-gear  -line w-6 text-lg"></i>
+                    <span>Kho</span>
                 </a>
             </li>
             <a href="#" class="hidden flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
