@@ -3,8 +3,13 @@
        xmlns:th="http://www.w3.org/1999/xhtml">
     <!-- Logo and Title -->
     <div class="p-6 text-center border-b border-gray-700">
-        <h1 class="text-2xl font-bold">Thiết bị điện</h1>
-        <h2 class="text-2xl font-bold">Hải Phòng</h2>
+        <a th:href="@{/landing-page }" class="flex items-center justify-center">
+            <img th:src="@{/images/logo1.jpg}" alt="Logo"
+                 class="w-20 h-20 object-cover rounded hover:opacity-80 transition" />
+        </a>
+
+        <!--        <h1 class="text-2xl font-bold">Thiết bị điện</h1>-->
+        <!--        <h2 class="text-2xl font-bold">Hải Phòng</h2>-->
         <p class="mt-2 text-sm text-gray-400">
             Role:
             <span th:switch="${#authentication.authorities[0].authority}">
@@ -21,25 +26,36 @@
     <nav class="flex-1 overflow-y-auto sidebar-nav px-4 py-4">
         <ul class="space-y-2">
             <li>
-                <a th:href="@{/dashboard}" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                <a href="/landing-page"
+                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                    <i class="ri-home-5-line w-6 text-lg"></i>
+                    <span>Landing Page</span>
+                </a>
+            </li>
+            <li>
+                <a th:href="@{/dashboard}"
+                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-home-5-line w-6 text-lg"></i>
                     <span>Trang chủ</span>
                 </a>
             </li>
             <li>
-                <a th:href="@{/admin/users}" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                <a th:href="@{/admin/users}"
+                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-account-circle-line w-6 text-lg"></i>
                     <span>Tài khoản</span>
                 </a>
             </li>
             <li>
-                <a th:href="@{/admin/warehouses}" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                <a th:href="@{/admin/warehouses}"
+                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-hard-drive-2-line w-6 text-lg"></i>
                     <span>Kho</span>
                 </a>
             </li>
             <li>
-                <a th:href="@{/products}" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                <a th:href="@{/products}"
+                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-archive-line w-6 text-lg"></i>
                     <span>Sản phẩm</span>
                 </a>
@@ -54,17 +70,22 @@
                             <i class="ri-apps-line w-6 text-lg"></i>
                             <span>Quản lý chung</span>
                         </div>
-                        <i id="submenu-arrow" class="ri-arrow-down-s-line transform transition-transform duration-300 ease-in-out origin-center"></i>
+                        <i id="submenu-arrow"
+                           class="ri-arrow-down-s-line transform transition-transform duration-300 ease-in-out origin-center"></i>
                     </button>
-                    <ul id="setting-submenu" class="ml-8 mt-1 space-y-1 overflow-hidden transition-all duration-300 max-h-0">
+                    <ul id="setting-submenu"
+                        class="ml-8 mt-1 space-y-1 overflow-hidden transition-all duration-300 max-h-0">
                         <li>
-                            <a th:href="@{/settings/UNIT}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Đơn vị</a>
+                            <a th:href="@{/settings/UNIT}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Đơn
+                                vị</a>
                         </li>
                         <li>
-                            <a th:href="@{/settings/BRAND}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Thương hiệu</a>
+                            <a th:href="@{/settings/BRAND}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Thương
+                                hiệu</a>
                         </li>
                         <li>
-                            <a th:href="@{/settings/CATEGORY}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Danh mục</a>
+                            <a th:href="@{/settings/CATEGORY}"
+                               class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Danh mục</a>
                         </li>
                     </ul>
                 </div>
@@ -83,36 +104,43 @@
                         </div>
                         <i class="ri-arrow-down-s-line transform transition-transform duration-300 ease-in-out origin-center"></i>
                     </button>
-                    <ul id="partner-submenu" class="ml-8 mt-1 space-y-1 overflow-hidden transition-all duration-300 max-h-0">
+                    <ul id="partner-submenu"
+                        class="ml-8 mt-1 space-y-1 overflow-hidden transition-all duration-300 max-h-0">
                         <li>
-                            <a th:href="@{/admin/suppliers}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Nhà cung cấp</a>
+                            <a th:href="@{/admin/suppliers}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Nhà
+                                cung cấp</a>
                         </li>
                         <li>
-                            <a th:href="@{/customers}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Khách hàng</a>
+                            <a th:href="@{/customers}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Khách
+                                hàng</a>
                         </li>
                     </ul>
                 </div>
             </li>
             <li>
-                <a th:href="@{/admin/purchase-orders}" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                <a th:href="@{/admin/purchase-orders}"
+                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-shopping-basket-line w-6 text-lg"></i>
                     <span>Mua hàng</span>
                 </a>
             </li>
             <li>
-                <a th:href="@{/sale-orders}" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                <a th:href="@{/sale-orders}"
+                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-shopping-cart-2-line w-6 text-lg"></i>
                     <span>Bán hàng</span>
                 </a>
             </li>
             <li>
-                <a href="#" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                <a href="#"
+                   class="hidden flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-shopping-cart-2-line w-6 text-lg"></i>
                     <span>Trả hàng</span>
                 </a>
             </li>
             <li>
-                <a href="#" class="flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                <a href="#"
+                   class="hidden flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <div class="flex items-center">
                         <i class="ri-file-list-3-line w-6 text-lg"></i>
                         <span>Phiếu kho</span>
@@ -121,31 +149,27 @@
                 </a>
             </li>
             <li>
-                <a href="/admin/warehouse-receipts" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                <a href="/admin/warehouse-receipts"
+                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-tools-line w-6 text-lg"></i>
                     <span>Phiếu nhập kho</span>
                 </a>
             </li>
             <li>
-                <a href="/landing-page" class="block py-2 px-4 hover:bg-blue-100 rounded">
-                    <i class="ri-home-5-line w-6 text-lg"></i>
-                    <span>Landing Page</span>
-                </a>
-            </li>
-
-            <li>
-                <a th:href="@{/good-issue}" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                <a th:href="@{/good-issue}"
+                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-truck-line w-6 text-lg"></i>
                     <span>Phiếu xuất kho</span>
                 </a>
             </li>
-                <a href="#" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <i class="ri-building-4-line w-6 text-lg"></i>
-                    <span>Tài sản cố định</span>
-                </a>
+            <a href="#" class="hidden flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                <i class="ri-building-4-line w-6 text-lg"></i>
+                <span>Tài sản cố định</span>
+            </a>
             </li>
             <li>
-                <a th:href="@{/admin/reports/warehouse-receipt}" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                <a th:href="@{/admin/reports/warehouse-receipt}"
+                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-bar-chart-2-line w-6 text-lg"></i>
                     <span>Báo cáo</span>
                 </a>
