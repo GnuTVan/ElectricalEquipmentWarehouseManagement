@@ -54,6 +54,7 @@ public class SaleOrder {
 
     public enum SaleOrderStatus {
         PENDING("Chờ lấy hàng"),
+        PROCESSING("Đang xử lý"),
         DELIVERIED("Đã giao hàng"),
         COMPLETED("Hoàn thành");
 

@@ -39,44 +39,49 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         saleOrder.setSoCode(orderCode);
         saleOrder.setCustomer(customer);
         saleOrder.setCreatedByUser(user);
-        saleOrder.setStatus(SaleOrder.SaleOrderStatus.PENDING); // luôn là pending ban đầu
+        saleOrder.setStatus(SaleOrder.SaleOrderStatus.PENDING); // Trạng thái ban đầu là PENDING
 
         List<SaleOrderDetail> detailList = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
-        StringBuilder warningNote = new StringBuilder();
+        StringBuilder warningNote = new StringBuilder(); // Sử dụng để lưu thông báo thiếu hàng
         boolean hasInsufficientStock = false;
 
         for (SaleOrderDetailDTO item : dto.getDetails()) {
             Product product = productRepo.findById(item.getProductId())
                     .orElseThrow(() -> new RuntimeException("Product not found"));
 
+            // Kiểm tra nếu số lượng yêu cầu lớn hơn tồn kho
             if (product.getQuantity() < item.getOrderedQuantity()) {
                 hasInsufficientStock = true;
                 warningNote.append(String.format("- Sản phẩm %s thiếu hàng (YC: %d / Tồn: %d)\n",
                         product.getName(), item.getOrderedQuantity(), product.getQuantity()));
             }
 
+            // Tạo chi tiết đơn hàng từ DTO
             SaleOrderDetail detail = SaleOrderMapper.toOrderDetail(item, product);
             detail.setSale_order(saleOrder);
             detailList.add(detail);
 
+            // Tính tổng tiền đơn hàng
             BigDecimal lineTotal = item.getPrice().multiply(BigDecimal.valueOf(item.getOrderedQuantity()));
             totalAmount = totalAmount.add(lineTotal);
         }
-        // Gán mô tả nếu thiếu hàng
 
+        // Cập nhật mô tả đơn hàng nếu thiếu hàng
         if (hasInsufficientStock) {
             saleOrder.setDescription("Đơn hàng thiếu hàng, cần nhập thêm để hoàn thành:\n" + warningNote.toString().trim());
         } else {
-            saleOrder.setDescription(dto.getDescription()); // nếu không thiếu, dùng mô tả gốc
+            saleOrder.setDescription(dto.getDescription()); // Nếu không thiếu hàng, dùng mô tả gốc
         }
 
+        // Lưu thông tin chi tiết đơn hàng và tổng tiền
         saleOrder.setDetails(detailList);
         saleOrder.setTotalAmount(totalAmount);
         orderRepo.save(saleOrder);
 
-        return SaleOrderMapper.toOrderResponseDTO(saleOrder);
+        return SaleOrderMapper.toOrderResponseDTO(saleOrder); // Trả về DTO cho response
     }
+
 
     @Override
     public List<SaleOrderResponseDTO> getAllOrders() {

@@ -14,6 +14,6 @@ public class SaleOrderDetailDTO {
     private BigDecimal price;
     private Integer orderedQuantity;
     private Integer availableQuantity;
-    private boolean fromCombo;
+//    private boolean fromCombo;
 }
 
