@@ -102,7 +102,10 @@
                     <td class="px-4 py-2 border" th:text="${note.customerName}">ABC Corp</td>
                     <td class="px-4 py-2 border" th:text="${note.createdBy}">Nguyễn Văn A</td>
                     <td class="px-4 py-2 border" th:text="${note.description}">Giao gấp</td>
-                    <td class="text-green-600 font-semibold text-right" th:text="${formattedTotalAmount}"></td>
+                    <td class="text-green-600 font-semibold text-right"
+                        th:text="${note.totalAmount.stripTrailingZeros().toPlainString()} + ' ₫'">
+                    </td>
+
                 </tr>
                 <tr th:if="${#lists.isEmpty(reportList)}">
                     <td colspan="7" class="text-center text-gray-500 py-4">Không có dữ liệu</td>

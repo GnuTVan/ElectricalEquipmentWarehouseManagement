@@ -178,18 +178,27 @@
             </a>
             </li>
             <li>
-                <a th:href="@{/admin/reports/warehouse-receipt}"
-                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <i class="ri-bar-chart-2-line w-6 text-lg"></i>
-                    <span>Báo cáo</span>
-                </a>
-            </li>
-            <li>
-                <a th:href="@{/admin/reports/good-issue}"
-                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <i class="ri-bar-chart-2-line w-6 text-lg"></i>
-                    <span>Báo cáo X</span>
-                </a>
+                <div class="flex flex-col">
+                    <button type="button"
+                            data-submenu-id="report-submenu"
+                            class="flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700 w-full"
+                            onclick="toggleSubmenu(this)">
+                        <div class="flex items-center">
+                            <i class="ri-bar-chart-2-line w-6 text-lg"></i>
+                            <span>Báo cáo</span>
+                        </div>
+                        <i class="ri-arrow-down-s-line transform transition-transform duration-300 ease-in-out origin-center"></i>
+                    </button>
+                    <ul id="report-submenu"
+                        class="ml-8 mt-1 space-y-1 overflow-hidden transition-all duration-300 max-h-0">
+                        <li>
+                            <a th:href="@{/admin/reports/warehouse-receipt}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Báo cáo nhập kho</a>
+                        </li>
+                        <li>
+                            <a th:href="@{/admin/reports/good-issue}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Báo cáo xuất kho</a>
+                        </li>
+                    </ul>
+                </div>
             </li>
 
         </ul>
