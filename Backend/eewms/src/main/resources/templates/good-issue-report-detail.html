@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common-head :: commonHead('Chi tiết phiếu xuất kho')}"></head>
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative px-6 py-8">
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <h1 class="text-2xl font-semibold mb-6">Chi tiết Phiếu Xuất Kho</h1>
+        <a th:href="@{/admin/reports/good-issue/export/{id}(id=${note.id})}"
+           class="inline-block bg-green-600 text-white px-4 py-2 mb-4 rounded hover:bg-green-700 text-sm float-right">
+            Xuất Excel
+        </a>
+
+        <div class="bg-white p-6 rounded shadow mb-6">
+            <p><strong>Mã phiếu:</strong> <span th:text="${note.code}"></span></p>
+            <p><strong>Ngày xuất:</strong> <span th:text="${#temporals.format(note.issueDate, 'dd/MM/yyyy')}"></span></p>
+            <p><strong>Khách hàng:</strong> <span th:text="${note.customerName}"></span></p>
+            <p><strong>Người lập:</strong> <span th:text="${note.createdBy}"></span></p>
+            <p><strong>Ghi chú:</strong> <span th:text="${note.description}"></span></p>
+        </div>
+
+        <div class="bg-white rounded shadow overflow-x-auto">
+            <table class="min-w-full text-sm table-auto">
+                <thead class="bg-gray-50 text-gray-700 font-semibold">
+                <tr>
+                    <th class="px-4 py-2 border text-center">STT</th>
+                    <th class="px-4 py-2 border text-left">Sản phẩm</th>
+                    <th class="px-4 py-2 border text-center">Số lượng</th>
+                    <th class="px-4 py-2 border text-right">Đơn giá</th>
+                    <th class="px-4 py-2 border text-right">Thành tiền</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item, iStat : ${note.details}">
+                    <!-- STT -->
+                    <td class="px-4 py-2 border text-center" th:text="${iStat.index + 1}"></td>
+
+                    <!-- Sản phẩm -->
+                    <td class="px-4 py-2 border text-left" th:text="${item.productName}"></td>
+
+                    <!-- Số lượng -->
+                    <td class="px-4 py-2 border text-center" th:text="${item.quantity}"></td>
+
+                    <!-- Đơn giá -->
+                    <td class="px-4 py-2 border text-right text-green-600 font-semibold"
+                        th:text="${#numbers.formatDecimal(item.price, 0, 0)} + ' ₫'"></td>
+
+                    <!-- Thành tiền -->
+                    <td class="px-4 py-2 border text-right text-green-600 font-semibold"
+                        th:text="${#numbers.formatDecimal(item.total, 0, 0)} + ' ₫'"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+<div th:replace="~{fragments/toast-script :: toast-script}"></div>
+</body>
+</html>

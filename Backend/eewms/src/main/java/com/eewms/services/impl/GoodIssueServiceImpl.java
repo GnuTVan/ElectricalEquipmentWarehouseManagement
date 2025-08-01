@@ -12,6 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -91,4 +92,18 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
         long count = goodIssueRepository.count() + 1;
         return String.format("GIN%05d", count);
     }
+
+    @Override
+    public List<GoodIssueNoteDTO> filterReport(LocalDate fromDate, LocalDate toDate, Long customerId, Long userId) {
+        return goodIssueRepository.findAll().stream()
+                .filter(note -> fromDate == null || !note.getIssueDate().toLocalDate().isBefore(fromDate))
+                .filter(note -> toDate == null || !note.getIssueDate().toLocalDate().isAfter(toDate))
+                .filter(note -> customerId == null ||
+                        (note.getCustomer() != null && note.getCustomer().getId().equals(customerId)))
+                .filter(note -> userId == null ||
+                        (note.getCreatedBy() != null && note.getCreatedBy().getId().equals(userId)))
+                .map(GoodIssueMapper::toNoteDTO)
+                .toList();
+    }
+
 }
