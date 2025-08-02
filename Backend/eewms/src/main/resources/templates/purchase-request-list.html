@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/common-head :: commonHead('Danh sách yêu cầu mua hàng')}"></head>
+
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <!-- Main Content -->
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <!-- Header -->
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <!-- Page Content -->
+        <section class="p-6">
+            <div class="mb-6 flex items-center justify-between">
+                <h1 class="text-2xl font-bold">Danh sách yêu cầu mua hàng</h1>
+                <a th:href="@{/admin/purchase-requests/create}"
+                   class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    + Tạo yêu cầu mới
+                </a>
+            </div>
+
+            <div th:if="${#lists.isEmpty(requests)}" class="text-gray-500 italic">
+                Không có yêu cầu nào.
+            </div>
+
+            <div th:if="${!#lists.isEmpty(requests)}">
+                <div class="overflow-auto">
+                    <table class="w-full table-auto border border-gray-300">
+                        <thead class="bg-gray-100">
+                        <tr>
+                            <th class="border p-2 text-left">Mã yêu cầu</th>
+                            <th class="border p-2 text-left">Người tạo</th>
+                            <th class="border p-2 text-left">Ngày tạo</th>
+                            <th class="border p-2 text-left">Trạng thái</th>
+                            <th class="border p-2 text-left">Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="request : ${requests}" class="hover:bg-gray-50">
+                            <td class="border p-2" th:text="${request.code}">PR00001</td>
+                            <td class="border p-2" th:text="${request.createdByName}">Nguyễn Văn A</td>
+                            <td class="border p-2">
+                            <span th:if="${request.createdAt != null}"
+                                th:text="${#temporals.format(request.createdAt, 'dd/MM/yyyy HH:mm')}">01/08/2025</span>
+                                <span th:if="${request.createdAt == null}">---</span>
+                            </td>
+                            <td class="border p-2" th:switch="${request.status}">
+                                <span th:case="'MOI_TAO'">Mới tạo</span>
+                                <span th:case="'DA_DUYET'">Đã duyệt</span>
+                                <span th:case="'DA_TAO_PO'">Đã tạo PO</span>
+                                <span th:case="*">---</span>
+                            </td>
+                            <td class="border p-2 space-x-2">
+                                <a class="text-blue-600 hover:underline"
+                                   th:href="@{'/admin/purchase-requests/' + ${request.id}}">Xem</a>
+
+                                <form th:if="${request.status != null and request.status.name() == 'MOI_TAO'}"
+                                      th:action="@{'/admin/purchase-requests/' + ${request.id} + '/status'}"
+                                      method="post" style="display:inline">
+                                    <input type="hidden" name="status" value="DA_DUYET"/>
+                                    <button class="text-green-600 hover:underline" type="submit">Duyệt</button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- Footer & Toast -->
+<div th:replace="~{fragments/footer :: footer}"></div>
+<div th:replace="~{fragments/toast-script :: toast-script}"></div>
+</body>
+</html>

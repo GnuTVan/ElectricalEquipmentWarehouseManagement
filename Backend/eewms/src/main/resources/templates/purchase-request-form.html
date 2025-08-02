@@ -1,0 +1,65 @@
+<!-- purchase-request-form.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/common-head :: commonHead('Tạo yêu cầu mua hàng')}"></head>
+
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <section class="p-6">
+            <h1 class="text-2xl font-bold mb-4">Tạo yêu cầu mua hàng</h1>
+            <form th:action="@{/admin/purchase-requests}" th:object="${requestDTO}" method="post">
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium">Người tạo</label>
+                    <input type="text" th:field="*{createdByName}" class="w-full border rounded px-3 py-2 bg-gray-100" readonly/>
+                </div>
+
+                <div class="mb-4 overflow-auto">
+                    <table class="w-full bg-white border border-gray-200">
+                        <thead class="bg-gray-100">
+                        <tr>
+                            <th class="p-2 border">Sản phẩm</th>
+                            <th class="p-2 border">Số lượng cần mua</th>
+                            <th class="p-2 border" th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}">Nhà cung cấp gợi ý</th>
+                            <th class="p-2 border" th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}">Ghi chú</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="item, stat : *{items}" class="border-t">
+                            <td class="p-2 border">
+                                <input type="text" th:value="${item.productName}" class="w-full bg-gray-100" readonly/>
+                                <input type="hidden" th:field="*{items[__${stat.index}__].productId}"/>
+                            </td>
+                            <td class="p-2 border">
+                                <input type="number" th:field="*{items[__${stat.index}__].quantityNeeded}" class="w-full" th:readonly="${!#authorization.expression('hasRole(''ROLE_ADMIN'')')}"/>
+                            </td>
+                            <td class="p-2 border" th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}">
+                                <select th:field="*{items[__${stat.index}__].suggestedSupplierId}" class="w-full">
+                                    <option th:each="supplier : ${suppliers}" th:value="${supplier.id}" th:text="${supplier.name}"></option>
+                                </select>
+                            </td>
+                            <td class="p-2 border" th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}">
+                                <input type="text" th:field="*{items[__${stat.index}__].note}" class="w-full"/>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="text-right">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">Lưu yêu cầu</button>
+                    <a th:href="@{/admin/purchase-requests}" class="ml-2 text-gray-600 hover:underline">Hủy</a>
+                </div>
+            </form>
+        </section>
+    </main>
+</div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+<div th:replace="fragments/toast-script :: toast-script"></div>
+</body>
+</html>

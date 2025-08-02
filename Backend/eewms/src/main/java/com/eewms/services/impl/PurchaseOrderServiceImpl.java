@@ -40,6 +40,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService {
 
         // Tạo đơn hàng
         PurchaseOrder order = PurchaseOrderMapper.toEntity(dto, supplier, attachmentUrl);
+        order.setCreatedByName(dto.getCreatedByName());
         order.setCode(generateOrderCode());
         order.setStatus(PurchaseOrderStatus.CHO_GIAO_HANG);
 
