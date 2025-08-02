@@ -110,4 +110,18 @@ public class SaleOrderController {
         }
         return "redirect:/sale-orders";
     }
+    @GetMapping("/{id}/view")
+    public String viewOrderDetails(@PathVariable Integer id , Model model) {
+        // Lấy đơn hàng từ cơ sở dữ liệu
+        SaleOrder saleOrder = saleOrderService.getOrderEntityById(id);
+
+        // Kiểm tra nếu trạng thái đơn hàng là "COMPLETED"
+        if (saleOrder.getStatus() == SaleOrder.SaleOrderStatus.COMPLETED) {
+            model.addAttribute("saleOrder", saleOrder);
+            return "sale-order/sale-order-detail";  // Chuyển tới trang chi tiết đơn hàng
+        } else {
+            // Trường hợp khác, có thể redirect đến trang khác hoặc thông báo lỗi
+            return "redirect:/sale-orders";  // Quay lại danh sách đơn hàng
+        }
+    }
 }
