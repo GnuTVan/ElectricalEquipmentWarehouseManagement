@@ -21,4 +21,5 @@ public class SaleOrderResponseDTO {
     private BigDecimal totalAmount; // tổng tiền đơn hàng
     private List<SaleOrderDetailDTO> details;
     private String createdBy;
+    private boolean hasInsufficientStock;
 }

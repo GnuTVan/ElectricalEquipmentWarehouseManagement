@@ -94,7 +94,16 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
     public SaleOrderResponseDTO getById(Integer orderId) {
         SaleOrder saleOrder = orderRepo.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
-        return SaleOrderMapper.toOrderResponseDTO(saleOrder);
+
+        SaleOrderResponseDTO dto = SaleOrderMapper.toOrderResponseDTO(saleOrder);
+
+        // ✅ Kiểm tra nếu còn sản phẩm thiếu kho thực tế
+        boolean stillMissing = saleOrder.getDetails().stream()
+                .anyMatch(d -> d.getProduct().getQuantity() < d.getOrderedQuantity());
+
+        dto.setHasInsufficientStock(stillMissing); // Gán vào DTO
+
+        return dto;
     }
 
     @Transactional

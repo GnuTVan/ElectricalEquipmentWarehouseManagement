@@ -54,6 +54,11 @@ public class PurchaseRequestController {
             return "redirect:/sale-orders/" + saleOrderId;
         }
 
+        // ✅ Cập nhật trạng thái đơn bán hàng từ PENDING → DELIVERIED
+        if (order.getStatus() == SaleOrder.SaleOrderStatus.PENDING) {
+            saleOrderService.updateOrderStatus(order.getSoId(), SaleOrder.SaleOrderStatus.DELIVERIED);
+        }
+
         PurchaseRequestDTO dto = PurchaseRequestDTO.builder()
                 .createdByName(order.getCreatedByUser().getFullName())
                 .saleOrderId(order.getSoId())
