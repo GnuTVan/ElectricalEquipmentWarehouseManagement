@@ -24,6 +24,7 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
     private final ProductRepository productRepo;
     private final CustomerRepository customerRepo;
     private final UserRepository userRepo;
+    private final GoodIssueNoteRepository goodIssueRepository;
 
     @Override
     @Transactional
@@ -97,11 +98,12 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
 
         SaleOrderResponseDTO dto = SaleOrderMapper.toOrderResponseDTO(saleOrder);
 
-        // ✅ Kiểm tra nếu còn sản phẩm thiếu kho thực tế
-        boolean stillMissing = saleOrder.getDetails().stream()
+        boolean exported = goodIssueRepository.existsBySaleOrder_SoId(saleOrder.getSoId());
+        boolean stillMissing = !exported && saleOrder.getDetails().stream()
                 .anyMatch(d -> d.getProduct().getQuantity() < d.getOrderedQuantity());
 
-        dto.setHasInsufficientStock(stillMissing); // Gán vào DTO
+        dto.setHasInsufficientStock(stillMissing);
+        dto.setAlreadyExported(exported);
 
         return dto;
     }

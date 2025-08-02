@@ -22,4 +22,5 @@ public class SaleOrderResponseDTO {
     private List<SaleOrderDetailDTO> details;
     private String createdBy;
     private boolean hasInsufficientStock;
+    private boolean alreadyExported;
 }
