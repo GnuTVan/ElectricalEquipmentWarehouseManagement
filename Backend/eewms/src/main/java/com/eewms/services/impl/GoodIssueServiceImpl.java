@@ -70,7 +70,12 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
         note.setDetails(details);
         note.setTotalAmount(total);
 
-        return goodIssueRepository.save(note);
+        order.setStatus(SaleOrder.SaleOrderStatus.DELIVERIED);
+        productRepository.saveAll(details.stream().map(GoodIssueDetail::getProduct).toList()); // lưu lại tồn kho
+        // Nếu bạn có sẵn orderRepo hoặc muốn đúng tầng:
+        goodIssueRepository.save(note);  // đã có dòng này
+
+        return note;
     }
 
     @Override
