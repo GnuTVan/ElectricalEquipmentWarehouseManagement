@@ -74,10 +74,20 @@
                     </td>
                     <td class="px-4 py-2 text-center">
                         <div class="flex justify-center items-center space-x-2">
-                            <a th:href="@{/sale-orders/{id}/edit(id=${order.orderId})}"
+                            <!-- Nút "Sửa" nếu trạng thái không phải "COMPLETED" -->
+                            <a th:if="${order.status.name() != 'COMPLETED'}"
+                               th:href="@{/sale-orders/{id}/edit(id=${order.orderId})}"
                                class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded shadow">
                                 <i class="ri-edit-line text-base"></i>
                                 Sửa
+                            </a>
+
+                            <!-- Nút "Xem chi tiết" nếu trạng thái là "COMPLETED" -->
+                            <a th:if="${order.status.name() == 'COMPLETED'}"
+                               th:href="@{/sale-orders/{id}/view(id=${order.orderId})}"
+                               class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm rounded shadow">
+                                <i class="ri-eye-line text-base"></i>
+                                Xem chi tiết
                             </a>
                         </div>
                     </td>
