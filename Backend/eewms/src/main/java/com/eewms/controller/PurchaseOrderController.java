@@ -19,6 +19,11 @@ import com.eewms.services.IPurchaseOrderService;
 import com.eewms.services.ImageUploadService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -27,6 +32,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -46,9 +52,26 @@ public class PurchaseOrderController {
 
     // ✅ Hiển thị danh sách đơn hàng nhập
     @GetMapping
-    public String listOrders(Model model) {
-        List<PurchaseOrderDTO> orders = orderService.findAll();
-        model.addAttribute("orders", orders);
+    public String listOrders(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "status", required = false) PurchaseOrderStatus status,
+            @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "8") int size,
+            Model model) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("code").ascending());
+        Page<PurchaseOrderDTO> orderPage = orderService.searchWithFilters(keyword, status, from, to, pageable);
+
+        model.addAttribute("orders", orderPage.getContent());
+        model.addAttribute("totalPages", orderPage.getTotalPages());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("status", status);
+        model.addAttribute("from", from);
+        model.addAttribute("to", to);
+
         return "purchase-order-list";
     }
 
