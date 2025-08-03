@@ -18,4 +18,5 @@ public interface IPurchaseRequestService {
     void updateStatus(Long id, PRStatus status);
     void updateItems(Long id, List<PurchaseRequestItemDTO> items); // ✅ THÊM
     void generatePurchaseOrdersFromRequest(Long prId) throws Exception;
+    Page<PurchaseRequestDTO> search(String keyword, Pageable pageable);
 }

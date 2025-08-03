@@ -176,4 +176,11 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
         prRepo.save(pr);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PurchaseRequestDTO> search(String keyword, Pageable pageable) {
+        return prRepo.search(keyword, pageable)
+                .map(PurchaseRequestMapper::toDTO);
+    }
+
 }

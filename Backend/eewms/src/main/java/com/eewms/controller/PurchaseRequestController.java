@@ -36,13 +36,22 @@ public class PurchaseRequestController {
     @GetMapping
     public String listRequests(Model model,
                                @RequestParam(defaultValue = "0") int page,
-                               @RequestParam(defaultValue = "8") int size) {
+                               @RequestParam(defaultValue = "8") int size,
+                               @RequestParam(defaultValue = "") String keyword) {
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").ascending());
-        Page<PurchaseRequestDTO> requestPage = prService.findAll(pageable);
+        Page<PurchaseRequestDTO> requestPage;
+
+        if (keyword != null && !keyword.isBlank()) {
+            requestPage = prService.search(keyword, pageable);
+        } else {
+            requestPage = prService.findAll(pageable);
+        }
 
         model.addAttribute("requestPage", requestPage);
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", requestPage.getTotalPages());
+        model.addAttribute("keyword", keyword);
 
         return "purchase-request-list";
     }

@@ -23,10 +23,19 @@
                 </a>
             </div>
 
+            <!-- Form tìm kiếm -->
+            <form method="get" class="mb-4 flex items-center space-x-2">
+                <input type="text" name="keyword" placeholder="Tìm theo mã hoặc người tạo"
+                       th:value="${keyword}" class="border px-3 py-2 rounded w-1/3"/>
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Tìm kiếm</button>
+            </form>
+
+            <!-- Nếu không có dữ liệu -->
             <div th:if="${requestPage.totalElements == 0}" class="text-gray-500 italic">
                 Không có yêu cầu nào.
             </div>
 
+            <!-- Nếu có dữ liệu -->
             <div th:if="${requestPage.totalElements > 0}">
                 <div class="overflow-auto">
                     <table class="w-full table-auto border border-gray-300">
@@ -44,8 +53,8 @@
                             <td class="border p-2" th:text="${request.code}">PR00001</td>
                             <td class="border p-2" th:text="${request.createdByName}">Nguyễn Văn A</td>
                             <td class="border p-2">
-                            <span th:if="${request.createdAt != null}"
-                                th:text="${#temporals.format(request.createdAt, 'dd/MM/yyyy HH:mm')}">01/08/2025</span>
+                                <span th:if="${request.createdAt != null}"
+                                      th:text="${#temporals.format(request.createdAt, 'dd/MM/yyyy HH:mm')}">01/08/2025</span>
                                 <span th:if="${request.createdAt == null}">---</span>
                             </td>
                             <td class="border p-2" th:switch="${request.status}">
@@ -68,9 +77,11 @@
                         </tr>
                         </tbody>
                     </table>
+
+                    <!-- Thanh phân trang -->
                     <div class="mt-4 flex justify-center space-x-2">
                         <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
-                           th:href="@{'/admin/purchase-requests'(page=${i})}"
+                           th:href="@{'/admin/purchase-requests'(page=${i}, keyword=${keyword})}"
                            th:text="${i + 1}"
                            th:class="'px-3 py-1 border rounded ' + (${i} == ${currentPage} ? 'bg-blue-600 text-white' : 'bg-white text-blue-600')">
                         </a>
