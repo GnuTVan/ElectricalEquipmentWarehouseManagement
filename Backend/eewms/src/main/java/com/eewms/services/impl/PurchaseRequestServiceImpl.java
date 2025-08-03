@@ -24,6 +24,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -178,8 +179,8 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<PurchaseRequestDTO> search(String keyword, Pageable pageable) {
-        return prRepo.search(keyword, pageable)
+    public Page<PurchaseRequestDTO> filter(String creator, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+        return prRepo.filter(creator, startDate, endDate, pageable)
                 .map(PurchaseRequestMapper::toDTO);
     }
 

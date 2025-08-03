@@ -14,12 +14,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Controller
@@ -37,21 +41,26 @@ public class PurchaseRequestController {
     public String listRequests(Model model,
                                @RequestParam(defaultValue = "0") int page,
                                @RequestParam(defaultValue = "8") int size,
-                               @RequestParam(defaultValue = "") String keyword) {
+                               @RequestParam(required = false) String creator,
+                               @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                               @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").ascending());
-        Page<PurchaseRequestDTO> requestPage;
+        Pageable pageable = PageRequest.of(page, size, Sort.by("code").ascending());
 
-        if (keyword != null && !keyword.isBlank()) {
-            requestPage = prService.search(keyword, pageable);
-        } else {
-            requestPage = prService.findAll(pageable);
-        }
+        // Convert ngày sang LocalDateTime
+        LocalDateTime start = (startDate != null) ? startDate.atStartOfDay() : null;
+        LocalDateTime end = (endDate != null) ? endDate.atTime(LocalTime.MAX) : null;
+
+        Page<PurchaseRequestDTO> requestPage = prService.filter(creator, start, end, pageable);
 
         model.addAttribute("requestPage", requestPage);
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", requestPage.getTotalPages());
-        model.addAttribute("keyword", keyword);
+
+        // Đưa filter về lại view
+        model.addAttribute("creator", creator);
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
 
         return "purchase-request-list";
     }
