@@ -23,11 +23,11 @@
                 </a>
             </div>
 
-            <div th:if="${#lists.isEmpty(requests)}" class="text-gray-500 italic">
+            <div th:if="${requestPage.totalElements == 0}" class="text-gray-500 italic">
                 Không có yêu cầu nào.
             </div>
 
-            <div th:if="${!#lists.isEmpty(requests)}">
+            <div th:if="${requestPage.totalElements > 0}">
                 <div class="overflow-auto">
                     <table class="w-full table-auto border border-gray-300">
                         <thead class="bg-gray-100">
@@ -40,7 +40,7 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr th:each="request : ${requests}" class="hover:bg-gray-50">
+                        <tr th:each="request : ${requestPage.content}" class="hover:bg-gray-50">
                             <td class="border p-2" th:text="${request.code}">PR00001</td>
                             <td class="border p-2" th:text="${request.createdByName}">Nguyễn Văn A</td>
                             <td class="border p-2">
@@ -68,6 +68,13 @@
                         </tr>
                         </tbody>
                     </table>
+                    <div class="mt-4 flex justify-center space-x-2">
+                        <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                           th:href="@{'/admin/purchase-requests'(page=${i})}"
+                           th:text="${i + 1}"
+                           th:class="'px-3 py-1 border rounded ' + (${i} == ${currentPage} ? 'bg-blue-600 text-white' : 'bg-white text-blue-600')">
+                        </a>
+                    </div>
                 </div>
             </div>
         </section>

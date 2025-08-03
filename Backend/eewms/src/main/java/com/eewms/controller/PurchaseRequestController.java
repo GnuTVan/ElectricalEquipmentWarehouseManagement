@@ -10,6 +10,10 @@ import com.eewms.services.ISaleOrderService;
 import com.eewms.services.ISupplierService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -30,9 +34,16 @@ public class PurchaseRequestController {
     private final IPurchaseRequestService purchaseRequestService;
 
     @GetMapping
-    public String listRequests(Model model) {
-        List<PurchaseRequestDTO> requests = prService.findAll();
-        model.addAttribute("requests", requests);
+    public String listRequests(Model model,
+                               @RequestParam(defaultValue = "0") int page,
+                               @RequestParam(defaultValue = "8") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").ascending());
+        Page<PurchaseRequestDTO> requestPage = prService.findAll(pageable);
+
+        model.addAttribute("requestPage", requestPage);
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", requestPage.getTotalPages());
+
         return "purchase-request-list";
     }
 

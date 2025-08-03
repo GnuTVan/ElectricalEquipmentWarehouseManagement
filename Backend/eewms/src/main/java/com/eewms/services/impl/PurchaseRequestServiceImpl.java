@@ -16,6 +16,8 @@ import com.eewms.repository.purchaseRequest.PurchaseRequestRepository;
 import com.eewms.services.IPurchaseOrderService;
 import com.eewms.services.IPurchaseRequestService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.Authentication;
@@ -52,10 +54,9 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PurchaseRequestDTO> findAll() {
-        return prRepo.findAll().stream()
-                .map(PurchaseRequestMapper::toDTO)
-                .toList();
+    public Page<PurchaseRequestDTO> findAll(Pageable pageable) {
+        return prRepo.findAll(pageable)
+                .map(PurchaseRequestMapper::toDTO);
     }
 
     @Override
