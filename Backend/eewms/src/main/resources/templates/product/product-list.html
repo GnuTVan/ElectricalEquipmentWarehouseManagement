@@ -64,8 +64,8 @@
                     th:data-unit-id="${product.unit.id}"
                     th:data-description="${product.description}"
                     th:data-images="${#strings.arrayJoin(imageUrls, ',')}"
-                    th:data-supplier-names="${#strings.arrayJoin(product.supplierNames, ',')}"
-                    th:data-supplier-ids="${#strings.arrayJoin(product.supplierIds, ',')}">
+                    th:data-supplier-names="${product.supplierNames} != null ? ${#strings.arrayJoin(product.supplierNames, ',')} : ''"
+                    th:data-supplier-ids="${product.supplierIds} != null ? ${#strings.arrayJoin(product.supplierIds, ',')} : ''">
 
 
                     <td class="px-4 py-3" th:text="${product.code}"></td>
@@ -566,19 +566,27 @@
         //Chọn sẵn NCC trên <select>
         const sel = document.getElementById('editSupplierIds');
         const idsStr = tr.dataset.supplierIds || '';
-        const selectedIds = idsStr ? idsStr.split(',').map(s => s.trim()).filter(Boolean) : [];
-        if (sel && !isFromServerError) {
-            Array.from(sel.options).forEach(op => {
-                op.selected = selectedIds.includes(String(op.value));
-            });
-        }
+        const selectedIds = idsStr ? idsStr.split(',').map(s => s.trim()) : [];
+        // 1) clear selected cũ ở thẻ select “thật”
+        Array.from(sel.options).forEach(op => { op.selected = false; });
+        // 2) đặt lại selected theo dữ liệu của hàng
+        selectedIds.forEach(id => {
+            const opt = Array.from(sel.options).find(o => String(o.value) === String(id));
+            if (opt) opt.selected = true;
+        });
 
+        // Hiện modal trước khi init Choices (để layout ổn định)
         document.getElementById('editProductModal').classList.remove('hidden');
 
+        // 3) Khởi tạo Choices sau khi options đã được selected
         initEditChoices();
+
+        // 4) Đồng bộ lần nữa bằng API Choices (ổn định cho mọi phiên bản Choices)
         if (editChoices && selectedIds.length && !isFromServerError) {
-            editChoices.removeActiveItems();
-            selectedIds.forEach(v => editChoices.setChoiceByValue(String(v)));
+            // KHÔNG removeActiveItems ở đây để tránh mất chọn
+            selectedIds.forEach(v => {
+                editChoices.setChoiceByValue(String(v));
+            });
         }
     }
 
@@ -586,6 +594,9 @@
     function closeEditModal() {
         const modal = document.getElementById('editProductModal');
         modal.classList.add('hidden');
+
+        // Hủy Choices để tránh giữ trạng thái cũ
+        if (editChoices) { editChoices.destroy(); editChoices = null; }
 
         // Reset form
         const form = document.getElementById('editProductForm');

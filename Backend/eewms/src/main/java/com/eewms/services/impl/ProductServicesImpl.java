@@ -139,10 +139,10 @@ public class ProductServicesImpl implements IProductServices {
                 .category(mapSetting(category))
                 .brand(mapSetting(brand))
                 .images(mapImages(imgs))
-                .supplierNames(saved.getSuppliers()
-                        .stream()
-                        .map(Supplier::getName)
-                        .toList())
+                .supplierIds(saved.getSuppliers() == null ? List.of()
+                        : saved.getSuppliers().stream().map(Supplier::getId).toList())
+                .supplierNames(saved.getSuppliers() == null ? List.of()
+                        : saved.getSuppliers().stream().map(Supplier::getName).toList())
                 .build();
     }
 
@@ -195,7 +195,10 @@ public class ProductServicesImpl implements IProductServices {
                 .category(mapSetting(p.getCategory()))
                 .brand(mapSetting(p.getBrand()))
                 .images(mapImages(imgs))
-                .supplierNames(p.getSuppliers().stream().map(Supplier::getName).toList())
+                .supplierIds(p.getSuppliers() == null ? List.of()
+                        : p.getSuppliers().stream().map(Supplier::getId).toList())
+                .supplierNames(p.getSuppliers() == null ? List.of()
+                        : p.getSuppliers().stream().map(Supplier::getName).toList())
                 .build();
     }
 
