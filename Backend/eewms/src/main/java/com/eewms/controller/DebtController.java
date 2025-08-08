@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -48,11 +49,18 @@ public class DebtController {
                              @RequestParam("partnerId") Long partnerId,
                              @RequestParam("amount") BigDecimal amount,
                              @RequestParam("note") String note,
-                             @RequestParam("dueDate") String dueDate // ISO format yyyy-MM-ddTHH:mm
-    ) {
+                             @RequestParam("dueDate") String dueDate,
+                             RedirectAttributes redirectAttributes) {
+
         debtTransactionService.createDebt(type, partnerType, partnerId, amount, note, LocalDateTime.parse(dueDate));
+
+        // Set message
+        redirectAttributes.addFlashAttribute("message", "Tạo công nợ thành công!");
+        redirectAttributes.addFlashAttribute("messageType", "success"); // success, error, info, warning
+
         return "redirect:/debts";
     }
+
 
     // Hiển thị form thanh toán cho công nợ
     @GetMapping("/{id}/pay")
@@ -70,13 +78,21 @@ public class DebtController {
     public String processPayment(@PathVariable Long id,
                                  @RequestParam("amount") BigDecimal amount,
                                  @RequestParam("method") String method,
-                                 @RequestParam("note") String note) {
+                                 @RequestParam("note") String note,
+                                 RedirectAttributes redirectAttributes) {
 
         Optional<DebtTransaction> debtOpt = debtTransactionService.findById(id);
         if (debtOpt.isPresent()) {
             debtPaymentService.createPayment(debtOpt.get(), amount, method, note);
+
+            redirectAttributes.addFlashAttribute("message", "Thanh toán thành công!");
+            redirectAttributes.addFlashAttribute("messageType", "success");
+        } else {
+            redirectAttributes.addFlashAttribute("message", "Không tìm thấy công nợ!");
+            redirectAttributes.addFlashAttribute("messageType", "error");
         }
 
         return "redirect:/debts";
     }
+
 }
