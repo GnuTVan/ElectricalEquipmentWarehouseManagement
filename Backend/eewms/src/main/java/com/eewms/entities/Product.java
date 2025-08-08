@@ -4,7 +4,11 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 
 @Entity
 @Table(name = "products")
@@ -73,5 +77,28 @@ public class Product {
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Image> images;
+
+    @ManyToMany
+    @JoinTable(
+            name = "product_suppliers",
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "supplier_id")
+    )
+    private Set<Supplier> suppliers = new HashSet<>();
+
+    @Transient
+    public List<Long> getSupplierIds() {
+        return suppliers == null
+                ? List.of()
+                : suppliers.stream().map(Supplier::getId).collect(Collectors.toList());
+    }
+
+    @Transient
+    public List<String> getSupplierNames() {
+        return suppliers == null
+                ? List.of()
+                : suppliers.stream().map(Supplier::getName).collect(Collectors.toList());
+    }
+
 }
 

@@ -54,4 +54,9 @@ public class ProductFormDTO {
     // Ảnh là optional
     @JsonIgnore
     private List<String> uploadedImageUrls;
+
+
+    // id các ncc cho create/edit
+    @Size(min = 1, message = "Vui lòng chọn ít nhất một nhà cung cấp")
+    private List<Long> supplierIds;
 }

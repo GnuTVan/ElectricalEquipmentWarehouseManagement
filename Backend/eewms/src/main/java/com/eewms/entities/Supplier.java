@@ -3,6 +3,9 @@ package com.eewms.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Table(name = "suppliers")
 @Getter
@@ -44,5 +47,7 @@ public class Supplier {
     @Column(length = 250)
     private String description;
 
+    @ManyToMany(mappedBy = "suppliers")
+    private Set<Product> products = new HashSet<>();
 
 }

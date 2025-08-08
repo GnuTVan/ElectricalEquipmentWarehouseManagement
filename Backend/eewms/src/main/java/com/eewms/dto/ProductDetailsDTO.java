@@ -24,4 +24,10 @@ public class ProductDetailsDTO {
     private SettingDTO brand;
 
     private List<ImageDTO> images;
+
+    // id các ncc cho create/edit
+    private List<Long> supplierIds;
+    // tên NCC cho view/list
+    private List<String> supplierNames;
+
 }

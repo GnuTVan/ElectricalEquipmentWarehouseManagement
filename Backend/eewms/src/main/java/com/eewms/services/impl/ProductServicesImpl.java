@@ -20,9 +20,7 @@ public class ProductServicesImpl implements IProductServices {
     private final ProductRepository productRepo;
     private final SettingRepository settingRepo;
     private final ImagesRepository imageRepo;
-    private final ProductRepository productRepository;
-
-
+    private final SupplierRepository supplierRepo;
 
     private final ImageUploadService imageUploadService;
 
@@ -80,6 +78,16 @@ public class ProductServicesImpl implements IProductServices {
         product.setCategory(category);
         product.setBrand(brand);
 
+        //Map suppliers từ supplierIds
+        List<Long> supplierIds = dto.getSupplierIds() == null ? List.of() : dto.getSupplierIds();
+        List<Supplier> foundSuppliers = supplierRepo.findAllById(supplierIds);
+        //(optional) validate đủ số lượng
+        if (foundSuppliers.size() != supplierIds.size()) {
+            throw new InventoryException("Một hoặc nhiều nhà cung cấp không tồn tại");
+        }
+        product.getSuppliers().clear();
+        product.getSuppliers().addAll(foundSuppliers);
+
         // --- Lưu product ---
         Product saved = productRepo.save(product);
 
@@ -131,6 +139,10 @@ public class ProductServicesImpl implements IProductServices {
                 .category(mapSetting(category))
                 .brand(mapSetting(brand))
                 .images(mapImages(imgs))
+                .supplierNames(saved.getSuppliers()
+                        .stream()
+                        .map(Supplier::getName)
+                        .toList())
                 .build();
     }
 
@@ -183,6 +195,7 @@ public class ProductServicesImpl implements IProductServices {
                 .category(mapSetting(p.getCategory()))
                 .brand(mapSetting(p.getBrand()))
                 .images(mapImages(imgs))
+                .supplierNames(p.getSuppliers().stream().map(Supplier::getName).toList())
                 .build();
     }
 
@@ -257,7 +270,7 @@ public class ProductServicesImpl implements IProductServices {
 
     @Override
     public List<ProductDetailsDTO> getAllActiveProducts() {
-        List<Product> products = productRepository.findByStatus(Product.ProductStatus.ACTIVE);
+        List<Product> products = productRepo.findByStatus(Product.ProductStatus.ACTIVE);
 
         return products.stream().map(product -> {
             ProductDetailsDTO dto = new ProductDetailsDTO();
@@ -301,6 +314,7 @@ public class ProductServicesImpl implements IProductServices {
             return dto;
         }).toList();
     }
+
     @Override
     @Transactional(readOnly = true)
     public List<ProductDetailsDTO> searchByKeywordAndCategory(String keyword, Long categoryId) {

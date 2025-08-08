@@ -1,6 +1,9 @@
 package com.eewms.repository;
 
 import com.eewms.entities.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,9 +17,11 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 
     Optional<Product> findByCode(String code);
 
+    @EntityGraph(attributePaths = "suppliers")
     boolean existsByCode(String code);
 
     // Tìm kiếm theo keyword (cũ)
+    @EntityGraph(attributePaths = "suppliers")
     @Query("""
         SELECT p FROM Product p
         WHERE
@@ -34,6 +39,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     List<Product> searchByKeyword(@Param("keyword") String keyword);
 
     // Tìm kiếm theo keyword và category (mới)
+    @EntityGraph(attributePaths = "suppliers")
     @Query("""
         SELECT p FROM Product p
         WHERE (:keyword IS NULL OR
@@ -53,4 +59,12 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
                                              @Param("categoryId") Long categoryId);
 
     List<Product> findByStatus(Product.ProductStatus status);
+
+    //load kèm suppliers để map DTO tránh LazyInitialization/N+1
+    @EntityGraph(attributePaths = "suppliers")
+    Optional<Product> findById(Integer id);
+
+    @EntityGraph(attributePaths = "suppliers")
+    List<Product> findAll();
+
 }

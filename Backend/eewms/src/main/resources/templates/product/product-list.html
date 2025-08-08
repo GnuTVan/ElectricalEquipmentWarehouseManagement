@@ -40,6 +40,7 @@
                     <th class="px-4 py-3">Số lượng</th>
                     <th class="px-4 py-3">Thương hiệu</th>
                     <th class="px-4 py-3">Danh mục</th>
+                    <th class="px-4 py-3">Nhà cung cấp</th>
                     <th class="px-4 py-3 w-[250px]">Trạng thái</th>
                     <th class="px-4 py-3 text-center">Hành động</th>
                 </tr>
@@ -62,7 +63,9 @@
                     th:data-unit="${product.unit.name}"
                     th:data-unit-id="${product.unit.id}"
                     th:data-description="${product.description}"
-                    th:data-images="${#strings.arrayJoin(imageUrls, ',')}">
+                    th:data-images="${#strings.arrayJoin(imageUrls, ',')}"
+                    th:data-supplier-names="${#strings.arrayJoin(product.supplierNames, ',')}"
+                    th:data-supplier-ids="${#strings.arrayJoin(product.supplierIds, ',')}">
 
 
                     <td class="px-4 py-3" th:text="${product.code}"></td>
@@ -81,6 +84,10 @@
                     <td class="px-4 py-3" th:text="${product.quantity}"></td>
                     <td class="px-4 py-3" th:text="${product.brand.name}"></td>
                     <td class="px-4 py-3" th:text="${product.category.name}"></td>
+                    <td class="px-4 py-3"
+                        th:text="${#lists.isEmpty(product.supplierNames) ? '—' : #strings.arrayJoin(product.supplierNames, ', ')}">
+                    </td>
+                    <!--                    <td class="px-4 py-3" th:text="${#strings.arrayJoin(product.supplierNames, ', ')}"></td>-->
                     <td class="px-4 py-3 h-full">
                         <div class="flex items-center justify-center gap-2">
                             <label class="inline-flex relative items-center cursor-pointer align-center">
@@ -130,6 +137,7 @@
                     <div><strong>Trạng thái:</strong> <span id="d_status"></span></div>
                     <div><strong>Thương hiệu:</strong> <span id="d_brand"></span></div>
                     <div><strong>Danh mục:</strong> <span id="d_category"></span></div>
+                    <div class="col-span-2"><strong>Nhà cung cấp:</strong> <span id="d_suppliers"></span></div>
                     <div><strong>Đơn vị:</strong> <span id="d_unit"></span></div>
                     <div class="col-span-2">
                         <strong>Mô tả:</strong>
@@ -247,6 +255,18 @@
                             </select>
                             <p th:if="${#lists.isEmpty(categories)}" class="text-sm text-red-500 mt-1">Không có danh mục
                                 nào đang hoạt động</p>
+                        </div>
+
+                        <div class="col-span-2">
+                            <label>Nhà cung cấp</label>
+                            <select id="editSupplierIds" multiple th:field="*{supplierIds}" class="w-full">
+                                <option th:each="s : ${suppliers}" th:value="${s.id}" th:text="${s.name}"></option>
+                            </select>
+                            <p th:if="${#fields.hasErrors('supplierIds')}" th:errors="*{supplierIds}"
+                               class="text-sm text-red-500 mt-1"></p>
+                            <p th:if="${#lists.isEmpty(suppliers)}" class="text-sm text-red-500 mt-1">
+                                Không có nhà cung cấp nào đang hoạt động
+                            </p>
                         </div>
 
                         <div class="col-span-2">
@@ -368,6 +388,20 @@
                             <p th:if="${#lists.isEmpty(categories)}" class="text-sm text-red-500 mt-1">Không có danh mục
                                 nào đang hoạt động</p>
                         </div>
+
+                        <div class="col-span-2">
+                            <label>Nhà cung cấp</label>
+                            <select id="addSupplierIds" multiple th:field="*{supplierIds}" class="w-full">
+                                <option th:each="s : ${suppliers}" th:value="${s.id}" th:text="${s.name}"></option>
+                            </select>
+                            <p th:if="${#fields.hasErrors('supplierIds')}" th:errors="*{supplierIds}"
+                               class="text-sm text-red-500 mt-1"></p>
+                            <p th:if="${#lists.isEmpty(suppliers)}" th:errors="*{supplierIds}"
+                               class="text-sm text-red-500 mt-1">
+                                Không có nhà cung cấp nào đang hoạt động
+                            </p>
+                        </div>
+
                         <div class="col-span-2">
                             <label>Mô tả</label>
                             <textarea th:field="*{description}" class="w-full border rounded px-3 py-2"
@@ -392,8 +426,29 @@
 
 
 <script th:inline="javascript">
+    let addChoices, editChoices;
+
+    function initAddChoices() {
+        const el = document.getElementById('addSupplierIds');
+        if (el && !addChoices) {
+            addChoices = new Choices(el, {removeItemButton: true, searchPlaceholderValue: 'Tìm NCC…'});
+        }
+    }
+
+    function initEditChoices() {
+        const el = document.getElementById('editSupplierIds');
+        if (!el) return;
+        if (editChoices) { editChoices.destroy(); editChoices = null; }
+        editChoices = new Choices(el, {
+            removeItemButton: true,
+            searchPlaceholderValue: 'Tìm NCC…',
+            shouldSort: false
+        });
+    }
+
     function openAddModal() {
         document.getElementById('productModal').classList.remove('hidden');
+        initAddChoices();
     }
 
     //đóng modal thêm sản phẩm
@@ -425,6 +480,8 @@
         document.getElementById('d_originPrice').innerText = tr.dataset.originprice;
         document.getElementById('d_listingPrice').innerText = tr.dataset.listingprice;
         document.getElementById('d_quantity').innerText = tr.dataset.quantity;
+        document.getElementById('d_suppliers').innerText =
+            (tr.dataset.supplierNames || '').split(',').filter(Boolean).join(', ') || '—';
 
         //đổi Enum trạng thái thành text teiesng việt
         const statusCode = tr.dataset.status;
@@ -478,6 +535,9 @@
             document.getElementById('editCategoryId').value = tr.dataset.categoryId;
             document.getElementById('editDescription').value = tr.dataset.description;
 
+            // Set action cho form chỉnh sửa
+            document.getElementById('editProductForm').action = `/products/update/${tr.dataset.id}`;
+
             const container = document.getElementById('editExistingImages');
             container.innerHTML = '';
 
@@ -501,11 +561,25 @@
             } else {
                 container.innerHTML = '<p class="text-sm italic text-gray-500">Không có ảnh sản phẩm</p>';
             }
+        }
 
-            document.getElementById('editProductForm').action = `/products/update/${tr.dataset.id}`;
+        //Chọn sẵn NCC trên <select>
+        const sel = document.getElementById('editSupplierIds');
+        const idsStr = tr.dataset.supplierIds || '';
+        const selectedIds = idsStr ? idsStr.split(',').map(s => s.trim()).filter(Boolean) : [];
+        if (sel && !isFromServerError) {
+            Array.from(sel.options).forEach(op => {
+                op.selected = selectedIds.includes(String(op.value));
+            });
         }
 
         document.getElementById('editProductModal').classList.remove('hidden');
+
+        initEditChoices();
+        if (editChoices && selectedIds.length && !isFromServerError) {
+            editChoices.removeActiveItems();
+            selectedIds.forEach(v => editChoices.setChoiceByValue(String(v)));
+        }
     }
 
     // Đóng modal chỉnh sửa và reset form
@@ -603,6 +677,14 @@
         closeDetailModal();
         openEditModal(row.querySelector("a[onclick*='openEditModal']"));
     }
+
+    //load lại trang và modal thêm sản phẩm đang mở sẵn, init Choices để hiển thị multiselect
+    document.addEventListener('DOMContentLoaded', function () {
+        const modal = document.getElementById('productModal');
+        if (modal && !modal.classList.contains('hidden')) {
+            initAddChoices();
+        }
+    });
 </script>
 
 <div th:replace="fragments/toast-script :: toast-script"></div>

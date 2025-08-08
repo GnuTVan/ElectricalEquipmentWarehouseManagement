@@ -7,6 +7,7 @@ import com.eewms.entities.Product;
 import com.eewms.exception.InventoryException;
 import com.eewms.services.IProductServices;
 import com.eewms.services.ISettingServices;
+import com.eewms.services.ISupplierService;
 import com.eewms.services.ImageUploadService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class ProductController {
     private final IProductServices productService;
     private final ISettingServices settingService;
     private final ImageUploadService imageUploadService;
+    private final ISupplierService supplierService;
 
     @GetMapping
     public String list( @RequestParam(value = "keyword",
@@ -45,6 +47,7 @@ public class ProductController {
         model.addAttribute("units",      settingService.findByTypeAndActive(SettingType.UNIT));
         model.addAttribute("brands",     settingService.findByTypeAndActive(SettingType.BRAND));
         model.addAttribute("categories", settingService.findByTypeAndActive(SettingType.CATEGORY));
+        model.addAttribute("suppliers",  supplierService.findAll()); // k cần lọc active
         return "product/product-list";
     }
 
@@ -63,6 +66,7 @@ public class ProductController {
             model.addAttribute("units",      settingService.findByTypeAndActive(SettingType.UNIT));
             model.addAttribute("brands",     settingService.findByTypeAndActive(SettingType.BRAND));
             model.addAttribute("categories", settingService.findByTypeAndActive(SettingType.CATEGORY));
+            model.addAttribute("suppliers",  supplierService.findAll()); //lọc active, sau sửa lại thành find active
             return "product/product-list";
         }
 
@@ -93,39 +97,6 @@ public class ProductController {
         return "redirect:/products";
     }
 
-//    @PostMapping("/save")
-//    public String save(
-//            @ModelAttribute("productDTO") ProductFormDTO dto,
-//            BindingResult br,
-//            Model model,
-//            RedirectAttributes ra) {
-//
-//        if (br.hasErrors()) {
-//            model.addAttribute("units",      settingService.getByType(SettingType.UNIT));
-//            model.addAttribute("brands",     settingService.getByType(SettingType.BRAND));
-//            model.addAttribute("categories", settingService.getByType(SettingType.CATEGORY));
-//            return "product-list";
-//        }
-//
-//        try {
-//            // Nếu id == null thì tạo mới, ngược lại update
-//            if (dto.getId() == null) {
-//                productService.create(dto);
-//                ra.addFlashAttribute( "success", "Thêm thành công");
-//            } else {
-//                productService.update(dto.getId(), dto);
-//                ra.addFlashAttribute("success", "Cập nhật thành công");
-//            }
-//        } catch (InventoryException ex) {
-//            ra.addFlashAttribute("error", ex.getMessage());
-//            model.addAttribute("units",      settingService.getByType(SettingType.UNIT));
-//            model.addAttribute("brands",     settingService.getByType(SettingType.BRAND));
-//            model.addAttribute("categories", settingService.getByType(SettingType.CATEGORY));
-//            return "product-list";
-//        }
-//        return "redirect:/products";
-//    }
-
     // Xử lý cập nhật
     @PostMapping("/update/{id}")
     public String updateProduct(@PathVariable Integer id,
@@ -144,6 +115,7 @@ public class ProductController {
             model.addAttribute("units", settingService.findByTypeAndActive(SettingType.UNIT));
             model.addAttribute("brands", settingService.findByTypeAndActive(SettingType.BRAND));
             model.addAttribute("categories", settingService.findByTypeAndActive(SettingType.CATEGORY));
+            model.addAttribute("suppliers",  supplierService.findAll()); //lọc active, sau sửa lại thành find active
             return "product/product-list";
         }
 
