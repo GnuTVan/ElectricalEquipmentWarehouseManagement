@@ -24,6 +24,7 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
     private final ProductRepository productRepo;
     private final CustomerRepository customerRepo;
     private final UserRepository userRepo;
+    private final GoodIssueNoteRepository goodIssueRepository;
 
     @Override
     @Transactional
@@ -94,7 +95,17 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
     public SaleOrderResponseDTO getById(Integer orderId) {
         SaleOrder saleOrder = orderRepo.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
-        return SaleOrderMapper.toOrderResponseDTO(saleOrder);
+
+        SaleOrderResponseDTO dto = SaleOrderMapper.toOrderResponseDTO(saleOrder);
+
+        boolean exported = goodIssueRepository.existsBySaleOrder_SoId(saleOrder.getSoId());
+        boolean stillMissing = !exported && saleOrder.getDetails().stream()
+                .anyMatch(d -> d.getProduct().getQuantity() < d.getOrderedQuantity());
+
+        dto.setHasInsufficientStock(stillMissing);
+        dto.setAlreadyExported(exported);
+
+        return dto;
     }
 
     @Transactional

@@ -9,10 +9,13 @@ import com.eewms.repository.*;
 import com.eewms.services.IPurchaseOrderService;
 import com.eewms.services.ImageUploadService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +43,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService {
 
         // Tạo đơn hàng
         PurchaseOrder order = PurchaseOrderMapper.toEntity(dto, supplier, attachmentUrl);
+        order.setCreatedByName(dto.getCreatedByName());
         order.setCode(generateOrderCode());
         order.setStatus(PurchaseOrderStatus.CHO_GIAO_HANG);
 
@@ -107,5 +111,12 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService {
                 .orElse(0L) + 1;
 
         return String.format("P%05d", nextNumber);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PurchaseOrderDTO> searchWithFilters(String keyword, PurchaseOrderStatus status, LocalDateTime from, LocalDateTime to, Pageable pageable) {
+        return orderRepo.searchWithFilters(keyword, status, from, to, pageable)
+                .map(PurchaseOrderMapper::toDTO);
     }
 }

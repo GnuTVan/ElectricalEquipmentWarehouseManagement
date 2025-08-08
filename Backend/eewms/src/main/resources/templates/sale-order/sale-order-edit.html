@@ -104,13 +104,11 @@
       </div>
 
       <!-- Nút "Tạo yêu cầu mua" khi đơn hàng thiếu hàng -->
-      <div th:if="${saleOrder.description.contains('thiếu hàng')}">
-        <form th:action="@{/create-purchase-request}" method="post">
-          <input type="hidden" name="orderId" th:value="${saleOrder.orderId}">
-          <button type="submit" class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded">
-            Tạo yêu cầu mua
-          </button>
-        </form>
+      <div th:if="${saleOrder.hasInsufficientStock and !saleOrder.alreadyExported}">
+        <a th:href="@{'/admin/purchase-requests/create-from-sale-order/' + ${saleOrder.orderId}}"
+           class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded inline-block">
+          Tạo yêu cầu mua
+        </a>
       </div>
       <!-- Hiển thị trạng thái hoàn tất đơn hàng -->
       <span th:if="${saleOrder.status.name() == 'COMPLETED'}" class="bg-green-100 text-green-800 px-4 py-2 rounded">

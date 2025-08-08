@@ -31,6 +31,19 @@
         <i class="ri-add-line mr-1"></i> Thêm đơn hàng
       </a>
     </div>
+  <form method="get" class="mb-4 flex items-center gap-2">
+    <input type="text" name="keyword" th:value="${keyword}" placeholder="Từ khóa (mã/ người tạo)"
+           class="border p-2 rounded w-60"/>
+    <select name="status" class="border p-2 rounded">
+      <option value="">-- Trạng thái --</option>
+      <option th:each="st : ${T(com.eewms.constant.PurchaseOrderStatus).values()}"
+              th:value="${st}" th:text="${st}" th:selected="${status == st}">
+      </option>
+    </select>
+    <input type="datetime-local" name="from" th:value="${from}" class="border p-2 rounded"/>
+    <input type="datetime-local" name="to" th:value="${to}" class="border p-2 rounded"/>
+    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Lọc</button>
+  </form>
 </div>
     <!-- Purchase Order Table -->
     <div class="overflow-x-auto bg-white rounded-lg shadow">
@@ -87,6 +100,13 @@
         </tr>
         </tbody>
       </table>
+      <div class="mt-4 flex justify-center space-x-2">
+        <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+           th:href="@{'/admin/purchase-orders'(page=${i}, keyword=${keyword}, status=${status}, from=${from}, to=${to})}"
+           th:text="${i + 1}"
+           th:class="'px-3 py-1 border rounded ' + (${i} == ${currentPage} ? 'bg-blue-600 text-white' : 'bg-white text-blue-600')">
+        </a>
+      </div>
     </div>
 
     <!-- Modal xác nhận -->
@@ -108,6 +128,7 @@
 </div>
 <!-- Footer -->
 <div th:replace="~{fragments/footer :: footer}"></div>
+
 
 <script>
 
