@@ -10,6 +10,7 @@ import com.eewms.services.ImageUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -58,8 +59,26 @@ public class ProductServicesImpl implements IProductServices {
             product = new Product();
         }
 
+        //Normalize ở DTO setter. Lấy code đã chuẩn hoá:
+        final String code = dto.getCode();
+
+        //UNIQUE CHECK
+        if (id == null) {
+            // create
+            if (productRepo.existsByCode(code)) {
+                throw new InventoryException("Mã sản phẩm đã tồn tại");
+            }
+        } else {
+            // update: tránh đụng record khác
+            productRepo.findByCode(code).ifPresent(p -> {
+                if (!p.getId().equals(id)) {
+                    throw new InventoryException("Mã sản phẩm đã tồn tại");
+                }
+            });
+        }
+
         // --- Gán chung các trường từ DTO ---
-        product.setCode(dto.getCode());
+        product.setCode(code);
         product.setName(dto.getName());
         product.setOriginPrice(dto.getOriginPrice());
         product.setListingPrice(dto.getListingPrice());

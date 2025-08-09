@@ -59,4 +59,13 @@ public class ProductFormDTO {
     // id các ncc cho create/edit
     @Size(min = 1, message = "Vui lòng chọn ít nhất một nhà cung cấp")
     private List<Long> supplierIds;
+
+    public void setCode(String code) {
+        if (code == null) {
+            this.code = null;
+        } else {
+            //trim -> remove all whitespaces -> UPPERCASE
+            this.code = code.trim().replaceAll("\\s+", "").toUpperCase();
+        }
+    }
 }

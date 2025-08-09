@@ -32,9 +32,9 @@ public class ProductController {
     private final ISupplierService supplierService;
 
     @GetMapping
-    public String list( @RequestParam(value = "keyword",
-                        required = false) String keyword,
-                        Model model) throws InventoryException {
+    public String list(@RequestParam(value = "keyword",
+                               required = false) String keyword,
+                       Model model) throws InventoryException {
 
         if (keyword != null && !keyword.isBlank()) {
             model.addAttribute("products", productService.searchByKeyword(keyword));
@@ -44,10 +44,10 @@ public class ProductController {
 
         model.addAttribute("keyword", keyword);
         model.addAttribute("productDTO", new ProductFormDTO());
-        model.addAttribute("units",      settingService.findByTypeAndActive(SettingType.UNIT));
-        model.addAttribute("brands",     settingService.findByTypeAndActive(SettingType.BRAND));
+        model.addAttribute("units", settingService.findByTypeAndActive(SettingType.UNIT));
+        model.addAttribute("brands", settingService.findByTypeAndActive(SettingType.BRAND));
         model.addAttribute("categories", settingService.findByTypeAndActive(SettingType.CATEGORY));
-        model.addAttribute("suppliers",  supplierService.findAll()); // k cần lọc active
+        model.addAttribute("suppliers", supplierService.findAll()); // k cần lọc active
         return "product/product-list";
     }
 
@@ -55,7 +55,7 @@ public class ProductController {
     @PostMapping
     public String create(@ModelAttribute("productDTO") @Valid ProductFormDTO dto,
                          BindingResult br,
-                         @RequestParam(value = "images",required = false) List<MultipartFile> images,
+                         @RequestParam(value = "images", required = false) List<MultipartFile> images,
                          Model model,
                          RedirectAttributes ra) {
         // Nếu có lỗi validate form
@@ -63,10 +63,10 @@ public class ProductController {
             model.addAttribute("productDTO", dto);// gán lại DTO để hiển thị lỗi
             model.addAttribute("hasFormError", true);
             model.addAttribute("products", productService.getAll());
-            model.addAttribute("units",      settingService.findByTypeAndActive(SettingType.UNIT));
-            model.addAttribute("brands",     settingService.findByTypeAndActive(SettingType.BRAND));
+            model.addAttribute("units", settingService.findByTypeAndActive(SettingType.UNIT));
+            model.addAttribute("brands", settingService.findByTypeAndActive(SettingType.BRAND));
             model.addAttribute("categories", settingService.findByTypeAndActive(SettingType.CATEGORY));
-            model.addAttribute("suppliers",  supplierService.findAll()); //lọc active, sau sửa lại thành find active
+            model.addAttribute("suppliers", supplierService.findAll()); //lọc active, sau sửa lại thành find active
             return "product/product-list";
         }
 
@@ -74,27 +74,49 @@ public class ProductController {
         try {
             List<String> urls = new java.util.ArrayList<>();
 
+            // Lọc bỏ file rỗng (nhiều trình duyệt gửi part rỗng khi không chọn ảnh)
+            List<MultipartFile> safeImages = (images == null) ? List.of()
+                    : images.stream()
+                    .filter(f -> f != null && !f.isEmpty() && f.getSize() > 0)
+                    .toList();
+
             // Nếu người dùng có upload ảnh
-            if (images != null && !images.isEmpty()) {
+            if (!safeImages.isEmpty()) {
                 try {
-                    urls = validateAndUploadImages(images, ra);
+                    urls = validateAndUploadImages(safeImages, ra);
                     dto.setUploadedImageUrls(urls);
                 } catch (Exception e) {
-                    ra.addFlashAttribute("error", e.getMessage());
+                    ra.addFlashAttribute("message", e.getMessage());
+                    ra.addFlashAttribute("messageType", "error");
                     return "redirect:/products";
                 }
             }
 
             dto.setUploadedImageUrls(urls); // gán URL đã xử lý vào DTO, có thể rỗng
             productService.create(dto);
+
             ra.addFlashAttribute("message", "Tạo thành công!");
             ra.addFlashAttribute("messageType", "success");
+            return "redirect:/products";
+
+        } catch (InventoryException ex) {
+            // <<<<<< THÊM: gắn lỗi vào field 'code' và mở lại modal Add
+            br.rejectValue("code", "code.duplicate", "Mã sản phẩm đã tồn tại");
+
+            model.addAttribute("productDTO", dto);
+            model.addAttribute("hasFormError", true);
+            model.addAttribute("products", productService.getAll());
+            model.addAttribute("units", settingService.findByTypeAndActive(SettingType.UNIT));
+            model.addAttribute("brands", settingService.findByTypeAndActive(SettingType.BRAND));
+            model.addAttribute("categories", settingService.findByTypeAndActive(SettingType.CATEGORY));
+            model.addAttribute("suppliers", supplierService.findAll());
+            return "product/product-list"; // <<<<<< KHÔNG redirect để modal hiển thị lỗi
+
         } catch (Exception ex) {
             ra.addFlashAttribute("message", "Lỗi khi tạo sản phẩm: " + ex.getMessage());
             ra.addFlashAttribute("messageType", "error");
+            return "redirect:/products";
         }
-
-        return "redirect:/products";
     }
 
     // Xử lý cập nhật
@@ -115,7 +137,7 @@ public class ProductController {
             model.addAttribute("units", settingService.findByTypeAndActive(SettingType.UNIT));
             model.addAttribute("brands", settingService.findByTypeAndActive(SettingType.BRAND));
             model.addAttribute("categories", settingService.findByTypeAndActive(SettingType.CATEGORY));
-            model.addAttribute("suppliers",  supplierService.findAll()); //lọc active, sau sửa lại thành find active
+            model.addAttribute("suppliers", supplierService.findAll()); //lọc active, sau sửa lại thành find active
             return "product/product-list";
         }
 
@@ -131,23 +153,38 @@ public class ProductController {
                     return "redirect:/products";
                 }
             }
+            productService.update(id, productForm);
 
             // Nếu có ảnh cần xóa
             if (deletedImages != null && !deletedImages.isEmpty()) {
                 productService.removeImagesByUrls(id, deletedImages);  // service tự xử lý xóa
             }
 
-            productService.update(id, productForm);
+
             redirect.addFlashAttribute("message", "Cập nhật sản phẩm thành công");
             redirect.addFlashAttribute("messageType", "success");
+            return "redirect:/products";
+
+        } catch (InventoryException ex) {
+            // <<<<<< THÊM: gắn lỗi vào field 'code' và mở lại modal Edit
+            br.rejectValue("code", "code.duplicate", "Mã sản phẩm đã tồn tại");
+
+            model.addAttribute("productDTO", productForm);
+            model.addAttribute("editError", true);
+            model.addAttribute("editId", id);
+            model.addAttribute("products", productService.getAll());
+            model.addAttribute("units", settingService.findByTypeAndActive(SettingType.UNIT));
+            model.addAttribute("brands", settingService.findByTypeAndActive(SettingType.BRAND));
+            model.addAttribute("categories", settingService.findByTypeAndActive(SettingType.CATEGORY));
+            model.addAttribute("suppliers", supplierService.findAll());
+            return "product/product-list"; // <<<<<< KHÔNG redirect
+
         } catch (Exception e) {
             redirect.addFlashAttribute("message", "Lỗi khi cập nhật: " + e.getMessage());
             redirect.addFlashAttribute("messageType", "error");
+            return "redirect:/products";
         }
-
-        return "redirect:/products";
     }
-
 
 
     @GetMapping("/{id}")
@@ -175,7 +212,8 @@ public class ProductController {
 
 
     //validate ảnh
-    private List<String> validateAndUploadImages(List<MultipartFile> images, RedirectAttributes redirect) throws Exception {
+    private List<String> validateAndUploadImages(List<MultipartFile> images, RedirectAttributes redirect) throws
+            Exception {
         List<String> urls = new java.util.ArrayList<>();
 
         for (int i = 0; i < images.size(); i++) {
