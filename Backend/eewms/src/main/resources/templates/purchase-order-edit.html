@@ -111,7 +111,7 @@
                                 <input type="number"
                                        th:name="'items[' + ${iStat.index} + '].deliveryQuantity'"
                                        th:value="0"
-                                       th:readonly="${readOnly or (orderDTO.status != T(com.eewms.constant.PurchaseOrderStatus).DA_GIAO_MOT_PHAN and orderDTO.status != T(com.eewms.constant.PurchaseOrderStatus).HOAN_THANH)}"
+                                       th:disabled="${readOnly or isLockedByStatus}"
 
                                        class="text-center w-24 border px-1"
                                        min="0"/>

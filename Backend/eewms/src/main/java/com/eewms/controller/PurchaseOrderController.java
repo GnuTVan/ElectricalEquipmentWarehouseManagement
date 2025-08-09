@@ -104,6 +104,25 @@ public class PurchaseOrderController {
             if (userOpt.isEmpty()) throw new IllegalArgumentException("Không tìm thấy người dùng");
 
             dto.setCreatedByName(userOpt.get().getFullName());
+
+            //thêm lọc dòng trống
+            //  Lọc bỏ dòng trống (không có productId)
+            if (dto.getItems() != null) {
+                dto.setItems(
+                        dto.getItems().stream()
+                                .filter(i -> i != null && i.getProductId() != null)
+                                .collect(Collectors.toList())
+                );
+            }
+
+            // Nếu không còn item nào -> báo lỗi
+            if (dto.getItems() == null || dto.getItems().isEmpty()) {
+                result.reject("items.empty", "Vui lòng chọn ít nhất 1 sản phẩm.");
+                model.addAttribute("suppliers", supplierRepo.findAll());
+                model.addAttribute("products", getPurchaseProductDTOs());
+                return "purchase-order-form";
+            }
+
             PurchaseOrder created = orderService.create(dto);
             redirect.addFlashAttribute("message", "Tạo đơn hàng thành công với mã: " + created.getCode());
             return "redirect:/admin/purchase-orders";
@@ -149,6 +168,7 @@ public class PurchaseOrderController {
                         .id(p.getId())
                         .name(p.getName())
                         .originPrice(p.getOriginPrice())
+                        .supplierIds(p.getSupplierIds())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -178,10 +198,16 @@ public class PurchaseOrderController {
 
         dto.setItems(itemDTOs);
 
+        var st = dto.getStatus(); // có thể null
+        boolean isLockedByStatus = (st == null)
+                || (st != PurchaseOrderStatus.DA_GIAO_MOT_PHAN && st != PurchaseOrderStatus.HOAN_THANH);
+
         // Truyền dữ liệu sang view
         model.addAttribute("orderDTO", dto);
         model.addAttribute("products", getPurchaseProductDTOs()); // Để lấy tên sản phẩm từ ID
         model.addAttribute("readOnly", readOnly);
+        model.addAttribute("isLockedByStatus", isLockedByStatus);
+
         return "purchase-order-edit";
     }
 
@@ -195,6 +221,12 @@ public class PurchaseOrderController {
             if (result.hasErrors()) {
                 model.addAttribute("products", getPurchaseProductDTOs());
                 model.addAttribute("readOnly", false);
+
+                var st = dto.getStatus();
+                boolean isLockedByStatus = (st == null)
+                        || (st != PurchaseOrderStatus.DA_GIAO_MOT_PHAN && st != PurchaseOrderStatus.HOAN_THANH);
+                model.addAttribute("isLockedByStatus", isLockedByStatus);
+
                 return "purchase-order-edit";
             }
 
@@ -240,6 +272,12 @@ public class PurchaseOrderController {
                             + "\": Tổng số lượng đã giao vượt quá số lượng hợp đồng (" + contract + ").");
                     model.addAttribute("products", getPurchaseProductDTOs());
                     model.addAttribute("readOnly", false);
+
+                    var st = dto.getStatus();
+                    boolean isLockedByStatus = (st == null)
+                            || (st != PurchaseOrderStatus.DA_GIAO_MOT_PHAN && st != PurchaseOrderStatus.HOAN_THANH);
+                    model.addAttribute("isLockedByStatus", isLockedByStatus);
+
                     return "purchase-order-edit";
                 }
 
@@ -264,6 +302,12 @@ public class PurchaseOrderController {
                     model.addAttribute("error", "Không thể hoàn thành đơn hàng khi chưa giao đủ tất cả sản phẩm.");
                     model.addAttribute("products", getPurchaseProductDTOs());
                     model.addAttribute("readOnly", false);
+
+                    var st = dto.getStatus();
+                    boolean isLockedByStatus = (st == null)
+                            || (st != PurchaseOrderStatus.DA_GIAO_MOT_PHAN && st != PurchaseOrderStatus.HOAN_THANH);
+                    model.addAttribute("isLockedByStatus", isLockedByStatus);
+
                     return "purchase-order-edit";
                 }
             }
@@ -276,6 +320,12 @@ public class PurchaseOrderController {
             model.addAttribute("error", e.getMessage());
             model.addAttribute("products", getPurchaseProductDTOs());
             model.addAttribute("readOnly", false);
+
+            var st = dto.getStatus();
+            boolean isLockedByStatus = (st == null)
+                    || (st != PurchaseOrderStatus.DA_GIAO_MOT_PHAN && st != PurchaseOrderStatus.HOAN_THANH);
+            model.addAttribute("isLockedByStatus", isLockedByStatus);
+
             return "purchase-order-edit";
         }
     }

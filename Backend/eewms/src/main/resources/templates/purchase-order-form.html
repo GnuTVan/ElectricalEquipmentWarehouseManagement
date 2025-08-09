@@ -78,13 +78,13 @@
                         <tbody id="itemTableBody"></tbody>
                         <tfoot>
                         <tr>
-                            <td colspan="3" class="px-3 py-2 text-right font-semibold">Tổng tiền:</td>
+                            <td colspan="3" class="px-3 py-2 text-right font-bold">Tổng tiền:</td>
                             <td class="px-3 py-2 text-right font-bold" id="grandTotal">0</td>
                             <td></td>
                         </tr>
                         </tfoot>
                     </table>
-                    <button type="button" onclick="addItemRow()"
+                    <button type="button" id="btnAddItem" onclick="addItemRow()"
                             class="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
                         <i class="ri-add-line mr-1"></i> Thêm sản phẩm
                     </button>
@@ -103,18 +103,156 @@
 <script th:inline="javascript">
     const products = /*[[${products}]]*/ [];
 
+    // --- NEW: state & refs ---
+    let supplierLock = null; // null = chưa khóa, chỉ khóa sau khi chọn sp đầu tiên hoặc chọn NCC
+    const supplierSelect = document.querySelector('[name="supplierId"]');
+    const tableBody = document.getElementById('itemTableBody');
+    const addBtn = document.getElementById('btnAddItem');
+
+    // --- NEW: helpers ---
+    function getAllowedProducts() {
+        if (!supplierLock) return products;
+        return products.filter(p => (p.supplierIds || []).some(id => String(id) === String(supplierLock)));
+    }
+
+    function getAllowedCount() {
+        return getAllowedProducts().length;
+    }
+
+    function getRemainingCount(excludeSelect = null) {
+        const allowed = getAllowedProducts();
+        const selected = getSelectedProductIds(excludeSelect);
+        return allowed.filter(p => !selected.has(String(p.id))).length;
+    }
+
+    function updateAddButtonVisibility() {
+        const remain = getRemainingCount();           // còn bao nhiêu SP chưa dùng
+        const rows = tableBody.querySelectorAll('tr').length;
+        const limit = supplierLock ? getAllowedCount() : Infinity; // chỉ giới hạn khi đã lock
+        const canAdd = remain > 0 && rows < limit;
+        if (addBtn) addBtn.style.display = canAdd ? '' : 'none';
+    }
+
+    function isRowEmpty(row) {
+        const sel = row.querySelector('.product-select');
+        return !sel || !sel.value;
+    }
+
+    function trimOrPadRowsTo(limit, opts = {pad: true}) {
+        const {pad = true} = opts;
+        let rows = Array.from(tableBody.querySelectorAll('tr'));
+        let current = rows.length;
+
+        // Trim: xóa dòng TRỐNG từ cuối cho tới khi ≤ limit
+        for (let i = rows.length - 1; i >= 0 && current > limit; i--) {
+            if (isRowEmpty(rows[i])) {
+                rows[i].remove();
+                current--;
+            }
+        }
+        // Không đụng dòng đã chọn nếu vẫn dư
+
+        // Pad: chỉ khi được phép
+        if (pad) {
+            while (current < limit && getRemainingCount() > 0) {
+                addItemRow();
+                current++;
+            }
+        }
+        updateAddButtonVisibility();
+    }
+
+    function autofillRemainingProducts() {
+        const allowed = getAllowedProducts();
+        const already = getSelectedProductIds();
+        const queue = allowed.filter(p => !already.has(String(p.id))); // các SP chưa dùng
+
+        // Fill các dòng trống bằng các SP còn lại trong queue
+        document.querySelectorAll('#itemTableBody select.product-select').forEach(sel => {
+            if (sel.value) return; // dòng đã chọn thì bỏ qua
+            const next = queue.shift();
+            if (!next) return;
+            sel.value = String(next.id);
+            updatePrice(sel);
+        });
+
+        // Cập nhật option để loại trùng trên các select khác
+        refreshAllProductSelects(false);
+        updateAddButtonVisibility();
+    }
+
+    // --- Selected products helper ---
+    function getSelectedProductIds(excludeSelect = null) {
+        const ids = new Set();
+        document.querySelectorAll('#itemTableBody select.product-select').forEach(sel => {
+            if (excludeSelect && sel === excludeSelect) return;
+            const v = sel.value?.trim();
+            if (v) ids.add(String(v));
+        });
+        return ids;
+    }
+
+    // function buildOptions(allowed, ) {
+    //     const opts = allowed.map(p =>
+    //         `<option value="${p.id}" data-price="${Number(p.originPrice)}" data-suppliers="${(p.supplierIds || []).join(',')}">
+    //   ${p.name}
+    // </option>`
+    //     ).join('');
+    //     return `<option value="">-- Chọn sản phẩm --</option>` + opts;
+    // }
+    function buildOptions(allowed, currentSelectedId = null, excludeIds = new Set()) {
+        const opts = allowed
+            .filter(p => {
+                const pid = String(p.id);
+                // Giữ lại option nếu là currentSelectedId; còn lại loại các pid đã chọn
+                return currentSelectedId && pid === String(currentSelectedId) ? true : !excludeIds.has(pid);
+            })
+            .map(p =>
+                `<option value="${p.id}" data-price="${Number(p.originPrice)}"
+               data-suppliers="${(p.supplierIds || []).join(',')}">${p.name}</option>`
+            ).join('');
+        return `<option value="">-- Chọn sản phẩm --</option>` + opts;
+    }
+
+    function refreshAllProductSelects(resetIfInvalid = false) {
+        const allowed = getAllowedProducts();
+        document.querySelectorAll('#itemTableBody select.product-select').forEach(sel => {
+            const current = sel.value || '';
+            const exclude = getSelectedProductIds(sel); // loại những sp đang được chọn ở select khác
+            sel.innerHTML = buildOptions(allowed, current, exclude);
+
+            if (current && allowed.some(p => String(p.id) === String(current))) {
+                sel.value = current;
+            } else if (resetIfInvalid) {
+                sel.value = '';
+            }
+            updatePrice(sel);
+        });
+        updateAddButtonVisibility();
+    }
+
     function addItemRow() {
+        const rows = tableBody.querySelectorAll('tr').length;
+        const limit = supplierLock ? getAllowedCount() : Infinity;
+        if (getRemainingCount() <= 0 || rows >= limit) {
+            updateAddButtonVisibility();
+            return;
+        }
+
         const table = document.getElementById('itemTableBody');
         const index = table.children.length;
 
         const row = document.createElement('tr');
 
-        let productOptions = products.map(p => `<option value="${p.id}" data-price="${p.originPrice}">${p.name}</option>`).join('');
+        // --- CHANGED: dùng allowed theo supplierLock ---
+        const allowed = getAllowedProducts();
+        const exclude = getSelectedProductIds(); // loại sp đã chọn ở các dòng khác
+        const productOptions = buildOptions(allowed, null, exclude);
 
         row.innerHTML = `
         <td class="px-2 py-1">
           <select name="items[${index}].productId" class="w-full border rounded px-2 py-1 product-select"
-                  onchange="updatePrice(this)">
+                  onchange="onProductChange(this)">
               ${productOptions}
           </select>
         </td>
@@ -128,7 +266,7 @@
             <span class="lineTotal">0</span>
         </td>
         <td class="px-2 py-1 text-center">
-            <button type="button" onclick="this.closest('tr').remove(); recalculateTotal()" class="text-red-600 text-lg">
+            <button type="button" onclick="this.closest('tr').remove(); onRowRemoved()" class="text-red-600 text-lg">
                 <i class="ri-close-line"></i>
             </button>
         </td>`;
@@ -137,14 +275,17 @@
         const select = row.querySelector('.product-select');
         updatePrice(select);
         recalculateTotal();
+        updateAddButtonVisibility();
     }
 
     function updatePrice(selectElement) {
         const selectedOption = selectElement.options[selectElement.selectedIndex];
-        const originPrice = parseFloat(selectedOption.dataset.price || 0);
+        const priceRaw = selectedOption ? selectedOption.dataset.price : 0;
+        const originPrice = parseFloat(priceRaw || 0);
+
         const row = selectElement.closest('tr');
         const priceInput = row.querySelector('.price');
-        priceInput.value = originPrice.toFixed(0);
+        priceInput.value = isNaN(originPrice) ? 0 : originPrice.toFixed(0);
         calculateTotal(priceInput);
     }
 
@@ -167,6 +308,83 @@
         document.getElementById('grandTotal').textContent = total.toFixed(0);
     }
 
+    // --- NEW: chọn sản phẩm (kèm update price ở đây nhé)---
+    function onProductChange(selectElement) {
+        updatePrice(selectElement);
+
+        if (!supplierLock && selectElement.value) {
+            const opt = selectElement.selectedOptions[0];
+            const suppliersCsv = opt?.dataset?.suppliers || '';
+            const supplierIds = suppliersCsv ? suppliersCsv.split(',').map(s => s.trim()).filter(Boolean) : [];
+            if (supplierIds.length > 0) {
+                // Lock NCC theo sản phẩm đầu tiên nếu dropdown NCC đang trống
+                supplierLock = supplierSelect?.value ? supplierSelect.value : supplierIds[0];
+                if (supplierSelect) supplierSelect.value = supplierLock;
+
+                refreshAllProductSelects(false);
+
+                const limit = getAllowedCount();
+                const rowsBefore = tableBody.querySelectorAll('tr').length;
+
+                // CHỈ khi đang dư dòng mới trim + autofill
+                if (rowsBefore > limit) {
+                    trimOrPadRowsTo(limit, {pad: false});
+                    autofillRemainingProducts();
+                }
+            }
+        } else {
+            // Đã lock từ trước hoặc thay đổi lựa chọn sau đó:
+            // chỉ refresh để loại trùng, KHÔNG pad, KHÔNG autofill
+            refreshAllProductSelects(false);
+        }
+
+        updateAddButtonVisibility();
+    }
+
+    // --- NEW: xóa dòng ---
+    function onRowRemoved() {
+        recalculateTotal();
+        // Nếu xóa hết & chưa chọn NCC → bỏ khóa để lần thêm sau lại thấy tất cả
+        if (!supplierSelect?.value && document.querySelectorAll('#itemTableBody tr').length === 0) {
+            supplierLock = null;
+            refreshAllProductSelects(true);
+            addItemRow();
+        }
+        updateAddButtonVisibility();
+    }
+
+    // --- NEW: khởi tạo dòng đầu tiên nếu chưa có ---
+    document.addEventListener('DOMContentLoaded', () => {
+        if (document.querySelectorAll('#itemTableBody tr').length === 0) {
+            addItemRow();
+        }
+        updateAddButtonVisibility();
+    });
+
+
+    // --- NEW: đổi NCC ---
+    supplierSelect?.addEventListener('change', () => {
+        const newSupplier = supplierSelect.value || null;
+
+        supplierLock = newSupplier; // có thể null
+        refreshAllProductSelects(true);
+
+        if (supplierLock) {
+            const limit = getAllowedCount();
+            const rowsBefore = tableBody.querySelectorAll('tr').length;
+
+            // CHỈ khi dư dòng mới trim + autofill
+            if (rowsBefore > limit) {
+                trimOrPadRowsTo(limit, {pad: false});
+                autofillRemainingProducts();
+            }
+        } else {
+            // Chưa chọn NCC: nếu chưa có dòng nào thì tạo 1 dòng trống để thao tác
+            if (document.querySelectorAll('#itemTableBody tr').length === 0) addItemRow();
+        }
+
+        updateAddButtonVisibility();
+    });
 
     const userBtn = document.getElementById('userMenuBtn');
     const dropdown = document.getElementById('userMenuDropdown');
@@ -182,6 +400,34 @@
         });
 
     }
+
+    function removeEmptyRows() {
+        document.querySelectorAll('#itemTableBody tr').forEach(row => {
+            const select = row.querySelector('.product-select');
+            if (!select || !select.value) {
+                row.remove();
+            }
+        });
+    }
+
+    function renumberRows() {
+        const rows = document.querySelectorAll('#itemTableBody tr');
+        rows.forEach((row, idx) => {
+            row.querySelectorAll('select[name], input[name]').forEach(el => {
+                const oldName = el.getAttribute('name');
+                if (!oldName) return;
+                // thay thế chỉ số items[<số>] thành items[idx]
+                const newName = oldName.replace(/items\[\d+\]/, `items[${idx}]`);
+                el.setAttribute('name', newName);
+            });
+        });
+    }
+
+    // Xoá dòng trống + reindex ngay trước khi submit
+    document.querySelector('form')?.addEventListener('submit', function () {
+        removeEmptyRows();
+        renumberRows();
+    });
 </script>
 </body>
 </html>
