@@ -37,6 +37,10 @@ public class ComboServiceImpl implements IComboService {
         if (comboRepository.existsByCodeIgnoreCase(code)) {
             throw new IllegalArgumentException("Mã combo đã tồn tại: " + code);
         }
+        // === THÊM: check tên ===
+        if (comboRepository.existsByNameIgnoreCase(name)) {
+            throw new IllegalArgumentException("Tên combo đã tồn tại: " + name);
+        }
 
         Combo combo = upsertToEntity(new Combo(), req, code, name);
         return ComboMapper.toDTO(comboRepository.save(combo));
@@ -48,7 +52,7 @@ public class ComboServiceImpl implements IComboService {
         Combo combo = comboRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy combo: " + id));
 
-        // Giữ nguyên code cũ nếu FE không gửi code
+        // code
         String code;
         if (req.getCode() == null || req.getCode().isBlank()) {
             code = combo.getCode();
@@ -60,7 +64,12 @@ public class ComboServiceImpl implements IComboService {
             }
         }
 
+        // name
         String name = NameUtils.normalizeName(req.getName());
+        if (!combo.getName().equalsIgnoreCase(name)
+                && comboRepository.existsByNameIgnoreCaseAndIdNot(name, id)) {
+            throw new IllegalArgumentException("Tên combo đã tồn tại: " + name);
+        }
 
         Combo updated = upsertToEntity(combo, req, code, name);
         return ComboMapper.toDTO(comboRepository.save(updated));

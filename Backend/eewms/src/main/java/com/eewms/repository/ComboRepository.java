@@ -11,13 +11,19 @@ import java.util.Optional;
 
 @Repository
 public interface ComboRepository extends JpaRepository<Combo, Long> {
+
     Optional<Combo> findByCode(String code);
     List<Combo> findByStatus(Combo.ComboStatus status);
 
-    // ==== bổ sung để fix lỗi ở Service ====
     boolean existsByCodeIgnoreCase(String code);
     @Query("select (count(c)>0) from Combo c where lower(c.code)=lower(:code) and c.id <> :id")
     boolean existsByCodeIgnoreCaseAndIdNot(@Param("code") String code, @Param("id") Long id);
+
+    // === THÊM MỚI: check trùng tên ===
+    boolean existsByNameIgnoreCase(String name);
+
+    @Query("select (count(c)>0) from Combo c where lower(c.name)=lower(:name) and c.id <> :id")
+    boolean existsByNameIgnoreCaseAndIdNot(@Param("name") String name, @Param("id") Long id);
 
     List<Combo> findByNameContainingIgnoreCaseOrCodeContainingIgnoreCase(String nameKeyword, String codeKeyword);
 
