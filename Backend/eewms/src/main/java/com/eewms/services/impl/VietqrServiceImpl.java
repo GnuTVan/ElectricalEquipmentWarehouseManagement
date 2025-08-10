@@ -1,10 +1,10 @@
 package com.eewms.services.impl;
 
 import com.eewms.config.TaxLookupProperties;
-import com.eewms.dto.VietQR.BankDTO;
-import com.eewms.dto.VietQR.BizInfo;
-import com.eewms.dto.VietQR.TaxLookupResponse;
-import com.eewms.dto.VietQR.VietqrBankResponse;
+import com.eewms.dto.vietQR.BankDTO;
+import com.eewms.dto.vietQR.BizInfo;
+import com.eewms.dto.vietQR.TaxLookupResponse;
+import com.eewms.dto.vietQR.VietqrBankResponse;
 import com.eewms.services.IVietqrService;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -112,7 +112,7 @@ public class VietqrServiceImpl implements IVietqrService {
         CACHE.put(key, new CacheEntry(data, Instant.now().toEpochMilli()));
     }
 
-    // DTO map từ VietQR
+    // DTO map từ vietQR
     @JsonIgnoreProperties(ignoreUnknown = true)
     static class VietqrResponse {
         @JsonProperty("data")

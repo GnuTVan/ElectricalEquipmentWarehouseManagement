@@ -16,6 +16,28 @@
                 positionClass: "toast-top-right"
             };
             toastr[messageType](message);
+
+            // --- Gửi lưu lịch sử thông báo (best-effort) ---
+            try {
+                const csrfH = document.querySelector('meta[name="_csrf_header"]')?.content;
+                const csrfT = document.querySelector('meta[name="_csrf"]')?.content;
+                const headers = {'Content-Type': 'application/json'};
+                if (csrfH && csrfT) headers[csrfH] = csrfT;
+
+                fetch('/admin/notifications', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ type: String(messageType).toLowerCase(), message: message })
+                }).then(() => {
+                    // Cập nhật badge ngay sau khi lưu thành công
+                    if (window.__notif_inc) {
+                        window.__notif_inc();
+                    } else {
+                        // notification-bell.js chưa sẵn sàng → đặt cờ tăng bù
+                        sessionStorage.setItem('notif_inc_pending', '1');
+                    }
+                }).catch(()=>{});
+            } catch(e) { /* noop */ }
         }
         /*]]>*/
     </script>

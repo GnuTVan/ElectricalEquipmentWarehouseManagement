@@ -1,4 +1,4 @@
-package com.eewms.dto.VietQR;
+package com.eewms.dto.vietQR;
 
 import lombok.Getter;
 import lombok.Setter;

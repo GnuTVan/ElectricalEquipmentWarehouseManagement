@@ -4,16 +4,15 @@
         <i class="ri-menu-line text-2xl"></i>
     </button>
 
-    <!-- Search Bar -->
+    <!-- Tên -->
     <div class="relative w-full max-w-md">
-                <h1 class="text-2xl font-bold">Thiết bị điện Hải Phòng</h1>
-<!--        <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>-->
-<!--        <input type="text" placeholder="Tìm kiếm..."-->
-<!--               class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">-->
+        <h1 class="text-2xl font-bold">Thiết bị điện Hải Phòng</h1>
     </div>
 
     <!-- User Menu -->
-    <div class="ms-auto relative" id="userMenuWrapper">
+    <div class="ms-auto relative flex items-center space-x-3" id="userMenuWrapper">
+        <!-- Nút thông báo -->
+        <div th:replace="~{fragments/notification-bell :: notificationBell}"></div>
         <!-- Nút avatar -->
         <button id="userMenuBtn"
                 class="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 focus:outline-none">
@@ -54,4 +53,5 @@
             </form>
         </div>
     </div>
+    <script th:src="@{/assets/js/notification-bell.js}"></script>
 </header>

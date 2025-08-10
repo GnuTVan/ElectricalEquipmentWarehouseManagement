@@ -1,0 +1,24 @@
+<div th:fragment="notificationBell">
+    <div class="relative">
+        <button id="btnNotif" type="button"
+                class="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring relative">
+            <i class="ri-notification-3-line text-xl"></i>
+            <span id="notifBadge"
+                  class="hidden absolute -top-1 -right-1 min-w-[1.25rem] h-5 flex items-center justify-center text-xs px-1 bg-red-500 text-white rounded-full">
+        0
+    </span>
+        </button>
+
+        <!-- Dropdown -->
+        <div id="notifDropdown"
+             class="hidden absolute right-0 mt-2 w-96 bg-white shadow-xl rounded-2xl p-2 z-50 border border-gray-100">
+            <div class="flex items-center justify-between px-3 py-2">
+                <div class="font-semibold">Lịch sử thông báo</div>
+                <button id="btnClearAll" type="button"
+                        class="text-sm text-red-600 hover:underline">Xoá tất cả
+                </button>
+            </div>
+            <div id="notifList" class="max-h-80 overflow-auto divide-y"></div>
+        </div>
+    </div>
+</div>

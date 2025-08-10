@@ -1,7 +1,7 @@
 package com.eewms.controller;
 
-import com.eewms.dto.VietQR.BankDTO;
-import com.eewms.dto.VietQR.TaxLookupResponse;
+import com.eewms.dto.vietQR.BankDTO;
+import com.eewms.dto.vietQR.TaxLookupResponse;
 import com.eewms.services.IVietqrService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -1,7 +1,7 @@
 package com.eewms.services;
 
-import com.eewms.dto.VietQR.BankDTO;
-import com.eewms.dto.VietQR.TaxLookupResponse;
+import com.eewms.dto.vietQR.BankDTO;
+import com.eewms.dto.vietQR.TaxLookupResponse;
 
 import java.util.List;
 
