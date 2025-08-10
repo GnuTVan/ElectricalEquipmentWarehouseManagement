@@ -93,7 +93,7 @@ public class SupplierController {
 
         // 3) Lưu
         supplierService.create(dto);
-        redirect.addFlashAttribute("message", "Thêm nhà cung cấp thành công, Tên: " + name);
+        redirect.addFlashAttribute("message", "Thêm NCC thành công, Tên: " + name);
         redirect.addFlashAttribute("messageType", "success");
         return "redirect:/admin/suppliers";
     }
