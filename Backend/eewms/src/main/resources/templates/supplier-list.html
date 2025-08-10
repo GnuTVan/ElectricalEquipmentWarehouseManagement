@@ -20,8 +20,10 @@
             <h1 class="text-2xl font-bold text-gray-800">Danh sách nhà cung cấp</h1>
             <div class="flex items-center gap-2">
                 <form th:action="@{/admin/suppliers}" method="get" class="flex gap-2">
-                    <input type="text" name="keyword" th:value="${keyword}" placeholder="Tìm theo tên, mã số thuế..." class="border px-3 py-2 rounded-md w-64" />
-                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tìm</button>
+                    <input type="text" name="keyword" th:value="${keyword}" placeholder="Tìm theo tên, mã số thuế..."
+                           class="border px-3 py-2 rounded-md w-64"/>
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tìm
+                    </button>
                 </form>
                 <button id="openAddModal" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm">
                     <i class="ri-add-line mr-1"></i> Thêm mới
@@ -59,7 +61,7 @@
                     <td class="px-4 py-2">
                             <span class="px-2 py-1 rounded text-xs font-medium"
                                   th:classappend="${supplier.status == true} ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
-                                  th:text="${supplier.status == true} ? 'Đang hoạt động' : 'Ngưng hoạt động'" >
+                                  th:text="${supplier.status == true} ? 'Đang hoạt động' : 'Ngưng hoạt động'">
 
                         </span>
 
@@ -81,13 +83,13 @@
                                     th:data-status="${supplier.status} == true ? 'true' : 'false'"
 
 
-
                                     th:data-description="${supplier.description}">
                                 <i class="ri-pencil-line"></i>
                             </button>
 
-                            <form th:action="@{'/admin/suppliers/toggle/' + ${supplier.id}}" method="post" class="status-toggle-form" th:data-id="${supplier.id}">
-                            <label class="inline-flex items-center cursor-pointer relative">
+                            <form th:action="@{'/admin/suppliers/toggle/' + ${supplier.id}}" method="post"
+                                  class="status-toggle-form" th:data-id="${supplier.id}">
+                                <label class="inline-flex items-center cursor-pointer relative">
                                     <input type="checkbox" name="status"
                                            th:checked="${supplier.status}"
                                            onchange="this.form.submit()" class="sr-only peer">
@@ -141,11 +143,11 @@
             </div>
 
 
-
         </div>
 
         <!-- ✅ Modal Thêm nhà cung cấp -->
-        <div id="addSupplierModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-30 flex items-center justify-center">
+        <div id="addSupplierModal"
+             class="fixed inset-0 z-50 hidden bg-black bg-opacity-30 flex items-center justify-center">
             <div class="bg-white rounded-lg shadow-md w-full max-w-2xl">
                 <div class="flex justify-between items-center p-4 border-b">
                     <h2 class="text-lg font-semibold text-gray-700">Thêm nhà cung cấp</h2>
@@ -155,46 +157,69 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Tên nhà cung cấp</label>
-                            <input type="text" th:field="*{name}" class="mt-1 w-full border rounded px-3 py-2 text-sm" required>
-                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
+                            <input type="text" th:field="*{name}" id="name" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('name')}"
+                               th:errors="*{name}"></p>
                         </div>
+<!--                        <div>-->
+<!--                            <label class="block text-sm font-medium text-gray-700">Mã số thuế</label>-->
+<!--                            <input type="text" th:field="*{taxCode}"-->
+<!--                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">-->
+<!--                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('taxCode')}"-->
+<!--                               th:errors="*{taxCode}"></p>-->
+<!--                        </div>-->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Mã số thuế</label>
-                            <input type="text" th:field="*{taxCode}" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Mã số thuế
+                                <span id="taxLoading" class="ml-2 text-xs text-gray-500 hidden">Đang tra…</span>
+                            </label>
+                            <div class="mt-1 flex gap-2">
+                                <input type="text" th:field="*{taxCode}" id="taxCode" class="w-full border rounded px-3 py-2 text-sm">
+                                <button type="button" id="btnFetchTax" class="px-3 py-2 bg-gray-100 rounded border text-sm">Lấy</button>
+                            </div>
                             <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('taxCode')}" th:errors="*{taxCode}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Ngân hàng</label>
-                            <input type="text" th:field="*{bankName}" class="mt-1 w-full border rounded px-3 py-2 text-sm">
-                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankName')}" th:errors="*{bankName}"></p>
+                            <input type="text" th:field="*{bankName}"
+                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankName')}"
+                               th:errors="*{bankName}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Số tài khoản</label>
-                            <input type="text" th:field="*{bankAccount}" class="mt-1 w-full border rounded px-3 py-2 text-sm">
-                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankAccount')}" th:errors="*{bankAccount}"></p>
+                            <input type="text" th:field="*{bankAccount}"
+                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankAccount')}"
+                               th:errors="*{bankAccount}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Người liên hệ</label>
-                            <input type="text" th:field="*{contactName}" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <input type="text" th:field="*{contactName}"
+                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">
                             <p class="text-red-500 text-xs italic mt-1"
                                th:if="${#fields.hasErrors('contactName')}"
                                th:errors="*{contactName}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Số điện thoại</label>
-                            <input type="text" th:field="*{contactMobile}" class="mt-1 w-full border rounded px-3 py-2 text-sm">
-                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('contactMobile')}" th:errors="*{contactMobile}"></p>
+                            <input type="text" th:field="*{contactMobile}"
+                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('contactMobile')}"
+                               th:errors="*{contactMobile}"></p>
                         </div>
                         <div class="col-span-2">
                             <label class="block text-sm font-medium text-gray-700">Địa chỉ</label>
-                            <input type="text" th:field="*{address}" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <input type="text" th:field="*{address}" id="address"
+                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">
                             <p class="text-red-500 text-xs italic mt-1"
                                th:if="${#fields.hasErrors('address')}"
                                th:errors="*{address}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Ghi chú</label>
-                            <input type="text" th:field="*{description}" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <input type="text" th:field="*{description}"
+                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">
                             <p class="text-red-500 text-xs italic mt-1"
                                th:if="${#fields.hasErrors('description')}"
                                th:errors="*{description}"></p>
@@ -209,10 +234,12 @@
 
                     </div>
                     <div class="flex justify-end mt-4 space-x-2">
-                        <button type="button" onclick="closeAddModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded text-sm">
+                        <button type="button" onclick="closeAddModal()"
+                                class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded text-sm">
                             Đóng
                         </button>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+                        <button type="submit"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
                             Lưu
                         </button>
                     </div>
@@ -221,79 +248,109 @@
         </div>
 
         <!-- ✅ Modal Sửa nhà cung cấp -->
-        <div id="editSupplierModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-30 flex items-center justify-center">
+        <div id="editSupplierModal"
+             class="fixed inset-0 z-50 hidden bg-black bg-opacity-30 flex items-center justify-center">
             <div class="bg-white rounded-lg shadow-md w-full max-w-2xl">
                 <div class="flex justify-between items-center p-4 border-b">
                     <h2 class="text-lg font-semibold text-gray-700">Chỉnh sửa nhà cung cấp</h2>
-                    <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-800 text-xl">&times;</button>
+                    <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-800 text-xl">&times;
+                    </button>
                 </div>
-                <form th:action="@{/admin/suppliers/update}" method="post" th:object="${editSupplier}" class="p-6 space-y-4">
+                <form th:action="@{/admin/suppliers/update}" method="post" th:object="${editSupplier}"
+                      class="p-6 space-y-4">
                     <input type="hidden" th:field="*{id}" id="editId"/>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Tên nhà cung cấp</label>
-                            <input type="text" th:field="*{name}" id="editName" class="mt-1 w-full border rounded px-3 py-2 text-sm">
-                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
+                            <input type="text" th:field="*{name}" id="editName"
+                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('name')}"
+                               th:errors="*{name}"></p>
                         </div>
+<!--                        <div>-->
+<!--                            <label class="block text-sm font-medium text-gray-700">Mã số thuế</label>-->
+<!--                            <input type="text" th:field="*{taxCode}" id="editTaxCode"-->
+<!--                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">-->
+<!--                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('taxCode')}"-->
+<!--                               th:errors="*{taxCode}"></p>-->
+<!--                        </div>-->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Mã số thuế</label>
-                            <input type="text" th:field="*{taxCode}" id="editTaxCode" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Mã số thuế
+                                <span id="editTaxLoading" class="ml-2 text-xs text-gray-500 hidden">Đang tra…</span>
+                            </label>
+                            <div class="mt-1 flex gap-2">
+                                <input type="text" th:field="*{taxCode}" id="editTaxCode" class="w-full border rounded px-3 py-2 text-sm">
+                                <button type="button" id="btnFetchTaxEdit" class="px-3 py-2 bg-gray-100 rounded border text-sm">Lấy</button>
+                            </div>
                             <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('taxCode')}" th:errors="*{taxCode}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Ngân hàng</label>
-                            <input type="text" th:field="*{bankName}" id="editBankName" class="mt-1 w-full border rounded px-3 py-2 text-sm">
-                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankName')}" th:errors="*{bankName}"></p>
+                            <input type="text" th:field="*{bankName}" id="editBankName"
+                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankName')}"
+                               th:errors="*{bankName}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Số tài khoản</label>
-                            <input type="text" th:field="*{bankAccount}" id="editBankAccount" class="mt-1 w-full border rounded px-3 py-2 text-sm">
-                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankAccount')}" th:errors="*{bankAccount}"></p>
+                            <input type="text" th:field="*{bankAccount}" id="editBankAccount"
+                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankAccount')}"
+                               th:errors="*{bankAccount}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Người liên hệ</label>
-                            <input type="text" th:field="*{contactName}" id="editContactName" class="mt-1 w-full border rounded px-3 py-2 text-sm">
-                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('contactName')}" th:errors="*{contactName}"></p>
+                            <input type="text" th:field="*{contactName}" id="editContactName"
+                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('contactName')}"
+                               th:errors="*{contactName}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Số điện thoại</label>
-                            <input type="text" th:field="*{contactMobile}" id="editContactMobile" class="mt-1 w-full border rounded px-3 py-2 text-sm">
-                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('contactMobile')}" th:errors="*{contactMobile}"></p>
+                            <input type="text" th:field="*{contactMobile}" id="editContactMobile"
+                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('contactMobile')}"
+                               th:errors="*{contactMobile}"></p>
                         </div>
                         <div class="col-span-2">
                             <label class="block text-sm font-medium text-gray-700">Địa chỉ</label>
-                            <input type="text" th:field="*{address}" id="editAddress" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <input type="text" th:field="*{address}" id="editAddress"
+                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">
                             <p class="text-red-500 text-xs italic mt-1"
                                th:if="${#fields.hasErrors('address')}"
                                th:errors="*{address}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Trạng thái</label>
-                            <select th:field="*{status}" id="editStatus" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <select th:field="*{status}" id="editStatus"
+                                    class="mt-1 w-full border rounded px-3 py-2 text-sm">
                                 <option value="true">Đang hoạt động</option>
                                 <option value="false">Ngưng hoạt động</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Ghi chú</label>
-                            <input type="text" th:field="*{description}" id="editDescription" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <input type="text" th:field="*{description}" id="editDescription"
+                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">
                             <p class="text-red-500 text-xs italic mt-1"
                                th:if="${#fields.hasErrors('description')}"
                                th:errors="*{description}"></p>
                         </div>
                     </div>
                     <div class="flex justify-end mt-4 space-x-2">
-                        <button type="button" onclick="closeEditModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded text-sm">
+                        <button type="button" onclick="closeEditModal()"
+                                class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded text-sm">
                             Hủy
                         </button>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+                        <button type="submit"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
                             Lưu thay đổi
                         </button>
                     </div>
                 </form>
             </div>
         </div>
-
 
 
     </main>
@@ -332,13 +389,13 @@
     }
 
     document.addEventListener("DOMContentLoaded", function () {
-    const alert = document.getElementById('alertSuccess');
-    if (alert) {
-        setTimeout(() => {
-            alert.classList.add('hidden');
-        }, 3000);
-    }
-});
+        const alert = document.getElementById('alertSuccess');
+        if (alert) {
+            setTimeout(() => {
+                alert.classList.add('hidden');
+            }, 3000);
+        }
+    });
 </script>
 
 
@@ -380,23 +437,21 @@
             },
             body: `status=${isChecked}`
         })
-        .then(res => {
-            if (!res.ok) {
-                alert("Cập nhật trạng thái thất bại.");
-                checkbox.checked = !isChecked; // revert nếu fail
-            }
-        })
-        .catch(err => {
-            alert("Có lỗi xảy ra.");
-            checkbox.checked = !isChecked;
-        });
+            .then(res => {
+                if (!res.ok) {
+                    alert("Cập nhật trạng thái thất bại.");
+                    checkbox.checked = !isChecked; // revert nếu fail
+                }
+            })
+            .catch(err => {
+                alert("Có lỗi xảy ra.");
+                checkbox.checked = !isChecked;
+            });
     }
 </script>
 
-
-
-
-
+<div th:replace="~{fragments/toast-script :: toast-script}"></div>
+<script th:src="@{/assets/js/supplier-tax-lookup.js}"></script>
 </body>
 </html>
 

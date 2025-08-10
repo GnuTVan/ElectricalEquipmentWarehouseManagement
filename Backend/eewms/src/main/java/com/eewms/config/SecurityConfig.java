@@ -32,7 +32,7 @@ public class SecurityConfig {
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/login", "/activate", "/activate/**").permitAll()
 
                         // Các endpoint yêu cầu login / phân quyền
-                        .requestMatchers("/account/info", "/account/update-profile").authenticated()
+                        .requestMatchers("/account/info", "/account/update-profile", "/api/tax-lookup/**").authenticated()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/manager/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/staff/**").hasAnyRole("ADMIN", "MANAGER", "STAFF")
