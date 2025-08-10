@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="vi">
-
 <head th:replace="~{fragments/common-head :: commonHead('Tạo đơn hàng bán')}"></head>
 
 <body class="bg-gray-100 font-sans">
@@ -9,11 +8,13 @@
 
     <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
         <div th:replace="~{fragments/header :: header}"></div>
-        <div class=" justify-between items-center mb-4 px-6 py-6">
+
+        <div class="justify-between items-center mb-4 px-6 py-6">
             <h1 class="text-2xl font-bold mb-4">Tạo đơn hàng bán</h1>
 
             <form th:action="@{/sale-orders/create}" method="post" th:object="${saleOrderForm}">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <!-- Khách hàng -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Khách hàng</label>
                         <select th:field="*{customerId}" class="w-full border rounded px-3 py-2" required>
@@ -21,7 +22,17 @@
                             <option th:each="c : ${customers}" th:value="${c.id}" th:text="${c.fullName}"></option>
                         </select>
                     </div>
-                    <div></div> <!-- Cột trống để ghi chú xuống hàng -->
+
+                    <!-- Combo (multi-tag) -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Chọn combo</label>
+                        <select id="comboSelect" multiple class="w-full border rounded px-3 py-2">
+                            <option th:each="cb : ${combos}"
+                                    th:value="${cb.id}"
+                                    th:text="${cb.code + ' - ' + cb.name}">
+                            </option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="mb-6">
@@ -36,7 +47,7 @@
                         <thead class="bg-gray-100">
                         <tr>
                             <th class="px-3 py-2 text-left">Sản phẩm</th>
-                            <th class="px-3 py-2 text-center">Tồn kho</th> <!-- ✅ Thêm dòng này -->
+                            <th class="px-3 py-2 text-center">Tồn kho</th>
                             <th class="px-3 py-2 text-center">Số lượng bán ra</th>
                             <th class="px-3 py-2 text-center">Đơn giá</th>
                             <th class="px-3 py-2 text-center">Thành tiền</th>
@@ -46,14 +57,14 @@
                         <tbody id="itemTableBody"></tbody>
                         <tfoot>
                         <tr>
-                            <td colspan="3" class="px-3 py-2 text-right font-semibold">Tổng tiền:</td>
+                            <td colspan="4" class="px-3 py-2 text-right font-semibold">Tổng tiền:</td>
                             <td class="px-3 py-2 text-right font-bold" id="grandTotal">0</td>
                             <td></td>
                         </tr>
                         </tfoot>
                     </table>
 
-                    <button type="button" onclick="addItemRow()"
+                    <button type="button" id="btnAddRow"
                             class="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
                         <i class="ri-add-line mr-1"></i> Thêm sản phẩm
                     </button>
@@ -68,169 +79,353 @@
                     </button>
                 </div>
             </form>
-
         </div>
     </main>
 </div>
+
 <div class="hidden" th:replace="~{fragments/footer :: footer}"></div>
 
+<!-- CSRF + dữ liệu sản phẩm -->
 <script th:inline="javascript">
-    // cập nhật lại từng phần tử mỗi khi xóa hoặc thêm
-    function reindexAllRows() {
-        const rows = document.querySelectorAll('#itemTableBody tr');
-        rows.forEach((row, index) => {
-            row.querySelectorAll('select, input').forEach(input => {
-                if (input.name.includes('details')) {
-                    const name = input.name.replace(/\[\d+\]/, `[${index}]`);
-                    input.name = name;
-                }
-            });
-        });
+    const csrfHeader = /*[[${_csrf.headerName}]]*/ 'X-CSRF-TOKEN';
+    const csrfToken  = /*[[${_csrf.token}]]*/ '';
+    const products   = /*[[${products}]]*/ [];
+</script>
+
+<!-- Choices.js (multi-tag UI) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
+<script>
+    /* ===================== DỮ LIỆU & TIỆN ÍCH ===================== */
+    const tableBody = document.getElementById('itemTableBody');
+    const productMap = new Map(products.map(p => [String(p.id), p]));
+    let selectedComboSet = new Set(); // đang chọn
+
+    function fmt(n) { return (Number(n) || 0).toLocaleString('vi-VN'); }
+
+    // Lấy list productId đang có dòng
+    function getUsedProductIds() {
+        return Array.from(tableBody.querySelectorAll('tr'))
+            .map(tr => tr.dataset.productId)
+            .filter(Boolean);
     }
 
-    function getSelectedProductIds() {
-        const selects = document.querySelectorAll('.product-select');
-        return Array.from(selects)
-            .map(s => s.value)
-            .filter(v => v);
-    }
-
-    function getFilteredOptions(currentProductId = null) {
-        const selectedIds = getSelectedProductIds();
-
-        // Nếu đang rebuild dropdown cho dòng hiện tại thì cho phép giữ lại sản phẩm đang chọn
-        const allowedIds = selectedIds.filter(id => id !== currentProductId);
+    // Option cho <select> theo luật không trùng
+    function buildOptionsHtml(currentPid) {
+        const used = new Set(getUsedProductIds().filter(id => id !== String(currentPid)));
         return products
-            .filter(p => !allowedIds.includes(p.id.toString()))
+            .filter(p => !used.has(String(p.id)))
             .map(p => `<option value="${p.id}" data-price="${p.listingPrice}" data-stock="${p.quantity}">${p.name}</option>`)
             .join('');
     }
 
-    function refreshAllProductOptions() {
-        const selects = document.querySelectorAll('.product-select');
-        const selectedValues = Array.from(selects)
-            .map(select => select.value)
-            .filter(val => val !== "");
-
-        selects.forEach(currentSelect => {
-            const currentValue = currentSelect.value;
-            const allowedIds = selectedValues.filter(id => id !== currentValue);
-            // Render lại toàn bộ option
-            currentSelect.innerHTML = products
-                .filter(p => !allowedIds.includes(p.id.toString()))
-                .map(p => `<option value="${p.id}" data-price="${p.listingPrice}" data-stock="${p.quantity}">${p.name}</option>`)
-                .join('');
-
-            currentSelect.value = currentValue;
-        });
+    function sumObjValues(obj) {
+        let s = 0;
+        for (const k in obj) if (Object.hasOwn(obj,k)) s += Number(obj[k] || 0);
+        return s;
     }
 
-    const products = /*[[${products}]]*/ [];
-
-    function addItemRow() {
-        const table = document.getElementById('itemTableBody');
-        const index = table.children.length;
-
-        const availableOptions = getFilteredOptions(); // gọi hàm đã có
-
-        const messageBox = document.getElementById('productLimitMsg');
-
-        if (!availableOptions || availableOptions.trim() === '') {
-            messageBox.classList.remove('hidden');
-            return;
-        } else {
-            messageBox.classList.add('hidden'); // ẩn nếu thêm được dòng mới
-        }
-
-        const row = document.createElement('tr');
-        row.innerHTML = `
-        <td class="px-3 py-2">
-               <select name="details[${index}].productId" class="w-full border rounded
-               px-2 py-1 product-select" onchange="updatePrice(this)">
-               ${availableOptions}
-               </select>
-
-        </td>
-        <td class="px-3 py-2 text-center align-middle">
-            <span class="stock-display font-semibold text-gray-800 border border-gray-400
-            px-2 py-1 rounded bg-white inline-block text-center min-w-[40px]">0</span>
-            <div class="text-xs text-red-600 mt-1 stock-warning hidden">
-                 Sản phẩm này hiện đã hết hàng!
-            </div>
-        </td>
-        <td class="px-3 py-2 text-center">
-            <input type="number" name="details[${index}].orderedQuantity" class="border px-2 py-1 w-full quantity" value="1" min="1" oninput="calculateTotal(this)">
-        </td>
-        <td class="px-3 py-2 text-center">
-            <input type="number" name="details[${index}].price" class="border px-2 py-1 w-full price" readonly>
-        </td>
-        <td class="px-3 py-2 text-right">
-            <span class="lineTotal">0</span>
-        </td>
-        <td class="px-3 py-2 text-center">
-            <button type="button" onclick="removeRow(this)" class="text-red-600 text-lg">
-            <i class="ri-close-line"></i>
-            </button>
-        </td>`;
-
-        table.appendChild(row);
-
-        // Tự động set giá & tồn kho ban đầu cho sản phẩm đầu tiên
-        const select = row.querySelector('.product-select');
-        updatePrice(select);
-        recalculateTotal();
-        reindexAllRows();
+    function recalcRowTotal(tr) {
+        const qty = Number(tr.querySelector('.quantity')?.value || 0);
+        const price = Number(tr.querySelector('.price')?.value || 0);
+        tr.querySelector('.lineTotal').textContent = fmt(qty * price);
     }
 
-
-    function updatePrice(selectElement) {
-        const selectedOption = selectElement.options[selectElement.selectedIndex];
-        const price = parseFloat(selectedOption.dataset.price || 0);
-        const stock = parseInt(selectedOption.dataset.stock || 0);
-
-        const row = selectElement.closest('tr');
-        const priceInput = row.querySelector('.price');
-        const stockDisplay = row.querySelector('.stock-display');
-        const warningBox = row.querySelector('.stock-warning'); // ✅ lấy phần tử cảnh báo
-
-        priceInput.value = price.toFixed(0);
-        stockDisplay.textContent = stock;
-
-        // ✅ Kiểm tra tồn kho và hiện cảnh báo
-        if (stock === 0) {
-            warningBox.classList.remove('hidden');
-        } else {
-            warningBox.classList.add('hidden');
-        }
-        calculateTotal(priceInput);
-        refreshAllProductOptions();
-    }
-
-    function removeRow(button) {
-        const row = button.closest('tr');
-        row.remove(); // xóa khỏi DOM
-        recalculateTotal();          // cập nhật tổng tiền
-        refreshAllProductOptions();  // cập nhật lại dropdown các dòng còn lại
-        reindexAllRows();
-    }
-
-    function calculateTotal(inputElement) {
-        const row = inputElement.closest('tr');
-        const qty = parseFloat(row.querySelector('.quantity').value || 0);
-        const price = parseFloat(row.querySelector('.price').value || 0);
-        const total = qty * price;
-        row.querySelector('.lineTotal').textContent = total.toFixed(0);
-        recalculateTotal();
-    }
-
-    function recalculateTotal() {
-        const rows = document.querySelectorAll('#itemTableBody tr');
+    function recalcGrand() {
         let total = 0;
-        rows.forEach(row => {
-            const lineTotal = parseFloat(row.querySelector('.lineTotal').textContent || 0);
-            total += lineTotal;
+        tableBody.querySelectorAll('tr').forEach(tr => {
+            const qty = Number(tr.querySelector('.quantity')?.value || 0);
+            const price = Number(tr.querySelector('.price')?.value || 0);
+            total += qty * price;
         });
-        document.getElementById('grandTotal').textContent = total.toFixed(0);
+        document.getElementById('grandTotal').textContent = fmt(total);
+    }
+
+    function reindexAllRows() {
+        const rows = tableBody.querySelectorAll('tr');
+        rows.forEach((tr, idx) => {
+            tr.querySelectorAll('input, select').forEach(el => {
+                if (!el.name) return;
+                el.name = el.name.replace(/\[\d+]/, `[${idx}]`);
+            });
+        });
+    }
+
+    /* =============== TẠO / TÌM DÒNG THEO PRODUCT =============== */
+    function getRowByProductId(pid) {
+        return tableBody.querySelector(`tr[data-product-id="${pid}"]`);
+    }
+
+    // Tạo một dòng "chuẩn" (giống dòng lẻ). Nếu hasCombo => disable select.
+    function createStandardRow({pid, pname, price, stock, qty, hasCombo}) {
+        const index = tableBody.children.length;
+        const tr = document.createElement('tr');
+        tr.dataset.productId = String(pid);
+        tr.dataset.manualContrib = String(Math.max(0, Number(qty) || 0));
+        tr.dataset.comboContrib = JSON.stringify({});
+
+        tr.innerHTML = `
+      <td class="px-3 py-2">
+        <select name="details[${index}].productId"
+                class="w-full border rounded px-2 py-1 product-select ${hasCombo ? 'bg-gray-100 cursor-not-allowed' : ''}">
+          ${buildOptionsHtml(pid)}
+        </select>
+        ${hasCombo ? `<input type="hidden" name="details[${index}].productId" value="${pid}">` : ''}
+      </td>
+      <td class="px-3 py-2 text-center align-middle">
+        <span class="stock-display font-semibold text-gray-800 border border-gray-400
+                     px-2 py-1 rounded bg-white inline-block min-w-[40px]">${stock ?? '-'}</span>
+      </td>
+      <td class="px-3 py-2 text-center">
+        <input type="number" name="details[${index}].orderedQuantity"
+               class="border px-2 py-1 w-full quantity" value="${qty}" min="1">
+      </td>
+      <td class="px-3 py-2 text-center">
+        <input type="number" name="details[${index}].price"
+               class="border px-2 py-1 w-full price" value="${price}" readonly>
+      </td>
+      <td class="px-3 py-2 text-right"><span class="lineTotal">0</span></td>
+      <td class="px-3 py-2 text-center">
+        <button type="button" class="text-red-600 text-lg btn-remove"><i class="ri-close-line"></i></button>
+      </td>
+    `;
+
+        tableBody.appendChild(tr);
+        const sel = tr.querySelector('.product-select');
+        sel.value = String(pid);
+        attachRowListeners(tr);
+        recalcRowTotal(tr);
+        return tr;
+    }
+
+    // Gắn event cho một dòng
+    function attachRowListeners(tr) {
+        const sel = tr.querySelector('.product-select');
+        const qtyInput = tr.querySelector('.quantity');
+        const priceInput = tr.querySelector('.price');
+        const btnRemove = tr.querySelector('.btn-remove');
+
+        if (sel) {
+            sel.addEventListener('change', () => {
+                const pid = sel.value;
+                tr.dataset.productId = pid;
+                const p = productMap.get(String(pid)) || {};
+                // update price/stock
+                priceInput.value = Number(p.listingPrice || 0);
+                tr.querySelector('.stock-display').textContent = p.quantity ?? '-';
+                // rebuild options for all rows (đảm bảo không trùng)
+                refreshAllProductSelects();
+                recalcRowTotal(tr);
+                recalcGrand();
+            });
+        }
+
+        qtyInput.addEventListener('input', () => {
+            limitMin(qtyInput, 1);
+            syncManualContribFromQty(tr);
+            recalcRowTotal(tr);
+            recalcGrand();
+        });
+
+        btnRemove.addEventListener('click', () => {
+            const comboMap = JSON.parse(tr.dataset.comboContrib || '{}');
+            const comboSum = sumObjValues(comboMap);
+            if (comboSum > 0) {
+                // chỉ xóa phần lẻ
+                tr.dataset.manualContrib = '0';
+                tr.querySelector('.quantity').value = comboSum;
+                recalcRowTotal(tr);
+                recalcGrand();
+                // nếu còn combo đóng góp -> giữ dòng
+            } else {
+                tr.remove();
+                refreshAllProductSelects();
+                reindexAllRows();
+                recalcGrand();
+            }
+        });
+    }
+
+    function limitMin(el, min) {
+        const v = Number(el.value || 0);
+        el.value = isNaN(v) || v < min ? min : v;
+    }
+
+    function refreshAllProductSelects() {
+        tableBody.querySelectorAll('tr').forEach(tr => {
+            const sel = tr.querySelector('.product-select');
+            if (!sel) return;
+            const cur = sel.value;
+            const hasCombo = sumObjValues(JSON.parse(tr.dataset.comboContrib || '{}')) > 0;
+            const html = buildOptionsHtml(cur);
+            sel.innerHTML = html;
+            sel.value = cur;
+
+            // Thay vì disable, cho readonly bằng CSS và hidden input
+            if (hasCombo) {
+                sel.classList.add('bg-gray-100', 'cursor-not-allowed');
+                if (!tr.querySelector(`input[type="hidden"][name*=".productId"]`)) {
+                    sel.insertAdjacentHTML('afterend',
+                        `<input type="hidden" name="${sel.name}" value="${cur}">`);
+                }
+            } else {
+                sel.classList.remove('bg-gray-100', 'cursor-not-allowed');
+                const hidden = tr.querySelector(`input[type="hidden"][name="${sel.name}"]`);
+                if (hidden) hidden.remove();
+            }
+        });
+    }
+
+    // Đồng bộ manualContrib dựa trên số lượng đang thấy (total = manual + sumCombo)
+    function syncManualContribFromQty(tr) {
+        const total = Number(tr.querySelector('.quantity').value || 0);
+        const comboSum = sumObjValues(JSON.parse(tr.dataset.comboContrib || '{}'));
+        const manual = Math.max(0, total - comboSum);
+        tr.dataset.manualContrib = String(manual);
+    }
+
+    // Cập nhật input orderedQuantity = manual + sum(combo)
+    function syncQtyFromContrib(tr) {
+        const manual  = Number(tr.dataset.manualContrib || 0);
+        const comboSum = sumObjValues(JSON.parse(tr.dataset.comboContrib || '{}'));
+        const total = manual + comboSum;
+        tr.querySelector('.quantity').value = total;   // <-- bỏ “|| 1”
+    }
+
+    /* ===================== DÒNG LẺ (thêm tay) ===================== */
+    document.getElementById('btnAddRow').addEventListener('click', () => {
+        const used = new Set(getUsedProductIds());
+        const candidate = products.find(p => !used.has(String(p.id)));
+        const msg = document.getElementById('productLimitMsg');
+
+        if (!candidate) {
+            msg.classList.remove('hidden');
+            return;
+        } else msg.classList.add('hidden');
+
+        const tr = createStandardRow({
+            pid: candidate.id,
+            pname: candidate.name,
+            price: candidate.listingPrice || 0,
+            stock: candidate.quantity ?? '-',
+            qty: 1,
+            hasCombo: false
+        });
+        reindexAllRows();
+        refreshAllProductSelects();
+        recalcGrand();
+    });
+
+    /* ===================== COMBO (tag) ===================== */
+    document.addEventListener('DOMContentLoaded', () => {
+        // Tag UI
+        const choices = new Choices('#comboSelect', {
+            removeItemButton: true,
+            shouldSort: false,
+            placeholder: true,
+            placeholderValue: 'Chọn combo'
+        });
+
+        const comboSelect = document.getElementById('comboSelect');
+
+        comboSelect.addEventListener('change', async () => {
+            const current = new Set(Array.from(comboSelect.selectedOptions).map(o => Number(o.value)));
+
+            // removed
+            for (const id of Array.from(selectedComboSet)) {
+                if (!current.has(id)) {
+                    removeComboContribution(id);
+                    selectedComboSet.delete(id);
+                }
+            }
+
+            // added
+            for (const id of Array.from(current)) {
+                if (!selectedComboSet.has(id)) {
+                    await addComboContribution(id);
+                    selectedComboSet.add(id);
+                }
+            }
+
+            reindexAllRows();
+            refreshAllProductSelects();
+            recalcGrand();
+        });
+    });
+
+    // Thêm đóng góp 1 combo vào các dòng
+    async function addComboContribution(comboId) {
+        try {
+            const res = await fetch('/combos/expand', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', [csrfHeader]: csrfToken},
+                body: JSON.stringify([comboId])
+            });
+            const items = await res.json(); // [{productId, productName, quantity, price, availableQuantity?}]
+            items.forEach(it => {
+                const pid = String(it.productId);
+                let tr = getRowByProductId(pid);
+                const p = productMap.get(pid) || {};
+                if (!tr) {
+                    tr = createStandardRow({
+                        pid: pid,
+                        pname: it.productName,
+                        price: Number(it.price ?? p.listingPrice ?? 0),
+                        stock: it.availableQuantity ?? p.quantity ?? '-',
+                        qty: Number(it.quantity || 0),
+                        hasCombo: true
+                    });
+                    tr.dataset.manualContrib = '0';
+                }
+
+                // cập nhật combo map
+                const map = JSON.parse(tr.dataset.comboContrib || '{}');
+                map[comboId] = (Number(map[comboId] || 0) + Number(it.quantity || 0));
+                tr.dataset.comboContrib = JSON.stringify(map);
+
+                // quantity = manual + sumCombo
+                syncQtyFromContrib(tr);
+                recalcRowTotal(tr);
+            });
+        } catch (e) {
+            console.error(e);
+            if (window.toastError) toastError('Không thể tải sản phẩm từ combo');
+        }
+    }
+
+    // Gỡ đóng góp của 1 combo
+    function removeComboContribution(comboId) {
+        tableBody.querySelectorAll('tr').forEach(tr => {
+            const map = JSON.parse(tr.dataset.comboContrib || '{}');
+            if (!(comboId in map)) return;
+
+            delete map[comboId];
+            tr.dataset.comboContrib = JSON.stringify(map);
+
+            const hasCombo = sumObjValues(map) > 0;
+            const sel = tr.querySelector('.product-select');
+            if (sel) {
+                sel.disabled = hasCombo;
+                sel.classList.toggle('opacity-70', hasCombo);
+            }
+
+            // cập nhật lại qty từ (manual + combo)
+            syncQtyFromContrib(tr);
+
+            // nếu không còn gì → xoá dòng luôn
+            const total = Number(tr.querySelector('.quantity').value || 0);
+            if (total <= 0) {
+                tr.remove();
+                return;
+            }
+
+            recalcRowTotal(tr);
+        });
+
+        refreshAllProductSelects();
+        reindexAllRows();
+        recalcGrand();
     }
 </script>
 </body>

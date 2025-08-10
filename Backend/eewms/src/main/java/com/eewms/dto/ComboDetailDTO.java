@@ -8,8 +8,10 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class ComboDetailDTO {
+    private Long comboId;
     private Integer productId;
     private String productName;
     private Integer quantity;
     private BigDecimal price;
+    private Integer availableQuantity; // tồn kho hiện tại
 }

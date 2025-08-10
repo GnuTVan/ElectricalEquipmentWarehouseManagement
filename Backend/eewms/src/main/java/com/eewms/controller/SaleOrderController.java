@@ -3,10 +3,7 @@ package com.eewms.controller;
 import com.eewms.dto.SaleOrderRequestDTO;
 import com.eewms.dto.SaleOrderResponseDTO;
 import com.eewms.entities.SaleOrder;
-import com.eewms.services.ICustomerService;
-import com.eewms.services.IGoodIssueService;
-import com.eewms.services.IProductServices;
-import com.eewms.services.ISaleOrderService;
+import com.eewms.services.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,6 +22,7 @@ public class SaleOrderController {
     private final ICustomerService customerService;
     private final IProductServices productService;
     private final IGoodIssueService goodIssueService;
+    private final IComboService comboService;
 
     // --- HIỂN THỊ DANH SÁCH ĐƠN ---
     @GetMapping
@@ -52,6 +50,7 @@ public class SaleOrderController {
         model.addAttribute("saleOrderForm", new SaleOrderRequestDTO());
         model.addAttribute("customers", customerService.findAll());
         model.addAttribute("products", productService.getAllActiveProducts());
+        model.addAttribute("combos", comboService.getAllActive());
         return "sale-order/sale-order-form";
     }
 
