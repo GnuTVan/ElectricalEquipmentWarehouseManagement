@@ -1,4 +1,4 @@
-package com.eewms.dto.tax;
+package com.eewms.dto.VietQR;
 
 import lombok.*;
 
