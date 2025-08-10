@@ -11,10 +11,6 @@
         <!-- Header -->
         <div th:replace="~{fragments/header :: header}"></div>
 
-        <div id="alertSuccess" th:if="${message}" class="mb-4 bg-green-100 text-green-800 px-4 py-2 rounded">
-            <p th:text="${message}"></p>
-        </div>
-
         <!-- Page Title + Button -->
         <div class="flex justify-between items-center mb-4 px-6 py-6">
             <h1 class="text-2xl font-bold text-gray-800">Danh sách nhà cung cấp</h1>
@@ -146,7 +142,8 @@
 
         <!-- ✅ Modal Thêm nhà cung cấp -->
         <div id="addSupplierModal"
-             class="fixed inset-0 z-50 hidden bg-black bg-opacity-30 flex items-center justify-center">
+             class="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center"
+             th:classappend="${hasFormError} ? '' : ' hidden'">
             <div class="bg-white rounded-lg shadow-md w-full max-w-2xl">
                 <div class="flex justify-between items-center p-4 border-b">
                     <h2 class="text-lg font-semibold text-gray-700">Thêm nhà cung cấp</h2>
@@ -183,22 +180,24 @@
                             <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('taxCode')}"
                                th:errors="*{taxCode}"></p>
                         </div>
-<!--                        <div>-->
-<!--                            <label class="block text-sm font-medium text-gray-700">Ngân hàng</label>-->
-<!--                            <input type="text" th:field="*{bankName}"-->
-<!--                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">-->
-<!--                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankName')}"-->
-<!--                               th:errors="*{bankName}"></p>-->
-<!--                        </div>-->
+                        <!--                        <div>-->
+                        <!--                            <label class="block text-sm font-medium text-gray-700">Ngân hàng</label>-->
+                        <!--                            <input type="text" th:field="*{bankName}"-->
+                        <!--                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">-->
+                        <!--                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankName')}"-->
+                        <!--                               th:errors="*{bankName}"></p>-->
+                        <!--                        </div>-->
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Ngân hàng</label>
                             <div class="mt-1 relative">
                                 <input type="text" th:field="*{bankName}" id="bankNameInput" autocomplete="off"
-                                       class="w-full border rounded px-3 py-2 text-sm" placeholder="Gõ mã/tên ngân hàng...">
+                                       class="w-full border rounded px-3 py-2 text-sm"
+                                       placeholder="Gõ mã/tên ngân hàng...">
                                 <div id="bankSuggest"
                                      class="absolute z-50 mt-1 w-full bg-white border rounded shadow max-h-64 overflow-auto hidden"></div>
                             </div>
-                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankName')}" th:errors="*{bankName}"></p>
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankName')}"
+                               th:errors="*{bankName}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Số tài khoản</label>
@@ -256,7 +255,8 @@
 
         <!-- ✅ Modal Sửa nhà cung cấp -->
         <div id="editSupplierModal"
-             class="fixed inset-0 z-50 hidden bg-black bg-opacity-30 flex items-center justify-center">
+             class="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center"
+             th:classappend="${hasEditError} ? '' : ' hidden'">
             <div class="bg-white rounded-lg shadow-md w-full max-w-2xl">
                 <div class="flex justify-between items-center p-4 border-b">
                     <h2 class="text-lg font-semibold text-gray-700">Chỉnh sửa nhà cung cấp</h2>
@@ -296,22 +296,24 @@
                             <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('taxCode')}"
                                th:errors="*{taxCode}"></p>
                         </div>
-<!--                        <div>-->
-<!--                            <label class="block text-sm font-medium text-gray-700">Ngân hàng</label>-->
-<!--                            <input type="text" th:field="*{bankName}" id="editBankName"-->
-<!--                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">-->
-<!--                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankName')}"-->
-<!--                               th:errors="*{bankName}"></p>-->
-<!--                        </div>-->
+                        <!--                        <div>-->
+                        <!--                            <label class="block text-sm font-medium text-gray-700">Ngân hàng</label>-->
+                        <!--                            <input type="text" th:field="*{bankName}" id="editBankName"-->
+                        <!--                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">-->
+                        <!--                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankName')}"-->
+                        <!--                               th:errors="*{bankName}"></p>-->
+                        <!--                        </div>-->
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Ngân hàng</label>
                             <div class="mt-1 relative">
                                 <input type="text" th:field="*{bankName}" id="editBankNameInput" autocomplete="off"
-                                       class="w-full border rounded px-3 py-2 text-sm" placeholder="Gõ mã/tên ngân hàng...">
+                                       class="w-full border rounded px-3 py-2 text-sm"
+                                       placeholder="Gõ mã/tên ngân hàng...">
                                 <div id="editBankSuggest"
                                      class="absolute z-50 mt-1 w-full bg-white border rounded shadow max-h-64 overflow-auto hidden"></div>
                             </div>
-                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankName')}" th:errors="*{bankName}"></p>
+                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankName')}"
+                               th:errors="*{bankName}"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Số tài khoản</label>
@@ -371,96 +373,92 @@
 <!-- Footer -->
 <div th:replace="~{fragments/footer :: footer}"></div>
 
-<script>
-    const openAddBtn = document.getElementById('openAddModal');
-    const addModal = document.getElementById('addSupplierModal');
+<script th:inline="javascript">
+    // ================= Helpers chung =================
+    function clearFieldErrors(scope) {
+        scope.querySelectorAll('.text-red-500, [data-field-error]').forEach(el => el.textContent = '');
+    }
 
-    if (openAddBtn && addModal) {
-        openAddBtn.addEventListener('click', function () {
-            addModal.classList.remove('hidden');
+    function resetFormAndHide(modalId, redirectPath) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        const form = modal.querySelector('form');
+        if (form) {
+            form.reset();            // đủ để reset value/checked/selected
+            clearFieldErrors(form);  // xóa message lỗi hiển thị
+        }
+        modal.classList.add('hidden');
+        // xóa các flag lỗi trong model bằng reload sạch
+        window.location.href = redirectPath;
+    }
+
+    // ================= ADD modal =================
+    const openAddBtn = document.getElementById('openAddModal');
+    if (openAddBtn) {
+        openAddBtn.addEventListener('click', () => {
+            document.getElementById('addSupplierModal').classList.remove('hidden');
         });
     }
 
     function closeAddModal() {
-        document.getElementById('addSupplierModal').classList.add('hidden');
+        resetFormAndHide('addSupplierModal', '/admin/suppliers');
     }
 
-    const userBtn = document.getElementById('userMenuBtn');
-    const dropdown = document.getElementById('userMenuDropdown');
-
-    if (userBtn && dropdown) {
-        userBtn.addEventListener('click', function () {
-            dropdown.classList.toggle('hidden');
-        });
-
-        document.addEventListener('click', function (event) {
-            if (!userBtn.contains(event.target) && !dropdown.contains(event.target)) {
-                dropdown.classList.add('hidden');
-            }
-        });
-
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-        const alert = document.getElementById('alertSuccess');
-        if (alert) {
-            setTimeout(() => {
-                alert.classList.add('hidden');
-            }, 3000);
-        }
-    });
-</script>
-
-
-<script>
+    // ================= EDIT modal =================
+    // MỞ từ nút Sửa: fill từ data-* (case bình thường, KHÔNG có lỗi server)
     function showEditModal(button) {
-        document.getElementById('editId').value = button.dataset.id;
-        document.getElementById('editName').value = button.dataset.name || '';
-        document.getElementById('editTaxCode').value = button.dataset.taxcode || '';
-        document.getElementById('editBankName').value = button.dataset.bankname || '';
-        document.getElementById('editBankAccount').value = button.dataset.bankaccount || '';
-        document.getElementById('editContactName').value = button.dataset.contactname || '';
-        document.getElementById('editContactMobile').value = button.dataset.contactmobile || '';
-        document.getElementById('editAddress').value = button.dataset.address || '';
-        document.getElementById('editDescription').value = button.dataset.description || '';
+        const editModal = document.getElementById('editSupplierModal');
 
-        document.getElementById('editSupplierModal').classList.remove('hidden');
+        // Nếu trang đang ở trạng thái hasEditError (đang hiển thị lỗi server),
+        // KHÔNG fill lại để tránh ghi đè dữ liệu và message do server trả về.
+        const hasEditError = /*[[${hasEditError}]]*/ false;
+        if (!hasEditError) {
+            document.getElementById('editId').value = button.dataset.id || '';
+            document.getElementById('editName').value = button.dataset.name || '';
+            document.getElementById('editTaxCode').value = button.dataset.taxcode || '';
+            document.getElementById('editBankNameInput').value = button.dataset.bankname || '';
+            document.getElementById('editBankAccount').value = button.dataset.bankaccount || '';
+            document.getElementById('editContactName').value = button.dataset.contactname || '';
+            document.getElementById('editContactMobile').value = button.dataset.contactmobile || '';
+            document.getElementById('editAddress').value = button.dataset.address || '';
+            document.getElementById('editDescription').value = button.dataset.description || '';
+        }
+
+        editModal.classList.remove('hidden');
     }
 
     function closeEditModal() {
-        document.getElementById('editSupplierModal').classList.add('hidden');
+        resetFormAndHide('editSupplierModal', '/admin/suppliers');
     }
 
-
-</script>
-
-<script>
-    function toggleStatus(checkbox) {
-        const form = checkbox.closest('form');
-        const supplierId = form.dataset.id;
-
-        const isChecked = checkbox.checked;
-
-        fetch(`/admin/suppliers/toggle/${supplierId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').getAttribute("content")
-            },
-            body: `status=${isChecked}`
-        })
-            .then(res => {
-                if (!res.ok) {
-                    alert("Cập nhật trạng thái thất bại.");
-                    checkbox.checked = !isChecked; // revert nếu fail
-                }
-            })
-            .catch(err => {
-                alert("Có lỗi xảy ra.");
-                checkbox.checked = !isChecked;
-            });
+    // ================= Auto-open khi submit lỗi =================
+    // Thêm: đã dùng th:classappend với hasFormError nên modal tự mở khi server validate lỗi
+    const hasFormError = /*[[${hasFormError}]]*/ false;
+    if (hasFormError) {
+        // Nếu cần init plugin (bank autosuggest, v.v.) khi modal đang mở sẵn, init ở đây.
     }
+
+    // Sửa: dùng hasEditError để tự mở lại modal và GIỮ nguyên dữ liệu + lỗi do server bind
+    const hasEditError = /*[[${hasEditError}]]*/ false;
+    if (hasEditError) {
+        document.getElementById('editSupplierModal').classList.remove('hidden');
+    }
+
+    // ================= User menu + alert như cũ =================
+    const userBtn = document.getElementById('userMenuBtn');
+    const dropdown = document.getElementById('userMenuDropdown');
+    if (userBtn && dropdown) {
+        userBtn.addEventListener('click', () => dropdown.classList.toggle('hidden'));
+        document.addEventListener('click', (e) => {
+            if (!userBtn.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.add('hidden');
+        });
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        const alert = document.getElementById('alertSuccess');
+        if (alert) setTimeout(() => alert.classList.add('hidden'), 3000);
+    });
 </script>
+
 
 <div th:replace="~{fragments/toast-script :: toast-script}"></div>
 <script th:src="@{/assets/js/supplier-tax-lookup.js}"></script>

@@ -42,129 +42,59 @@ public class SupplierController {
         return "supplier-list";
     }
 
-    
-
-
-
-    // ✅ Xử lý tạo mới nhà cung cấp
-//    @PostMapping
-//    public String createSupplier(@Valid @ModelAttribute("newSupplier") SupplierDTO dto,
-//                                 BindingResult result,
-//                                 @RequestParam(defaultValue = "") String keyword,
-//                                 Model model,
-//                                 RedirectAttributes redirect) {
-//
-//
-//        // ✅ Kiểm tra trùng mã số thuế nếu có nhập
-//        if (dto.getTaxCode() != null && !dto.getTaxCode().isBlank()
-//                && supplierService.existsByTaxCode(dto.getTaxCode())) {
-//            result.rejectValue("taxCode", "error.taxCode", "Mã số thuế đã tồn tại");
-//        }
-//
-//        // ✅ Kiểm tra tên ngân hàng có hợp lệ không
-//        List<String> validBanks = List.of(
-//                "Vietcombank", "BIDV", "Techcombank", "MB Bank", "TPBank", "VPBank", "ACB", "Sacombank"
-//        );
-//        if (dto.getBankName() != null && !dto.getBankName().isBlank()
-//                && !validBanks.contains(dto.getBankName())) {
-//            result.rejectValue("bankName", "error.bankName", "Ngân hàng không hợp lệ");
-//        }
-//
-//        if (result.hasErrors()) {
-//            // ✅ Dữ liệu phân trang mặc định page=0, keyword=""
-//            Page<SupplierDTO> supplierPage = supplierService.searchSuppliers(0, "");
-//            model.addAttribute("supplierPage", supplierPage);
-//            model.addAttribute("suppliers", supplierPage.getContent());
-//            model.addAttribute("keyword", keyword);
-//
-//
-//            // ✅ Giữ lại form dữ liệu
-//            model.addAttribute("newSupplier", dto);
-//            model.addAttribute("editSupplier", new SupplierDTO());
-//            return "supplier-list";
-//        }
-//
-//        supplierService.create(dto);
-//        redirect.addFlashAttribute("message", "Thêm nhà cung cấp thành công");
-//        return "redirect:/admin/suppliers";
-//    }
-//
-//
-//    // ✅ Xử lý cập nhật nhà cung cấp
-//    @PostMapping("/update")
-//    public String updateSupplier(@Valid @ModelAttribute("editSupplier") SupplierDTO dto,
-//                                 BindingResult result,
-//                                 Model model,
-//                                 RedirectAttributes redirect) {
-//
-//        // ✅ Kiểm tra trùng mã số thuế (nếu có nhập)
-//        if (!result.hasFieldErrors("taxCode") &&
-//                dto.getTaxCode() != null && !dto.getTaxCode().isBlank()) {
-//            SupplierDTO existing = supplierService.findByTaxCode(dto.getTaxCode());
-//            if (existing != null && !existing.getId().equals(dto.getId())) {
-//                result.rejectValue("taxCode", "error.taxCode", "Mã số thuế đã tồn tại cho nhà cung cấp khác");
-//            }
-//        }
-//
-//        // ✅ Kiểm tra tên ngân hàng có hợp lệ không
-//        List<String> validBanks = List.of(
-//                "Vietcombank", "BIDV", "Techcombank", "MB Bank", "TPBank", "VPBank", "ACB", "Sacombank"
-//        );
-//        if (!result.hasFieldErrors("bankName") &&
-//                (dto.getBankName() == null || !validBanks.contains(dto.getBankName()))) {
-//            result.rejectValue("bankName", "error.bankName", "Ngân hàng không hợp lệ");
-//        }
-//
-//        if (result.hasErrors()) {
-//            Page<SupplierDTO> supplierPage = supplierService.searchSuppliers(0, "");
-//            model.addAttribute("supplierPage", supplierPage);
-//            model.addAttribute("suppliers", supplierPage.getContent());
-//            model.addAttribute("keyword", "");
-//
-//            model.addAttribute("newSupplier", new SupplierDTO());
-//            model.addAttribute("editSupplier", dto);
-//            return "supplier-list";
-//        }
-//
-//        supplierService.update(dto);
-//        redirect.addFlashAttribute("message", "Cập nhật nhà cung cấp thành công");
-//        return "redirect:/admin/suppliers";
-//    }
-
     @PostMapping
     public String createSupplier(@Valid @ModelAttribute("newSupplier") SupplierDTO dto,
                                  BindingResult result,
                                  @RequestParam(defaultValue = "") String keyword,
                                  Model model,
                                  RedirectAttributes redirect) {
-
-        if (!result.hasFieldErrors("taxCode")
-                && dto.getTaxCode() != null && !dto.getTaxCode().isBlank()
-                && supplierService.existsByTaxCode(dto.getTaxCode().trim())) {
-            result.rejectValue("taxCode", "error.taxCode", "Mã số thuế đã tồn tại");
-        }
-
+        // 1) Nếu sai regex/NotBlank từ DTO → trả form ngay
         if (result.hasErrors()) {
-            Page<SupplierDTO> supplierPage = supplierService.searchSuppliers(0, "");
+            Page<SupplierDTO> supplierPage = supplierService.searchSuppliers(0, keyword);
             model.addAttribute("supplierPage", supplierPage);
             model.addAttribute("suppliers", supplierPage.getContent());
             model.addAttribute("keyword", keyword);
             model.addAttribute("newSupplier", dto);
             model.addAttribute("editSupplier", new SupplierDTO());
+            model.addAttribute("hasFormError", true);
+
             return "supplier-list";
         }
 
-        // ✅ Chuyển "" thành null trực tiếp
-        if (dto.getTaxCode() != null && dto.getTaxCode().isBlank()) dto.setTaxCode(null);
-        if (dto.getBankName() != null && dto.getBankName().isBlank()) dto.setBankName(null);
-        if (dto.getBankAccount() != null && dto.getBankAccount().isBlank()) dto.setBankAccount(null);
-        if (dto.getContactName() != null && dto.getContactName().isBlank()) dto.setContactName(null);
-        if (dto.getContactMobile() != null && dto.getContactMobile().isBlank()) dto.setContactMobile(null);
-        if (dto.getAddress() != null && dto.getAddress().isBlank()) dto.setAddress(null);
-        if (dto.getDescription() != null && dto.getDescription().isBlank()) dto.setDescription(null);
+        // 2) Chuẩn hoá và check trùng có điều kiện
+        String name = dto.getName() == null ? null : dto.getName().trim();
+        String tax  = dto.getTaxCode() == null ? null : dto.getTaxCode().trim();
+        String acc  = dto.getBankAccount() == null ? null : dto.getBankAccount().trim();
+        String mob  = dto.getContactMobile() == null ? null : dto.getContactMobile().trim();
 
+        if (name != null && !name.isBlank() && supplierService.existsByNameIgnoreCase(name)) {
+            result.rejectValue("name", "dup.name", "Tên nhà cung cấp đã tồn tại");
+        }
+        if (tax != null && !tax.isBlank() && supplierService.existsByTaxCode(tax)) {
+            result.rejectValue("taxCode", "dup.tax", "Mã số thuế đã tồn tại");
+        }
+        if (acc != null && !acc.isBlank() && supplierService.existsByBankAccount(acc)) {
+            result.rejectValue("bankAccount", "dup.acc", "Số tài khoản đã tồn tại");
+        }
+        if (mob != null && !mob.isBlank() && supplierService.existsByContactMobile(mob)) {
+            result.rejectValue("contactMobile", "dup.mobile", "Số điện thoại đã tồn tại");
+        }
+
+        if (result.hasErrors()) {
+            Page<SupplierDTO> supplierPage = supplierService.searchSuppliers(0, keyword);
+            model.addAttribute("supplierPage", supplierPage);
+            model.addAttribute("suppliers", supplierPage.getContent());
+            model.addAttribute("keyword", keyword);
+            model.addAttribute("newSupplier", dto);
+            model.addAttribute("editSupplier", new SupplierDTO());
+            model.addAttribute("hasFormError", true);
+            return "supplier-list";
+        }
+
+        // 3) Lưu
         supplierService.create(dto);
-        redirect.addFlashAttribute("message", "Thêm nhà cung cấp thành công");
+        redirect.addFlashAttribute("message", "Thêm nhà cung cấp thành công, Tên: " + name);
+        redirect.addFlashAttribute("messageType", "success");
         return "redirect:/admin/suppliers";
     }
 
@@ -172,47 +102,56 @@ public class SupplierController {
     public String updateSupplier(@Valid @ModelAttribute("editSupplier") SupplierDTO dto,
                                  BindingResult result,
                                  Model model,
-                                 RedirectAttributes redirect) {
-
-        // Check trùng MST nếu có nhập và thuộc về NCC khác
-        if (!result.hasFieldErrors("taxCode")
-                && dto.getTaxCode() != null && !dto.getTaxCode().isBlank()) {
-            String tax = dto.getTaxCode().trim();
-            SupplierDTO existing = supplierService.findByTaxCode(tax);
-            if (existing != null && !existing.getId().equals(dto.getId())) {
-                result.rejectValue("taxCode", "error.taxCode", "Mã số thuế đã tồn tại cho nhà cung cấp khác");
-            }
-        }
-
+                                 RedirectAttributes redirect,
+                                 @RequestParam(defaultValue = "") String keyword) {
+        // 1) Nếu sai regex/NotBlank từ DTO → trả form ngay
         if (result.hasErrors()) {
-            Page<SupplierDTO> supplierPage = supplierService.searchSuppliers(0, "");
+            Page<SupplierDTO> supplierPage = supplierService.searchSuppliers(0, keyword);
             model.addAttribute("supplierPage", supplierPage);
             model.addAttribute("suppliers", supplierPage.getContent());
-            model.addAttribute("keyword", "");
+            model.addAttribute("keyword", keyword);
             model.addAttribute("newSupplier", new SupplierDTO());
             model.addAttribute("editSupplier", dto);
+            model.addAttribute("hasEditError", true);
             return "supplier-list";
         }
 
-        // Chuyển "" -> null cho các trường optional (regex sẽ làm sau)
-        if (dto.getTaxCode() != null) dto.setTaxCode(dto.getTaxCode().trim());
-        if (dto.getBankName() != null) dto.setBankName(dto.getBankName().trim());
-        if (dto.getBankAccount() != null) dto.setBankAccount(dto.getBankAccount().trim());
-        if (dto.getContactName() != null) dto.setContactName(dto.getContactName().trim());
-        if (dto.getContactMobile() != null) dto.setContactMobile(dto.getContactMobile().trim());
-        if (dto.getAddress() != null) dto.setAddress(dto.getAddress().trim());
-        if (dto.getDescription() != null) dto.setDescription(dto.getDescription().trim());
+        // 2) Chuẩn hoá và check trùng loại trừ chính nó
+        String name = dto.getName() == null ? null : dto.getName().trim();
+        String tax  = dto.getTaxCode() == null ? null : dto.getTaxCode().trim();
+        String acc  = dto.getBankAccount() == null ? null : dto.getBankAccount().trim();
+        String mob  = dto.getContactMobile() == null ? null : dto.getContactMobile().trim();
 
-        if (dto.getTaxCode() != null && dto.getTaxCode().isBlank()) dto.setTaxCode(null);
-        if (dto.getBankName() != null && dto.getBankName().isBlank()) dto.setBankName(null);
-        if (dto.getBankAccount() != null && dto.getBankAccount().isBlank()) dto.setBankAccount(null);
-        if (dto.getContactName() != null && dto.getContactName().isBlank()) dto.setContactName(null);
-        if (dto.getContactMobile() != null && dto.getContactMobile().isBlank()) dto.setContactMobile(null);
-        if (dto.getAddress() != null && dto.getAddress().isBlank()) dto.setAddress(null);
-        if (dto.getDescription() != null && dto.getDescription().isBlank()) dto.setDescription(null);
+        Long id = dto.getId();
 
+        if (name != null && !name.isBlank() && supplierService.existsByNameIgnoreCaseAndIdNot(name, id)) {
+            result.rejectValue("name", "dup.name", "Tên nhà cung cấp đã tồn tại");
+        }
+        if (tax != null && !tax.isBlank() && supplierService.existsByTaxCodeAndIdNot(tax, id)) {
+            result.rejectValue("taxCode", "dup.tax", "Mã số thuế đã tồn tại");
+        }
+        if (acc != null && !acc.isBlank() && supplierService.existsByBankAccountAndIdNot(acc, id)) {
+            result.rejectValue("bankAccount", "dup.acc", "Số tài khoản đã tồn tại");
+        }
+        if (mob != null && !mob.isBlank() && supplierService.existsByContactMobileAndIdNot(mob, id)) {
+            result.rejectValue("contactMobile", "dup.mobile", "Số điện thoại đã tồn tại");
+        }
+
+        if (result.hasErrors()) {
+            Page<SupplierDTO> supplierPage = supplierService.searchSuppliers(0, keyword);
+            model.addAttribute("supplierPage", supplierPage);
+            model.addAttribute("suppliers", supplierPage.getContent());
+            model.addAttribute("keyword", keyword);
+            model.addAttribute("newSupplier", new SupplierDTO());
+            model.addAttribute("editSupplier", dto);
+            model.addAttribute("hasEditError", true);
+            return "supplier-list";
+        }
+
+        // 3) Lưu
         supplierService.update(dto);
-        redirect.addFlashAttribute("message", "Cập nhật nhà cung cấp thành công");
+        redirect.addFlashAttribute("message", "Cập nhật NCC thành công, Tên: " + name);
+        redirect.addFlashAttribute("messageType", "success");
         return "redirect:/admin/suppliers";
     }
 
@@ -220,7 +159,8 @@ public class SupplierController {
     @PostMapping("/toggle/{id}")
     public String toggleStatus(@PathVariable Long id, RedirectAttributes redirect) {
         supplierService.toggleStatus(id);
-        redirect.addFlashAttribute("message", "Đã thay đổi trạng thái nhà cung cấp");
+        redirect.addFlashAttribute("message", "Cập nhật trạng thái NCC thành công, ID: " + id);
+        redirect.addFlashAttribute("messageType", "success");
         return "redirect:/admin/suppliers";
     }
 }
