@@ -46,9 +46,6 @@ jobs:
     env:
       MAVEN_OPTS: -Dfile.encoding=UTF-8
       JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
-    environment:
-      name: Production
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write
       contents: read
