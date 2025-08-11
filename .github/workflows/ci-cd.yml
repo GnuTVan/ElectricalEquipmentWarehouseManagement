@@ -27,17 +27,17 @@ jobs:
           cache: 'maven'
 
       - name: Maven Test
-        run: mvn -B -ntp test
+        run: mvn -B -ntp -f Backend/eewms/pom.xml test
 
       - name: Package
-        run: mvn -B -ntp -DskipTests package
+        run: mvn -B -ntp -f Backend/eewms/pom.xml -DskipTests package
 
       - name: Upload artifact (push only)
         if: github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
           name: eewms-jar
-          path: .\target\*.jar
+          path: Backend/eewms/target/*.jar
 
   deploy:
     needs: build
