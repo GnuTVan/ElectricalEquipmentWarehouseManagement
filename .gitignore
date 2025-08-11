@@ -3,3 +3,4 @@
 *.properties
 Backend/.idea/misc.xml
 Backend/.idea/misc.xml
+Backend/.env
