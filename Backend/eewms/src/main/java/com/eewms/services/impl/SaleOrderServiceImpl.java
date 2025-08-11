@@ -25,7 +25,7 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
     private final CustomerRepository customerRepo;
     private final UserRepository userRepo;
     private final GoodIssueNoteRepository goodIssueRepository;
-
+    private final ComboRepository comboRepository;
     @Override
     @Transactional
     public SaleOrderResponseDTO createOrder(SaleOrderRequestDTO dto, String createdByUsername) {
@@ -40,47 +40,65 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         saleOrder.setSoCode(orderCode);
         saleOrder.setCustomer(customer);
         saleOrder.setCreatedByUser(user);
-        saleOrder.setStatus(SaleOrder.SaleOrderStatus.PENDING); // Trạng thái ban đầu là PENDING
+        saleOrder.setStatus(SaleOrder.SaleOrderStatus.PENDING);
 
         List<SaleOrderDetail> detailList = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
-        StringBuilder warningNote = new StringBuilder(); // Sử dụng để lưu thông báo thiếu hàng
+        StringBuilder warningNote = new StringBuilder();
         boolean hasInsufficientStock = false;
 
         for (SaleOrderDetailDTO item : dto.getDetails()) {
             Product product = productRepo.findById(item.getProductId())
                     .orElseThrow(() -> new RuntimeException("Product not found"));
 
-            // Kiểm tra nếu số lượng yêu cầu lớn hơn tồn kho
             if (product.getQuantity() < item.getOrderedQuantity()) {
                 hasInsufficientStock = true;
                 warningNote.append(String.format("- Sản phẩm %s thiếu hàng (YC: %d / Tồn: %d)\n",
                         product.getName(), item.getOrderedQuantity(), product.getQuantity()));
             }
 
-            // Tạo chi tiết đơn hàng từ DTO
             SaleOrderDetail detail = SaleOrderMapper.toOrderDetail(item, product);
             detail.setSale_order(saleOrder);
             detailList.add(detail);
 
-            // Tính tổng tiền đơn hàng
             BigDecimal lineTotal = item.getPrice().multiply(BigDecimal.valueOf(item.getOrderedQuantity()));
             totalAmount = totalAmount.add(lineTotal);
         }
 
-        // Cập nhật mô tả đơn hàng nếu thiếu hàng
+        // ===== PHẦN MÔ TẢ: GHÉP THIẾU HÀNG + COMBO =====
+        // 3.1. Base description (nếu thiếu hàng thì ưu tiên thông báo)
+        String baseDesc;
         if (hasInsufficientStock) {
-            saleOrder.setDescription("Đơn hàng thiếu hàng, cần nhập thêm để hoàn thành:\n" + warningNote.toString().trim());
+            baseDesc = "Đơn hàng thiếu hàng, cần nhập thêm để hoàn thành:\n" + warningNote.toString().trim();
         } else {
-            saleOrder.setDescription(dto.getDescription()); // Nếu không thiếu hàng, dùng mô tả gốc
+            baseDesc = Optional.ofNullable(dto.getDescription()).orElse("").trim();
         }
 
-        // Lưu thông tin chi tiết đơn hàng và tổng tiền
+        // 3.2. Nếu có comboIds thì nối thêm "Đơn có combo: CODE1, CODE2"
+        //      -> cần inject ComboRepository vào service này
+        if (dto.getComboIds() != null && !dto.getComboIds().isEmpty()) {
+            List<Combo> combos = comboRepository.findAllById(dto.getComboIds());
+            // bạn có thể thay .map(Combo::getCode) bằng .map(Combo::getName) nếu muốn hiển thị tên
+            String comboLabel = combos.stream()
+                    .map(Combo::getName)      // hoặc getName()
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .collect(Collectors.joining(", "));
+
+            if (!comboLabel.isBlank()) {
+                String suffix = "Đơn có combo: " + comboLabel;
+                baseDesc = baseDesc.isBlank() ? suffix : (baseDesc + " | " + suffix);
+            }
+        }
+
+        saleOrder.setDescription(baseDesc);
+        // ===== HẾT PHẦN GHÉP MÔ TẢ =====
+
         saleOrder.setDetails(detailList);
         saleOrder.setTotalAmount(totalAmount);
         orderRepo.save(saleOrder);
 
-        return SaleOrderMapper.toOrderResponseDTO(saleOrder); // Trả về DTO cho response
+        return SaleOrderMapper.toOrderResponseDTO(saleOrder);
     }
 
 

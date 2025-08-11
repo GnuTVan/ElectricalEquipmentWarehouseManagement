@@ -5,13 +5,16 @@ import com.eewms.dto.warehouseReceipt.WarehouseReceiptDTO;
 import com.eewms.dto.warehouseReceipt.WarehouseReceiptItemDTO;
 import com.eewms.entities.*;
 import com.eewms.repository.ProductRepository;
+import com.eewms.repository.SaleOrderRepository;
 import com.eewms.repository.WarehouseRepository;
 import com.eewms.repository.warehouseReceipt.*;
+import com.eewms.services.ISaleOrderService;
 import com.eewms.services.IWarehouseReceiptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.eewms.entities.SaleOrder;
+import com.eewms.services.ISaleOrderService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,6 +29,9 @@ public class WarehouseReceiptServiceImpl implements IWarehouseReceiptService {
     private final ProductWarehouseStockRepository productWarehouseStockRepository;
     private final WarehouseRepository warehouseRepository;
     private final ProductRepository productRepository;
+
+    private final SaleOrderRepository saleOrderRepository;
+    private final ISaleOrderService saleOrderService;
     @Transactional
     @Override
     public void saveReceipt(WarehouseReceiptDTO dto, PurchaseOrder order, User user) {
@@ -80,9 +86,43 @@ public class WarehouseReceiptServiceImpl implements IWarehouseReceiptService {
             stock.setQuantity(stock.getQuantity() + itemDTO.getQuantity());
             productWarehouseStockRepository.save(stock);
         }
-
+//        tryUpdateSaleOrdersAfterReceipt();
     }
 
+//    @Transactional
+//    protected void tryUpdateSaleOrdersAfterReceipt() {
+//        // Lấy tất cả đơn đang PROCESSING
+//        List<SaleOrder> processingOrders = saleOrderRepository.findByStatus(SaleOrder.SaleOrderStatus.PROCESSING);
+//        if (processingOrders.isEmpty()) return;
+//
+//        for (SaleOrder so : processingOrders) {
+//            boolean enough = true;
+//
+//            // Duyệt từng dòng sản phẩm trong đơn
+//            for (SaleOrderDetail d : so.getDetails()) {
+//                Product product = d.getProduct();
+//
+//                // Tìm tồn kho hiện tại cho sản phẩm (ở kho mặc định/ kho bán)
+//                // Nếu hệ thống bạn đang bán từ 1 kho duy nhất, lấy kho đó.
+//                // Nếu nhiều kho, bạn có thể lấy tổng tồn tất cả kho.
+//                ProductWarehouseStock stock = productWarehouseStockRepository
+//                        .findByProductAndWarehouse(product, /* TODO: kho bán của bạn */ so.getWarehouse());
+//
+//                int available = (stock != null ? stock.getQuantity() : 0);
+//
+//                // Nếu có logic "đã giao một phần", thay d.getQuantity() bằng (d.getQuantity() - d.getDeliveredQty())
+//                if (available < d.getQuantity()) {
+//                    enough = false;
+//                    break;
+//                }
+//            }
+//
+//            // Nếu mọi sản phẩm đều đủ tồn => chuyển PENDING
+//            if (enough) {
+//                saleOrderService.updateOrderStatus(so.getId(), SaleOrder.SaleOrderStatus.PENDING);
+//            }
+//        }
+//    }
     @Override
     public List<WarehouseReceiptReportDTO> getReceiptReport(LocalDate fromDate, LocalDate toDate, Long warehouseId, Long supplierId) {
         List<WarehouseReceipt> receipts = warehouseReceiptRepository.findAll();

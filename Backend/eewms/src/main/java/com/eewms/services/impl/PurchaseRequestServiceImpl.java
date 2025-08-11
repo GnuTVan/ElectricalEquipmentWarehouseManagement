@@ -1,5 +1,6 @@
 package com.eewms.services.impl;
-
+import com.eewms.entities.SaleOrder;
+import com.eewms.services.ISaleOrderService;
 import com.eewms.constant.PRStatus;
 import com.eewms.constant.PurchaseOrderStatus;
 import com.eewms.dto.purchase.PurchaseOrderDTO;
@@ -37,6 +38,7 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
     private final SupplierRepository supplierRepo;
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final IPurchaseOrderService purchaseOrderService;
+    private final ISaleOrderService saleOrderService;
 
     @Override
     @Transactional
@@ -44,13 +46,17 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
         List<Product> products = productRepo.findAllById(
                 dto.getItems().stream().map(i -> i.getProductId().intValue()).toList()
         );
-
         List<Supplier> suppliers = supplierRepo.findAll();
 
         PurchaseRequest request = PurchaseRequestMapper.toEntity(dto, products, suppliers);
         request.setCode(generateCode());
+        PurchaseRequest saved = prRepo.save(request);
 
-        return prRepo.save(request);
+        // ✅ nếu PR gắn với SaleOrder thì set trạng thái PROCESSING
+        if (dto.getSaleOrderId() != null) {
+            saleOrderService.updateOrderStatus(dto.getSaleOrderId(), SaleOrder.SaleOrderStatus.PROCESSING);
+        }
+        return saved;
     }
 
     @Override
