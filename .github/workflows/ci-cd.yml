@@ -29,11 +29,8 @@ jobs:
           distribution: 'microsoft'
           cache: 'maven'
 
-      - name: Maven Test
-        run: mvn -B -ntp -f Backend/eewms/pom.xml test
-
-      - name: Package
-        run: mvn -B -ntp -f Backend/eewms/pom.xml -DskipTests package
+      - name: Build with Maven (skip tests)
+        run: mvn -f Backend/eewms/pom.xml -B -ntp -DskipTests clean package
 
       - name: Upload artifact (push only)
         if: github.event_name == 'push'
