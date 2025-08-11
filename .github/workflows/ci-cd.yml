@@ -2,9 +2,7 @@ name: CI/CD EEWMS (Windows + OIDC)
 
 on:
   push:
-    branches: [ "master", "prod" ]
-  pull_request:
-    branches: [ "master", "prod" ]
+    branches: [ "prod" ]
   workflow_dispatch:
 
 jobs:
@@ -32,8 +30,7 @@ jobs:
       - name: Build with Maven (skip tests)
         run: mvn -f Backend/eewms/pom.xml -B -ntp -DskipTests clean package
 
-      - name: Upload artifact (push only)
-        if: github.event_name == 'push'
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: eewms-jar
