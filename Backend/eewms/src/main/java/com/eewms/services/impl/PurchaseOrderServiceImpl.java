@@ -47,20 +47,33 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService {
         order.setCode(generateOrderCode());
         order.setStatus(PurchaseOrderStatus.CHO_GIAO_HANG);
 
-        // Tính tổng tiền
-        List<Product> products = productRepo.findAllById(
-                dto.getItems().stream().map(i -> i.getProductId()).toList()
-        );
-        List<PurchaseOrderItem> items = PurchaseOrderMapper.toItemEntities(dto.getItems(), order, products);
+        // Lấy danh sách productId từ DTO
+        var productIds = dto.getItems().stream()
+                .map(i -> i.getProductId())
+                .toList();
 
+// Lấy products tương ứng
+        List<Product> products = productRepo.findAllById(productIds);
+
+// VALIDATE: mọi product phải thuộc NCC đã chọn
+        boolean allBelong = products.stream().allMatch(p ->
+                p.getSuppliers() != null &&
+                        p.getSuppliers().stream().anyMatch(s -> s.getId().equals(dto.getSupplierId()))
+        );
+
+        if (!allBelong) {
+            throw new InventoryException("Có sản phẩm không thuộc nhà cung cấp đã chọn!");
+        }
+
+// Tạo items & tính tổng như cũ
+        List<PurchaseOrderItem> items = PurchaseOrderMapper.toItemEntities(dto.getItems(), order, products);
         BigDecimal total = items.stream()
                 .map(i -> i.getPrice().multiply(BigDecimal.valueOf(i.getContractQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         order.setTotalAmount(total);
-
-        // Gán items → lưu
         order.setItems(items);
-        return orderRepo.save(order); // Cascade ALL sẽ tự lưu items
+
+        return orderRepo.save(order);
     }
 
     @Override

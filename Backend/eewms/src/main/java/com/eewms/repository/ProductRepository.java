@@ -67,4 +67,6 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     @EntityGraph(attributePaths = "suppliers")
     List<Product> findAll();
 
+    List<Product> findBySuppliers_Id(Long supplierId);
+
 }
