@@ -111,9 +111,8 @@
                                 <input type="number"
                                        th:name="'items[' + ${iStat.index} + '].deliveryQuantity'"
                                        th:value="0"
-                                       th:disabled="${readOnly or isLockedByStatus}"
-
-                                       class="text-center w-24 border px-1"
+                                       th:disabled="${readOnly}"
+                                       class="delivery-qty text-center w-24 border px-1"
                                        min="0"/>
                             </td>
 
@@ -141,42 +140,43 @@
 </div>
 <!-- Footer -->
 <div class="hidden" th:insert="~{fragments/footer :: footer}"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const statusSelect = document.querySelector('[name="status"]');
+<script th:inline="javascript">
+    // ===== Bật/tắt input "Giao lần này" theo trạng thái =====
+    const READ_ONLY = /*[[${readOnly}]]*/ false;
+    const statusSelect = document.querySelector('[name="status"]');
+    const getDeliveryInputs = () => document.querySelectorAll('input[name^="items"][name$=".deliveryQuantity"]');
 
-        // Cập nhật lại selector để lấy đúng input giao hàng mới
-        const deliveryInputs = document.querySelectorAll('input[name^="items"][name$=".deliveryQuantity"]');
+    function toggleDeliveryInputs() {
+      if (READ_ONLY) {
+        getDeliveryInputs().forEach(inp => inp.disabled = true);
+        return;
+      }
+      const st = statusSelect?.value;
+      const allow = (st === 'DA_GIAO_MOT_PHAN' || st === 'HOAN_THANH');
+      getDeliveryInputs().forEach(inp => inp.disabled = !allow);
+    }
 
-        function updateReadonlyState() {
-            const selected = statusSelect.value;
+    document.addEventListener('DOMContentLoaded', toggleDeliveryInputs);
+    statusSelect?.addEventListener('change', toggleDeliveryInputs);
 
-            deliveryInputs.forEach(input => {
-                if (selected === 'DA_GIAO_MOT_PHAN' || selected === 'HOAN_THANH') {
-                    input.removeAttribute('readonly');
-                } else {
-                    input.setAttribute('readonly', 'readonly');
-                }
-            });
-        }
-
-        statusSelect.addEventListener('change', updateReadonlyState);
-        updateReadonlyState(); // chạy lần đầu để khớp trạng thái hiện tại
+    // Đảm bảo input không disabled trước khi submit (để post giá trị)
+    const form = document.querySelector('form');
+    form?.addEventListener('submit', () => {
+      const st = statusSelect?.value;
+      const allow = !READ_ONLY && (st === 'DA_GIAO_MOT_PHAN' || st === 'HOAN_THANH');
+      if (allow) getDeliveryInputs().forEach(inp => inp.disabled = false);
     });
 
+    // ===== Giữ phần toggle menu người dùng như cũ =====
     const userBtn = document.getElementById('userMenuBtn');
     const dropdown = document.getElementById('userMenuDropdown');
     if (userBtn && dropdown) {
-        userBtn.addEventListener('click', function () {
-            dropdown.classList.toggle('hidden');
-        });
-
-        document.addEventListener('click', function (event) {
-            if (!userBtn.contains(event.target) && !dropdown.contains(event.target)) {
-                dropdown.classList.add('hidden');
-            }
-        });
-
+      userBtn.addEventListener('click', function () { dropdown.classList.toggle('hidden'); });
+      document.addEventListener('click', function (event) {
+        if (!userBtn.contains(event.target) && !dropdown.contains(event.target)) {
+          dropdown.classList.add('hidden');
+        }
+      });
     }
 </script>
 </body>
