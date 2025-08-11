@@ -10,6 +10,9 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    env:
+      MAVEN_OPTS: -Dfile.encoding=UTF-8
+      JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
     permissions:
       contents: read
     concurrency:
@@ -43,6 +46,9 @@ jobs:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
     runs-on: windows-latest
+    env:
+      MAVEN_OPTS: -Dfile.encoding=UTF-8
+      JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
     environment:
       name: Production
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
