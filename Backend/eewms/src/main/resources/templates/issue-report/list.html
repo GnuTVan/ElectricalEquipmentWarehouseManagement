@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{fragments/common-head :: commonHead('Báo cáo xuất kho')}"></head>
+
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+  <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <section class="p-6 space-y-4">
+      <h1 class="text-2xl font-semibold">Báo cáo xuất kho</h1>
+
+      <!-- Preset + Toggle -->
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div class="flex flex-wrap gap-2">
+          <button type="button" class="px-3 py-1 border rounded" data-preset="today">Hôm nay</button>
+          <button type="button" class="px-3 py-1 border rounded" data-preset="week">Tuần này</button>
+          <button type="button" class="px-3 py-1 border rounded" data-preset="month">Tháng này</button>
+          <button type="button" class="px-3 py-1 border rounded" data-preset="quarter">Quý này</button>
+          <button type="button" class="px-3 py-1 border rounded" data-preset="year">Năm nay</button>
+        </div>
+
+        <label class="inline-flex items-center gap-2 select-none">
+          <input id="fmtToggle" type="checkbox" class="h-4 w-4">
+          <span>Định dạng VND</span>
+        </label>
+      </div>
+
+      <!-- Filter -->
+      <form id="filterForm" method="get" class="bg-white rounded-lg p-4 shadow grid grid-cols-1 md:grid-cols-6 gap-3">
+        <input type="hidden" name="page" id="pageInput" th:value="${data != null} ? ${data.number} : 0">
+
+        <div>
+          <label class="block text-sm mb-1">Từ ngày</label>
+          <input id="fromDate" type="date" name="fromDate" th:value="${fromDate}" class="w-full border rounded px-2 py-1">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Đến ngày</label>
+          <input id="toDate" type="date" name="toDate" th:value="${toDate}" class="w-full border rounded px-2 py-1">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Khách hàng</label>
+          <select name="customerId" class="w-full border rounded px-2 py-1">
+            <option th:value="${null}">Tất cả</option>
+            <option th:each="c : ${customers}" th:value="${c.id}" th:text="${c.fullName}" th:selected="${customerId} == ${c.id}"></option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Người lập</label>
+          <select name="userId" class="w-full border rounded px-2 py-1">
+            <option th:value="${null}">Tất cả</option>
+            <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.fullName}" th:selected="${userId} == ${u.id}"></option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Mã PXK</label>
+          <input type="text" name="issueCode" th:value="${issueCode}" class="w-full border rounded px-2 py-1" placeholder="VD: PXK0001">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Mã ĐH</label>
+          <input type="text" name="saleOrderCode" th:value="${saleOrderCode}" class="w-full border rounded px-2 py-1" placeholder="VD: SO0001">
+        </div>
+
+        <div class="md:col-span-6 flex gap-2">
+          <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white">Lọc</button>
+          <a th:href="@{/admin/reports/issues}" class="px-4 py-2 rounded bg-gray-200">Xóa lọc</a>
+
+          <!-- Export -->
+          <a th:href="@{/admin/reports/issues/export/xlsx(
+                fromDate=${fromDate}, toDate=${toDate},
+                customerId=${customerId}, userId=${userId},
+                issueCode=${issueCode}, saleOrderCode=${saleOrderCode}
+              )}"
+             class="px-4 py-2 rounded bg-green-600 text-white">Xuất Excel</a>
+        </div>
+      </form>
+
+      <!-- KPIs -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="bg-white p-4 rounded-lg shadow">
+          <div class="text-sm text-gray-500">Số phiếu</div>
+          <div class="text-xl font-semibold num-plain"
+               th:attr="data-value=${totals != null} ? ${totals.issueCount} : 0"
+               th:text="${totals != null} ? ${totals.issueCount} : 0"></div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow">
+          <div class="text-sm text-gray-500">Tổng số lượng</div>
+          <div class="text-xl font-semibold num-plain"
+               th:attr="data-value=${totals != null} ? ${totals.totalQuantity} : 0"
+               th:text="${totals != null} ? ${totals.totalQuantity} : 0"></div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow">
+          <div class="text-sm text-gray-500">Tổng tiền</div>
+          <div class="text-xl font-semibold money"
+               th:attr="data-value=${totals != null} ? ${totals.totalAmount} : 0"
+               th:text="${totals != null} ? ${totals.totalAmount} : 0"></div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="bg-white rounded-lg shadow overflow-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-50">
+          <tr>
+            <th class="text-left p-3">Mã PXK</th>
+            <th class="text-left p-3">Ngày xuất</th>
+            <th class="text-left p-3">Khách hàng</th>
+            <th class="text-left p-3">Người lập</th>
+            <th class="text-left p-3">Mã ĐH</th>
+            <th class="text-right p-3">Số lượng</th>
+            <th class="text-right p-3">Tổng tiền</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="r : ${data.content}">
+            <td class="p-3" th:text="${r.issueCode}">PXK0001</td>
+            <td class="p-3" th:text="${r.issueDate}">2025-08-01</td>
+            <td class="p-3" th:text="${r.customerName}">KH A</td>
+            <td class="p-3" th:text="${r.createdByName}">user</td>
+            <td class="p-3" th:text="${r.saleOrderCode}">SO0001</td>
+            <td class="p-3 text-right num-plain" th:attr="data-value=${r.totalQuantity}" th:text="${r.totalQuantity}">0</td>
+            <td class="p-3 text-right money" th:attr="data-value=${r.totalAmount}" th:text="${r.totalAmount}">0</td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(data.content)}">
+            <td class="p-3 text-center text-gray-500" colspan="7">Không có dữ liệu</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination (bottom only) -->
+      <!-- Pagination (centered, no summary text) -->
+      <nav class="bg-white rounded-lg shadow mt-4 p-2"
+           th:if="${data != null and data.totalPages > 0}"
+           role="navigation" aria-label="Pagination">
+        <div class="flex justify-center items-center gap-1">
+          <!-- First -->
+          <a th:href="@{/admin/reports/issues(
+          page=${0},
+          size=${data.size},
+          fromDate=${fromDate}, toDate=${toDate},
+          customerId=${customerId}, userId=${userId},
+          issueCode=${issueCode}, saleOrderCode=${saleOrderCode}
+        )}"
+             class="px-3 py-1 border rounded"
+             th:classappend="${data.first} ? 'pointer-events-none opacity-50' : ''">« Đầu</a>
+
+          <!-- Prev -->
+          <a th:href="@{/admin/reports/issues(
+          page=${data.number - 1},
+          size=${data.size},
+          fromDate=${fromDate}, toDate=${toDate},
+          customerId=${customerId}, userId=${userId},
+          issueCode=${issueCode}, saleOrderCode=${saleOrderCode}
+        )}"
+             class="px-3 py-1 border rounded"
+             th:classappend="${data.first} ? 'pointer-events-none opacity-50' : ''">‹ Trước</a>
+
+          <!-- Page numbers -->
+          <th:block th:with="
+        start=${T(java.lang.Math).max(0, data.number - 3)},
+        end=${T(java.lang.Math).min(data.totalPages - 1, data.number + 3)}
+      ">
+            <a th:each="i : ${#numbers.sequence(start, end)}"
+               th:text="${i + 1}"
+               th:href="@{/admin/reports/issues(
+              page=${i},
+              size=${data.size},
+              fromDate=${fromDate}, toDate=${toDate},
+              customerId=${customerId}, userId=${userId},
+              issueCode=${issueCode}, saleOrderCode=${saleOrderCode}
+            )}"
+               class="px-3 py-1 border rounded"
+               th:classappend="${i} == ${data.number} ? ' bg-blue-600 text-white border-blue-600' : ''"></a>
+          </th:block>
+
+          <!-- Next -->
+          <a th:href="@{/admin/reports/issues(
+          page=${data.number + 1},
+          size=${data.size},
+          fromDate=${fromDate}, toDate=${toDate},
+          customerId=${customerId}, userId=${userId},
+          issueCode=${issueCode}, saleOrderCode=${saleOrderCode}
+        )}"
+             class="px-3 py-1 border rounded"
+             th:classappend="${data.last} ? 'pointer-events-none opacity-50' : ''">Sau ›</a>
+
+          <!-- Last -->
+          <a th:href="@{/admin/reports/issues(
+          page=${data.totalPages - 1},
+          size=${data.size},
+          fromDate=${fromDate}, toDate=${toDate},
+          customerId=${customerId}, userId=${userId},
+          issueCode=${issueCode}, saleOrderCode=${saleOrderCode}
+        )}"
+             class="px-3 py-1 border rounded"
+             th:classappend="${data.last} ? 'pointer-events-none opacity-50' : ''">Cuối »</a>
+        </div>
+      </nav>
+    </section>
+
+    <!-- Scripts -->
+    <script>
+      // DATE PRESETS
+      const fromEl = document.getElementById('fromDate');
+      const toEl   = document.getElementById('toDate');
+      const form   = document.getElementById('filterForm');
+      const pageInput = document.getElementById('pageInput');
+
+      function fmt(d){ return d.toISOString().slice(0,10); }
+      function startOfWeek(d){ const day=d.getDay(); const diff=(day===0?-6:1-day); const r=new Date(d); r.setDate(d.getDate()+diff); return r; }
+      function endOfWeek(d){ const s=startOfWeek(d); const r=new Date(s); r.setDate(s.getDate()+6); return r; }
+      function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+      function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0); }
+      function startOfQuarter(d){ const m=Math.floor(d.getMonth()/3)*3; return new Date(d.getFullYear(), m, 1); }
+      function endOfQuarter(d){ const s=startOfQuarter(d); return new Date(s.getFullYear(), s.getMonth()+3, 0); }
+      function startOfYear(d){ return new Date(d.getFullYear(), 0, 1); }
+      function endOfYear(d){ return new Date(d.getFullYear(), 11, 31); }
+
+      document.querySelectorAll('[data-preset]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const now = new Date();
+          let f = now, t = now;
+          switch(btn.dataset.preset){
+            case 'today':   f=t=now; break;
+            case 'week':    f=startOfWeek(now); t=endOfWeek(now); break;
+            case 'month':   f=startOfMonth(now); t=endOfMonth(now); break;
+            case 'quarter': f=startOfQuarter(now); t=endOfQuarter(now); break;
+            case 'year':    f=startOfYear(now); t=endOfYear(now); break;
+          }
+          fromEl.value = fmt(f);
+          toEl.value   = fmt(t);
+          if (pageInput) pageInput.value = 0;
+          form.submit();
+        });
+      });
+
+      // FORMAT TOGGLE (mặc định bật VND)
+      const toggle = document.getElementById('fmtToggle');
+      const nfVND  = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 });
+      toggle.checked = true;
+
+      function asNumber(raw){ const n=Number(raw); return isNaN(n) ? 0 : n; }
+      function applyFormat(){
+        document.querySelectorAll('.money').forEach(el=>{
+          const n = asNumber(el.getAttribute('data-value') || '0');
+          el.textContent = toggle.checked ? nfVND.format(n) : n.toLocaleString('en-US',{useGrouping:false,maximumFractionDigits:0});
+        });
+        document.querySelectorAll('.num-plain').forEach(el=>{
+          const n = asNumber(el.getAttribute('data-value') || '0');
+          el.textContent = toggle.checked ? n.toLocaleString('vi-VN') : n.toLocaleString('en-US',{useGrouping:false,maximumFractionDigits:0});
+        });
+      }
+      toggle.addEventListener('change', applyFormat);
+      applyFormat();
+
+      // Reset về trang 1 khi submit filter
+      form.addEventListener('submit', ()=> { if (pageInput) pageInput.value = 0; });
+    </script>
+  </main>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+<div th:replace="fragments/toast-script :: toast-script"></div>
+</body>
+</html>

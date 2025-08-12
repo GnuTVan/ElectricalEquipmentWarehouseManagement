@@ -95,7 +95,7 @@ public class ProductController {
             dto.setUploadedImageUrls(urls); // gán URL đã xử lý vào DTO, có thể rỗng
             productService.create(dto);
 
-            ra.addFlashAttribute("message", "Tạo thành công!");
+            ra.addFlashAttribute("message", "Thêm SP thành công, ID: " + dto.getId() + " - " + dto.getName());
             ra.addFlashAttribute("messageType", "success");
             return "redirect:/products";
 
@@ -113,7 +113,7 @@ public class ProductController {
             return "product/product-list"; // <<<<<< KHÔNG redirect để modal hiển thị lỗi
 
         } catch (Exception ex) {
-            ra.addFlashAttribute("message", "Lỗi khi tạo sản phẩm: " + ex.getMessage());
+            ra.addFlashAttribute("message", "Lỗi khi tạo sản phẩm: " + dto.getName());
             ra.addFlashAttribute("messageType", "error");
             return "redirect:/products";
         }
@@ -161,7 +161,7 @@ public class ProductController {
             }
 
 
-            redirect.addFlashAttribute("message", "Cập nhật sản phẩm thành công");
+            redirect.addFlashAttribute("message", "Cập nhật SP thành công, Tên" + productForm.getName());
             redirect.addFlashAttribute("messageType", "success");
             return "redirect:/products";
 

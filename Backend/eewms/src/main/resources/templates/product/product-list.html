@@ -438,7 +438,10 @@
     function initEditChoices() {
         const el = document.getElementById('editSupplierIds');
         if (!el) return;
-        if (editChoices) { editChoices.destroy(); editChoices = null; }
+        if (editChoices) {
+            editChoices.destroy();
+            editChoices = null;
+        }
         editChoices = new Choices(el, {
             removeItemButton: true,
             searchPlaceholderValue: 'Tìm NCC…',
@@ -568,7 +571,9 @@
         const idsStr = tr.dataset.supplierIds || '';
         const selectedIds = idsStr ? idsStr.split(',').map(s => s.trim()) : [];
         // 1) clear selected cũ ở thẻ select “thật”
-        Array.from(sel.options).forEach(op => { op.selected = false; });
+        Array.from(sel.options).forEach(op => {
+            op.selected = false;
+        });
         // 2) đặt lại selected theo dữ liệu của hàng
         selectedIds.forEach(id => {
             const opt = Array.from(sel.options).find(o => String(o.value) === String(id));
@@ -596,7 +601,10 @@
         modal.classList.add('hidden');
 
         // Hủy Choices để tránh giữ trạng thái cũ
-        if (editChoices) { editChoices.destroy(); editChoices = null; }
+        if (editChoices) {
+            editChoices.destroy();
+            editChoices = null;
+        }
 
         // Reset form
         const form = document.getElementById('editProductForm');
@@ -697,9 +705,6 @@
         }
     });
 </script>
-
-<div th:replace="fragments/toast-script :: toast-script"></div>
-
 </body>
 
 </html>

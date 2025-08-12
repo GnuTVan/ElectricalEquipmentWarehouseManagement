@@ -43,10 +43,10 @@ public class CustomerController {
     }
 
     @PostMapping("/save")
-    public String createCustomer (@ModelAttribute("customer") @Valid CustomerDTO dto,
-                                  BindingResult result,
-                                  RedirectAttributes redirect,
-                                  Model model) {
+    public String createCustomer(@ModelAttribute("customer") @Valid CustomerDTO dto,
+                                 BindingResult result,
+                                 RedirectAttributes redirect,
+                                 Model model) {
         if (result.hasErrors()) {
             model.addAttribute("customer", dto);
             model.addAttribute("hasFormError", true);
@@ -56,7 +56,8 @@ public class CustomerController {
 
         try {
             service.create(dto);
-            redirect.addFlashAttribute("success", "Thêm khách hàng thành công");
+            redirect.addFlashAttribute("message", "Thêm KH" + dto.getFullName() + " thành công");
+            redirect.addFlashAttribute("messageType", "success");
         } catch (Exception ex) {
             ex.printStackTrace();
             redirect.addFlashAttribute("error", "Lỗi khi thêm khách hàng: " + ex.getMessage());
@@ -64,7 +65,6 @@ public class CustomerController {
 
         return "redirect:/customers";
     }
-
 
 
     @GetMapping("/edit/{id}")
@@ -91,7 +91,8 @@ public class CustomerController {
 
         try {
             service.update(dto);
-            redirect.addFlashAttribute("success", "Cập nhật thành công");
+            redirect.addFlashAttribute("message", "Cập nhật thông tin KH thành công, Tên:" + dto.getFullName());
+            redirect.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", "Lỗi khi cập nhật: " + e.getMessage());
         }
@@ -101,11 +102,13 @@ public class CustomerController {
 
     @PostMapping("/{id}/status")
     @ResponseBody
-    public String updateStatus(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+    public String updateStatus(@PathVariable Long id, @RequestBody Map<String, String> payload, RedirectAttributes redirect, Model model) {
         try {
             String statusStr = payload.get("status");
             Customer.CustomerStatus status = Customer.CustomerStatus.valueOf(statusStr);
             service.updateStatus(id, status);
+            redirect.addFlashAttribute("message", "Cập nhật trạng thái KH thành công");
+            redirect.addFlashAttribute("messageType", "success");
             return "OK";
         } catch (Exception e) {
             return "ERROR: " + e.getMessage();

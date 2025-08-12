@@ -1,97 +1,90 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-  <title>Danh sách công nợ</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/toastr/build/toastr.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastr/build/toastr.min.css" />
-</head>
-<body class="bg-gray-100">
-<!-- Sidebar -->
-<div th:replace="~{fragments/sidebar :: sidebar}"></div>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{fragments/common-head :: commonHead('Danh sách công nợ')}"></head>
 
-<!-- Header -->
-<div class="ml-64">
-  <div th:replace="~{fragments/header :: header}"></div>
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <!-- Header -->
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <div th:replace="~{fragments/header :: header}"></div>
 
 
+        <!-- Nội dung -->
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-2xl font-bold">Công nợ</h1>
+                <a th:href="@{/debts/create}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    Thêm công nợ
+                </a>
+            </div>
 
-  <!-- Nội dung -->
-  <div class="p-6">
-    <div class="flex justify-between items-center mb-4">
-      <h1 class="text-2xl font-bold">Công nợ</h1>
-      <a th:href="@{/debts/create}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-        Thêm công nợ
-      </a>
-    </div>
-
-    <div class="overflow-x-auto bg-white shadow rounded">
-      <table class="min-w-full text-sm table-auto">
-        <thead class="bg-gray-100">
-        <tr>
-          <th class="px-4 py-2 text-left">ID</th>
-          <th class="text-left">Loại</th>
-          <th class="text-left">Đối tượng</th>
-          <th class="text-left">ID Đối tượng</th>
-          <th class="text-left">Số tiền</th>
-          <th class="text-left">Đã trả</th>
-          <th class="text-left">Còn nợ</th>
-          <th class="text-left">Trạng thái</th>
-          <th class="text-left">Ngày đến hạn</th>
-          <th class="text-left">Thao tác</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="debt : ${debts}" class="border-b hover:bg-gray-50">
-          <td class="px-4 py-2" th:text="${debt.id}">1</td>
-          <td th:text="${debt.type}">PAYABLE</td>
-          <td th:text="${debt.partnerType}">SUPPLIER</td>
-          <td th:text="${debt.partnerId}">10</td>
-          <td th:text="${#numbers.formatDecimal(debt.amount, 1, 'COMMA', 2, 'POINT')}">100.00</td>
-          <td th:text="${#numbers.formatDecimal(debt.paidAmount, 1, 'COMMA', 2, 'POINT')}">30.00</td>
-          <td th:text="${#numbers.formatDecimal(debt.remaining, 1, 'COMMA', 2, 'POINT')}">70.00</td>
-          <td>
+            <div class="overflow-x-auto bg-white shadow rounded">
+                <table class="min-w-full text-sm table-auto">
+                    <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-4 py-2 text-left">ID</th>
+                        <th class="text-left">Loại</th>
+                        <th class="text-left">Đối tượng</th>
+                        <th class="text-left">ID Đối tượng</th>
+                        <th class="text-left">Số tiền</th>
+                        <th class="text-left">Đã trả</th>
+                        <th class="text-left">Còn nợ</th>
+                        <th class="text-left">Trạng thái</th>
+                        <th class="text-left">Ngày đến hạn</th>
+                        <th class="text-left">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="debt : ${debts}" class="border-b hover:bg-gray-50">
+                        <td class="px-4 py-2" th:text="${debt.id}">1</td>
+                        <td th:text="${debt.type}">PAYABLE</td>
+                        <td th:text="${debt.partnerType}">SUPPLIER</td>
+                        <td th:text="${debt.partnerId}">10</td>
+                        <td th:text="${#numbers.formatDecimal(debt.amount, 1, 'COMMA', 2, 'POINT')}">100.00</td>
+                        <td th:text="${#numbers.formatDecimal(debt.paidAmount, 1, 'COMMA', 2, 'POINT')}">30.00</td>
+                        <td th:text="${#numbers.formatDecimal(debt.remaining, 1, 'COMMA', 2, 'POINT')}">70.00</td>
+                        <td>
                             <span th:text="${debt.status}"
                                   th:classappend="${debt.status == 'PAID'} ? 'text-green-600 font-semibold' :
                                                   (debt.status == 'PARTIALLY_PAID' ? 'text-yellow-600 font-semibold' :
                                                   'text-red-600 font-semibold')">
                             </span>
-          </td>
-          <td th:text="${#temporals.format(debt.dueDate, 'dd/MM/yyyy HH:mm')}">05/08/2025</td>
-          <td>
-            <a th:href="@{/debts/{id}/pay(id=${debt.id})}"
-               class="text-blue-500 hover:underline text-sm">Thanh toán</a>
-          </td>
-        </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+                        </td>
+                        <td th:text="${#temporals.format(debt.dueDate, 'dd/MM/yyyy HH:mm')}">05/08/2025</td>
+                        <td>
+                            <a th:href="@{/debts/{id}/pay(id=${debt.id})}"
+                               class="text-blue-500 hover:underline text-sm">Thanh toán</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
 </div>
 <script>
-  const btn = document.getElementById('userMenuBtn');
-  const dropdown = document.getElementById('userMenuDropdown');
+    const btn = document.getElementById('userMenuBtn');
+    const dropdown = document.getElementById('userMenuDropdown');
 
-  btn.addEventListener('click', function(event) {
-      event.stopPropagation();
-      dropdown.classList.toggle('hidden');
-  });
+    btn.addEventListener('click', function (event) {
+        event.stopPropagation();
+        dropdown.classList.toggle('hidden');
+    });
 
-  document.addEventListener('click', function() {
-      if (!dropdown.classList.contains('hidden')) {
-          dropdown.classList.add('hidden');
-      }
-  });
+    document.addEventListener('click', function () {
+        if (!dropdown.classList.contains('hidden')) {
+            dropdown.classList.add('hidden');
+        }
+    });
 
-  document.addEventListener('keydown', function(event) {
-      if (event.key === 'Escape') {
-          dropdown.classList.add('hidden');
-      }
-  });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            dropdown.classList.add('hidden');
+        }
+    });
 </script>
-
-<div th:replace="fragments/toast-script :: toast-script"></div>
-
 </body>
 </html>

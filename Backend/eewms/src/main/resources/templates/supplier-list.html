@@ -29,8 +29,8 @@
 
 
         <!-- Supplier Table -->
-        <div class="overflow-x-auto bg-white rounded-lg shadow">
-            <table class="min-w-full table-auto text-sm">
+        <div class="overflow-x-auto bg-white rounded-lg shadow px-4 py-6 space-y-6">
+            <table class="min-w-full table-auto overflow-y-hidden text-sm">
                 <thead class="bg-gray-100 text-left">
                 <tr>
                     <th class="px-4 py-3 font-semibold">ID</th>
@@ -459,8 +459,6 @@
     });
 </script>
 
-
-<div th:replace="~{fragments/toast-script :: toast-script}"></div>
 <script th:src="@{/assets/js/supplier-tax-lookup.js}"></script>
 <script th:src="@{/assets/js/bank-select.js}"></script>
 </body>
