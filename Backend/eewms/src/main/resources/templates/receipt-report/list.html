@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{fragments/common-head :: commonHead('Báo cáo nhập kho')}"></head>
+
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <!-- Sidebar fragment -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <!-- Main Content -->
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <!-- Header -->
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <section class="p-6 space-y-4">
+            <h1 class="text-2xl font-semibold">Báo cáo nhập kho</h1>
+
+            <!-- Preset + Toggle -->
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" class="px-3 py-1 border rounded" data-preset="today">Hôm nay</button>
+                    <button type="button" class="px-3 py-1 border rounded" data-preset="week">Tuần này</button>
+                    <button type="button" class="px-3 py-1 border rounded" data-preset="month">Tháng này</button>
+                    <button type="button" class="px-3 py-1 border rounded" data-preset="quarter">Quý này</button>
+                    <button type="button" class="px-3 py-1 border rounded" data-preset="year">Năm nay</button>
+                </div>
+
+                <label class="inline-flex items-center gap-2 select-none">
+                    <input id="fmtToggle" type="checkbox" class="h-4 w-4">
+                    <span>Định dạng VND</span>
+                </label>
+            </div>
+
+            <!-- Filter bar -->
+            <form id="filterForm" method="get"
+                  class="bg-white rounded-lg p-4 shadow grid grid-cols-1 md:grid-cols-6 gap-3">
+                <input type="hidden" name="page" id="pageInput" th:value="${data != null} ? ${data.number} : 0">
+
+                <div>
+                    <label class="block text-sm mb-1">Từ ngày</label>
+                    <input id="fromDate" type="date" name="fromDate" th:value="${fromDate}"
+                           class="w-full border rounded px-2 py-1">
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">Đến ngày</label>
+                    <input id="toDate" type="date" name="toDate" th:value="${toDate}"
+                           class="w-full border rounded px-2 py-1">
+                </div>
+                <!-- ... các ô filter khác giữ nguyên ... -->
+                <div class="md:col-span-6 flex gap-2">
+                    <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white">Lọc</button>
+                    <a th:href="@{/admin/reports/receipts}" class="px-4 py-2 rounded bg-gray-200">Xóa lọc</a>
+                </div>
+            </form>
+
+            <!-- KPIs -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="text-sm text-gray-500">Số phiếu</div>
+                    <div class="text-xl font-semibold num-plain"
+                         th:attr="data-value=${totals != null} ? ${totals.receiptCount} : 0"
+                         th:text="${totals != null} ? ${totals.receiptCount} : 0"></div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="text-sm text-gray-500">Tổng số lượng</div>
+                    <div class="text-xl font-semibold num-plain"
+                         th:attr="data-value=${totals != null} ? ${totals.totalQuantity} : 0"
+                         th:text="${totals != null} ? ${totals.totalQuantity} : 0"></div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="text-sm text-gray-500">Tổng tiền</div>
+                    <div class="text-xl font-semibold money"
+                         th:attr="data-value=${totals != null} ? ${totals.totalAmount} : 0"
+                         th:text="${totals != null} ? ${totals.totalAmount} : 0"></div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="bg-white rounded-lg shadow overflow-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50">
+                    <tr>
+                        <th class="text-left p-3">Mã phiếu</th>
+                        <th class="text-left p-3">Ngày nhập</th>
+                        <th class="text-left p-3">Kho</th>
+                        <th class="text-left p-3">Nhà cung cấp</th>
+                        <th class="text-left p-3">Người tạo</th>
+                        <th class="text-right p-3">Số lượng</th>
+                        <th class="text-right p-3">Tổng tiền</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="r : ${data.content}">
+                        <td class="p-3" th:text="${r.receiptCode}">RN00001</td>
+                        <td class="p-3" th:text="${r.receiptDate}">2025-08-01</td>
+                        <td class="p-3" th:text="${r.warehouseName}">Kho A</td>
+                        <td class="p-3" th:text="${r.supplierName}">NCC A</td>
+                        <td class="p-3" th:text="${r.createdByName}">Admin</td>
+                        <td class="p-3 text-right num-plain"
+                            th:attr="data-value=${r.totalQuantity}"
+                            th:text="${r.totalQuantity}">0
+                        </td>
+                        <td class="p-3 text-right money"
+                            th:attr="data-value=${r.totalAmount}"
+                            th:text="${r.totalAmount}">0
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(data.content)}">
+                        <td class="p-3 text-center text-gray-500" colspan="7">Không có dữ liệu</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="bg-white rounded-lg shadow p-3 flex justify-center">
+                <ul class="inline-flex items-center gap-1">
+                    <!-- First -->
+                    <li>
+                        <button type="button" class="px-3 py-1 border rounded disabled:opacity-40"
+                                th:disabled="${data.first}" data-page="0">« Đầu
+                        </button>
+                    </li>
+                    <!-- Prev -->
+                    <li>
+                        <button type="button" class="px-3 py-1 border rounded disabled:opacity-40"
+                                th:disabled="${!data.hasPrevious()}" th:attr="data-page=${data.number - 1}">‹ Trước
+                        </button>
+                    </li>
+
+                    <!-- Page numbers -->
+                    <th:block th:with="
+        start=${(data.number - 2) < 0 ? 0 : (data.number - 2)},
+        end=${(data.number + 2) >= (data.totalPages - 1) ? (data.totalPages - 1) : (data.number + 2)}
+      ">
+                        <li th:each="i : ${#numbers.sequence(start, end)}">
+                            <button type="button"
+                                    class="px-3 py-1 border rounded"
+                                    th:classappend="${i == data.number} ? ' bg-blue-600 text-white border-blue-600' : ''"
+                                    th:text="${i + 1}"
+                                    th:attr="data-page=${i}">1
+                            </button>
+                        </li>
+                    </th:block>
+
+                    <!-- Next -->
+                    <li>
+                        <button type="button" class="px-3 py-1 border rounded disabled:opacity-40"
+                                th:disabled="${!data.hasNext()}" th:attr="data-page=${data.number + 1}">Sau ›
+                        </button>
+                    </li>
+                    <!-- Last -->
+                    <li>
+                        <button type="button" class="px-3 py-1 border rounded disabled:opacity-40"
+                                th:disabled="${data.last}" th:attr="data-page=${data.totalPages - 1}">Cuối »
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+        </section>
+
+        <!-- Script nhỏ cho preset & toggle -->
+        <script>
+            const pageInput = document.getElementById('pageInput');
+ document.querySelectorAll('[data-page]').forEach(btn => {
+   btn.addEventListener('click', () => {
+     pageInput.value = btn.getAttribute('data-page');
+     form.submit();
+   });
+ });
+         // --- DATE PRESETS ---
+         const fromEl = document.getElementById('fromDate');
+         const toEl   = document.getElementById('toDate');
+         const form   = document.getElementById('filterForm');
+
+         function fmt(d){ return d.toISOString().slice(0,10); } // yyyy-MM-dd
+         function startOfWeek(d){  // tuần bắt đầu Thứ 2
+           const day = d.getDay(); // 0 CN .. 6 T7
+           const diff = (day === 0 ? -6 : 1 - day); // về thứ 2
+           const r = new Date(d); r.setDate(d.getDate() + diff); return r;
+         }
+         function endOfWeek(d){
+           const s = startOfWeek(d); const r = new Date(s);
+           r.setDate(s.getDate() + 6); return r;
+         }
+         function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+         function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0); }
+         function startOfQuarter(d){
+           const qStartMonth = Math.floor(d.getMonth()/3)*3;
+           return new Date(d.getFullYear(), qStartMonth, 1);
+         }
+         function endOfQuarter(d){
+           const s = startOfQuarter(d);
+           return new Date(s.getFullYear(), s.getMonth()+3, 0);
+         }
+         function startOfYear(d){ return new Date(d.getFullYear(), 0, 1); }
+         function endOfYear(d){ return new Date(d.getFullYear(), 11, 31); }
+
+         document.querySelectorAll('[data-preset]').forEach(btn=>{
+           btn.addEventListener('click', ()=>{
+             const now = new Date();
+             let f = now, t = now;
+             switch(btn.dataset.preset){
+               case 'today':   f = t = now; break;
+               case 'week':    f = startOfWeek(now); t = endOfWeek(now); break;
+               case 'month':   f = startOfMonth(now); t = endOfMonth(now); break;
+               case 'quarter': f = startOfQuarter(now); t = endOfQuarter(now); break;
+               case 'year':    f = startOfYear(now); t = endOfYear(now); break;
+             }
+             fromEl.value = fmt(f);
+             toEl.value   = fmt(t);
+             form.submit();
+           });
+         });
+
+         // --- FORMAT TOGGLE ---
+const toggle = document.getElementById('fmtToggle');
+const nfVND  = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 });
+
+// bật mặc định VND khi vào trang
+toggle.checked = true;
+
+function asNumber(raw) {
+ // raw có thể là "18000", "18000.00" hoặc BigDecimal in ra
+ const n = Number(raw);
+ return isNaN(n) ? 0 : n;
+}
+
+function applyFormat(){
+ const moneyEls = document.querySelectorAll('.money');
+ const numEls   = document.querySelectorAll('.num-plain');
+
+ moneyEls.forEach(el=>{
+   const raw = el.getAttribute('data-value') || '0';
+   const n = asNumber(raw);
+   el.textContent = toggle.checked
+     ? nfVND.format(n)                                          // VND
+     : n.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 0 }); // thuần số
+ });
+
+ numEls.forEach(el=>{
+   const raw = el.getAttribute('data-value') || '0';
+   const n = asNumber(raw);
+   el.textContent = toggle.checked
+     ? n.toLocaleString('vi-VN')                                // số có dấu phân tách
+     : n.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 0 }); // thuần số
+ });
+}
+
+toggle.addEventListener('change', applyFormat);
+applyFormat(); // áp dụng ngay khi load (VND mặc định)
+        </script>
+    </main>
+</div>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
+<div th:replace="fragments/toast-script :: toast-script"></div>
+</body>
+</html>
