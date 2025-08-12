@@ -187,33 +187,45 @@ public class ComboServiceImpl implements IComboService {
     public List<ComboDetailDTO> expandAsComboDetailDTO(List<Long> comboIds) {
         if (comboIds == null || comboIds.isEmpty()) return List.of();
 
-        List<Combo> combos = comboRepository.findAllById(comboIds).stream()
+        // 1) Đếm số lần cho từng comboId (giữ duplicates)
+        Map<Long, Integer> timesByComboId = new LinkedHashMap<>();
+        for (Long id : comboIds) {
+            timesByComboId.merge(id, 1, Integer::sum);
+        }
+
+        // 2) Chỉ fetch theo tập unique id
+        List<Combo> combos = comboRepository.findAllById(timesByComboId.keySet()).stream()
                 .filter(c -> c.getStatus() == Combo.ComboStatus.ACTIVE)
                 .toList();
 
+        // 3) Gộp theo productId, nhưng quantity = d.quantity * số lần chọn combo đó
         Map<Integer, ComboDetailDTO> acc = new LinkedHashMap<>();
+
         for (Combo c : combos) {
+            int times = timesByComboId.getOrDefault(c.getId(), 1);
             if (c.getDetails() == null) continue;
+
             for (ComboDetail d : c.getDetails()) {
                 Product p = d.getProduct();
                 if (p == null) continue;
-
                 if (p.getStatus() != Product.ProductStatus.ACTIVE) continue;
 
-                Integer pid = p.getId();
+                int pid = p.getId();
+                int addQty = (d.getQuantity() == null ? 0 : d.getQuantity()) * times;
+
                 ComboDetailDTO cur = acc.get(pid);
                 if (cur == null) {
                     cur = ComboDetailDTO.builder()
+                            .comboId(c.getId()) // (không còn nhiều ý nghĩa vì đã gộp theo sản phẩm)
                             .productId(pid)
                             .productName(p.getName())
-                            .quantity(d.getQuantity())
-                            .price(p.getListingPrice())
-                            .availableQuantity(p.getQuantity()) // thêm tồn kho
-                            .comboId(c.getId()) // lưu comboId để FE biết sản phẩm thuộc combo nào
+                            .quantity(addQty)
+                            .price(p.getListingPrice())            // BigDecimal
+                            .availableQuantity(p.getQuantity())    // tồn kho hiện tại
                             .build();
                     acc.put(pid, cur);
                 } else {
-                    cur.setQuantity(cur.getQuantity() + d.getQuantity());
+                    cur.setQuantity(cur.getQuantity() + addQty);
                 }
             }
         }
