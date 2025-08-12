@@ -77,9 +77,6 @@
         <div class="hidden" th:insert="~{fragments/footer :: footer}"></div>
     </main>
 </div>
-
-<div th:replace="~{fragments/toast-script :: toast-script}"></div>
-
 <script th:inline="javascript">
     function toggleComboStatus(checkbox) {
         const comboId   = checkbox.dataset.id;
