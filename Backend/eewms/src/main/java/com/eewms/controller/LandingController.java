@@ -38,7 +38,7 @@ public class LandingController {
                                @RequestParam(value = "filterCategory", required = false) Long categoryId,
                                @RequestParam(value = "sort", required = false, defaultValue = "") String sort,
                                @RequestParam(value = "page", required = false, defaultValue = "0") int page,
-                               @RequestParam(value = "size", required = false, defaultValue = "12") int size,
+                               @RequestParam(value = "size", required = false, defaultValue = "8") int size,
                                Model model) {
 
         boolean hasFilter = (keyword != null && !keyword.isBlank()) || (categoryId != null);
