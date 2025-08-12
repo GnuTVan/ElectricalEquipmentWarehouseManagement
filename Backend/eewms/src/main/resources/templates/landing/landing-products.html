@@ -35,8 +35,8 @@
   <!-- Danh sách sản phẩm -->
   <section class="flex-1">
 
-    <!-- Form tìm kiếm -->
-    <form method="get" th:action="@{/san-pham}" class="mb-6 flex gap-3 items-center">
+    <!-- Form tìm kiếm + sort + page-size -->
+    <form method="get" th:action="@{/san-pham}" class="mb-6 flex flex-wrap gap-3 items-center">
       <input type="text" name="keyword" id="keywordInput" placeholder="Tìm sản phẩm..."
              th:value="${keyword}"
              class="border border-gray-300 px-3 py-1 rounded w-64" />
@@ -44,9 +44,33 @@
       <!-- Ẩn categoryId nếu đang lọc danh mục -->
       <input type="hidden" name="filterCategory" th:value="${selectedCategoryId}" />
 
+      <!-- Reset về trang 1 khi submit form -->
+      <input type="hidden" name="page" value="0"/>
+      <!-- Giữ size hiện tại -->
+      <input type="hidden" name="size" th:value="${size}"/>
+
+      <!-- Dropdown sắp xếp -->
+      <select name="sort"
+              class="border border-gray-300 px-3 py-1 rounded"
+              th:value="${sort}"
+              onchange="this.form.submit()">
+        <option value="">Mặc định</option>
+        <option value="priceAsc"  th:selected="${sort} == 'priceAsc'">Giá tăng dần</option>
+        <option value="priceDesc" th:selected="${sort} == 'priceDesc'">Giá giảm dần</option>
+      </select>
+
       <button type="submit" class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700">
         <i class="ri-search-line mr-1"></i> Tìm kiếm
       </button>
+
+      <!-- (Tuỳ chọn) chọn số lượng mỗi trang -->
+      <label class="ml-auto text-sm text-gray-600">Hiển thị
+        <select id="sizeSelect" class="border border-gray-300 px-2 py-1 rounded ml-1 align-middle">
+          <option th:selected="${size == 12}" value="12">12</option>
+          <option th:selected="${size == 24}" value="24">24</option>
+          <option th:selected="${size == 48}" value="48">48</option>
+        </select> / trang
+      </label>
     </form>
 
     <!-- Grid sản phẩm -->
@@ -76,6 +100,33 @@
         </p>
       </div>
     </div>
+
+    <!-- Phân trang -->
+    <div class="mt-8 flex items-center justify-center gap-2" th:if="${totalPages > 1}">
+      <!-- Prev -->
+      <a th:if="${currentPage > 0}"
+         th:href="@{/san-pham(page=${currentPage-1}, size=${size}, sort=${sort}, keyword=${keyword}, filterCategory=${selectedCategoryId})}"
+         class="px-3 py-1 border rounded hover:bg-gray-50">Trước</a>
+      <span th:if="${currentPage == 0}" class="px-3 py-1 border rounded text-gray-400 cursor-not-allowed">Trước</span>
+
+      <!-- Numbers -->
+      <span th:each="i : ${#numbers.sequence(0, totalPages-1)}">
+        <a th:if="${i != currentPage}"
+           th:href="@{/san-pham(page=${i}, size=${size}, sort=${sort}, keyword=${keyword}, filterCategory=${selectedCategoryId})}"
+           th:text="${i + 1}"
+           class="px-3 py-1 border rounded hover:bg-gray-50"></a>
+        <span th:if="${i == currentPage}"
+              th:text="${i + 1}"
+              class="px-3 py-1 border rounded bg-blue-600 text-white"></span>
+      </span>
+
+      <!-- Next -->
+      <a th:if="${currentPage + 1 < totalPages}"
+         th:href="@{/san-pham(page=${currentPage+1}, size=${size}, sort=${sort}, keyword=${keyword}, filterCategory=${selectedCategoryId})}"
+         class="px-3 py-1 border rounded hover:bg-gray-50">Sau</a>
+      <span th:if="${currentPage + 1 >= totalPages}" class="px-3 py-1 border rounded text-gray-400 cursor-not-allowed">Sau</span>
+    </div>
+
   </section>
 </div>
 
@@ -84,29 +135,44 @@
   &copy; 2025 Thiết Bị Điện Hải Phòng. All rights reserved.
 </footer>
 
-<!-- JavaScript cập nhật href khi click danh mục -->
+<!-- JavaScript: click danh mục giữ sort/size và reset về trang 1 -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const keywordInput = document.getElementById("keywordInput");
     const categoryLinks = document.querySelectorAll(".category-link");
 
+    const usp        = new URLSearchParams(window.location.search);
+    const currentSort = usp.get('sort') || '';
+    const currentSize = usp.get('size') || '12';
+
     categoryLinks.forEach(link => {
       link.addEventListener("click", function (e) {
-        e.preventDefault(); // Ngăn điều hướng mặc định
-
+        e.preventDefault();
         const categoryId = this.getAttribute("data-category-id");
         const keyword = keywordInput.value.trim();
 
-        // Tạo URL mới
-        let url = `/san-pham?filterCategory=${categoryId}`;
-        if (keyword !== "") {
-          url += `&keyword=${encodeURIComponent(keyword)}`;
-        }
+        let url = `/san-pham?filterCategory=${encodeURIComponent(categoryId)}&page=0&size=${encodeURIComponent(currentSize)}`;
+        if (keyword !== "") url += `&keyword=${encodeURIComponent(keyword)}`;
+        if (currentSort)   url += `&sort=${encodeURIComponent(currentSort)}`;
 
-        // Điều hướng
         window.location.href = url;
       });
     });
+
+    // Đổi page size: giữ keyword/category/sort, reset page = 0
+    const sizeSelect = document.getElementById('sizeSelect');
+    if (sizeSelect) {
+      sizeSelect.addEventListener('change', function() {
+        const size = this.value;
+        const keyword = keywordInput.value.trim();
+        const categoryId = usp.get('filterCategory') || '';
+        let url = `/san-pham?page=0&size=${encodeURIComponent(size)}`;
+        if (categoryId) url += `&filterCategory=${encodeURIComponent(categoryId)}`;
+        if (keyword)    url += `&keyword=${encodeURIComponent(keyword)}`;
+        if (currentSort)url += `&sort=${encodeURIComponent(currentSort)}`;
+        window.location.href = url;
+      });
+    }
   });
 </script>
 

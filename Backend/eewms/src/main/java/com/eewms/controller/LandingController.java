@@ -32,30 +32,35 @@ public class LandingController {
         return "landing/landing-about";
     }
 
-    // Trang sản phẩm (landing), hỗ trợ lọc
+    // Trang sản phẩm (landing) – lọc + sắp xếp + phân trang (DB-side)
     @GetMapping("/san-pham")
     public String showProducts(@RequestParam(value = "keyword", required = false) String keyword,
                                @RequestParam(value = "filterCategory", required = false) Long categoryId,
+                               @RequestParam(value = "sort", required = false, defaultValue = "") String sort,
+                               @RequestParam(value = "page", required = false, defaultValue = "0") int page,
+                               @RequestParam(value = "size", required = false, defaultValue = "12") int size,
                                Model model) {
 
-        List<ProductDetailsDTO> products;
+        boolean hasFilter = (keyword != null && !keyword.isBlank()) || (categoryId != null);
 
-        boolean hasKeyword = keyword != null && !keyword.isBlank();
-        boolean hasCategory = categoryId != null;
+        var productPage = hasFilter
+                ? productService.searchByKeywordAndCategory(keyword, categoryId, sort, page, size)
+                : productService.getAllActiveProducts(sort, page, size);
 
-        if (hasKeyword || hasCategory) {
-            products = productService.searchByKeywordAndCategory(hasKeyword ? keyword : null, categoryId);
-        } else {
-            products = productService.getAllActiveProducts();
-        }
+        var categories = settingService.getByType(SettingType.CATEGORY);
 
-        List<SettingDTO> categories = settingService.getByType(SettingType.CATEGORY);
+        model.addAttribute("productPage", productPage);
+        model.addAttribute("products", productPage.getContent());
+        model.addAttribute("totalPages", productPage.getTotalPages());
+        model.addAttribute("currentPage", productPage.getNumber());
+        model.addAttribute("size", productPage.getSize());
 
-        model.addAttribute("products", products);
         model.addAttribute("categories", categories);
         model.addAttribute("keyword", keyword);
         model.addAttribute("selectedCategoryId", categoryId);
+        model.addAttribute("sort", sort);
 
         return "landing/landing-products";
     }
+
 }

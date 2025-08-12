@@ -3,6 +3,7 @@ package com.eewms.repository;
 import com.eewms.entities.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -20,7 +21,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     @EntityGraph(attributePaths = "suppliers")
     boolean existsByCode(String code);
 
-    // Tìm kiếm theo keyword (cũ)
+    // ===== Tìm kiếm theo keyword (cũ, không phân trang) =====
     @EntityGraph(attributePaths = "suppliers")
     @Query("""
         SELECT p FROM Product p
@@ -38,7 +39,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     """)
     List<Product> searchByKeyword(@Param("keyword") String keyword);
 
-    // Tìm kiếm theo keyword và category (mới)
+    // ===== Tìm kiếm theo keyword + category (cũ, không phân trang) =====
     @EntityGraph(attributePaths = "suppliers")
     @Query("""
         SELECT p FROM Product p
@@ -58,9 +59,58 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     List<Product> searchByKeywordAndCategory(@Param("keyword") String keyword,
                                              @Param("categoryId") Long categoryId);
 
+    // ===== Lấy theo status (cũ, không phân trang) =====
     List<Product> findByStatus(Product.ProductStatus status);
 
-    //load kèm suppliers để map DTO tránh LazyInitialization/N+1
+    // ===== MỚI: Lấy theo status + SORT ở DB + PHÂN TRANG (cho landing "tất cả sản phẩm") =====
+    // Dùng images để tránh N+1 khi render landing
+    @EntityGraph(attributePaths = "images")
+    Page<Product> findByStatus(Product.ProductStatus status, Pageable pageable);
+
+    // ===== MỚI: Lọc ACTIVE + search keyword + category + SORT ở DB + PHÂN TRANG (cho landing search) =====
+    // Lưu ý: ép chỉ lấy ACTIVE cho landing. Nếu muốn bao cả INACTIVE, bỏ điều kiện status dưới đây.
+    @EntityGraph(attributePaths = "images")
+    @Query(value = """
+        SELECT p FROM Product p
+        WHERE (:keyword IS NULL OR
+               LOWER(p.code)        LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               LOWER(p.name)        LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               LOWER(p.status)      LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               STR(p.originPrice)   LIKE CONCAT('%', :keyword, '%') OR
+               STR(p.listingPrice)  LIKE CONCAT('%', :keyword, '%') OR
+               STR(p.quantity)      LIKE CONCAT('%', :keyword, '%') OR
+               LOWER(p.brand.name)    LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               LOWER(p.category.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               LOWER(p.unit.name)     LIKE LOWER(CONCAT('%', :keyword, '%')))
+          AND (:categoryId IS NULL OR p.category.id = :categoryId)
+          AND p.status = com.eewms.entities.Product$ProductStatus.ACTIVE
+        """,
+            countQuery = """
+        SELECT COUNT(p) FROM Product p
+        WHERE (:keyword IS NULL OR
+               LOWER(p.code)        LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               LOWER(p.name)        LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               LOWER(p.status)      LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               STR(p.originPrice)   LIKE CONCAT('%', :keyword, '%') OR
+               STR(p.listingPrice)  LIKE CONCAT('%', :keyword, '%') OR
+               STR(p.quantity)      LIKE CONCAT('%', :keyword, '%') OR
+               LOWER(p.brand.name)    LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               LOWER(p.category.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               LOWER(p.unit.name)     LIKE LOWER(CONCAT('%', :keyword, '%')))
+          AND (:categoryId IS NULL OR p.category.id = :categoryId)
+          AND p.status = com.eewms.entities.Product$ProductStatus.ACTIVE
+        """)
+    Page<Product> searchByKeywordAndCategory(@Param("keyword") String keyword,
+                                             @Param("categoryId") Long categoryId,
+                                             Pageable pageable);
+
+    // ===== (tuỳ chọn) Lấy theo status + Sort (không phân trang) — dùng ở nơi khác nếu cần =====
+    @EntityGraph(attributePaths = "images")
+    List<Product> findByStatus(Product.ProductStatus status, Sort sort);
+
+    // ===== Load kèm suppliers để map DTO chi tiết tránh LazyInitialization/N+1 =====
     @EntityGraph(attributePaths = "suppliers")
     Optional<Product> findById(Integer id);
 
@@ -68,5 +118,4 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     List<Product> findAll();
 
     List<Product> findBySuppliers_Id(Long supplierId);
-
 }
