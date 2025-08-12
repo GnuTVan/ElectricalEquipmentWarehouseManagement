@@ -59,7 +59,8 @@ public class SettingController {
 
         try {
             settingService.create(dto);
-            ra.addFlashAttribute("success", "Lưu thành công");
+            ra.addFlashAttribute("message", "Thêm " + dto.getType() + " thành công, Tên: " + dto.getName());
+            ra.addFlashAttribute("messageType", "success");
         } catch (InventoryException ex) {
             ra.addFlashAttribute("error", ex.getMessage());
         }
@@ -95,7 +96,8 @@ public class SettingController {
 
         try {
             settingService.update(id, dto);
-            ra.addFlashAttribute("success", "Cập nhật thành công");
+            ra.addFlashAttribute("message", "Cập nhật "+dto.getType()+" thành công, Tên: " + dto.getName());
+            ra.addFlashAttribute("messageType", "success");
         } catch (InventoryException ex) {
             ra.addFlashAttribute("error", ex.getMessage());
         }

@@ -102,7 +102,8 @@ public class UserController {
             String token = verificationTokenService.createVerificationToken(user);
             emailService.sendActivationEmail(user, token);
 
-            redirect.addFlashAttribute("message", "Tạo người dùng thành công. Đã gửi email kích hoạt.");
+            redirect.addFlashAttribute("message", "Tạo người dùng " + userDTO.getUsername() + " thành công. Đã gửi email kích hoạt tới địa chỉ email: " + userDTO.getEmail());
+            redirect.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", "Lỗi khi tạo người dùng: " + e.getMessage());
         }
@@ -121,16 +122,19 @@ public class UserController {
             // Nếu đang tắt → chuẩn bị bật
             if (!user.isEnabled()) {
                 if (user.getPassword() == null || user.getPassword().isBlank()) {
-                    redirect.addFlashAttribute("error", "Không thể bật tài khoản vì người dùng chưa kích hoạt qua email.");
+                    redirect.addFlashAttribute("message", "Không thể bật tài khoản" + user.getUsername() + " vì người dùng" + user.getFullName() + " chưa kích hoạt qua email.");
+                    redirect.addFlashAttribute("messageType", "error");
                     return "redirect:/admin/users";
                 }
             }
 
             // Thực hiện đảo trạng thái
             userService.toggleEnabledStatus(id);
-            redirect.addFlashAttribute("message", "Cập nhật trạng thái thành công.");
+            redirect.addFlashAttribute("message", "Cập nhật trạng thái tài khoản" + user.getUsername() + " thành công.");
+            redirect.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Lỗi khi cập nhật trạng thái: " + e.getMessage());
+            redirect.addFlashAttribute("message", "Lỗi khi cập nhật trạng thái: " + e.getMessage());
+            redirect.addFlashAttribute("messageType", "error");
         }
 
         return "redirect:/admin/users";
@@ -149,9 +153,11 @@ public class UserController {
             // Gửi email đặt lại mật khẩu
             emailService.sendResetPasswordEmail(user, token);
 
-            redirect.addFlashAttribute("message", "Đã gửi email đặt lại mật khẩu cho người dùng.");
+            redirect.addFlashAttribute("message", "Đã gửi email đặt lại mật khẩu cho người dùng " + user.getUsername());
+            redirect.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Lỗi khi gửi email đặt lại mật khẩu: " + e.getMessage());
+            redirect.addFlashAttribute("message", "Lỗi khi gửi email đặt lại mật khẩu: " + e.getMessage());
+            redirect.addFlashAttribute("messageType", "error");
         }
 
         return "redirect:/admin/users";

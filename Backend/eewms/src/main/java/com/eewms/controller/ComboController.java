@@ -99,7 +99,7 @@ public class ComboController {
         }
         try {
             comboService.update(id, req);
-            ra.addFlashAttribute("message", "Cập nhật combo thành công.");
+            ra.addFlashAttribute("message", "Cập nhật combo" + id + " thành công.");
             ra.addFlashAttribute("messageType", "success");
             return "redirect:/combos";
         } catch (Exception e) {
@@ -136,12 +136,11 @@ public class ComboController {
             model.addAttribute("products", productService.getAllActiveProducts());
             return "combo/combo-edit";
         } catch (Exception e) {
-            ra.addFlashAttribute("message", "Không tìm thấy combo");
+            ra.addFlashAttribute("message", "Không tìm thấy combo" + id);
             ra.addFlashAttribute("messageType", "error");
             return "redirect:/combos";
         }
     }
-
 
 
     /* ===== DETAIL (/{id}/view) ===== */
@@ -151,7 +150,7 @@ public class ComboController {
             model.addAttribute("combo", comboService.getById(id));
             return "combo/combo-detail";
         } catch (Exception e) {
-            ra.addFlashAttribute("message", "Không tìm thấy combo");
+            ra.addFlashAttribute("message", "Không tìm thấy thông tin combo" + id);
             ra.addFlashAttribute("messageType", "error");
             return "redirect:/combos";
         }
@@ -160,12 +159,16 @@ public class ComboController {
     /* ===== TOGGLE STATUS (AJAX) ===== */
     @PostMapping("/{id:\\d+}/status")
     @ResponseBody
-    public String updateStatus(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+    public String updateStatus(@PathVariable Long id, @RequestBody Map<String, String> payload, RedirectAttributes redirect) {
         try {
             Combo.ComboStatus status = Combo.ComboStatus.valueOf(payload.get("status"));
             comboService.updateStatus(id, status);
+            redirect.addFlashAttribute("message", "Cập nhật trạng thái Combo thành công, ID: " + id);
+            redirect.addFlashAttribute("messageType", "success");
             return "OK";
         } catch (Exception e) {
+            redirect.addFlashAttribute("message", "Cập nhật trạng thái NCC thất bại, ID: " + id);
+            redirect.addFlashAttribute("messageType", "error");
             return "ERROR: " + e.getMessage();
         }
     }
