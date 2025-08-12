@@ -149,4 +149,10 @@ public class ReceiptReportServiceImpl implements IReceiptReportService {
         PurchaseOrder po = r.getPurchaseOrder();
         return po != null ? po.getSupplier() : null;
     }
+    @Override
+    public List<ReceiptReportRowDTO> findAllForExport(ReceiptReportFilter f) {
+        // tái dùng logic của findReceiptHeaders nhưng KHÔNG phân trang
+        return findReceiptHeaders(f, org.springframework.data.domain.PageRequest.of(0, Integer.MAX_VALUE))
+                .getContent();
+    }
 }

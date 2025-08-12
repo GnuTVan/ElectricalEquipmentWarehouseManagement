@@ -50,6 +50,13 @@
                 <div class="md:col-span-6 flex gap-2">
                     <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white">Lọc</button>
                     <a th:href="@{/admin/reports/receipts}" class="px-4 py-2 rounded bg-gray-200">Xóa lọc</a>
+                    <a th:href="@{/admin/reports/receipts/export/xlsx(
+        fromDate=${fromDate}, toDate=${toDate},
+        warehouseId=${warehouseId}, supplierId=${supplierId},
+        productId=${productId}, userId=${userId},
+        receiptCode=${receiptCode}, poCode=${poCode}
+      )}"
+                       class="px-4 py-2 rounded bg-green-600 text-white">Xuất Excel</a>
                 </div>
             </form>
 

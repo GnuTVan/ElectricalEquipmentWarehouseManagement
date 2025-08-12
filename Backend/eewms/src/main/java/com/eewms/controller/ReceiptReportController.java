@@ -69,4 +69,23 @@ public class ReceiptReportController {
 
         return "receipt-report/list";
     }
+
+    @GetMapping("/export/xlsx")
+    public void exportXlsx(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false) Long warehouseId,
+            @RequestParam(required = false) Long supplierId,
+            @RequestParam(required = false) Long productId,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) String receiptCode,
+            @RequestParam(required = false) String poCode,
+            jakarta.servlet.http.HttpServletResponse response
+    ) {
+        ReceiptReportFilter f = new ReceiptReportFilter(
+                fromDate, toDate, warehouseId, supplierId, productId, userId, receiptCode, poCode
+        );
+        java.util.List<ReceiptReportRowDTO> rows = reportService.findAllForExport(f);
+        com.eewms.utils.ReceiptReportExcelExporter.export(rows, fromDate, toDate, response);
+    }
 }

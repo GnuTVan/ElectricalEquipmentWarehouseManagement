@@ -9,4 +9,6 @@ import org.springframework.data.domain.Pageable;
 public interface IReceiptReportService {
     Page<ReceiptReportRowDTO> findReceiptHeaders(ReceiptReportFilter f, Pageable pageable);
     ReceiptTotalsDTO totalsForFilter(ReceiptReportFilter f);
+
+    java.util.List<ReceiptReportRowDTO> findAllForExport(ReceiptReportFilter f);
 }
