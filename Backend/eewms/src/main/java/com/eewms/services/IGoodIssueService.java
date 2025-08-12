@@ -11,5 +11,4 @@
         GoodIssueNote createFromOrder(SaleOrder order, String username);
         GoodIssueNoteDTO getById(Long id);
         List<GoodIssueNoteDTO> getAllNotes();
-        List<GoodIssueNoteDTO> filterReport(LocalDate fromDate, LocalDate toDate, Long customerId, Long userId);
     }
