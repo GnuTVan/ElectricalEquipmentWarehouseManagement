@@ -3,14 +3,18 @@ package com.eewms.controller;
 import com.eewms.constant.SettingType;
 import com.eewms.dto.ProductDetailsDTO;
 import com.eewms.dto.SettingDTO;
+import com.eewms.dto.ComboDTO;                     // ✨ thêm
 import com.eewms.services.IProductServices;
 import com.eewms.services.ISettingServices;
+import com.eewms.services.IComboService;         // ✨ thêm
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;    // ✨ thêm
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.math.BigDecimal;                      // ✨ thêm
 import java.util.List;
 
 @Controller
@@ -19,6 +23,7 @@ public class LandingController {
 
     private final IProductServices productService;
     private final ISettingServices settingService;
+    private final IComboService comboService;    // ✨ thêm
 
     // Trang chủ
     @GetMapping("/landing-page")
@@ -48,6 +53,7 @@ public class LandingController {
                 : productService.getAllActiveProducts(sort, page, size);
 
         var categories = settingService.getByType(SettingType.CATEGORY);
+        var combos = comboService.getAllActive();                 // ✨ nạp danh sách combo cho sidebar
 
         model.addAttribute("productPage", productPage);
         model.addAttribute("products", productPage.getContent());
@@ -56,6 +62,7 @@ public class LandingController {
         model.addAttribute("size", productPage.getSize());
 
         model.addAttribute("categories", categories);
+        model.addAttribute("combos", combos);                      // ✨ truyền xuống view
         model.addAttribute("keyword", keyword);
         model.addAttribute("selectedCategoryId", categoryId);
         model.addAttribute("sort", sort);
@@ -63,4 +70,30 @@ public class LandingController {
         return "landing/landing-products";
     }
 
+    // ✨ Trang CHI TIẾT COMBO – hiển thị tất cả sản phẩm trong combo
+    @GetMapping("/combo/{id}")
+    public String showComboDetail(@PathVariable("id") Long comboId, Model model) {
+        ComboDTO combo = comboService.getById(comboId);
+        if (combo == null || combo.getStatus() != com.eewms.entities.Combo.ComboStatus.ACTIVE) {
+            return "redirect:/san-pham";
+        }
+
+        // Tính tổng tiền = Σ (price * quantity)
+        BigDecimal totalPrice = combo.getDetails() == null ? BigDecimal.ZERO :
+                combo.getDetails().stream()
+                        .map(it -> (it.getPrice() == null ? BigDecimal.ZERO : it.getPrice())
+                                .multiply(BigDecimal.valueOf(it.getQuantity() == null ? 0 : it.getQuantity())))
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Sidebar vẫn hiển thị categories + combos
+        var categories = settingService.getByType(SettingType.CATEGORY);
+        var combos = comboService.getAllActive();
+
+        model.addAttribute("categories", categories);
+        model.addAttribute("combos", combos);
+        model.addAttribute("combo", combo);
+        model.addAttribute("totalPrice", totalPrice);
+
+        return "landing/landing-combo-detail";
+    }
 }
