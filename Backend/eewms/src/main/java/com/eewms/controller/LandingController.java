@@ -3,18 +3,19 @@ package com.eewms.controller;
 import com.eewms.constant.SettingType;
 import com.eewms.dto.ProductDetailsDTO;
 import com.eewms.dto.SettingDTO;
-import com.eewms.dto.ComboDTO;                     // ✨ thêm
+import com.eewms.dto.ComboDTO;
 import com.eewms.services.IProductServices;
 import com.eewms.services.ISettingServices;
-import com.eewms.services.IComboService;         // ✨ thêm
+import com.eewms.services.IComboService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;    // ✨ thêm
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PathVariable;
 
-import java.math.BigDecimal;                      // ✨ thêm
+import java.math.BigDecimal;
 import java.util.List;
 
 @Controller
@@ -96,4 +97,20 @@ public class LandingController {
 
         return "landing/landing-combo-detail";
     }
+
+    @GetMapping("/san-pham/{id}")
+    public String showProductDetail(@PathVariable("id") Integer id, Model model) {
+        var product = productService.getById(id); // đã có sẵn trong service của bạn
+        var categories = settingService.getByType(SettingType.CATEGORY);
+        var combos     = comboService.getAllActive(); // ✨ thêm
+
+        model.addAttribute("product", product);
+        model.addAttribute("categories", categories);
+
+
+        model.addAttribute("combos", comboService.getAllActive());
+
+        return "landing/landing-product-detail";
+    }
+
 }

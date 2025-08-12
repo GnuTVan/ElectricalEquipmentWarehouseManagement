@@ -89,12 +89,14 @@
 
     <!-- Grid sản phẩm -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div th:each="p : ${products}" class="bg-white rounded shadow p-3">
+      <a th:each="p : ${products}"
+         th:href="@{/san-pham/{id}(id=${p.id})}"
+         class="block bg-white rounded shadow p-3 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500">
         <!-- Ảnh đầu tiên -->
         <img th:if="${p.images != null and !p.images.isEmpty()}"
              th:src="${p.images[0].imageUrl}"
              class="w-full h-48 object-contain mb-2 bg-gray-100 rounded"
-             alt="Ảnh sản phẩm">
+             th:alt="${'Ảnh ' + p.name}">
 
         <div th:if="${p.images == null or p.images.isEmpty()}"
              class="w-full h-48 flex items-center justify-center bg-gray-200 rounded text-gray-500 italic">
@@ -109,11 +111,10 @@
 
         <!-- Giá -->
         <p class="text-red-600 font-semibold mt-2"
-           th:text="${#numbers.formatDecimal(p.listingPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'">
-          0 ₫
-        </p>
-      </div>
+           th:text="${#numbers.formatDecimal(p.listingPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</p>
+      </a>
     </div>
+
 
     <!-- Phân trang -->
     <div class="mt-8 flex items-center justify-center gap-2" th:if="${totalPages > 1}">

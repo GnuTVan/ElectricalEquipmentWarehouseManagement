@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title th:text="${product.name}">Chi tiết sản phẩm</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+  <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
+  <style>
+    @keyframes ring {
+      0%{transform:rotate(0)} 15%{transform:rotate(15deg)}
+      30%{transform:rotate(-12deg)} 45%{transform:rotate(9deg)}
+      60%{transform:rotate(-6deg)} 75%{transform:rotate(3deg)}
+      100%{transform:rotate(0)}
+    }
+    .call-btn:hover .phone-icon { animation: ring .8s ease-in-out; }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+<div th:replace="~{fragments/landing-header :: landingHeader}"></div>
+
+<div class="flex px-6 py-8 gap-6">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-white p-4 shadow rounded h-fit">
+    <a th:href="@{/san-pham}" class="font-bold text-lg mb-3 block text-blue-700 hover:underline">
+      DANH MỤC SẢN PHẨM
+    </a>
+    <ul class="space-y-2 text-gray-700 text-sm">
+      <li th:each="c : ${categories}">
+        <a th:href="@{/san-pham(filterCategory=${c.id})}"
+           th:text="${c.name}" class="block hover:underline"></a>
+      </li>
+    </ul>
+
+    <hr class="my-4">
+    <div class="font-bold text-lg mb-2 text-blue-700">COMBO</div>
+    <ul class="space-y-2 text-gray-700 text-sm">
+      <li th:each="co : ${combos}">
+        <a th:href="@{/combo/{id}(id=${co.id})}"
+           th:text="${co.name}" class="block hover:underline"></a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- Content -->
+  <section class="flex-1">
+    <nav class="text-sm text-gray-500 mb-3">
+      <a th:href="@{/san-pham}" class="hover:underline">Sản phẩm</a>
+      <span class="mx-1">/</span>
+      <span th:text="${product.name}">Tên</span>
+    </nav>
+
+    <!-- Card lớn -->
+    <div class="bg-white rounded shadow p-5 relative pb-16">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Ảnh lớn + thumbnails -->
+        <div>
+          <img th:if="${product.images != null and !#lists.isEmpty(product.images)}"
+               th:src="${product.images[0].imageUrl}"
+               class="w-full h-80 object-contain bg-gray-50 rounded" th:alt="${product.name}">
+          <div th:if="${product.images == null or #lists.isEmpty(product.images)}"
+               class="w-full h-80 flex items-center justify-center bg-gray-100 rounded text-gray-500">
+            Không có ảnh
+          </div>
+
+          <div class="mt-3 grid grid-cols-5 gap-2"
+               th:if="${product.images != null and product.images.size() > 1}">
+            <img th:each="img, iStat : ${product.images}"
+                 th:if="${iStat.index > 0}"
+                 th:src="${img.imageUrl}"
+                 class="h-16 w-full object-cover rounded border" loading="lazy">
+          </div>
+        </div>
+
+        <!-- Thông tin -->
+        <div>
+          <h1 class="text-2xl font-bold" th:text="${product.name}">Tên sản phẩm</h1>
+
+          <div class="mt-2 text-sm text-gray-600 space-y-1">
+            <div>Danh mục: <span class="font-medium" th:text="${product.category.name}">A</span></div>
+            <div>Thương hiệu: <span class="font-medium" th:text="${product.brand.name}">Brand</span></div>
+            <div>Đơn vị: <span class="font-medium" th:text="${product.unit.name}">Cái</span></div>
+            <div>Tồn kho: <span class="font-medium" th:text="${product.quantity}">0</span></div>
+          </div>
+
+          <div class="mt-8">
+            <h2 class="font-semibold mb-2">Mô tả</h2>
+            <div class="prose max-w-none text-gray-700 whitespace-pre-line"
+                 th:text="${product.description}">Nội dung mô tả...</div>
+          </div>
+
+          <div class="mt-4">
+            <div class="text-2xl font-bold text-red-600"
+                 th:text="${#numbers.formatDecimal(product.listingPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
+            <div class="text-sm text-gray-400 line-through"
+                 th:if="${product.originPrice != null and product.originPrice > product.listingPrice}"
+                 th:text="${#numbers.formatDecimal(product.originPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
+          </div>
+
+          <!-- Nhóm nút  -->
+          <div class="mt-6 flex flex-wrap gap-3">
+            <!-- Gọi điện -->
+            <a href="tel:0936841799"
+               class="call-btn inline-flex h-11 items-center gap-2 rounded-full bg-green-600 px-5 text-white shadow
+                      hover:bg-green-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-600/30 transition">
+              <i class="ri-phone-fill phone-icon text-[18px]"></i>
+              <span class="font-medium">Gọi đặt hàng</span>
+            </a>
+
+            <!-- Zalo -->
+            <a href="https://zalo.me/0936841799" target="_blank" rel="noopener noreferrer"
+               class="group inline-flex h-11 items-center gap-3 rounded-full bg-green-600 px-5 text-white shadow
+                      hover:bg-green-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-600/30 transition">
+              <span class="font-medium">Liên hệ qua</span>
+              <span class="relative inline-flex items-center justify-center w-9 h-9 rounded-full bg-[#0068FF]">
+                <span class="absolute -inset-1 rounded-full bg-white/40 opacity-0
+                             group-hover:opacity-80 group-hover:animate-ping"></span>
+                <iconify-icon icon="simple-icons:zalo" width="20" class="relative" style="color:#ffffff"></iconify-icon>
+              </span>
+            </a>
+          </div>
+        </div> <!-- /Thông tin -->
+      </div>   <!-- /grid -->
+
+      <!-- Quay lại -->
+      <a href="javascript:history.back()"
+         class="absolute right-5 bottom-4 inline-flex items-center gap-2 text-gray-600 hover:text-gray-900">
+        ← Quay lại
+      </a>
+    </div>
+  </section>
+</div>
+
+<footer class="bg-gray-200 py-4 text-center text-sm text-gray-600 mt-8">
+  &copy; 2025 Thiết Bị Điện Hải Phòng. All rights reserved.
+</footer>
+
+</body>
+</html>
