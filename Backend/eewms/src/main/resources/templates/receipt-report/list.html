@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{fragments/common-head :: commonHead('Báo cáo nhập kho')}"></head>
+
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <!-- Sidebar fragment -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <!-- Main Content -->
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <!-- Header -->
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <section class="p-6 space-y-4">
+            <h1 class="text-2xl font-semibold">Báo cáo nhập kho</h1>
+
+            <!-- Filter bar -->
+            <form method="get" class="bg-white rounded-lg p-4 shadow grid grid-cols-1 md:grid-cols-6 gap-3">
+                <div>
+                    <label class="block text-sm mb-1">Từ ngày</label>
+                    <input type="date" name="fromDate" th:value="${fromDate}" class="w-full border rounded px-2 py-1">
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">Đến ngày</label>
+                    <input type="date" name="toDate" th:value="${toDate}" class="w-full border rounded px-2 py-1">
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">Kho</label>
+                    <select name="warehouseId" class="w-full border rounded px-2 py-1">
+                        <option th:value="${null}">Tất cả</option>
+                        <option th:each="w: ${warehouses}" th:value="${w.id}" th:text="${w.name}"
+                                th:selected="${warehouseId} == ${w.id}"></option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">Nhà cung cấp</label>
+                    <select name="supplierId" class="w-full border rounded px-2 py-1">
+                        <option th:value="${null}">Tất cả</option>
+                        <option th:each="s: ${suppliers}" th:value="${s.id}" th:text="${s.name}"
+                                th:selected="${supplierId} == ${s.id}"></option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">Mã phiếu</label>
+                    <input type="text" name="receiptCode" th:value="${receiptCode}" class="w-full border rounded px-2 py-1" placeholder="VD: RN00001">
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">Mã PO</label>
+                    <input type="text" name="poCode" th:value="${poCode}" class="w-full border rounded px-2 py-1" placeholder="VD: PO00001">
+                </div>
+
+                <div class="md:col-span-6 flex gap-2">
+                    <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white">Lọc</button>
+                    <a th:href="@{/admin/reports/receipts}" class="px-4 py-2 rounded bg-gray-200">Xóa lọc</a>
+                </div>
+            </form>
+
+            <!-- KPIs -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="text-sm text-gray-500">Số phiếu</div>
+                    <div class="text-xl font-semibold" th:text="${totals != null} ? ${totals.receiptCount} : 0">0</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="text-sm text-gray-500">Tổng số lượng</div>
+                    <div class="text-xl font-semibold" th:text="${totals != null} ? ${totals.totalQuantity} : 0">0</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="text-sm text-gray-500">Tổng tiền</div>
+                    <div class="text-xl font-semibold" th:text="${totals != null} ? ${totals.totalAmount} : 0">0</div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="bg-white rounded-lg shadow overflow-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50">
+                    <tr>
+                        <th class="text-left p-3">Mã phiếu</th>
+                        <th class="text-left p-3">Ngày nhập</th>
+                        <th class="text-left p-3">Kho</th>
+                        <th class="text-left p-3">Nhà cung cấp</th>
+                        <th class="text-left p-3">Người tạo</th>
+                        <th class="text-right p-3">Số lượng</th>
+                        <th class="text-right p-3">Tổng tiền</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="r : ${data.content}">
+                        <td class="p-3" th:text="${r.receiptCode}">RN00001</td>
+                        <td class="p-3" th:text="${r.receiptDate}">2025-08-01</td>
+                        <td class="p-3" th:text="${r.warehouseName}">Kho A</td>
+                        <td class="p-3" th:text="${r.supplierName}">NCC A</td>
+                        <td class="p-3" th:text="${r.createdByName}">Admin</td>
+                        <td class="p-3 text-right" th:text="${r.totalQuantity}">0</td>
+                        <td class="p-3 text-right" th:text="${r.totalAmount}">0</td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(data.content)}">
+                        <td class="p-3 text-center text-gray-500" colspan="7">Không có dữ liệu</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-500">
+                    Trang <span th:text="${data.number + 1}">1</span>/<span th:text="${data.totalPages}">1</span>
+                    — Tổng <span th:text="${data.totalElements}">0</span> dòng
+                </div>
+                <div class="flex gap-2">
+                    <a th:href="@{/admin/reports/receipts(page=${0}, size=${data.size}, fromDate=${fromDate}, toDate=${toDate}, warehouseId=${warehouseId}, supplierId=${supplierId}, receiptCode=${receiptCode}, poCode=${poCode})}"
+                       class="px-3 py-1 border rounded" th:classappend="${data.first} ? 'pointer-events-none opacity-50' : ''">Đầu</a>
+                    <a th:href="@{/admin/reports/receipts(page=${data.number - 1}, size=${data.size}, fromDate=${fromDate}, toDate=${toDate}, warehouseId=${warehouseId}, supplierId=${supplierId}, receiptCode=${receiptCode}, poCode=${poCode})}"
+                       class="px-3 py-1 border rounded" th:classappend="${data.first} ? 'pointer-events-none opacity-50' : ''">Trước</a>
+                    <a th:href="@{/admin/reports/receipts(page=${data.number + 1}, size=${data.size}, fromDate=${fromDate}, toDate=${toDate}, warehouseId=${warehouseId}, supplierId=${supplierId}, receiptCode=${receiptCode}, poCode=${poCode})}"
+                       class="px-3 py-1 border rounded" th:classappend="${data.last} ? 'pointer-events-none opacity-50' : ''">Sau</a>
+                    <a th:href="@{/admin/reports/receipts(page=${data.totalPages - 1}, size=${data.size}, fromDate=${fromDate}, toDate=${toDate}, warehouseId=${warehouseId}, supplierId=${supplierId}, receiptCode=${receiptCode}, poCode=${poCode})}"
+                       class="px-3 py-1 border rounded" th:classappend="${data.last} ? 'pointer-events-none opacity-50' : ''">Cuối</a>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
+<div th:replace="fragments/toast-script :: toast-script"></div>
+</body>
+</html>

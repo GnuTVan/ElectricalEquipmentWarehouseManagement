@@ -1,6 +1,5 @@
 package com.eewms.services;
 
-import com.eewms.dto.report.WarehouseReceiptReportDTO;
 import com.eewms.dto.warehouseReceipt.WarehouseReceiptDTO;
 import com.eewms.entities.PurchaseOrder;
 import com.eewms.entities.User;
@@ -14,6 +13,4 @@ public interface IWarehouseReceiptService {
     @Transactional
     void saveReceipt(WarehouseReceiptDTO dto, PurchaseOrder order, User user);
 
-
-    List<WarehouseReceiptReportDTO> getReceiptReport(LocalDate fromDate, LocalDate toDate, Long warehouseId, Long supplierId);
 }

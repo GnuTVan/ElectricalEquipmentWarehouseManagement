@@ -1,6 +1,5 @@
 package com.eewms.services.impl;
 
-import com.eewms.dto.report.WarehouseReceiptReportDTO;
 import com.eewms.dto.warehouseReceipt.WarehouseReceiptDTO;
 import com.eewms.dto.warehouseReceipt.WarehouseReceiptItemDTO;
 import com.eewms.entities.*;
@@ -123,45 +122,7 @@ public class WarehouseReceiptServiceImpl implements IWarehouseReceiptService {
 //            }
 //        }
 //    }
-    @Override
-    public List<WarehouseReceiptReportDTO> getReceiptReport(LocalDate fromDate, LocalDate toDate, Long warehouseId, Long supplierId) {
-        List<WarehouseReceipt> receipts = warehouseReceiptRepository.findAll();
 
-        return receipts.stream()
-                .filter(r -> {
-                    boolean match = true;
-                    if (fromDate != null) {
-                        match &= !r.getCreatedAt().toLocalDate().isBefore(fromDate);
-                    }
-                    if (toDate != null) {
-                        match &= !r.getCreatedAt().toLocalDate().isAfter(toDate);
-                    }
-                    if (warehouseId != null) {
-                        match &= r.getWarehouse().getId().equals(warehouseId);
-                    }
-                    if (supplierId != null) {
-                        match &= r.getPurchaseOrder().getSupplier().getId().equals(supplierId);
-                    }
-                    return match;
-                })
-                .map(r -> {
-                    List<WarehouseReceiptItem> items = warehouseReceiptItemRepository.findByWarehouseReceipt(r);
-                    int totalQuantity = items.stream().mapToInt(WarehouseReceiptItem::getActualQuantity).sum();
-                    BigDecimal totalAmount = items.stream()
-                            .map(i -> i.getPrice().multiply(BigDecimal.valueOf(i.getActualQuantity())))
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                    return new WarehouseReceiptReportDTO(
-                            r.getCode(),
-                            r.getCreatedAt(),
-                            r.getWarehouse().getName(),
-                            r.getPurchaseOrder().getSupplier().getName(),
-                            totalQuantity,
-                            totalAmount
-                    );
-                })
-                .toList();
-    }
 
     private String generateCode() {
         long count = warehouseReceiptRepository.count() + 1;
