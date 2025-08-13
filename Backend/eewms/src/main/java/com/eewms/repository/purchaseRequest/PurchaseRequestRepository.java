@@ -24,6 +24,8 @@ public interface PurchaseRequestRepository extends JpaRepository<PurchaseRequest
 
     List<PurchaseRequest> findByStatus(PRStatus status);
 
+    Optional<PurchaseRequest> findBySaleOrder_SoId(Integer soId);
+
     // ✅ Lọc theo người tạo + ngày tạo
     @Query("""
         SELECT pr FROM PurchaseRequest pr

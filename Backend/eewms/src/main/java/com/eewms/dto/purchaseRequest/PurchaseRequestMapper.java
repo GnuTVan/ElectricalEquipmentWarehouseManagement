@@ -5,7 +5,6 @@ import com.eewms.entities.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
 public class PurchaseRequestMapper {
 
     public static PurchaseRequest toEntity(PurchaseRequestDTO dto, List<Product> products, List<Supplier> suppliers) {
@@ -49,6 +48,8 @@ public class PurchaseRequestMapper {
                 .createdByName(entity.getCreatedByName())
                 .createdAt(entity.getCreatedAt())
                 .status(entity.getStatus())
+                // ✅ Thêm saleOrderId để controller/UI dùng lại
+                .saleOrderId(entity.getSaleOrder() != null ? entity.getSaleOrder().getSoId() : null)
                 .items(entity.getItems().stream().map(item -> PurchaseRequestItemDTO.builder()
                         .id(item.getId())
                         .productId(Long.valueOf(item.getProduct().getId()))
@@ -61,5 +62,3 @@ public class PurchaseRequestMapper {
                 .build();
     }
 }
-
-

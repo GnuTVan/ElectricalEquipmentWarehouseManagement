@@ -61,7 +61,8 @@
                             <td class="border p-2">
                                 <select th:name="'items[' + ${iStat.index} + '].suggestedSupplierId'" class="w-full border rounded px-2 py-1">
                                     <option value="">-- Không chọn --</option>
-                                    <option th:each="s : ${suppliers}" th:value="${s.id}" th:text="${s.name}"
+                                    <option th:each="s : ${allowedSuppliers[ item.productId ]}"
+                                            th:value="${s.id}" th:text="${s.name}"
                                             th:selected="${item.suggestedSupplierId != null and item.suggestedSupplierId == s.id}">
                                     </option>
                                 </select>

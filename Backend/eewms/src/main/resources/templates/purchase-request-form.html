@@ -40,7 +40,11 @@
                             </td>
                             <td class="p-2 border" th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}">
                                 <select th:field="*{items[__${stat.index}__].suggestedSupplierId}" class="w-full">
-                                    <option th:each="supplier : ${suppliers}" th:value="${supplier.id}" th:text="${supplier.name}"></option>
+                                    <option value="">-- Không chọn --</option>
+                                    <option th:each="s : ${allowedSuppliers[ item.productId ]}"
+                                            th:value="${s.id}"
+                                            th:text="${s.name}">
+                                    </option>
                                 </select>
                             </td>
                             <td class="p-2 border" th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}">

@@ -43,19 +43,33 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
     @Override
     @Transactional
     public PurchaseRequest create(PurchaseRequestDTO dto) {
+        // ✅ Chặn tạo PR trùng cho cùng SaleOrder
+        if (dto.getSaleOrderId() != null) {
+            prRepo.findBySaleOrder_SoId(dto.getSaleOrderId())
+                    .ifPresent(pr -> { throw new InventoryException("Đơn bán đã có yêu cầu mua hàng."); });
+        }
+
         List<Product> products = productRepo.findAllById(
                 dto.getItems().stream().map(i -> i.getProductId().intValue()).toList()
         );
         List<Supplier> suppliers = supplierRepo.findAll();
 
         PurchaseRequest request = PurchaseRequestMapper.toEntity(dto, products, suppliers);
+
+        // ✅ Gắn SaleOrder vào PR (khắc phục lỗi không map)
+        if (dto.getSaleOrderId() != null) {
+            SaleOrder so = saleOrderService.getOrderEntityById(dto.getSaleOrderId());
+            if (so == null) throw new InventoryException("Không tìm thấy SaleOrder: " + dto.getSaleOrderId());
+            request.setSaleOrder(so);
+        }
+
         request.setCode(generateCode());
         PurchaseRequest saved = prRepo.save(request);
 
-        // ✅ nếu PR gắn với SaleOrder thì set trạng thái PROCESSING
-        if (dto.getSaleOrderId() != null) {
-            saleOrderService.updateOrderStatus(dto.getSaleOrderId(), SaleOrder.SaleOrderStatus.PROCESSING);
-        }
+        // (tuỳ) Cập nhật trạng thái SO nếu bạn muốn
+        // if (dto.getSaleOrderId() != null) {
+        //     saleOrderService.updateOrderStatus(dto.getSaleOrderId(), SaleOrder.SaleOrderStatus.PROCESSING);
+        // }
         return saved;
     }
 
@@ -81,10 +95,38 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
     @Override
     @Transactional
     public void updateStatus(Long id, PRStatus status) {
+        // Nếu set sang ĐÃ DUYỆT → chạy luồng duyệt với validate NCC
+        if (status == PRStatus.DA_DUYET) {
+            approve(id);
+            return;
+        }
         PurchaseRequest request = prRepo.findById(id)
                 .orElseThrow(() -> new InventoryException("Không tìm thấy yêu cầu mua hàng"));
         request.setStatus(status);
         prRepo.save(request);
+    }
+
+    // ✅ Duyệt: chỉ cho khi mọi item có NCC thuộc danh sách NCC của Product
+    public void approve(Long id) {
+        PurchaseRequest pr = prRepo.findById(id)
+                .orElseThrow(() -> new InventoryException("Không tìm thấy yêu cầu mua hàng"));
+
+        if (pr.getStatus() != PRStatus.MOI_TAO) {
+            throw new InventoryException("Chỉ duyệt PR ở trạng thái MỚI TẠO");
+        }
+
+        for (PurchaseRequestItem it : pr.getItems()) {
+            Product p = it.getProduct();
+            Supplier s = it.getSuggestedSupplier();
+            if (p == null) throw new InventoryException("Thiếu sản phẩm cho một item");
+            if (s == null) throw new InventoryException("Thiếu nhà cung cấp gợi ý cho sản phẩm: " + p.getName());
+            if (p.getSuppliers() == null || !p.getSuppliers().contains(s)) {
+                throw new InventoryException("NCC '" + s.getName() + "' không thuộc danh sách của sản phẩm '" + p.getName() + "'");
+            }
+        }
+
+        pr.setStatus(PRStatus.DA_DUYET);
+        prRepo.save(pr);
     }
 
     @Override
@@ -92,6 +134,10 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
     public void updateItems(Long id, List<PurchaseRequestItemDTO> items) {
         PurchaseRequest request = prRepo.findById(id)
                 .orElseThrow(() -> new InventoryException("Không tìm thấy yêu cầu mua hàng"));
+
+        if (request.getStatus() != PRStatus.MOI_TAO) {
+            throw new InventoryException("Chỉ được sửa danh sách khi PR đang ở trạng thái MỚI TẠO");
+        }
 
         List<Product> products = productRepo.findAll();
         List<Supplier> suppliers = supplierRepo.findAll();
@@ -102,8 +148,9 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
                     .findFirst()
                     .orElseThrow(() -> new InventoryException("Không tìm thấy sản phẩm ID: " + i.getProductId()));
 
-            if (i.getQuantityNeeded() == null || i.getQuantityNeeded() <= 0) {
-                throw new InventoryException("Số lượng cần mua phải lớn hơn 0");
+            Integer q = i.getQuantityNeeded();
+            if (q == null || q <= 0) {
+                throw new InventoryException("Số lượng cần mua phải lớn hơn 0 cho sản phẩm: " + product.getName());
             }
 
             Supplier supplier = null;
@@ -111,14 +158,14 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
                 supplier = suppliers.stream()
                         .filter(s -> Long.valueOf(s.getId()).equals(i.getSuggestedSupplierId()))
                         .findFirst()
-                        .orElse(null); // Cho phép null nếu chưa chọn NCC
+                        .orElse(null); // cho phép null nếu chưa chọn
             }
 
             return PurchaseRequestItem.builder()
-                    .id(i.getId()) // có thể giữ lại nếu cần
+                    .id(i.getId())
                     .purchaseRequest(request)
                     .product(product)
-                    .quantityNeeded(i.getQuantityNeeded())
+                    .quantityNeeded(q)
                     .note(i.getNote())
                     .suggestedSupplier(supplier)
                     .build();
@@ -150,12 +197,19 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
             throw new InventoryException("Chỉ tạo PO từ yêu cầu đã duyệt");
         }
 
+        // ensure mọi item đều có NCC
+        for (PurchaseRequestItem it : pr.getItems()) {
+            if (it.getSuggestedSupplier() == null) {
+                throw new InventoryException("Thiếu nhà cung cấp gợi ý cho sản phẩm: " +
+                        (it.getProduct() != null ? it.getProduct().getName() : "UNKNOWN"));
+            }
+        }
+
         Map<Supplier, List<PurchaseRequestItem>> groupedBySupplier = pr.getItems().stream()
-                .filter(i -> i.getSuggestedSupplier() != null)
                 .collect(Collectors.groupingBy(PurchaseRequestItem::getSuggestedSupplier));
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
+        String username = auth != null ? auth.getName() : "system";
 
         for (Map.Entry<Supplier, List<PurchaseRequestItem>> entry : groupedBySupplier.entrySet()) {
             Supplier supplier = entry.getKey();
@@ -165,7 +219,7 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
                 PurchaseOrderItemDTO dto = new PurchaseOrderItemDTO();
                 dto.setProductId(i.getProduct().getId());
                 dto.setContractQuantity(i.getQuantityNeeded());
-                dto.setPrice(i.getProduct().getOriginPrice()); // sử dụng originPrice
+                dto.setPrice(i.getProduct().getOriginPrice()); // bạn có thể thay bằng chính sách giá khác
                 dto.setActualQuantity(null); // ban đầu chưa giao
                 return dto;
             }).toList();
@@ -189,5 +243,4 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
         return prRepo.filter(creator, startDate, endDate, pageable)
                 .map(PurchaseRequestMapper::toDTO);
     }
-
 }
