@@ -11,4 +11,5 @@ public class IssueTotalsDTO {
     private long issueCount;
     private int totalQuantity;
     private BigDecimal totalAmount;
+    private int totalCombos;
 }

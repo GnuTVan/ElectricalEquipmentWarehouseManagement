@@ -68,5 +68,9 @@ public class SaleOrder {
             return label;
         }
     }
+    //danh sach combo
+    @OneToMany(mappedBy = "saleOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    private java.util.List<SaleOrderCombo> combos = new java.util.ArrayList<>();
 
 }

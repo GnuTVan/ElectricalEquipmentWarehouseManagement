@@ -48,6 +48,12 @@ public class IssueReportServiceImpl implements IIssueReportService {
                             .mapToInt(d -> d.getQuantity() != null ? d.getQuantity() : 0)
                             .sum();
                     BigDecimal totalAmt = n.getTotalAmount() != null ? n.getTotalAmount() : BigDecimal.ZERO;
+                    int comboCount = 0;
+                    if (n.getSaleOrder() != null && n.getSaleOrder().getCombos() != null) {
+                        comboCount = n.getSaleOrder().getCombos().stream()
+                                .mapToInt(c -> c.getQuantity() != null ? c.getQuantity() : 1)
+                                .sum();
+                    }
 
                     return new IssueReportRowDTO(
                             n.getGinId(),
@@ -59,7 +65,8 @@ public class IssueReportServiceImpl implements IIssueReportService {
                             n.getCreatedBy() != null ? n.getCreatedBy().getUsername() : null,
                             n.getSaleOrder() != null ? n.getSaleOrder().getSoCode() : null,
                             totalQty,
-                            totalAmt
+                            totalAmt,
+                            comboCount
                     );
                 })
                 .sorted(Comparator
@@ -75,6 +82,7 @@ public class IssueReportServiceImpl implements IIssueReportService {
     @Override
     public IssueTotalsDTO totalsForFilter(IssueReportFilter f) {
         List<GoodIssueNote> notes = noteRepo.findAll();
+        int totalCombos = 0;
 
         List<GoodIssueNote> filtered = notes.stream()
                 .filter(n -> testDate(asLocalDate(n.getIssueDate()), f.getFromDate(), f.getToDate()))
@@ -92,8 +100,15 @@ public class IssueReportServiceImpl implements IIssueReportService {
                     .sum();
             totalQty += qty;
             totalAmt = totalAmt.add(n.getTotalAmount() != null ? n.getTotalAmount() : BigDecimal.ZERO);
+            int comboCount = 0;
+            if (n.getSaleOrder() != null && n.getSaleOrder().getCombos() != null) {
+                comboCount = n.getSaleOrder().getCombos().stream()
+                        .mapToInt(c -> c.getQuantity() != null ? c.getQuantity() : 1)
+                        .sum();
+            }
+            totalCombos += comboCount;
         }
-        return new IssueTotalsDTO(filtered.size(), totalQty, totalAmt);
+        return new IssueTotalsDTO(filtered.size(), totalQty, totalAmt, totalCombos);
     }
 
     @Override

@@ -19,4 +19,5 @@ public class IssueReportRowDTO {
     private String saleOrderCode;
     private Integer totalQuantity;
     private BigDecimal totalAmount;
+    private Integer totalCombos;
 }

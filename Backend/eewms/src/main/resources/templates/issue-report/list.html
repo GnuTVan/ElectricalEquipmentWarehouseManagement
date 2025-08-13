@@ -97,6 +97,12 @@
                th:attr="data-value=${totals != null} ? ${totals.totalAmount} : 0"
                th:text="${totals != null} ? ${totals.totalAmount} : 0"></div>
         </div>
+        <div class="bg-white p-4 rounded-lg shadow">
+          <div class="text-sm text-gray-500">Số combo</div>
+          <div class="text-xl font-semibold num-plain"
+               th:attr="data-value=${totals != null} ? ${totals.totalCombos} : 0"
+               th:text="${totals != null} ? ${totals.totalCombos} : 0">0</div>
+        </div>
       </div>
 
       <!-- Table -->
@@ -109,8 +115,9 @@
             <th class="text-left p-3">Khách hàng</th>
             <th class="text-left p-3">Người lập</th>
             <th class="text-left p-3">Mã ĐH</th>
-            <th class="text-right p-3">Số lượng</th>
+            <th class="text-right p-3">Số lượng đã bán</th>
             <th class="text-right p-3">Tổng tiền</th>
+            <th class="text-right p-3">Số combo đã bán</th>
           </tr>
           </thead>
           <tbody>
@@ -122,6 +129,9 @@
             <td class="p-3" th:text="${r.saleOrderCode}">SO0001</td>
             <td class="p-3 text-right num-plain" th:attr="data-value=${r.totalQuantity}" th:text="${r.totalQuantity}">0</td>
             <td class="p-3 text-right money" th:attr="data-value=${r.totalAmount}" th:text="${r.totalAmount}">0</td>
+            <td class="p-3 text-right num-plain"
+                th:attr="data-value=${r.totalCombos}"
+                th:text="${r.totalCombos}">0</td>
           </tr>
           <tr th:if="${#lists.isEmpty(data.content)}">
             <td class="p-3 text-center text-gray-500" colspan="7">Không có dữ liệu</td>

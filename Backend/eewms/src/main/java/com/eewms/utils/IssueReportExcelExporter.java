@@ -18,7 +18,7 @@ public class IssueReportExcelExporter {
                               HttpServletResponse resp) {
         try (Workbook wb = new XSSFWorkbook()) {
             Sheet sh = wb.createSheet("Bao cao xuat kho");
-            int lastCol = 7; // 0..7 = 8 cột
+            int lastCol = 8; // 0..8 = 9 cột
 
             // Fonts & styles
             Font bold = wb.createFont(); bold.setBold(true);
@@ -61,7 +61,7 @@ public class IssueReportExcelExporter {
 
             // Header bảng
             Row h = sh.createRow(r++);
-            String[] heads = {"STT", "Mã PXK", "Ngày xuất", "Khách hàng", "Người tạo", "Mã ĐH", "Số lượng", "Tổng tiền"};
+            String[] heads = {"STT", "Mã PXK", "Ngày xuất", "Khách hàng", "Người tạo", "Mã ĐH", "Số lượng", "Tổng tiền","Số combo"};
             for (int i = 0; i <= lastCol; i++) {
                 Cell cell = h.createCell(i);
                 cell.setCellValue(heads[i]);
@@ -82,6 +82,8 @@ public class IssueReportExcelExporter {
                 put(tr, 5, nvl(row.getSaleOrderCode()), td);
                 putNumber(tr, 6, row.getTotalQuantity() != null ? row.getTotalQuantity() : 0, tdInt);
                 putNumber(tr, 7, row.getTotalAmount() != null ? row.getTotalAmount().doubleValue() : 0d, tdMoney);
+                putNumber(tr, 8, row.getTotalCombos() != null ? row.getTotalCombos() : 0, tdInt);
+
             }
 
             r++;

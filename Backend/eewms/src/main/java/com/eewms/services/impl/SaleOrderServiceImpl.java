@@ -26,6 +26,8 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
     private final UserRepository userRepo;
     private final GoodIssueNoteRepository goodIssueRepository;
     private final ComboRepository comboRepository;
+    //sale order combo
+    private final SaleOrderComboRepository saleOrderComboRepository;
     @Override
     @Transactional
     public SaleOrderResponseDTO createOrder(SaleOrderRequestDTO dto, String createdByUsername) {
@@ -97,6 +99,21 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         saleOrder.setDetails(detailList);
         saleOrder.setTotalAmount(totalAmount);
         orderRepo.save(saleOrder);
+        if (dto.getComboIds() != null && !dto.getComboIds().isEmpty()) {
+            Map<Long, Long> counts = dto.getComboIds().stream()
+                    .collect(Collectors.groupingBy(id -> id, Collectors.counting()));
+
+            for (Map.Entry<Long, Long> e : counts.entrySet()) {
+                Combo combo = comboRepository.findById(e.getKey())
+                        .orElseThrow(() -> new RuntimeException("Combo not found: " + e.getKey()));
+                SaleOrderCombo soc = SaleOrderCombo.builder()
+                        .saleOrder(saleOrder)
+                        .combo(combo)
+                        .quantity(e.getValue().intValue())
+                        .build();
+                saleOrderComboRepository.save(soc);
+            }
+        }
 
         return SaleOrderMapper.toOrderResponseDTO(saleOrder);
     }
