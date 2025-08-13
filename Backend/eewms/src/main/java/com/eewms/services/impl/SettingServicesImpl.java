@@ -2,7 +2,6 @@ package com.eewms.services.impl;
 
 import com.eewms.constant.SettingType;
 import com.eewms.dto.SettingDTO;
-import com.eewms.entities.Product;
 import com.eewms.entities.Setting;
 import com.eewms.exception.InventoryException;
 import com.eewms.repository.SettingRepository;
@@ -11,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Locale;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,36 +19,76 @@ import java.util.stream.Collectors;
 public class SettingServicesImpl implements ISettingServices {
     private final SettingRepository settingRepository;
 
+    // ===== Helpers normalize =====
+    private String collapseSpaces(String s) {
+        if (s == null) return null;
+        return s.trim().replaceAll("\\s+", " ");
+    }
+
+    private String titleCase(String s) {
+        if (s == null || s.isBlank()) return s;
+        String[] parts = s.toLowerCase(Locale.ROOT).split(" ");
+        StringBuilder sb = new StringBuilder();
+        for (String p : parts) {
+            if (p.isEmpty()) continue;
+            String first = p.substring(0, 1).toUpperCase(Locale.ROOT);
+            String rest = p.substring(1);
+            sb.append(first).append(rest).append(' ');
+        }
+        return sb.toString().trim();
+    }
+
+    private void normalize(SettingDTO dto) {
+        dto.setName(titleCase(collapseSpaces(dto.getName())));
+        dto.setDescription(collapseSpaces(dto.getDescription()));
+        if (dto.getStatus() == null) {
+            dto.setStatus(Setting.SettingStatus.ACTIVE);
+        }
+        if (dto.getType() != null) {
+            dto.setType(SettingType.valueOf(dto.getType().name().toUpperCase()));
+        }
+    }
+
     @Override
+    @Transactional
     public SettingDTO create(SettingDTO dto) throws InventoryException {
-        if (settingRepository.existsByNameAndType(dto.getName(), dto.getType())) {
+        // 1) Normalize trước khi kiểm tra
+        normalize(dto);
+
+        // 2) Check trùng theo (type, name) không phân biệt hoa thường
+        if (settingRepository.existsByTypeAndNameIgnoreCase(dto.getType(), dto.getName())) {
             throw new InventoryException("Tên đã tồn tại trong nhóm " + dto.getType());
         }
+
+        // 3) Lưu
         Setting s = Setting.builder()
                 .name(dto.getName())
                 .type(dto.getType())
                 .description(dto.getDescription())
                 .status(dto.getStatus())
                 .build();
-        Setting saved = settingRepository.save(s);
-        return toDto(saved);
+        return toDto(settingRepository.save(s));
     }
 
     @Override
+    @Transactional
     public SettingDTO update(Integer id, SettingDTO dto) throws InventoryException {
         Setting s = settingRepository.findById(id)
                 .orElseThrow(() -> new InventoryException("Không tìm thấy id=" + id));
-        if (!s.getType().equals(dto.getType()) || !s.getName().equals(dto.getName())) {
-            if (settingRepository.existsByNameAndType(dto.getName(), dto.getType())) {
-                throw new InventoryException("Tên đã tồn tại trong nhóm " + dto.getType());
-            }
+        // 1) Normalize input
+        normalize(dto);
+
+        // 2) Check trùng theo (type, name) nhưng loại trừ chính record hiện tại
+        if (settingRepository.existsByTypeAndNameIgnoreCaseAndIdNot(
+                s.getType(), dto.getName(), id)) {
+            throw new InventoryException("Tên đã tồn tại trong nhóm " + dto.getType());
         }
+
+        // 3) Cập nhật field (nếu KHÔNG cho phép đổi type, hãy bỏ dòng setType)
         s.setName(dto.getName());
-        s.setType(dto.getType());
         s.setDescription(dto.getDescription());
         s.setStatus(dto.getStatus());
-        Setting updated = settingRepository.save(s);
-        return toDto(updated);
+        return toDto(settingRepository.save(s));
     }
 
     @Override

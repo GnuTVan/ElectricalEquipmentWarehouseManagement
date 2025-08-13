@@ -51,7 +51,10 @@ public class SettingController {
                        BindingResult result,
                        Model model,
                        RedirectAttributes ra) {
+
+        // Nếu validate DTO lỗi -> giữ lại trang + bật modal thêm mới
         if (result.hasErrors()) {
+            model.addAttribute("hasFormError", true);             // <-- để JS auto mở modal
             model.addAttribute("settingType", dto.getType());
             model.addAttribute("settings", settingService.getByType(dto.getType()));
             return "settings/list";
@@ -61,11 +64,15 @@ public class SettingController {
             settingService.create(dto);
             ra.addFlashAttribute("message", "Thêm " + dto.getType() + " thành công, Tên: " + dto.getName());
             ra.addFlashAttribute("messageType", "success");
+            return "redirect:/settings/" + dto.getType();
         } catch (InventoryException ex) {
-            ra.addFlashAttribute("error", ex.getMessage());
+            // Map lỗi duplicate vào FIELD 'name' để hiển thị ngay dưới input
+            result.rejectValue("name", "duplicate", ex.getMessage());
+            model.addAttribute("hasFormError", true);             // <-- để JS auto mở modal
+            model.addAttribute("settingType", dto.getType());
+            model.addAttribute("settings", settingService.getByType(dto.getType()));
+            return "settings/list";
         }
-
-        return "redirect:/settings/" + dto.getType();
     }
 
     @GetMapping("/edit/{type}/{id}")
@@ -88,7 +95,14 @@ public class SettingController {
                          BindingResult result,
                          Model model,
                          RedirectAttributes ra) {
+
+        // Bảo đảm DTO có id và type khớp path (phòng trường hợp form thiếu/changed)
+        dto.setId(id);
+        dto.setType(type);
+
+        // Nếu validate DTO lỗi -> giữ lại trang + bật modal Sửa
         if (result.hasErrors()) {
+            model.addAttribute("hasFormError", true);          // <-- để JS auto mở modal
             model.addAttribute("settingType", type);
             model.addAttribute("settings", settingService.getByType(type));
             return "settings/list";
@@ -96,13 +110,17 @@ public class SettingController {
 
         try {
             settingService.update(id, dto);
-            ra.addFlashAttribute("message", "Cập nhật "+dto.getType()+" thành công, Tên: " + dto.getName());
+            ra.addFlashAttribute("message", "Cập nhật " + dto.getType() + " thành công, Tên: " + dto.getName());
             ra.addFlashAttribute("messageType", "success");
+            return "redirect:/settings/" + type;
         } catch (InventoryException ex) {
-            ra.addFlashAttribute("error", ex.getMessage());
+            // Map lỗi duplicate vào FIELD 'name'
+            result.rejectValue("name", "duplicate", ex.getMessage());
+            model.addAttribute("hasFormError", true);          // <-- để JS auto mở modal
+            model.addAttribute("settingType", type);
+            model.addAttribute("settings", settingService.getByType(type));
+            return "settings/list";
         }
-
-        return "redirect:/settings/" + type;
     }
 
     @GetMapping("/delete/{type}/{id}")

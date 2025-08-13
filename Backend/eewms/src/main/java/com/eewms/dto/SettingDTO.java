@@ -15,7 +15,7 @@ public class SettingDTO {
 
     @NotBlank(message = "Tên không được để trống")
     @Size(max = 100, message = "Tên tối đa 100 ký tự")
-    @Pattern(regexp = NAME, message = "Tên chỉ được chứa chữ cái, khoảng trắng và dấu nháy đơn (ví dụ: O'Connor)")
+    @Pattern(regexp = NAME, message = "Tên chỉ được chứa chữ cái, khoảng trắng")
     private String name;
 
     private SettingType type; 

@@ -10,9 +10,12 @@ import java.util.List;
 
 @Repository
 public interface SettingRepository extends JpaRepository<Setting, Integer> {
-    boolean existsByNameAndType(String name, SettingType type);
+    boolean existsByTypeAndNameIgnoreCase(SettingType type, String name);
+    boolean existsByTypeAndNameIgnoreCaseAndIdNot(SettingType type, String name, Integer id);
+
     List<Setting> findByType(SettingType type);
 
     //lọc theo type và status active
     List<Setting> findByTypeAndStatus(SettingType type, Setting.SettingStatus status);
+
 }
