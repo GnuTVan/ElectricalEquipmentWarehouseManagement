@@ -99,7 +99,18 @@
         </section>
     </main>
 </div>
-
+<script>
+    const btn = document.getElementById("userMenuBtn");
+    const dropdown = document.getElementById("userMenuDropdown");
+        btn?.addEventListener("click", () => {
+        dropdown?.classList.toggle("hidden");
+        });
+        document.addEventListener("click", (event) => {
+        if (!event.target.closest("#userMenuWrapper")) {
+        dropdown?.classList.add("hidden");
+        }
+        });
+</script>
 <!-- Footer & Toast -->
 <div th:replace="~{fragments/footer :: footer}"></div>
 </body>

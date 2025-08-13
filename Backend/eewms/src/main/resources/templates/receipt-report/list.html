@@ -257,6 +257,17 @@ function applyFormat(){
 
 toggle.addEventListener('change', applyFormat);
 applyFormat(); // áp dụng ngay khi load (VND mặc định)
+
+            const btn = document.getElementById("userMenuBtn");
+    const dropdown = document.getElementById("userMenuDropdown");
+        btn?.addEventListener("click", () => {
+        dropdown?.classList.toggle("hidden");
+        });
+        document.addEventListener("click", (event) => {
+        if (!event.target.closest("#userMenuWrapper")) {
+        dropdown?.classList.add("hidden");
+        }
+        });
         </script>
     </main>
 </div>
