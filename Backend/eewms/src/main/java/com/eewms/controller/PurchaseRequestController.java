@@ -4,6 +4,9 @@ import com.eewms.constant.PRStatus;
 import com.eewms.dto.purchaseRequest.PurchaseRequestDTO;
 import com.eewms.dto.purchaseRequest.PurchaseRequestItemDTO;
 import com.eewms.entities.SaleOrder;
+import com.eewms.entities.Product;
+import com.eewms.entities.Supplier;
+import com.eewms.repository.ProductRepository;
 import com.eewms.services.IProductServices;
 import com.eewms.services.IPurchaseRequestService;
 import com.eewms.services.ISaleOrderService;
@@ -24,7 +27,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/admin/purchase-requests")
@@ -36,6 +40,20 @@ public class PurchaseRequestController {
     private final IProductServices productService;
     private final ISupplierService supplierService;
     private final IPurchaseRequestService purchaseRequestService;
+    private final ProductRepository productRepository; //  thêm
+
+    // helper: map productId -> allowed suppliers
+    private Map<Long, List<Supplier>> buildAllowedSuppliersMap(List<PurchaseRequestItemDTO> items) {
+        Map<Long, List<Supplier>> map = new HashMap<>();
+        for (PurchaseRequestItemDTO it : items) {
+            Product p = productRepository.findById(it.getProductId().intValue()).orElse(null);
+            List<Supplier> allowed = (p == null || p.getSuppliers() == null)
+                    ? List.of()
+                    : p.getSuppliers().stream().collect(Collectors.toList());
+            map.put(it.getProductId(), allowed);
+        }
+        return map;
+    }
 
     @GetMapping
     public String listRequests(Model model,
@@ -47,7 +65,6 @@ public class PurchaseRequestController {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("code").ascending());
 
-        // Convert ngày sang LocalDateTime
         LocalDateTime start = (startDate != null) ? startDate.atStartOfDay() : null;
         LocalDateTime end = (endDate != null) ? endDate.atTime(LocalTime.MAX) : null;
 
@@ -56,8 +73,6 @@ public class PurchaseRequestController {
         model.addAttribute("requestPage", requestPage);
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", requestPage.getTotalPages());
-
-        // Đưa filter về lại view
         model.addAttribute("creator", creator);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
@@ -83,11 +98,6 @@ public class PurchaseRequestController {
             return "redirect:/sale-orders/" + saleOrderId;
         }
 
-//        // ✅ Cập nhật trạng thái đơn bán hàng từ PENDING → DELIVERIED
-//        if (order.getStatus() == SaleOrder.SaleOrderStatus.PENDING) {
-//            saleOrderService.updateOrderStatus(order.getSoId(), SaleOrder.SaleOrderStatus.DELIVERIED);
-//        }
-
         PurchaseRequestDTO dto = PurchaseRequestDTO.builder()
                 .createdByName(order.getCreatedByUser().getFullName())
                 .saleOrderId(order.getSoId())
@@ -95,7 +105,10 @@ public class PurchaseRequestController {
                 .build();
 
         model.addAttribute("requestDTO", dto);
-        model.addAttribute("suppliers", supplierService.findAll());
+        // bỏ suppliers toàn hệ thống
+        // model.addAttribute("suppliers", supplierService.findAll());
+        //  chỉ NCC thuộc từng sản phẩm
+        model.addAttribute("allowedSuppliers", buildAllowedSuppliersMap(items));
         return "purchase-request-form";
     }
 
@@ -105,7 +118,8 @@ public class PurchaseRequestController {
                          RedirectAttributes redirect,
                          Model model) {
         if (result.hasErrors()) {
-            model.addAttribute("suppliers", supplierService.findAll());
+            // model.addAttribute("suppliers", supplierService.findAll());
+            model.addAttribute("allowedSuppliers", buildAllowedSuppliersMap(dto.getItems()));
             return "purchase-request-form";
         }
 
@@ -121,8 +135,10 @@ public class PurchaseRequestController {
             redirect.addFlashAttribute("error", "Không tìm thấy yêu cầu mua hàng");
             return "redirect:/admin/purchase-requests";
         }
-        model.addAttribute("request", opt.get());
-        model.addAttribute("suppliers", supplierService.findAll()); // ✅ Thêm supplier vào model
+        PurchaseRequestDTO pr = opt.get();
+        model.addAttribute("request", pr);
+        // model.addAttribute("suppliers", supplierService.findAll());
+        model.addAttribute("allowedSuppliers", buildAllowedSuppliersMap(pr.getItems()));
         return "purchase-request-detail";
     }
 
@@ -130,8 +146,12 @@ public class PurchaseRequestController {
     public String updateStatus(@PathVariable Long id,
                                @RequestParam PRStatus status,
                                RedirectAttributes redirect) {
-        prService.updateStatus(id, status);
-        redirect.addFlashAttribute("message", "Cập nhật trạng thái yêu cầu thành công");
+        try {
+            prService.updateStatus(id, status);
+            redirect.addFlashAttribute("message", "Cập nhật trạng thái yêu cầu thành công");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
         return "redirect:/admin/purchase-requests/" + id;
     }
 
