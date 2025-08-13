@@ -56,10 +56,9 @@ public class CustomerController {
 
         try {
             service.create(dto);
-            redirect.addFlashAttribute("message", "Thêm KH" + dto.getFullName() + " thành công");
+            redirect.addFlashAttribute("message", "Thêm KH " + dto.getFullName() + " thành công");
             redirect.addFlashAttribute("messageType", "success");
         } catch (Exception ex) {
-            ex.printStackTrace();
             redirect.addFlashAttribute("error", "Lỗi khi thêm khách hàng: " + ex.getMessage());
         }
 
@@ -84,14 +83,14 @@ public class CustomerController {
         if (result.hasErrors()) {
             model.addAttribute("customer", dto);
             model.addAttribute("editId", id);
-            model.addAttribute("hasFormError", true);
+            model.addAttribute("hasEditError", true);
             model.addAttribute("customers", service.findAll());
             return "customer/customer-list";
         }
 
         try {
             service.update(dto);
-            redirect.addFlashAttribute("message", "Cập nhật thông tin KH thành công, Tên:" + dto.getFullName());
+            redirect.addFlashAttribute("message", "Cập nhật thông tin KH thành công, Tên: " + dto.getFullName());
             redirect.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", "Lỗi khi cập nhật: " + e.getMessage());
