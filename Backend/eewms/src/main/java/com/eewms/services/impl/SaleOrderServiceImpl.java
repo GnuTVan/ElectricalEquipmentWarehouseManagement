@@ -8,6 +8,7 @@ import com.eewms.entities.*;
 import com.eewms.repository.*;
 import com.eewms.services.IGoodIssueService;
 import com.eewms.services.ISaleOrderService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SaleOrderServiceImpl implements ISaleOrderService {
 
+
+    private final SaleOrderDetailRepository saleOrderDetailRepository;
+    private final ProductRepository productRepository;
+
     private final SaleOrderRepository orderRepo;
     private final ProductRepository productRepo;
     private final CustomerRepository customerRepo;
@@ -27,7 +32,10 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
     private final GoodIssueNoteRepository goodIssueRepository;
     private final ComboRepository comboRepository;
     //sale order combo
+
     private final SaleOrderComboRepository saleOrderComboRepository;
+
+
     @Override
     @Transactional
     public SaleOrderResponseDTO createOrder(SaleOrderRequestDTO dto, String createdByUsername) {
@@ -118,6 +126,67 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         return SaleOrderMapper.toOrderResponseDTO(saleOrder);
     }
 
+    @Transactional
+    @Override
+    public void updateOrderItems(Integer orderId, SaleOrderRequestDTO form) {
+        SaleOrder order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Sale order not found"));
+
+        if (order.getStatus() != SaleOrder.SaleOrderStatus.PENDING) {
+            throw new IllegalStateException("Only PENDING order can be edited");
+        }
+
+        Set<Integer> ids = form.getDetails().stream()
+                .map(SaleOrderDetailDTO::getProductId)
+                .collect(Collectors.toSet());
+
+        Map<Integer, Product> pmap = productRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
+        List<SaleOrderDetail> newLines = new ArrayList<>();
+        BigDecimal sum = BigDecimal.ZERO;
+
+        for (SaleOrderDetailDTO d : form.getDetails()) {
+            Product p = pmap.get(d.getProductId());
+            if (p == null || p.getStatus() != Product.ProductStatus.ACTIVE) {
+                throw new IllegalArgumentException("Invalid/inactive product: " + d.getProductId());
+            }
+
+            // Null-safety
+            int qty = Optional.ofNullable(d.getOrderedQuantity()).orElse(0);
+            BigDecimal price = Optional.ofNullable(d.getPrice()).orElse(BigDecimal.ZERO);
+
+            SaleOrderDetail line = new SaleOrderDetail();
+            line.setSale_order(order);
+            line.setProduct(p);
+            line.setOrderedQuantity(qty);
+            line.setPrice(price);
+            newLines.add(line);
+
+            // Cộng dồn tổng tiền theo price * qty (không dùng detail.total)
+            sum = sum.add(price.multiply(BigDecimal.valueOf(qty)));
+        }
+        saleOrderDetailRepository.deleteByOrderSoId(orderId);
+        saleOrderDetailRepository.saveAll(newLines);
+
+        order.setTotalAmount(sum);
+        order.setDescription(Optional.ofNullable(form.getDescription()).orElse(""));
+
+        StringBuilder warn = new StringBuilder();
+        for (SaleOrderDetail l : newLines) {
+            int stock = Optional.ofNullable(l.getProduct().getQuantity()).orElse(0);
+            if (l.getOrderedQuantity() > stock) {
+                warn.append("\nThiếu hàng: ").append(l.getProduct().getName())
+                        .append(" cần ").append(l.getOrderedQuantity())
+                        .append(" tồn ").append(stock);
+            }
+        }
+        if (warn.length() > 0) {
+            order.setDescription((order.getDescription() + "\n" + warn).trim());
+        }
+
+        orderRepo.save(order);
+    }
 
     @Override
     public List<SaleOrderResponseDTO> getAllOrders() {

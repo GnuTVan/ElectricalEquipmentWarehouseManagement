@@ -14,4 +14,5 @@ public interface ISaleOrderService {
     void updateOrderStatus(Integer orderId, SaleOrder.SaleOrderStatus newStatus);
     List<SaleOrderResponseDTO> searchByKeyword(String keyword);
     SaleOrder getOrderEntityById(Integer id); // thêm để dùng tạo phiếu
+    void updateOrderItems(Integer orderId, SaleOrderRequestDTO form);
 }
