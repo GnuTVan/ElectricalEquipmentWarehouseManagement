@@ -201,17 +201,6 @@
         document.getElementById('userModal').classList.add('hidden');
     }
 
-    const btn = document.getElementById("userMenuBtn");
-    const dropdown = document.getElementById("userMenuDropdown");
-    btn?.addEventListener("click", () => {
-        dropdown?.classList.toggle("hidden");
-    });
-    document.addEventListener("click", (event) => {
-        if (!event.target.closest("#userMenuWrapper")) {
-            dropdown?.classList.add("hidden");
-        }
-    });
-
     function toggleUserStatus(checkbox, event) {
         event.preventDefault(); // CHẶN hành vi mặc định gây nhảy
 

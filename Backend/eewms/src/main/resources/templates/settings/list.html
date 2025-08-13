@@ -129,18 +129,29 @@
                             <input type="hidden" th:field="*{id}"/>
                             <div>
                                 <label class="block">Tên</label>
-                                <input type="text" th:field="*{name}" class="w-full border px-2 py-1" required/>
+                                <input type="text" th:field="*{name}"
+                                       class="w-full border px-2 py-1"
+                                       th:classappend="${#fields.hasErrors('name')} ? ' border-red-500' : ''"
+                                       required/>
+                                <p th:if="${#fields.hasErrors('name')}" th:errors="*{name}"
+                                   class="text-sm text-red-500 mt-1"></p>
                             </div>
                             <div>
                                 <label class="block">Trạng thái</label>
-                                <select th:field="*{status}" class="w-full border px-2 py-1">
+                                <select th:field="*{status}" class="w-full border px-2 py-1"
+                                        th:classappend="${#fields.hasErrors('status')} ? ' border-red-500' : ''">
                                     <option value="ACTIVE">Active</option>
                                     <option value="INACTIVE">Inactive</option>
                                 </select>
+                                <p th:if="${#fields.hasErrors('status')}" th:errors="*{status}"
+                                   class="text-sm text-red-500 mt-1"></p>
                             </div>
                             <div>
                                 <label class="block">Mô tả</label>
-                                <textarea th:field="*{description}" class="w-full border px-2 py-1" rows="3"></textarea>
+                                <textarea th:field="*{description}" class="w-full border px-2 py-1" rows="3"
+                                          th:classappend="${#fields.hasErrors('description')} ? ' border-red-500' : ''"></textarea>
+                                <p th:if="${#fields.hasErrors('description')}" th:errors="*{description}"
+                                   class="text-sm text-red-500 mt-1"></p>
                             </div>
                             <div class="text-right">
                                 <button type="button" onclick="closeModal()" class="px-4 py-1 border rounded mr-2">Hủy
@@ -153,28 +164,77 @@
 
             </div>
 
-            <script>
-                function openModal(id, name, pri, status) {
+            <script th:inline="javascript">
+                // ====== Helpers ======
+                function clearFieldErrors(scope) {
+                    // nếu có phần tử hiển thị lỗi, xoá sạch text (để tái sử dụng chung)
+                    (scope || document).querySelectorAll('.text-red-500, [data-field-error]')
+                        .forEach(el => el.textContent = '');
+                }
+
+                function resetForm(modalEl) {
+                    const form = modalEl ? modalEl.querySelector('form') : null;
+                    if (!form) return;
+                    form.reset();
+                    // reset các input/textarea/select (trừ hidden)
+                    form.querySelectorAll('input, textarea, select').forEach(el => {
+                        if (el.type !== 'hidden') el.value = el.value; // giữ default
+                    });
+                    clearFieldErrors(form);
+                }
+
+                // Tạo redirectPath tới danh sách theo type hiện tại
+                const __redirectPath = /*[[@{/settings/{t}(t=${settingType})}]]*/ '/settings';
+
+                // ====== Modal control ======
+                function openModal(id, name, status, description) {
+                    const modal = document.getElementById('settingModal');
+                    if (!modal) return;
+
+                    const form = modal.querySelector('form');
+                    // Fill dữ liệu (giống Suppliers/Products: không override khi server đang bind lỗi)
+                    // Ở đây giả định case mở tay để thêm/sửa bình thường
                     document.getElementById('modalTitle').innerText = id ? 'Sửa' : 'Thêm';
-                    document.querySelector('[name="id"]').value = id || '';
-                    document.querySelector('[name="name"]').value = name || '';
-                    document.querySelector('[name="status"]').value = status || 'ACTIVE';
-                    document.getElementById('settingModal').classList.remove('hidden');
+
+                    const idEl = form.querySelector('[name="id"]');
+                    const nameEl = form.querySelector('[name="name"]');
+                    const stEl = form.querySelector('[name="status"]');
+                    const desEl = form.querySelector('[name="description"]');
+
+                    if (idEl) idEl.value = id || '';
+                    if (nameEl) nameEl.value = name || '';
+                    if (stEl) stEl.value = status || 'ACTIVE';
+                    if (desEl) desEl.value = description || '';
+
+                    modal.classList.remove('hidden');
                 }
 
                 function closeModal() {
-                    document.getElementById('settingModal').classList.add('hidden');
+                    const modal = document.getElementById('settingModal');
+                    if (!modal) return;
+                    resetForm(modal);
+                    modal.classList.add('hidden');
+                    // Redirect nhẹ để xoá state lỗi/biến model phía server (giống 2 trang kia)
+                    window.location.href = __redirectPath;
                 }
-            </script>
-            <script th:if="${settingForm.id != null}">
-                document.addEventListener('DOMContentLoaded', function () {
-                    // Đổi title cho đúng
-                    document.getElementById('modalTitle').innerText = 'Sửa';
-                    // Hiển thị modal
-                    document.getElementById('settingModal').classList.remove('hidden');
-                });
-            </script>
-            <script>
+
+                // ====== Auto-open khi server trả về form đang edit / có lỗi ======
+                (function autoOpenFromServer() {
+                    // Server có thể set 2 flag:
+                    // 1) settingForm.id != null  => đang edit hoặc submit lỗi khi edit
+                    // 2) hasFormError (tuỳ bạn thêm vào model) => submit lỗi khi add
+                    const isEditing = /*[[${settingForm.id != null}]]*/ false;
+                    const hasFormError = /*[[${hasFormError}]]*/ false; // nếu chưa dùng, sẽ là false
+
+                    if (isEditing || hasFormError) {
+                        // Khi server đã bind sẵn dữ liệu + lỗi, ta CHỈ mở modal, KHÔNG fill lại để tránh ghi đè.
+                        document.getElementById('modalTitle').innerText = isEditing ? 'Sửa' : 'Thêm';
+                        const modal = document.getElementById('settingModal');
+                        if (modal) modal.classList.remove('hidden');
+                    }
+                })();
+
+                // ====== Toggle status (giữ nguyên logic reload) ======
                 function toggleStatus(checkbox) {
                     const tr = checkbox.closest('tr');
                     const id = tr.dataset.id;
@@ -185,10 +245,7 @@
 
                     fetch(`/settings/${id}/status`, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            [csrfHeader]: csrfToken
-                        },
+                        headers: {'Content-Type': 'application/json', [csrfHeader]: csrfToken},
                         body: JSON.stringify({status: newStatus})
                     })
                         .then(res => {
@@ -196,8 +253,8 @@
                             return res.text();
                         })
                         .then(() => {
-                            location.reload(); // ✅ reload lại trang để Thymeleaf load đúng status mới
-                        })
+                            location.reload();
+                        }) // đảm bảo Thymeleaf đồng bộ
                         .catch(err => {
                             console.error(err);
                             checkbox.checked = !checkbox.checked; // rollback UI
@@ -205,7 +262,7 @@
                         });
                 }
             </script>
-
+        </div>
     </main>
 </div>
 
