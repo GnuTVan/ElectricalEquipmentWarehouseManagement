@@ -55,7 +55,8 @@ public class SecurityConfig {
                         .requestMatchers("/admin/purchase-orders/**").hasAnyRole("MANAGER")
                         .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/**").hasAnyRole("MANAGER") // sau 2 rule Staff ở trên
                         .requestMatchers("/admin/warehouse-receipts/**").hasAnyRole("MANAGER")
-
+                        .requestMatchers("/products/**").hasAnyRole("MANAGER")
+                        .requestMatchers("/product-list/**").hasAnyRole("MANAGER")
                         //MANAGER + ADMIN
                         .requestMatchers("/admin/reports/issues/**").hasAnyRole("ADMIN","MANAGER")
                         .requestMatchers("/admin/reports/receipts/**").hasAnyRole("ADMIN","MANAGER")
@@ -68,8 +69,7 @@ public class SecurityConfig {
                         .requestMatchers("/customer-list/**").hasAnyRole("STAFF")
                         .requestMatchers("/combos/**").hasAnyRole("STAFF")
                         .requestMatchers("/combo-list/**").hasAnyRole("STAFF")
-                        .requestMatchers("/products/**").hasAnyRole("STAFF")
-                        .requestMatchers("/product-list/**").hasAnyRole("STAFF")
+
 
                         //Purchase Requests (Y/C Mua) (POST): Staff chỉ được POST create; các POST khác chỉ Manager/Admin
                         .requestMatchers(HttpMethod.POST, "/admin/purchase-requests").hasAnyRole("MANAGER","STAFF") // create PostMapping không path
