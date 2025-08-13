@@ -1,98 +1,66 @@
 package com.eewms.controller;
 
-import com.eewms.entities.DebtTransaction;
+import com.eewms.entities.Debt;
 import com.eewms.entities.DebtPayment;
-import com.eewms.entities.DebtTransaction.Type;
-import com.eewms.entities.DebtTransaction.PartnerType;
-
-
-import com.eewms.services.impl.DebtPaymentService;
-import com.eewms.services.impl.DebtTransactionService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.eewms.repository.DebtRepository;
+import com.eewms.services.IDebtService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.Optional;
+import java.time.LocalDate;
 
 @Controller
-@RequestMapping("/debts")
+@RequestMapping("/admin/debts")
+@RequiredArgsConstructor
 public class DebtController {
 
-    @Autowired
-    private DebtTransactionService debtTransactionService;
+    private final IDebtService debtService;
+    private final DebtRepository debtRepository;
 
-    @Autowired
-    private DebtPaymentService debtPaymentService;
+    @PostMapping("/{debtId}/pay")
+    public String pay(@PathVariable Long debtId,
+                      @RequestParam BigDecimal amount,
+                      @RequestParam(required = false) DebtPayment.Method method,
+                      @RequestParam(required = false) String referenceNo,
+                      @RequestParam(required = false) String note,
+                      @RequestParam(required = false) String paymentDate,
+                      RedirectAttributes ra) {
 
-    // Hiển thị danh sách công nợ
-    @GetMapping
-    public String listDebts(Model model) {
-        model.addAttribute("debts", debtTransactionService.getAll());
-        return "debt/list";
+        LocalDate date = (paymentDate == null || paymentDate.isBlank())
+                ? LocalDate.now()
+                : LocalDate.parse(paymentDate);
+
+        debtService.pay(debtId, amount,
+                method == null ? DebtPayment.Method.CASH : method,
+                date, referenceNo, note);
+
+        ra.addFlashAttribute("message", "Thanh toán công nợ thành công.");
+        ra.addFlashAttribute("messageType", "success");
+
+        // Quay lại trang phiếu nhập của công nợ này
+        Debt d = debtRepository.findById(debtId).orElseThrow();
+        Long wrId = (d.getWarehouseReceipt() != null) ? d.getWarehouseReceipt().getId() : null;
+        return (wrId != null)
+                ? "redirect:/admin/warehouse-receipts/view/" + wrId
+                : "redirect:/admin/warehouse-receipts";
     }
 
-    // Hiển thị form tạo mới công nợ
-    @GetMapping("/create")
-    public String showCreateForm(Model model) {
-        model.addAttribute("debt", new DebtTransaction());
-        return "debt/create";
+    @PostMapping("/{debtId}/due-date")
+    public String updateDueDate(@PathVariable Long debtId,
+                                @RequestParam String dueDate,
+                                RedirectAttributes ra) {
+        debtService.updateDueDate(debtId, LocalDate.parse(dueDate));
+
+        ra.addFlashAttribute("message", "Cập nhật hạn thanh toán thành công.");
+        ra.addFlashAttribute("messageType", "success");
+
+        Debt d = debtRepository.findById(debtId).orElseThrow();
+        Long wrId = (d.getWarehouseReceipt() != null) ? d.getWarehouseReceipt().getId() : null;
+        return (wrId != null)
+                ? "redirect:/admin/warehouse-receipts/view/" + wrId
+                : "redirect:/admin/warehouse-receipts";
     }
-
-    // Xử lý form tạo mới công nợ
-    @PostMapping("/create")
-    public String createDebt(@RequestParam("type") Type type,
-                             @RequestParam("partnerType") PartnerType partnerType,
-                             @RequestParam("partnerId") Long partnerId,
-                             @RequestParam("amount") BigDecimal amount,
-                             @RequestParam("note") String note,
-                             @RequestParam("dueDate") String dueDate,
-                             RedirectAttributes redirectAttributes) {
-
-        debtTransactionService.createDebt(type, partnerType, partnerId, amount, note, LocalDateTime.parse(dueDate));
-
-        // Set message
-        redirectAttributes.addFlashAttribute("message", "Tạo công nợ thành công!");
-        redirectAttributes.addFlashAttribute("messageType", "success"); // success, error, info, warning
-
-        return "redirect:/debts";
-    }
-
-
-    // Hiển thị form thanh toán cho công nợ
-    @GetMapping("/{id}/pay")
-    public String showPaymentForm(@PathVariable Long id, Model model) {
-        Optional<DebtTransaction> debtOpt = debtTransactionService.findById(id);
-        if (debtOpt.isPresent()) {
-            model.addAttribute("debt", debtOpt.get());
-            return "debt/pay";
-        }
-        return "redirect:/debts";
-    }
-
-    // Xử lý form thanh toán
-    @PostMapping("/{id}/pay")
-    public String processPayment(@PathVariable Long id,
-                                 @RequestParam("amount") BigDecimal amount,
-                                 @RequestParam("method") String method,
-                                 @RequestParam("note") String note,
-                                 RedirectAttributes redirectAttributes) {
-
-        Optional<DebtTransaction> debtOpt = debtTransactionService.findById(id);
-        if (debtOpt.isPresent()) {
-            debtPaymentService.createPayment(debtOpt.get(), amount, method, note);
-
-            redirectAttributes.addFlashAttribute("message", "Thanh toán thành công!");
-            redirectAttributes.addFlashAttribute("messageType", "success");
-        } else {
-            redirectAttributes.addFlashAttribute("message", "Không tìm thấy công nợ!");
-            redirectAttributes.addFlashAttribute("messageType", "error");
-        }
-
-        return "redirect:/debts";
-    }
-
 }
