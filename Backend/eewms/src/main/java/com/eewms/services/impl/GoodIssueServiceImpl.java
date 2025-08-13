@@ -5,6 +5,7 @@ import com.eewms.dto.GoodIssueNoteDTO;
 import com.eewms.entities.*;
 import com.eewms.repository.GoodIssueNoteRepository;
 import com.eewms.repository.ProductRepository;
+import com.eewms.repository.SaleOrderRepository;
 import com.eewms.repository.UserRepository;
 import com.eewms.services.IGoodIssueService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
     private final GoodIssueNoteRepository goodIssueRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final SaleOrderRepository saleOrderRepository;
 
     @Override
     public GoodIssueNote createFromOrder(SaleOrder order, String username) {
@@ -71,6 +73,8 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
         note.setTotalAmount(total);
 
         order.setStatus(SaleOrder.SaleOrderStatus.DELIVERIED);
+        saleOrderRepository.save(order);
+
         productRepository.saveAll(details.stream().map(GoodIssueDetail::getProduct).toList()); // lưu lại tồn kho
         // Nếu bạn có sẵn orderRepo hoặc muốn đúng tầng:
         goodIssueRepository.save(note);  // đã có dòng này

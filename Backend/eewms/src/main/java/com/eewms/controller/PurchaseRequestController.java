@@ -7,6 +7,7 @@ import com.eewms.entities.SaleOrder;
 import com.eewms.entities.Product;
 import com.eewms.entities.Supplier;
 import com.eewms.repository.ProductRepository;
+import com.eewms.repository.purchaseRequest.PurchaseRequestRepository;
 import com.eewms.services.IProductServices;
 import com.eewms.services.IPurchaseRequestService;
 import com.eewms.services.ISaleOrderService;
@@ -29,6 +30,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @Controller
 @RequestMapping("/admin/purchase-requests")
@@ -41,6 +44,7 @@ public class PurchaseRequestController {
     private final ISupplierService supplierService;
     private final IPurchaseRequestService purchaseRequestService;
     private final ProductRepository productRepository; //  thêm
+    private final PurchaseRequestRepository prRepo;
 
     // helper: map productId -> allowed suppliers
     private Map<Long, List<Supplier>> buildAllowedSuppliersMap(List<PurchaseRequestItemDTO> items) {
@@ -82,6 +86,11 @@ public class PurchaseRequestController {
 
     @GetMapping("/create-from-sale-order/{saleOrderId}")
     public String createFromSaleOrder(@PathVariable Integer saleOrderId, Model model, RedirectAttributes redirect) {
+
+        if (prRepo.existsBySaleOrder_SoId(saleOrderId)) {
+            redirect.addFlashAttribute("error", "Đơn bán đã có yêu cầu mua.");
+            return "redirect:/sale-orders/" + saleOrderId + "/edit";
+        }
         SaleOrder order = saleOrderService.getOrderEntityById(saleOrderId);
 
         List<PurchaseRequestItemDTO> items = order.getDetails().stream()
@@ -118,14 +127,33 @@ public class PurchaseRequestController {
                          RedirectAttributes redirect,
                          Model model) {
         if (result.hasErrors()) {
-            // model.addAttribute("suppliers", supplierService.findAll());
             model.addAttribute("allowedSuppliers", buildAllowedSuppliersMap(dto.getItems()));
             return "purchase-request-form";
         }
 
-        prService.create(dto);
-        redirect.addFlashAttribute("message", "Tạo yêu cầu mua hàng thành công");
-        return "redirect:/admin/purchase-requests";
+        if (dto.getSaleOrderId() == null) {
+            redirect.addFlashAttribute("error", "Thiếu thông tin đơn bán. Vui lòng tạo yêu cầu từ màn hình đơn bán.");
+            return "redirect:/sale-orders";
+        }
+
+        var saved = prService.create(dto);
+        // Staff không có quyền xem PR -> quay về SO detail
+        if (!hasAnyRole("ADMIN", "MANAGER")) {
+            redirect.addFlashAttribute("message", "Đã gửi yêu cầu mua. Vui lòng chờ phê duyệt.");
+            return "redirect:/sale-orders/" + dto.getSaleOrderId() + "/edit";
+        }
+        // Manager/Admin -> vào chi tiết PR
+        return "redirect:/admin/purchase-requests/" + saved.getId();
+    }
+
+    private boolean hasAnyRole(String... roles) {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return false;
+        var authorities = auth.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
+        for (String r : roles) {
+            if (authorities.contains("ROLE_" + r)) return true;
+        }
+        return false;
     }
 
     @GetMapping("/{id}")

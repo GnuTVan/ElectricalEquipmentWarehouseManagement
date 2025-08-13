@@ -3,6 +3,7 @@ package com.eewms.controller;
 import com.eewms.dto.SaleOrderRequestDTO;
 import com.eewms.dto.SaleOrderResponseDTO;
 import com.eewms.entities.SaleOrder;
+import com.eewms.repository.purchaseRequest.PurchaseRequestRepository;
 import com.eewms.services.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class SaleOrderController {
     private final IProductServices productService;
     private final IGoodIssueService goodIssueService;
     private final IComboService comboService;
+    private final PurchaseRequestRepository prRepo;
 
     // --- HIỂN THỊ DANH SÁCH ĐƠN ---
     @GetMapping
@@ -93,6 +95,10 @@ public class SaleOrderController {
         model.addAttribute("statusOptions", SaleOrder.SaleOrderStatus.values());
         model.addAttribute("customers", customerService.findAll());
         model.addAttribute("products", productService.getAll());
+
+        boolean prExists = prRepo.existsBySaleOrder_SoId(id);
+        model.addAttribute("prExists", prExists);
+
         return "sale-order/sale-order-edit";
     }
 

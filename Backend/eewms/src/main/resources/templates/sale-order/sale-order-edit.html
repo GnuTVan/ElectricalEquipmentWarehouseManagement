@@ -89,13 +89,21 @@
                     <i class="ri-arrow-go-back-line mr-1"></i> Quay lại
                 </a>
 
-                <!-- Nút "Tạo phiếu xuất" khi trạng thái là PENDING -->
-                <a th:if="${saleOrder.status.name() == 'PENDING'}"
+                <!-- Nút "Tạo phiếu xuất" chỉ khi: PENDING + không thiếu + chưa xuất -->
+                <a th:if="${saleOrder.status.name() == 'PENDING'
+           and !saleOrder.hasInsufficientStock
+           and !saleOrder.alreadyExported}"
                    th:href="@{'/good-issue/create-from-order/' + ${saleOrder.orderId}}"
                    class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded"
                    id="createDeliveryBtn">
                     <i class="ri-truck-line mr-1"></i> Tạo phiếu xuất
                 </a>
+
+                <!-- Nếu đang thiếu hàng, hiển thị badge cảnh báo -->
+                <span th:if="${saleOrder.hasInsufficientStock}"
+                      class="inline-flex items-center px-3 py-2 rounded bg-yellow-100 text-yellow-800 border">
+  Thiếu hàng – hãy tạo yêu cầu mua
+</span>
 
                 <!-- Nút "Hoàn tất đơn hàng" khi trạng thái là DELIVERIED -->
                 <div th:if="${saleOrder.status.name() == 'DELIVERIED'}">
@@ -108,11 +116,17 @@
                 </div>
 
                 <!-- Nút "Tạo yêu cầu mua" khi đơn hàng thiếu hàng -->
-                <div th:if="${saleOrder.hasInsufficientStock and !saleOrder.alreadyExported}">
+
+                <div th:if="${saleOrder.hasInsufficientStock and !saleOrder.alreadyExported and !prExists}">
                     <a th:href="@{'/admin/purchase-requests/create-from-sale-order/' + ${saleOrder.orderId}}"
                        class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded inline-block">
                         Tạo yêu cầu mua
                     </a>
+                </div>
+
+                <!-- thêm badge khi đã có PR -->
+                <div th:if="${prExists}" class="inline-flex items-center px-3 py-2 rounded bg-gray-100 text-gray-700 border">
+                    Đã tạo yêu cầu mua
                 </div>
                 <!-- Hiển thị trạng thái hoàn tất đơn hàng -->
                 <span th:if="${saleOrder.status.name() == 'COMPLETED'}"

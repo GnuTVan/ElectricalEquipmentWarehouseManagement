@@ -39,5 +39,8 @@ public interface PurchaseRequestRepository extends JpaRepository<PurchaseRequest
             @Param("end") LocalDateTime end,
             Pageable pageable
     );
+//new
+    boolean existsBySaleOrder_SoId(Integer soId);
+
 
 }
