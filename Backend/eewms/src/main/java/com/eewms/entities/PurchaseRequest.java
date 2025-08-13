@@ -41,6 +41,6 @@ public class PurchaseRequest {
         if (this.status == null) this.status = PRStatus.MOI_TAO;
     }
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sale_order_id")
+    @JoinColumn(name = "sale_order_id", unique = true)
     private SaleOrder saleOrder;
 }

@@ -38,33 +38,37 @@ public class GoodIssueController {
 
     // ✅ 2. Form tạo phiếu xuất từ đơn hàng
     @GetMapping("/create-from-order/{orderId}")
-    public String showCreateForm(@PathVariable("orderId") Integer orderId, Model model) {
+    public String showCreateForm(@PathVariable("orderId") Integer orderId,
+                                 Model model, RedirectAttributes ra) {
+        // dùng DTO để lấy cờ thiếu hàng đã tính sẵn
+        var dto = saleOrderService.getById(orderId);
+        if (dto.isHasInsufficientStock()) {
+            ra.addFlashAttribute("error", "Đơn hàng đang thiếu hàng. Không thể tạo phiếu xuất.");
+            return "redirect:/sale-orders/" + orderId + "/edit";
+        }
         SaleOrder saleOrder = saleOrderService.getOrderEntityById(orderId);
         model.addAttribute("saleOrder", saleOrder);
-        return "good-issue-form"; // 📄 Tạo file good-issue-form.html
+        return "good-issue-form";
     }
 
     // ✅ 3. Submit tạo phiếu xuất
     @PostMapping("/create")
-    public String createGoodIssue(
-            @RequestParam("orderId") Integer orderId,
-            HttpServletRequest request,
-            RedirectAttributes ra
-    ) {
+    public String createGoodIssue(@RequestParam("orderId") Integer orderId,
+                                  HttpServletRequest request,
+                                  RedirectAttributes ra) {
         try {
             String username = request.getUserPrincipal().getName();
             SaleOrder order = saleOrderService.getOrderEntityById(orderId);
             GoodIssueNote gin = goodIssueService.createFromOrder(order, username);
 
-            saleOrderService.updateOrderStatus(orderId, SaleOrder.SaleOrderStatus.DELIVERIED);
+//            saleOrderService.updateOrderStatus(orderId, SaleOrder.SaleOrderStatus.DELIVERIED);
 
             ra.addFlashAttribute("success", "✅ Tạo phiếu xuất kho thành công. Mã phiếu: " + gin.getGinCode());
-            ra.addFlashAttribute("info", "📦 Trạng thái đơn hàng đã chuyển sang: Đã xuất kho");
+            return "redirect:/good-issue/view/" + gin.getGinId(); // chuyển sang chi tiết phiếu
         } catch (Exception e) {
             ra.addFlashAttribute("error", "Lỗi khi tạo phiếu xuất: " + e.getMessage());
+            return "redirect:/sale-orders/" + orderId + "/edit"; // QUAN TRỌNG: quay về đơn
         }
-
-        return "redirect:/good-issue";
     }
 
     @GetMapping("/view/{id}")

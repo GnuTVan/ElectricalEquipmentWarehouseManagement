@@ -13,6 +13,8 @@
         <section class="p-6">
             <h1 class="text-2xl font-bold mb-4">Tạo yêu cầu mua hàng</h1>
             <form th:action="@{/admin/purchase-requests}" th:object="${requestDTO}" method="post">
+                <input type="hidden" th:field="*{saleOrderId}"/>
+                <input type="hidden" th:field="*{createdByName}"/>
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Người tạo</label>
