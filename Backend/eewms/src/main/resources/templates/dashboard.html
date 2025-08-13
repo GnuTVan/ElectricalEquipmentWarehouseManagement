@@ -1,94 +1,339 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/common-head :: commonHead('Dashboard | Thiết bị điện Hải Phòng')}"></head>
-
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{fragments/common-head :: commonHead('Dashboard')}"></head>
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
-    <!-- Sidebar fragment -->
+    <!-- Sidebar -->
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-    <!-- Main Content -->
+    <!-- Main -->
     <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
-        <!-- Header -->
         <div th:replace="~{fragments/header :: header}"></div>
 
+        <section class="p-6 space-y-4">
+            <h1 class="text-2xl font-semibold">Tổng quan</h1>
 
-        <!-- Page Content -->
-        <div class="p-6">
-            <h1 class="text-2xl font-bold text-gray-800 mb-6">Bảng điều khiển</h1>
+            <!-- Preset ngày + bộ lọc + toggle tiền tệ -->
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" class="px-3 py-1 border rounded" data-preset="today">Hôm nay</button>
+                    <button type="button" class="px-3 py-1 border rounded" data-preset="week">Tuần này</button>
+                    <button type="button" class="px-3 py-1 border rounded" data-preset="month">Tháng này</button>
+                    <button type="button" class="px-3 py-1 border rounded" data-preset="quarter">Quý này</button>
+                    <button type="button" class="px-3 py-1 border rounded" data-preset="year">Năm nay</button>
+                </div>
 
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-6">
-                <div class="bg-white p-5 rounded-lg shadow flex items-center space-x-4">
-                    <div class="bg-blue-100 p-3 rounded-lg"><i class="ri-group-line text-2xl text-blue-600"></i></div>
-                    <div><p class="text-sm text-gray-500">Khách hàng</p><p class="text-2xl font-bold">558</p></div>
-                </div>
-                <div class="bg-white p-5 rounded-lg shadow flex items-center space-x-4">
-                    <div class="bg-green-100 p-3 rounded-lg"><i class="ri-wallet-3-line text-2xl text-green-600"></i></div>
-                    <div><p class="text-sm text-gray-500">Chi phí TB</p><p class="text-2xl font-bold">2,164K</p></div>
-                </div>
-                <div class="bg-white p-5 rounded-lg shadow flex items-center space-x-4">
-                    <div class="bg-yellow-100 p-3 rounded-lg"><i class="ri-user-star-line text-2xl text-yellow-600"></i></div>
-                    <div><p class="text-sm text-gray-500">Nhân viên</p><p class="text-2xl font-bold">112</p></div>
-                </div>
-                <div class="bg-white p-5 rounded-lg shadow flex items-center space-x-4">
-                    <div class="bg-purple-100 p-3 rounded-lg"><i class="ri-truck-line text-2xl text-purple-600"></i></div>
-                    <div><p class="text-sm text-gray-500">Phương tiện</p><p class="text-2xl font-bold">16</p></div>
-                </div>
-                <div class="bg-white p-5 rounded-lg shadow flex items-center space-x-4">
-                    <div class="bg-red-100 p-3 rounded-lg"><i class="ri-calendar-check-line text-2xl text-red-600"></i></div>
-                    <div><p class="text-sm text-gray-500">Cuộc hẹn</p><p class="text-2xl font-bold">220</p></div>
-                </div>
-                <div class="bg-white p-5 rounded-lg shadow flex items-center space-x-4">
-                    <div class="bg-indigo-100 p-3 rounded-lg"><i class="ri-compass-3-line text-2xl text-indigo-600"></i></div>
-                    <div><p class="text-sm text-gray-500">Vận hành</p><p class="text-2xl font-bold">10</p></div>
-                </div>
+                <form id="filterForm" method="get" class="flex items-center gap-2">
+                    <input id="fromDate" type="date" name="fromDate" th:value="${fromDate}" class="border rounded px-2 py-1">
+                    <span>—</span>
+                    <input id="toDate" type="date" name="toDate" th:value="${toDate}" class="border rounded px-2 py-1">
+                    <button class="px-3 py-1 bg-blue-600 text-white rounded">Lọc</button>
+                </form>
+
+                <label class="inline-flex items-center gap-2 select-none">
+                    <input id="fmtToggle" type="checkbox" class="h-4 w-4" checked>
+                    <span>Định dạng VND</span>
+                </label>
             </div>
 
             <!-- Charts -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="font-bold text-lg text-gray-700">Khách hàng theo Giới tính</h2>
-                        <select class="border rounded-md px-3 py-1 text-sm"><option>2024</option><option>2023</option></select>
-                    </div>
-                    <img src="https://placehold.co/600x300/f1f5f9/a0aec0?text=Bar+Chart+Placeholder" alt="Bar chart" class="w-full h-auto rounded-md">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="font-semibold mb-2">Số lượng nhập / xuất theo ngày</div>
+                    <canvas id="flowQtyChart" height="140"></canvas>
                 </div>
 
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="font-bold text-lg text-gray-700">Khách hàng theo Bộ phận</h2>
-                        <select class="border rounded-md px-3 py-1 text-sm"><option>Hôm nay</option><option>Tuần này</option><option>Tháng này</option></select>
-                    </div>
-                    <img src="https://placehold.co/300x300/f1f5f9/a0aec0?text=Donut+Chart+Placeholder" alt="Doughnut chart" class="w-full h-auto rounded-md">
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="font-semibold mb-2">Giá trị xuất kho theo ngày</div>
+                    <canvas id="flowAmtChart" height="140"></canvas>
                 </div>
             </div>
-        </div>
 
-        <!-- Footer -->
-        <div th:replace="~{fragments/footer :: footer}"></div>
+            <!-- KPIs -->
+            <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-3">
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="text-sm text-gray-500">Phiếu nhập</div>
+                    <div class="text-xl font-semibold num-plain" th:attr="data-value=${summary.receiptCount}" th:text="${summary.receiptCount}">0</div>
+                    <div class="text-sm text-gray-500 money" th:attr="data-value=${summary.receiptAmount}" th:text="${summary.receiptAmount}">0</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="text-sm text-gray-500">Phiếu xuất</div>
+                    <div class="text-xl font-semibold num-plain" th:attr="data-value=${summary.issueCount}" th:text="${summary.issueCount}">0</div>
+                    <div class="text-sm text-gray-500 money" th:attr="data-value=${summary.issueAmount}" th:text="${summary.issueAmount}">0</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="text-sm text-gray-500">Chênh lệch SL (Nhập − Xuất)</div>
+                    <div class="text-xl font-semibold num-plain" th:attr="data-value=${summary.netQty}" th:text="${summary.netQty}">0</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="text-sm text-gray-500">Giá trị tồn kho</div>
+                    <div class="text-xl font-semibold money" th:attr="data-value=${summary.inventoryValue}" th:text="${summary.inventoryValue}">0</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="text-sm text-gray-500">Sắp hết hàng</div>
+                    <div class="text-xl font-semibold num-plain" th:attr="data-value=${summary.lowStockCount}" th:text="${summary.lowStockCount}">0</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="text-sm text-gray-500">Đơn chưa hoàn tất</div>
+                    <div class="text-xl font-semibold num-plain" th:attr="data-value=${summary.pendingOrdersCount}" th:text="${summary.pendingOrdersCount}">0</div>
+                </div>
+            </div>
+
+            <!-- Cảnh báo tồn kho & hoạt động gần đây -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="font-semibold mb-2">Sắp hết hàng (Top 10)</div>
+                    <div class="overflow-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-gray-50">
+                            <tr>
+                                <th class="text-left p-2">Sản phẩm</th>
+                                <th class="text-right p-2">Tồn</th>
+                                <th class="text-right p-2">Giá niêm yết</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="p : ${lowStock}">
+                                <td class="p-2" th:text="${p.name}">SP A</td>
+                                <td class="p-2 text-right num-plain" th:attr="data-value=${p.quantity}" th:text="${p.quantity}">0</td>
+                                <td class="p-2 text-right money" th:attr="data-value=${p.listingPrice}" th:text="${p.listingPrice}">0</td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(lowStock)}">
+                                <td colspan="3" class="p-2 text-center text-gray-500">Không có dữ liệu</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="font-semibold mb-2">Hoạt động gần đây</div>
+                    <div class="overflow-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-gray-50">
+                            <tr>
+                                <th class="text-left p-2">Loại</th>
+                                <th class="text-left p-2">Mã</th>
+                                <th class="text-left p-2">Đối tác</th>
+                                <th class="text-left p-2">Ngày</th>
+                                <th class="text-right p-2">Tiền</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="a : ${recent}">
+                                <td class="p-2" th:text="${a.type}">ISSUE</td>
+                                <td class="p-2" th:text="${a.code}">PXK0001</td>
+                                <td class="p-2" th:text="${a.partnerName}">KH A</td>
+                                <td class="p-2" th:text="${#temporals.format(a.dateTime, 'yyyy-MM-dd HH:mm')}">2025-08-12</td>
+                                <td class="p-2 text-right money" th:attr="data-value=${a.amount}" th:text="${a.amount}">0</td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(recent)}">
+                                <td colspan="5" class="p-2 text-center text-gray-500">Không có dữ liệu</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top lists -->
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="font-semibold mb-2">Top 3 Nhà cung cấp</div>
+                    <ol class="space-y-1">
+                        <li th:each="s,st : ${topSuppliers}">
+                            <span class="font-medium" th:text="${st.index + 1} + '. ' + ${s.supplierName}">1. NCC A</span>
+                            <span class="block text-sm text-gray-500 money" th:attr="data-value=${s.totalAmount}" th:text="${s.totalAmount}">0</span>
+                        </li>
+                        <li th:if="${#lists.isEmpty(topSuppliers)}" class="text-gray-500 text-sm">Không có dữ liệu</li>
+                    </ol>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="font-semibold mb-2">Top 3 Nhân viên bán hàng</div>
+                    <ol class="space-y-1">
+                        <li th:each="u,st : ${topSalespeople}">
+                            <span class="font-medium" th:text="${st.index + 1} + '. ' + ${u.userName}">1. NV A</span>
+                            <span class="block text-sm text-gray-500">
+                                <span class="money" th:attr="data-value=${u.totalSales}" th:text="${u.totalSales}">0</span>
+                                <span class="ml-1 text-gray-400">(ĐH: <span th:text="${u.orderCount}">0</span>)</span>
+                            </span>
+                        </li>
+                        <li th:if="${#lists.isEmpty(topSalespeople)}" class="text-gray-500 text-sm">Không có dữ liệu</li>
+                    </ol>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="font-semibold mb-2">Top 3 SP bán chạy</div>
+                    <ol class="space-y-1">
+                        <li th:each="p,st : ${topIssued}">
+                            <span class="font-medium" th:text="${st.index + 1} + '. ' + ${p.productName}">1. SP A</span>
+                            <span class="block text-sm text-gray-500 num-plain" th:attr="data-value=${p.totalQuantity}" th:text="${p.totalQuantity}">0</span>
+                        </li>
+                        <li th:if="${#lists.isEmpty(topIssued)}" class="text-gray-500 text-sm">Không có dữ liệu</li>
+                    </ol>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="font-semibold mb-2">Top 3 Combo thi công</div>
+                    <ol class="space-y-1">
+                        <li th:each="c,st : ${topCombos}">
+                            <span class="font-medium" th:text="${st.index + 1} + '. ' + ${c.comboName}">1. Combo A</span>
+                            <span class="block text-sm text-gray-500 num-plain" th:attr="data-value=${c.totalQuantity}" th:text="${c.totalQuantity}">0</span>
+                        </li>
+                        <li th:if="${#lists.isEmpty(topCombos)}" class="text-gray-500 text-sm">Không có dữ liệu</li>
+                    </ol>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="font-semibold mb-2">Top 3 Khách hàng tiềm năng</div>
+                    <ol class="space-y-1">
+                        <li th:each="c,st : ${topCustomers}">
+                            <span class="font-medium" th:text="${st.index + 1} + '. ' + ${c.customerName}">1. KH A</span>
+                            <span class="block text-sm text-gray-500">
+                                <span class="money" th:attr="data-value=${c.totalSales}" th:text="${c.totalSales}">0</span>
+                                <span class="ml-1 text-gray-400">(ĐH: <span th:text="${c.orderCount}">0</span>)</span>
+                            </span>
+                        </li>
+                        <li th:if="${#lists.isEmpty(topCustomers)}" class="text-gray-500 text-sm">Không có dữ liệu</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== LIBS: Chart.js trước khi khởi tạo ===== -->
+        <!-- Nếu không ra Internet, tải về /static/js/chart.umd.min.js và dùng th:src -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+        <!-- ===== SCRIPT CHUNG: preset, format, và CHARTS ===== -->
+        <script th:inline="javascript">
+            (function(){
+                // --- PRESETS ---
+                const fromEl=document.getElementById('fromDate');
+                const toEl=document.getElementById('toDate');
+                const form=document.getElementById('filterForm');
+
+                function fmt(d){ return d.toISOString().slice(0,10); }
+                function startOfWeek(d){ const day=d.getDay(); const diff=(day===0?-6:1-day); const r=new Date(d); r.setDate(d.getDate()+diff); return r; }
+                function endOfWeek(d){ const s=startOfWeek(d); const r=new Date(s); r.setDate(s.getDate()+6); return r; }
+                function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+                function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0); }
+                function startOfQuarter(d){ const m=Math.floor(d.getMonth()/3)*3; return new Date(d.getFullYear(), m, 1); }
+                function endOfQuarter(d){ const s=startOfQuarter(d); return new Date(s.getFullYear(), s.getMonth()+3, 0); }
+                function startOfYear(d){ return new Date(d.getFullYear(), 0, 1); }
+                function endOfYear(d){ return new Date(d.getFullYear(), 11, 31); }
+
+                document.querySelectorAll('[data-preset]').forEach(btn=>{
+                  btn.addEventListener('click', ()=>{
+                    const now=new Date(); let f=now, t=now;
+                    switch(btn.dataset.preset){
+                      case 'today': f=t=now; break;
+                      case 'week': f=startOfWeek(now); t=endOfWeek(now); break;
+                      case 'month': f=startOfMonth(now); t=endOfMonth(now); break;
+                      case 'quarter': f=startOfQuarter(now); t=endOfQuarter(now); break;
+                      case 'year': f=startOfYear(now); t=endOfYear(now); break;
+                    }
+                    fromEl.value = fmt(f); toEl.value = fmt(t); form.submit();
+                  });
+                });
+
+                // --- VND TOGGLE & FORMAT ---
+                const toggle=document.getElementById('fmtToggle');
+                const nfVND=new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0});
+                function asNumber(raw){ const n=Number(raw); return isNaN(n)?0:n; }
+                function applyFormat(){
+                  document.querySelectorAll('.money').forEach(el=>{
+                    const n=asNumber(el.getAttribute('data-value')||'0');
+                    el.textContent = toggle.checked ? nfVND.format(n) :
+                        n.toLocaleString('en-US',{useGrouping:false,maximumFractionDigits:0});
+                  });
+                  document.querySelectorAll('.num-plain').forEach(el=>{
+                    const n=asNumber(el.getAttribute('data-value')||'0');
+                    el.textContent = toggle.checked ? n.toLocaleString('vi-VN') :
+                        n.toLocaleString('en-US',{useGrouping:false,maximumFractionDigits:0});
+                  });
+                }
+                toggle.addEventListener('change', applyFormat); applyFormat();
+
+                // --- DỮ LIỆU FLOWS (JSON an toàn) ---
+                const flows = /*[[${flows}]]*/ [];
+                console.table(flows.slice(0,5));
+                // flows[i] có dạng: {day:"yyyy-MM-dd", receiptQty:0, issueQty:0, receiptAmount:0, issueAmount:0}
+                const labels = (flows||[]).map(x => (x && x.day) ? String(x.day) : '');
+                const qtyIn  = (flows||[]).map(x => Number(x?.receiptQty||0));
+                const qtyOut = (flows||[]).map(x => Number(x?.issueQty||0));
+                const amtOut = (flows||[]).map(x => Number(x?.issueAmount||0));
+
+                // --- CHARTS ---
+                if (typeof Chart !== 'undefined') {
+                  const qtyCtx = document.getElementById('flowQtyChart')?.getContext('2d');
+                  if (qtyCtx) {
+                    const qtyChart = new Chart(qtyCtx, {
+                      type: 'line',
+                      data: {
+                        labels,
+                        datasets: [
+                          { label: 'Nhập', data: qtyIn,  tension: 0.3, fill: false },
+                          { label: 'Xuất', data: qtyOut, tension: 0.3, fill: false }
+                        ]
+                      },
+                      options: {
+                        responsive: true,
+                        interaction: { mode: 'index', intersect: false },
+                        scales: { y: { beginAtZero: true, ticks: { callback: v => Number(v).toLocaleString('vi-VN') } } },
+                        plugins: {
+                          legend: { display: true },
+                          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${Number(ctx.parsed.y||0).toLocaleString('vi-VN')}` } }
+                        }
+                      }
+                    });
+
+                    const amtCtx = document.getElementById('flowAmtChart')?.getContext('2d');
+                    const amtChart = new Chart(amtCtx, {
+                      type: 'bar',
+                      data: { labels, datasets: [{ label: 'Giá trị xuất', data: amtOut }] },
+                      options: {
+                        responsive: true,
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                            ticks: { callback: v => toggle?.checked ? nfVND.format(Number(v)) : Number(v) }
+                          }
+                        },
+                        plugins: {
+                          legend: { display: true },
+                          tooltip: {
+                            callbacks: {
+                              label: (ctx) => toggle?.checked
+                                ? `Giá trị xuất: ${nfVND.format(Number(ctx.parsed.y||0))}`
+                                : `Giá trị xuất: ${Number(ctx.parsed.y||0)}`
+                            }
+                          }
+                        }
+                      }
+                    });
+
+                    toggle?.addEventListener('change', ()=>{ qtyChart.update(); amtChart.update(); });
+                  }
+                }
+            })();
+
+                const btn = document.getElementById("userMenuBtn");
+                const dropdown = document.getElementById("userMenuDropdown");
+                btn?.addEventListener("click", () => {
+                dropdown?.classList.toggle("hidden");
+                });
+                document.addEventListener("click", (event) => {
+                if (!event.target.closest("#userMenuWrapper")) {
+                dropdown?.classList.add("hidden");
+                }
+                });
+
+        </script>
     </main>
 </div>
-<script>
-const btn = document.getElementById('userMenuBtn');
-const dropdown = document.getElementById('userMenuDropdown');
 
-btn.addEventListener('click', function(event) {
-    event.stopPropagation();
-    dropdown.classList.toggle('hidden');
-});
-
-document.addEventListener('click', function() {
-    if (!dropdown.classList.contains('hidden')) {
-        dropdown.classList.add('hidden');
-    }
-});
-
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        dropdown.classList.add('hidden');
-    }
-});
-</script>
+<div th:replace="~{fragments/footer :: footer}"></div>
+<div th:replace="~{fragments/toast-script :: toast-script}"></div>
 </body>
 </html>

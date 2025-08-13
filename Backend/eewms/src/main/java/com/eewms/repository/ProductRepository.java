@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -117,5 +118,13 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     @EntityGraph(attributePaths = "suppliers")
     List<Product> findAll();
 
-    List<Product> findBySuppliers_Id(Long supplierId);
+    // top tồn thấp
+    List<Product> findTop10ByOrderByQuantityAsc();
+
+    // tổng giá trị tồn kho
+    @Query("""
+      select coalesce(sum( coalesce(p.listingPrice, 0) * coalesce(p.quantity, 0) ), 0)
+      from Product p
+    """)
+    BigDecimal sumInventoryValue();
 }
