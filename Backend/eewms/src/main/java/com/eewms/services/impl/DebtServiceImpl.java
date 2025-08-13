@@ -33,28 +33,34 @@ public class DebtServiceImpl implements IDebtService {
         var wr = warehouseReceiptRepository.findById(warehouseReceiptId)
                 .orElseThrow(() -> new IllegalArgumentException("WarehouseReceipt not found: " + warehouseReceiptId));
 
-        // 1) Tổng tiền
+        // 1) Tính tổng tiền
         BigDecimal total = computeTotal(wr);
 
-        // 2) Supplier (qua PO)
+        // 2) Lấy nhà cung cấp từ PO
         var po = wr.getPurchaseOrder();
         var supplier = (po != null) ? po.getSupplier() : null;
         if (supplier == null) {
             throw new IllegalStateException("Supplier is required on receipt (via Purchase Order).");
         }
 
-        // 3) Không tạo trùng 1 receipt
-        var existed = debtRepository.findByWarehouseReceiptId(wr.getId());
+        // 3) Dedupe theo documentType + documentId (chuẩn hóa)
+        var existed = debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.WAREHOUSE_RECEIPT, wr.getId());
         if (existed.isPresent()) return existed.get();
 
-        // 4) Ngày hóa đơn & hạn
+        // 4) Ngày hóa đơn & hạn thanh toán
         LocalDate invoiceDate = (wr.getCreatedAt() != null) ? wr.getCreatedAt().toLocalDate() : LocalDate.now();
         LocalDate dueDate = invoiceDate.plusDays(Math.max(0, termDays));
 
+        // 5) Tạo Debt
         Debt debt = Debt.builder()
+                .partyType(Debt.PartyType.SUPPLIER)
+                .documentType(Debt.DocumentType.WAREHOUSE_RECEIPT)
+                .documentId(wr.getId())
+
                 .supplier(supplier)
                 .warehouseReceipt(wr)
                 .purchaseOrder(po)
+
                 .totalAmount(total)
                 .paidAmount(BigDecimal.ZERO)
                 .status(Debt.Status.UNPAID)
@@ -64,7 +70,7 @@ public class DebtServiceImpl implements IDebtService {
 
         debt = debtRepository.save(debt);
 
-        // 5) Thanh toán ngay => tạo payment full
+        // 6) Nếu trả ngay (termDays == 0) -> tạo payment full; ngược lại cập nhật trạng thái
         if (termDays == 0) {
             pay(debt.getId(), total, DebtPayment.Method.CASH, invoiceDate,
                     "AUTO-IMMEDIATE", "Auto pay on receipt confirm");
@@ -122,6 +128,8 @@ public class DebtServiceImpl implements IDebtService {
         return recomputeAndSave(debt);
     }
 
+    /* ============================ Helpers ============================ */
+
     private Debt recomputeAndSave(Debt debt) {
         BigDecimal total = (debt.getTotalAmount() == null) ? BigDecimal.ZERO : debt.getTotalAmount();
         BigDecimal paid  = (debt.getPaidAmount() == null) ? BigDecimal.ZERO : debt.getPaidAmount();
@@ -132,6 +140,7 @@ public class DebtServiceImpl implements IDebtService {
         else if (cmp < 0)       s = Debt.Status.PARTIAL;
         else                    s = Debt.Status.PAID;
 
+        // Quá hạn nếu chưa PAID và đã quá dueDate
         if (s != Debt.Status.PAID && debt.getDueDate() != null && LocalDate.now().isAfter(debt.getDueDate())) {
             s = Debt.Status.OVERDUE;
         }
@@ -139,7 +148,9 @@ public class DebtServiceImpl implements IDebtService {
         return debtRepository.save(debt);
     }
 
-    /** Tính tổng: ưu tiên WR items -> PO items -> PO.totalAmount */
+    /**
+     * Tính tổng: ưu tiên WR items -> PO items -> PO.totalAmount
+     */
     private BigDecimal computeTotal(WarehouseReceipt wr) {
         // a) Tổng trên dòng phiếu nhập
         var wrItems = warehouseReceiptItemRepository.findByWarehouseReceipt(wr);

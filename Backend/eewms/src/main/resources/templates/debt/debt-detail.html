@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{fragments/common-head :: commonHead('Chi tiết công nợ')}"></head>
+<body class="bg-gray-100">
+<div class="flex min-h-screen">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+  <main class="flex-1 ml-64 p-6">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div class="mb-4 flex justify-between">
+      <h1 class="text-2xl font-bold">Chi tiết công nợ</h1>
+      <a href="/debts" class="px-3 py-1 bg-gray-200 rounded">Quay lại</a>
+    </div>
+
+    <div class="bg-white p-6 rounded shadow mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div><span class="font-semibold">Đối tác: </span>
+          <span th:text="${debt.supplier != null ? debt.supplier.name : (debt.customer != null ? debt.customer.name : '')}"></span>
+        </div>
+        <div><span class="font-semibold">Trạng thái: </span><span th:text="${debt.status}"></span></div>
+        <div><span class="font-semibold">Ngày hóa đơn: </span><span th:text="${debt.invoiceDate}"></span></div>
+        <div><span class="font-semibold">Hạn thanh toán: </span><span th:text="${debt.dueDate}"></span></div>
+        <div><span class="font-semibold">Chứng từ gốc: </span>
+          <a th:if="${documentUrl != null}" th:href="${documentUrl}" target="_blank"
+             class="text-blue-700 underline" th:text="${documentCode}">Xem</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded shadow mb-6">
+      <h2 class="font-semibold mb-3">Số tiền</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div><span class="font-semibold">Tổng: </span><span th:text="${#numbers.formatInteger(total,3,'POINT')}"></span></div>
+        <div><span class="font-semibold">Đã trả: </span><span th:text="${#numbers.formatInteger(paid,3,'POINT')}"></span></div>
+        <div><span class="font-semibold">Còn lại: </span><span th:text="${#numbers.formatInteger(remaining,3,'POINT')}"></span></div>
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded shadow">
+      <h2 class="font-semibold mb-3">Lịch sử thanh toán</h2>
+      <table class="min-w-full table-auto text-sm">
+        <thead class="bg-gray-100">
+        <tr>
+          <th class="px-4 py-2 text-left">Ngày</th>
+          <th class="px-4 py-2 text-left">Phương thức</th>
+          <th class="px-4 py-2 text-left">Mã tham chiếu</th>
+          <th class="px-4 py-2 text-right">Số tiền</th>
+          <th class="px-4 py-2 text-left">Ghi chú</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="p : ${payments}" class="border-t">
+          <td class="px-4 py-2" th:text="${p.paymentDate}"></td>
+          <td class="px-4 py-2" th:text="${p.method}"></td>
+          <td class="px-4 py-2" th:text="${p.referenceNo}"></td>
+          <td class="px-4 py-2 text-right" th:text="${#numbers.formatInteger(p.amount,3,'POINT')}"></td>
+          <td class="px-4 py-2" th:text="${p.note}"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

@@ -2,76 +2,87 @@ package com.eewms.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.*;
 
 @Entity
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 @Table(name = "debts",
         indexes = {
-                @Index(name = "idx_debt_supplier", columnList = "supplier_id"),
-                @Index(name = "idx_debt_due_date", columnList = "dueDate"),
-                @Index(name = "idx_debt_status", columnList = "status")
-        })
+                @Index(name = "idx_debt_party_type", columnList = "party_type"),
+                @Index(name = "idx_debt_status", columnList = "status"),
+                @Index(name = "idx_debt_due_date", columnList = "due_date"),
+                @Index(name = "idx_debt_document", columnList = "document_type, document_id")
+        }
+)
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Debt {
 
     public enum Status { UNPAID, PARTIAL, PAID, OVERDUE }
+    public enum PartyType { SUPPLIER, CUSTOMER }
+    public enum DocumentType { WAREHOUSE_RECEIPT, SALES_INVOICE, OTHER }
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    private Supplier supplier;
+    // === NEW: dùng chung cho NCC & KH ===
+    @Enumerated(EnumType.STRING)
+    @Column(name = "party_type", nullable = false)
+    private PartyType partyType = PartyType.SUPPLIER; // default cho dữ liệu hiện tại
 
-    // tạo nợ khi xác nhận phiếu nhập
-    @ManyToOne(fetch = FetchType.LAZY)
-    private WarehouseReceipt warehouseReceipt;
-
-    // tùy chọn: truy dấu ngược về PO
-    @ManyToOne(fetch = FetchType.LAZY)
-    private PurchaseOrder purchaseOrder;
-
-    @Column(nullable = false, precision = 18, scale = 2)
-    private BigDecimal totalAmount;
-
-    @Column(nullable = false, precision = 18, scale = 2)
-    private BigDecimal paidAmount;
+    // Nếu chưa có Customer entity thì để customerId dạng Long để compile an toàn
+    @Column(name = "customer_id")
+    private Long customerId; // sau này đổi sang ManyToOne Customer
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 16)
-    private Status status;
+    @Column(name = "document_type", nullable = false)
+    private DocumentType documentType = DocumentType.WAREHOUSE_RECEIPT;
 
-    private LocalDate invoiceDate; // = ngày tạo phiếu nhập
-    private LocalDate dueDate;     // = invoiceDate + 0/7/10
+    @Column(name = "document_id")
+    private Long documentId;
+
+    // === Các field cũ vẫn giữ nguyên ===
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supplier_id", nullable = false)  // hiện tại vẫn là NCC
+    private Supplier supplier;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "warehouse_receipt_id")
+    private WarehouseReceipt warehouseReceipt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "purchase_order_id")
+    private PurchaseOrder purchaseOrder;
+
+    private LocalDate invoiceDate;
+    private LocalDate dueDate;
+
+    @Column(nullable = false, precision = 18, scale = 2)
+    private BigDecimal totalAmount = BigDecimal.ZERO;
+
+    @Column(nullable = false, precision = 18, scale = 2)
+    private BigDecimal paidAmount = BigDecimal.ZERO;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status status = Status.UNPAID;
 
     @Column(length = 500)
     private String note;
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    private java.time.LocalDateTime createdAt;
 
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
-
-    @OneToMany(mappedBy = "debt", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<DebtPayment> payments = new ArrayList<>();
+    @Column(name = "updated_at", nullable = false)
+    private java.time.LocalDateTime updatedAt;
 
     @PrePersist
-    void prePersist() {
-        LocalDateTime now = LocalDateTime.now();
-        if (createdAt == null) createdAt = now;
-        if (updatedAt == null) updatedAt = now;
-        if (paidAmount == null) paidAmount = BigDecimal.ZERO;
-        if (status == null) status = Status.UNPAID;
+    public void prePersist() {
+        var now = java.time.LocalDateTime.now();
+        this.createdAt = now; this.updatedAt = now;
     }
-
     @PreUpdate
-    void preUpdate() { updatedAt = LocalDateTime.now(); }
-
-    public BigDecimal getRemaining() {
-        return (totalAmount == null ? BigDecimal.ZERO : totalAmount)
-                .subtract(paidAmount == null ? BigDecimal.ZERO : paidAmount);
+    public void preUpdate() {
+        this.updatedAt = java.time.LocalDateTime.now();
     }
 }

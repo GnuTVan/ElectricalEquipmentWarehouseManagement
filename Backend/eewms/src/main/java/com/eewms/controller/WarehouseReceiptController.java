@@ -5,11 +5,16 @@ import com.eewms.entities.*;
 import com.eewms.repository.*;
 import com.eewms.repository.warehouseReceipt.WarehouseReceiptItemRepository;
 import com.eewms.repository.warehouseReceipt.WarehouseReceiptRepository;
-import com.eewms.services.IWarehouseReceiptService;
 import com.eewms.services.IDebtService;
-import com.lowagie.text.*;
-import com.lowagie.text.Font;
+import com.eewms.services.IWarehouseReceiptService;
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.Element;
+import com.lowagie.text.PageSize;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Phrase;
 import com.lowagie.text.Rectangle;
+import com.lowagie.text.Font;
 import com.lowagie.text.pdf.BaseFont;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
@@ -21,7 +26,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.awt.*;
+import java.awt.Color;
 import java.io.File;
 import java.io.OutputStream;
 import java.math.BigDecimal;
@@ -31,8 +36,11 @@ import java.security.Principal;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Controller
@@ -57,10 +65,12 @@ public class WarehouseReceiptController {
     public String listReceipts(Model model) {
         List<WarehouseReceipt> receipts = warehouseReceiptRepository.findAll();
 
+        // Map receiptId -> có công nợ?
         Map<Long, Boolean> hasDebt = receipts.stream()
                 .collect(Collectors.toMap(
                         WarehouseReceipt::getId,
-                        r -> debtRepository.existsByWarehouseReceiptId(r.getId())
+                        r -> debtRepository.existsByDocumentTypeAndDocumentId(
+                                Debt.DocumentType.WAREHOUSE_RECEIPT, r.getId())
                 ));
 
         model.addAttribute("receipts", receipts);
@@ -120,7 +130,8 @@ public class WarehouseReceiptController {
         model.addAttribute("receipt", receipt);
         model.addAttribute("items", items);
 
-        debtRepository.findByWarehouseReceiptId(id).ifPresent(d -> {
+        // Công nợ + lịch sử thanh toán
+        debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.WAREHOUSE_RECEIPT, id).ifPresent(d -> {
             model.addAttribute("debt", d);
             model.addAttribute("payments", debtPaymentRepository.findByDebt(d));
         });
@@ -135,17 +146,19 @@ public class WarehouseReceiptController {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu nhập"));
         List<WarehouseReceiptItem> items = warehouseReceiptItemRepository.findByWarehouseReceipt(receipt);
         PurchaseOrder order = receipt.getPurchaseOrder();
-        Supplier supplier = order.getSupplier();
+        Supplier supplier = (order != null) ? order.getSupplier() : null;
 
         // === Trạng thái thanh toán & số liệu công nợ ===
-        var optDebt = debtRepository.findByWarehouseReceiptId(id);
+        var optDebt = debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.WAREHOUSE_RECEIPT, id);
         String paymentStatus = "Chưa thanh toán";
         if (optDebt.isPresent()) {
-            String st = String.valueOf(optDebt.get().getStatus());
-            if ("PAID".equals(st)) paymentStatus = "Đã thanh toán";
-            else if ("PARTIAL".equals(st)) paymentStatus = "Thanh toán một phần";
-            else if ("UNPAID".equals(st)) paymentStatus = "Chưa thanh toán";
-            else if ("OVERDUE".equals(st)) paymentStatus = "Chưa thanh toán (Quá hạn)";
+            Debt.Status st = optDebt.get().getStatus();
+            switch (st) {
+                case PAID -> paymentStatus = "Đã thanh toán";
+                case PARTIAL -> paymentStatus = "Thanh toán một phần";
+                case UNPAID -> paymentStatus = "Chưa thanh toán";
+                case OVERDUE -> paymentStatus = "Chưa thanh toán (Quá hạn)";
+            }
         }
 
         response.setContentType("application/pdf");
@@ -186,7 +199,7 @@ public class WarehouseReceiptController {
             info.addCell(cellLabel("Mã phiếu:", H2));
             info.addCell(cellText(receipt.getCode(), N));
             info.addCell(cellLabel("Đơn hàng:", H2));
-            info.addCell(cellText(order.getCode(), N));
+            info.addCell(cellText(order != null ? order.getCode() : "", N));
             info.addCell(cellLabel("Kho:", H2));
             info.addCell(cellText(receipt.getWarehouse().getName(), N));
             info.addCell(cellLabel("Ngày tạo:", H2));
@@ -245,7 +258,6 @@ public class WarehouseReceiptController {
             // ---- Tổng / Đã trả / Còn lại ----
             BigDecimal grand = optDebt.map(Debt::getTotalAmount).orElse(itemsSum);
             BigDecimal paid = optDebt.map(d -> {
-                // ưu tiên trường paidAmount nếu có; nếu không cộng từ payments
                 BigDecimal p = d.getPaidAmount();
                 if (p != null) return p;
                 return debtPaymentRepository.findByDebt(d).stream()
@@ -271,7 +283,7 @@ public class WarehouseReceiptController {
             totalVal.setPadding(6);
             tbl.addCell(totalVal);
 
-            // ĐÃ TRẢ
+            // Đã trả
             PdfPCell paidLabel = new PdfPCell(new Phrase("Đã trả", NB));
             paidLabel.setColspan(4);
             paidLabel.setHorizontalAlignment(Element.ALIGN_RIGHT);
@@ -283,7 +295,7 @@ public class WarehouseReceiptController {
             paidVal.setPadding(6);
             tbl.addCell(paidVal);
 
-            // CÒN LẠI
+            // Còn lại
             PdfPCell remainLabel = new PdfPCell(new Phrase("Còn lại", NB));
             remainLabel.setColspan(4);
             remainLabel.setHorizontalAlignment(Element.ALIGN_RIGHT);
@@ -308,19 +320,19 @@ public class WarehouseReceiptController {
         }
     }
 
-
     /** Xác nhận phiếu nhập + tạo công nợ (hạn 0/7/10 ngày) */
     @PostMapping("/{id}/confirm")
     public String confirm(@PathVariable Long id,
                           @RequestParam(defaultValue = "7") int termDays,
                           RedirectAttributes ra) {
 
-        WarehouseReceipt wr = warehouseReceiptRepository.findById(id)
+        warehouseReceiptRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu nhập"));
 
         debtService.createDebtForReceipt(id, termDays);
 
-        ra.addFlashAttribute("message", "Đã xác nhận nhập kho và tạo công nợ (hạn " + termDays + " ngày).");
+        ra.addFlashAttribute("message",
+                "Đã xác nhận nhập kho và tạo công nợ (hạn " + termDays + " ngày).");
         ra.addFlashAttribute("messageType", "success");
         return "redirect:/admin/warehouse-receipts";
     }
@@ -344,10 +356,11 @@ public class WarehouseReceiptController {
                 "/System/Library/Fonts/Supplemental/Arial.ttf"
         );
         for (String p : candidates) {
-            if (new File(p).exists()) {
+            if (new File(p).exists()) { // <-- đã sửa bỏ dấu ')' thừa
                 return BaseFont.createFont(p, BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
             }
         }
+        // Fallback: không hỗ trợ tiếng Việt đầy đủ
         return BaseFont.createFont(BaseFont.HELVETICA, BaseFont.WINANSI, BaseFont.NOT_EMBEDDED);
     }
 
@@ -415,9 +428,5 @@ public class WarehouseReceiptController {
     private String fmtInt(BigDecimal v) {
         if (v == null) return "0";
         return v.stripTrailingZeros().toPlainString();
-    }
-
-    private String nullToEmpty(String s) {
-        return s == null ? "" : s;
     }
 }
