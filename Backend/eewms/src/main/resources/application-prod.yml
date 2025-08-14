@@ -1,5 +1,8 @@
 server:
   port: 8080
+  error:
+    whitelabel:
+      enabled: false
 
 spring:
   datasource:
@@ -28,3 +31,13 @@ logging:
     root: INFO
     org.hibernate.SQL: WARN
     org.springframework.web: INFO
+payos:
+  clientId: ${PAYOS_CLIENT_ID}
+  apiKey: ${PAYOS_API_KEY}
+  webhookSecret: ${PAYOS_WEBHOOK_SECRET}
+  base-url: ${PAYOS_BASE_URL:https://api-merchant.payos.vn}
+
+cloudinary:
+  cloud_name: ${CLOUDINARY_CLOUD}
+  api_key: ${CLOUDINARY_KEY}
+  api_secret: ${CLOUDINARY_SECRET}
