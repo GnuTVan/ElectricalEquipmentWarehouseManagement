@@ -3,6 +3,7 @@ package com.eewms.entities;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+
 import java.math.BigDecimal;
 
 import java.time.LocalDateTime;
@@ -52,6 +53,7 @@ public class SaleOrder {
     private List<SaleOrderDetail> details;
 
 
+    @Getter
     public enum SaleOrderStatus {
         PENDING("Chờ lấy hàng"),
         PROCESSING("Đang xử lý"),
@@ -64,21 +66,30 @@ public class SaleOrder {
             this.label = label;
         }
 
-        public String getLabel() {
-            return label;
-        }
     }
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_status", nullable = false, length = 16)
-    private PaymentStatus paymentStatus = PaymentStatus.NONE;
-
-    public enum PaymentStatus {
-        NONE,UNPAID, PARTIAL, PAID
-    }
     //danh sach combo
     @OneToMany(mappedBy = "saleOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private java.util.List<SaleOrderCombo> combos = new java.util.ArrayList<>();
 
+
+    //PAYOS
+    public enum PaymentStatus {
+        PENDING, // Chưa thanh toán hoặc đang chờ thanh toán
+        PAID,    // Đã thanh toán
+        FAILED   // Thanh toán thất bại hoặc bị hủy
+    }
+
+    @Column(name = "payos_order_code", length = 100)
+    private String payOsOrderCode;
+
+    //Mặc định là PENDING, với đơn thanh toán luôn thì override từ khâu khởi tạo đơn hàng
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", length = 20)
+    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
+
+    //Ghi chú thanh toán, vd: "Thanh toan don hang ORD-XXXXX, so tien xxxx vnd"
+    @Column(name = "payment_note", length = 255)
+    private String paymentNote;
 }

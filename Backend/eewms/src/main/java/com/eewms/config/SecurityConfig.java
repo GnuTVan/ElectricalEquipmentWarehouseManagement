@@ -29,21 +29,23 @@ public class SecurityConfig {
                 // ✅ Bật lại CSRF và dùng Cookie để cấp token ngay cả khi chưa login
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .ignoringRequestMatchers("/api/webhooks/payos")
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.POST, "/api/webhooks/payos").permitAll()
                         // Public/static
                         .requestMatchers("/", "/landing/**",
                                 "/css/**", "/js/**", "/images/**", "/assets/**",
                                 "/login", "/activate", "/activate/**").permitAll()
 
+
                         // Common authenticated
                         .requestMatchers("/account/info", "/account/update-profile", "/api/tax-lookup/**").authenticated()
-
                         //Purchase Requests: STAFF được 2 GET cụ thể (đặt TRƯỚC rule rộng cho Manager)
                         .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/create-from-sale-order/**")
-                        .hasAnyRole("ADMIN","MANAGER","STAFF")
+                        .hasAnyRole("ADMIN", "MANAGER", "STAFF")
                         .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/*") // ví dụ /admin/purchase-requests/{id}
-                        .hasAnyRole("ADMIN","MANAGER","STAFF")
+                        .hasAnyRole("ADMIN", "MANAGER", "STAFF")
 
                         //ADMIN
                         .requestMatchers("/admin/users/**").hasRole("ADMIN")
@@ -58,11 +60,11 @@ public class SecurityConfig {
                         .requestMatchers("/products/**").hasAnyRole("MANAGER")
                         .requestMatchers("/product-list/**").hasAnyRole("MANAGER")
                         //MANAGER + ADMIN
-                        .requestMatchers("/admin/reports/issues/**").hasAnyRole("ADMIN","MANAGER")
-                        .requestMatchers("/admin/reports/receipts/**").hasAnyRole("ADMIN","MANAGER")
+                        .requestMatchers("/admin/reports/issues/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/admin/reports/receipts/**").hasAnyRole("ADMIN", "MANAGER")
 
                         //STAFF
-                        .requestMatchers("/debts/**").hasAnyRole("MANAGER","STAFF") //Manager cũng được xem công nợ
+                        .requestMatchers("/debts/**").hasAnyRole("MANAGER", "STAFF") //Manager cũng được xem công nợ
                         .requestMatchers("/sale-orders/**").hasAnyRole("STAFF")
                         .requestMatchers("/good-issue/**").hasAnyRole("STAFF")
                         .requestMatchers("/customers/**").hasAnyRole("STAFF")
@@ -72,7 +74,7 @@ public class SecurityConfig {
 
 
                         //Purchase Requests (Y/C Mua) (POST): Staff chỉ được POST create; các POST khác chỉ Manager/Admin
-                        .requestMatchers(HttpMethod.POST, "/admin/purchase-requests").hasAnyRole("MANAGER","STAFF") // create PostMapping không path
+                        .requestMatchers(HttpMethod.POST, "/admin/purchase-requests").hasAnyRole("MANAGER", "STAFF") // create PostMapping không path
                         .requestMatchers(HttpMethod.POST, "/admin/purchase-requests/**").hasAnyRole("MANAGER")      // /{id}/status, /{id}/update, /{id}/generate-po
 
 

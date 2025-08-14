@@ -15,6 +15,7 @@ import com.eewms.utils.ComboJsonHelper;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -43,7 +44,10 @@ public class SaleOrderController {
     private final SaleOrderComboRepository saleOrderComboRepository;
     private final PurchaseRequestRepository prRepo;
     private final ComboRepository cbRepo;
+    private final IPayOsService payOsService;
 
+    @Value("${payos.enabled:false}")
+    private boolean payOsEnabled;
 
     // ========== LIST ==========
     @GetMapping
@@ -87,6 +91,7 @@ public class SaleOrderController {
         try {
             String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
             SaleOrderResponseDTO createdOrder = saleOrderService.createOrder(dto, currentUsername);
+
             if (createdOrder.getDescription() != null
                     && createdOrder.getDescription().toLowerCase().contains("thiếu hàng")) {
                 ra.addFlashAttribute("warning", "Đơn hàng đã tạo, tuy nhiên có sản phẩm thiếu hàng. Vui lòng nhập thêm để hoàn thành.");
@@ -140,6 +145,35 @@ public class SaleOrderController {
         model.addAttribute("products", productService.getAllActiveProducts());
         model.addAttribute("combos", cbRepo.findAll());
         model.addAttribute("prExists", prRepo.existsBySaleOrder_SoId(id));
+
+        // (MỚI) — hiển thị QR ở màn EDIT khi đơn còn PENDING (có refresh từ PayOS nếu thiếu)
+        if (dto.getStatus() == SaleOrder.SaleOrderStatus.PENDING) {
+            // Lấy entity để đọc note & mã order PayOS
+            SaleOrder ent = saleOrderService.getOrderEntityById(id);
+
+            // Lấy từ DTO trước (nếu bạn đã đổ sẵn khi tạo đơn)
+            String qr   = dto.getQrCodeUrl();
+            String link = dto.getPaymentLink();
+
+            // Nếu DTO chưa có QR/link, nhưng đã có mã PayOS → gọi PayOS để refresh
+            if (payOsEnabled && (qr == null || link == null) && ent.getPayOsOrderCode() != null) {
+                try {
+                    var pr = payOsService.getOrder(ent.getPayOsOrderCode());
+                    if (pr != null) {
+                        if (qr == null)   qr   = pr.getQrCode();
+                        if (link == null) link = pr.getPaymentLink();
+                    }
+                } catch (Exception e) {
+                    // Không chặn UI; có thể log nếu cần
+                    // log.warn("[PayOS][edit] {}", e.getMessage());
+                }
+            }
+
+            model.addAttribute("qrCodeUrl", qr);
+            model.addAttribute("paymentLink", link);
+            model.addAttribute("paymentStatus", dto.getPaymentStatus()); // hoặc ent.getPaymentStatus().name()
+            model.addAttribute("paymentNote", ent.getPaymentNote());
+        }
 
         return "sale-order/sale-order-edit";
     }
@@ -211,7 +245,7 @@ public class SaleOrderController {
 
     // View completed
     @GetMapping("/{id}/view")
-    public String viewOrderDetails(@PathVariable Integer id , Model model) {
+    public String viewOrderDetails(@PathVariable Integer id, Model model) {
         SaleOrder saleOrder = saleOrderService.getOrderEntityById(id);
         if (saleOrder.getStatus() == SaleOrder.SaleOrderStatus.COMPLETED) {
             model.addAttribute("saleOrder", saleOrder);
@@ -222,7 +256,7 @@ public class SaleOrderController {
     }
     @PostMapping("/{id}/actions/mark-unpaid") // ✅ đúng
     public String markUnpaid(@PathVariable Integer id, RedirectAttributes ra) {
-        saleOrderService.updatePaymentStatus(id, SaleOrder.PaymentStatus.UNPAID);
+        saleOrderService.updatePaymentStatus(id, SaleOrder.PaymentStatus.PENDING);
         ra.addFlashAttribute("success", "Đã gán trạng thái thanh toán: UNPAID cho đơn hàng.");
         return "redirect:/sale-orders/" + id + "/edit";
     }

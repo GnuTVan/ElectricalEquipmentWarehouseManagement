@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface SaleOrderRepository extends JpaRepository<SaleOrder, Integer> {
@@ -19,13 +20,13 @@ public interface SaleOrderRepository extends JpaRepository<SaleOrder, Integer> {
 
     //top sale order
     @Query("""
-      select o.createdByUser.id, o.createdByUser.fullName,
-             coalesce(sum(o.totalAmount),0), count(o)
-      from SaleOrder o
-      where o.orderDate between :from and :to
-      group by o.createdByUser.id, o.createdByUser.fullName
-      order by coalesce(sum(o.totalAmount),0) desc
-    """)
+              select o.createdByUser.id, o.createdByUser.fullName,
+                     coalesce(sum(o.totalAmount),0), count(o)
+              from SaleOrder o
+              where o.orderDate between :from and :to
+              group by o.createdByUser.id, o.createdByUser.fullName
+              order by coalesce(sum(o.totalAmount),0) desc
+            """)
     List<Object[]> topSalespeople(LocalDateTime from, LocalDateTime to);
 
     @Query("""
@@ -44,4 +45,8 @@ public interface SaleOrderRepository extends JpaRepository<SaleOrder, Integer> {
                          com.eewms.entities.SaleOrder$SaleOrderStatus.PROCESSING)
     """)
     long countPending();
+
+    //findByPayOsOrderCode: để webhook controller gọi khi muốn tìm đơn hàng khớp với orderCode PayOS gửi về.
+    Optional<SaleOrder> findByPayOsOrderCode(String payOsOrderCode);
+
 }

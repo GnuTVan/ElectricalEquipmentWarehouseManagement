@@ -55,6 +55,58 @@
                 </div>
             </div>
 
+            <!-- === QR Thanh toán (hiện khi PENDING & có qr/link) === -->
+            <div th:if="${
+      (qrCodeUrl != null or paymentLink != null)
+      and saleOrder != null
+      and saleOrder.status != null
+      and saleOrder.status.name() == 'PENDING'
+    }"
+                 class="bg-white p-4 rounded-xl shadow mb-4">
+
+                <h3 class="text-lg font-semibold mb-3 flex items-center gap-3">
+                    <span>Thanh toán đơn [[${saleOrder.orderCode}]]</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full border"
+                          th:classappend="${
+            (paymentStatus != null and paymentStatus.name() == 'UNPAID') ? 'border-amber-400 bg-amber-50 text-amber-700' :
+            ((paymentStatus != null and paymentStatus.name() == 'PAID') ? 'border-emerald-400 bg-emerald-50 text-emerald-700' :
+            'border-gray-300 bg-gray-50 text-gray-600')
+          }">
+      [[${paymentStatus}]]
+    </span>
+                </h3>
+
+                <div class="flex items-start gap-4">
+                    <!-- Ưu tiên ảnh QR từ server -->
+                    <img th:if="${qrCodeUrl}" th:src="${qrCodeUrl}" alt="QR Thanh toán"
+                         class="w-48 h-48 rounded-lg border"/>
+
+                    <!-- Nếu không có ảnh QR, sẽ render QR từ paymentLink vào khung này -->
+                    <div th:if="${qrCodeUrl == null}" id="qrcodeBox"
+                         class="w-48 h-48 rounded-lg border flex items-center justify-center">
+                        <span class="text-xs text-gray-500">Đang tạo QR...</span>
+                    </div>
+
+                    <div class="text-sm">
+                        <p th:if="${paymentNote}">
+                            <span class="font-medium">Nội dung CK:</span> [[${paymentNote}]]
+                        </p>
+
+                        <div class="mt-2 flex items-center gap-3" th:if="${paymentLink}">
+                            <a th:href="${paymentLink}" target="_blank"
+                               class="px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">Mở trang thanh toán</a>
+                            <button type="button" id="btnCopyPayLink"
+                                    class="px-3 py-2 rounded bg-gray-100 hover:bg-gray-200 border">Copy link</button>
+                        </div>
+
+                        <p class="mt-2 text-gray-500" th:if="${!paymentLink}">
+                            Không có link thanh toán.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+
             <form id="saleOrderForm"
                   th:action="@{|/sale-orders/${saleOrder.orderId}/items/edit|}"
                   method="post"
@@ -353,5 +405,42 @@
         });
     });
 </script>
+<!-- QRCode.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script th:inline="javascript">
+    // Nếu không có qrCodeUrl nhưng có paymentLink -> build QR ở client
+    (function () {
+        const hasQrUrl = /*[[${qrCodeUrl != null}]]*/ false;
+        const payLink  = /*[[${paymentLink}]]*/ null;
+        const box = document.getElementById('qrcodeBox');
+
+        if (!hasQrUrl && box && payLink) {
+            const canvas = document.createElement('canvas');
+            box.innerHTML = '';
+            box.appendChild(canvas);
+            try {
+                QRCode.toCanvas(canvas, String(payLink), { width: 192, margin: 1 }, function (err) {
+                    if (err) console.error(err);
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // Copy link
+        const copyBtn = document.getElementById('btnCopyPayLink');
+        if (copyBtn && payLink) {
+            copyBtn.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(String(payLink));
+                    alert('Đã copy link thanh toán');
+                } catch {
+                    alert('Không copy được, vui lòng copy thủ công.');
+                }
+            });
+        }
+    })();
+</script>
+
 </body>
 </html>

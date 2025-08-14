@@ -8,16 +8,23 @@ import com.eewms.dto.SaleOrderResponseDTO;
 import com.eewms.entities.*;
 import com.eewms.repository.*;
 import com.eewms.services.IGoodIssueService;
+import com.eewms.services.IPayOsService;
 import com.eewms.services.ISaleOrderService;
 import com.eewms.utils.ComboUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.eewms.exception.InventoryException;
+import org.springframework.beans.factory.annotation.Value;
+
 
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
+
+@Slf4j
 
 @Service
 @RequiredArgsConstructor
@@ -37,10 +44,16 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
 
     private final SaleOrderComboRepository saleOrderComboRepository;
 
+    // nạp dịch vụ PayOS
+    private final IPayOsService payOsService;
+
+    @Value("${payos.enabled:true}")
+    private boolean payOsEnabled;
 
     @Override
     @Transactional
     public SaleOrderResponseDTO createOrder(SaleOrderRequestDTO dto, String createdByUsername) {
+
         Customer customer = customerRepo.findById(dto.getCustomerId())
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
 
@@ -58,6 +71,10 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         BigDecimal totalAmount = BigDecimal.ZERO;
         StringBuilder warningNote = new StringBuilder();
         boolean hasInsufficientStock = false;
+
+        if (dto.getDetails() == null || dto.getDetails().isEmpty()) {
+            throw new RuntimeException("Chi tiết đơn hàng trống");
+        }
 
         for (SaleOrderDetailDTO item : dto.getDetails()) {
             Product product = productRepo.findById(item.getProductId())
@@ -119,7 +136,79 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
 
         saleOrder.setDetails(detailList);
         saleOrder.setTotalAmount(totalAmount);
+
+        log.info("[PayOS][switch] enabled={}", payOsEnabled);
+
+        // ===== Tạo paymentNote & gọi PayOS (có fallback) =====
+        String paymentNote = String.format("Thanh toan don %s",
+                orderCode);
+        saleOrder.setPaymentNote(paymentNote);
+        saleOrder.setPaymentStatus(SaleOrder.PaymentStatus.PENDING); // luôn khởi tạo PENDING
+
+        String warnPay = null;
+        String qr = null, link = null;
+
+        log.info("[PayOS][switch] enabled={}", payOsEnabled);
+
+        if (payOsEnabled) {
+            try {
+                // Ép kiểu amount an toàn, phát hiện sai sớm nếu có phần lẻ
+                long amountVnd = totalAmount.longValueExact();
+
+                // Tạo orderCode dạng SỐ dành riêng cho PayOS (6–9 chữ số, hạn chế trùng)
+                long payOrderCode = (System.currentTimeMillis() / 100) % 1_000_000_000L;
+
+                // Log đủ ngữ cảnh trước khi gọi PayOS (ghi số)
+                log.info("[PayOS][pre-call] orderCode={} amount={} desc={}", payOrderCode, amountVnd, paymentNote);
+
+                // Gọi PayOS với mã SỐ
+                var payRes = payOsService.createOrder(String.valueOf(payOrderCode), amountVnd, paymentNote);
+
+                if (payRes != null && payRes.isSuccess()) {
+                    // 1) Mã đơn PayOS
+                    if (payRes.getOrderCode() != null) {
+                        saleOrder.setPayOsOrderCode(String.valueOf(payRes.getOrderCode())); // chú ý tên setter khớp field!
+                    }
+
+                    // 2) Link thanh toán (ưu tiên checkoutUrl)
+                    link = payRes.getPaymentLink();
+                    qr = link; // FE dùng link để render QR
+
+                    // 3) Lưu link vào cột hiện có (tạm dùng payment_note để hiển thị trên UI)
+                    if (link != null && !link.isBlank()) {
+                        saleOrder.setPaymentNote(link);
+                    }
+
+                    log.info("[PayOS][serviceimpl] success=true orderCode={} link={}", payRes.getOrderCode(), link);
+                } else {
+                    warnPay = (payRes == null)
+                            ? "Không nhận được phản hồi từ PayOS (payRes=null)."
+                            : ("PayOS trả lỗi: code=" + payRes.getCode() + " desc=" + payRes.getDesc());
+                    log.warn("[PayOS][serviceimpl] {}", warnPay);
+                }
+            } catch (ArithmeticException ex) {
+                // Trường hợp totalAmount có phần lẻ/ngoài biên long
+                warnPay = "Số tiền không phù hợp định dạng số nguyên (VND).";
+                log.warn("[PayOS][serviceimpl][amount] {} totalAmount={}", warnPay, totalAmount, ex);
+            } catch (InventoryException ex) {
+                warnPay = ex.getMessage();
+                log.warn("[PayOS][serviceimpl][InventoryException] {}", warnPay);
+            } catch (RuntimeException ex) {
+                warnPay = "Lỗi kết nối PayOS: " + ex.getMessage();
+                log.warn("[PayOS][serviceimpl][RuntimeException] {}", warnPay, ex);
+            }
+        } else {
+            warnPay = "PayOS đang tắt ở môi trường hiện tại.";
+            log.warn("[PayOS][serviceimpl] {}", warnPay);
+        }
+
+        // Lưu SaleOrder trước để có soId, quan hệ details…
         orderRepo.save(saleOrder);
+        log.info("[SaleOrder][save] id={} soCode={} payOsOrderCode={}",
+                saleOrder.getSoId(), saleOrder.getSoCode(), saleOrder.getPayOsOrderCode());
+        log.info("[SaleOrder][after-save] soId={} payOsOrderCode={} paymentLink={}",
+                saleOrder.getSoId(), saleOrder.getPayOsOrderCode(), link);
+
 
         // 🔹 NEW: Lưu selections combo vào sale_order_combos (để EDIT pre‑select chip ×N)
         if (dto.getComboIds() != null && !dto.getComboIds().isEmpty()) {
@@ -137,8 +226,22 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
                 saleOrderComboRepository.save(soc);
             }
         }
+        // Nếu có cảnh báo PayOS thì nối gọn vào description để tra cứu nhanh (không bắt buộc)
+        if (warnPay != null && !warnPay.isBlank()) {
+            String d = Optional.ofNullable(saleOrder.getDescription()).orElse("");
+            d = (d.isBlank() ? "" : (d + " | ")) + "[PAYOS] " + warnPay;
+            saleOrder.setDescription(d); // ✅ giữ nguyên paymentNote = link
+            orderRepo.save(saleOrder);
+        }
 
-        return SaleOrderMapper.toOrderResponseDTO(saleOrder);
+
+// Trả response + kèm QR/link nếu có
+        SaleOrderResponseDTO resp = SaleOrderMapper.toOrderResponseDTO(saleOrder);
+// ⚠️ Đảm bảo DTO có field: private String qrCodeUrl; private String paymentLink;
+        resp.setQrCodeUrl(qr);
+        resp.setPaymentLink(link);
+        return resp;
+
     }
 
     // Helper: mở rộng comboIds thành map productId -> SaleOrderDetail (origin COMBO)

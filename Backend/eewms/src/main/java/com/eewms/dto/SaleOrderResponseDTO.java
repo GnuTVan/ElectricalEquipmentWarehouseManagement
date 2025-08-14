@@ -23,5 +23,11 @@ public class SaleOrderResponseDTO {
     private String createdBy;
     private boolean hasInsufficientStock;
     private boolean alreadyExported;
-    private String paymentStatus;
+
+    // Thông tin thanh toán
+    private String qrCodeUrl;           // URL ảnh QR từ PayOS
+    private String paymentLink;         // Link thanh toán từ PayOS
+    private SaleOrder.PaymentStatus paymentStatus;
+    private String paymentNote;          // Nội dung CK
+
 }

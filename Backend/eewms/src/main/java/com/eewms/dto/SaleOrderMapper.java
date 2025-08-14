@@ -48,9 +48,6 @@ public class SaleOrderMapper {
                 .totalAmount(order.getTotalAmount())
                 .createdBy(order.getCreatedByUser().getFullName())
                 .details(detailsDTOs)
-                .paymentStatus(order.getPaymentStatus() != null
-                        ? order.getPaymentStatus().name()
-                        : "NONE")
                 .build();
     }
 }
