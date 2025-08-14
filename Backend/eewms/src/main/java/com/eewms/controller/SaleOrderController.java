@@ -12,6 +12,7 @@ import com.eewms.repository.SaleOrderComboRepository;
 import com.eewms.repository.purchaseRequest.PurchaseRequestRepository; // ✅ đúng package bạn đưa
 import com.eewms.services.*;
 import com.eewms.utils.ComboJsonHelper;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -218,5 +219,11 @@ public class SaleOrderController {
         } else {
             return "redirect:/sale-orders";
         }
+    }
+    @PostMapping("/{id}/actions/mark-unpaid") // ✅ đúng
+    public String markUnpaid(@PathVariable Integer id, RedirectAttributes ra) {
+        saleOrderService.updatePaymentStatus(id, SaleOrder.PaymentStatus.UNPAID);
+        ra.addFlashAttribute("success", "Đã gán trạng thái thanh toán: UNPAID cho đơn hàng.");
+        return "redirect:/sale-orders/" + id + "/edit";
     }
 }
