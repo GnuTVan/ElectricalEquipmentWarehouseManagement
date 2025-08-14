@@ -23,4 +23,5 @@ public class SaleOrderResponseDTO {
     private String createdBy;
     private boolean hasInsufficientStock;
     private boolean alreadyExported;
+    private String paymentStatus;
 }

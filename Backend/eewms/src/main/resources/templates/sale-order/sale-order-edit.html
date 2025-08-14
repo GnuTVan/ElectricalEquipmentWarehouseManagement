@@ -14,13 +14,45 @@
                     Sửa đơn <span class="text-blue-700" th:text="${saleOrder.orderCode}">ORD000</span>
                 </h1>
 
-                <a th:if="${saleOrder.status.name() == 'PENDING'
-                   and !saleOrder.alreadyExported
-                   and !saleOrder.hasInsufficientStock}"
-                   th:href="@{|/good-issue/create-from-order/${saleOrder.orderId}|}"
-                   class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white transition">
-                    Tạo phiếu xuất
-                </a>
+                <!-- Bước chọn phương thức thanh toán: chỉ hiển thị khi paymentStatus = NONE -->
+                <div th:if="${saleOrder.paymentStatus == 'NONE'
+             and saleOrder.status.name() == 'PENDING'
+             and !saleOrder.alreadyExported
+             and !saleOrder.hasInsufficientStock}"
+                     class="flex items-center gap-3">
+                    <button type="button"
+                            class="px-4 py-2 rounded bg-gray-300 text-gray-700 cursor-not-allowed"
+                            disabled>
+                        Thanh toán luôn (đang phát triển)
+                    </button>
+                    <form th:action="@{/sale-orders/{id}/actions/mark-unpaid(id=${saleOrder.orderId})}"
+                          method="post" class="inline">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button type="submit"
+                                class="px-4 py-2 rounded bg-amber-500 hover:bg-amber-600 text-white transition">
+                            Chưa thanh toán
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Sau khi chọn 'Chưa thanh toán' → chỉ hiện Tạo phiếu xuất -->
+                <a th:if="${saleOrder.paymentStatus == 'UNPAID'
+           and saleOrder.status.name() == 'PENDING'
+           and !saleOrder.alreadyExported
+           and !saleOrder.hasInsufficientStock}"
+                   th:href="@{|/good-issue/create-from-order/${saleOrder.orderId}|}">Tạo phiếu xuất</a>
+
+                <!-- Thiếu hàng: Tạo yêu cầu mua -->
+                <div th:if="${saleOrder.hasInsufficientStock and !saleOrder.alreadyExported and !prExists}">
+                    <a th:href="@{'/admin/purchase-requests/create-from-sale-order/' + ${saleOrder.orderId}}"
+                       class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded inline-block">
+                        Tạo yêu cầu mua
+                    </a>
+                </div>
+
+                <div th:if="${prExists}" class="inline-flex items-center px-3 py-2 rounded bg-gray-100 text-gray-700 border">
+                    Đã tạo yêu cầu mua
+                </div>
             </div>
 
             <form id="saleOrderForm"
@@ -49,7 +81,6 @@
                         </select>
                     </div>
 
-                    <!-- Picker mới: select + chip tự render -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Chọn combo</label>
                         <div class="flex gap-2">
@@ -61,13 +92,10 @@
                                 </option>
                             </select>
                             <button type="button" id="btnAddCombo"
-                                    class="px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">Thêm</button>
+                                    class="px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">Thêm
+                            </button>
                         </div>
-
-                        <!-- Chips hiển thị ×N -->
                         <div id="comboChips" class="mt-2 flex flex-wrap gap-2"></div>
-
-                        <!-- Hidden inputs comboCounts[ID]=N (build khi submit) -->
                         <div id="comboCountsHidden"></div>
                     </div>
 
@@ -115,6 +143,7 @@
                         Lưu đơn
                     </button>
                 </div>
+
             </form>
         </div>
     </main>
@@ -124,103 +153,75 @@
 
 <script th:inline="javascript">
     const csrfHeader = /*[[${_csrf.headerName}]]*/ 'X-CSRF-TOKEN';
-    const csrfToken  = /*[[${_csrf.token}]]*/ '';
-    const products   = /*[[${products}]]*/ [];
-    const saleForm   = /*[[${saleOrderForm}]]*/ {}; // { details, comboCounts:{id:n} }
+    const csrfToken = /*[[${_csrf.token}]]*/ '';
+    const products = /*[[${products}]]*/ [];
+    const saleForm = /*[[${saleOrderForm}]]*/ {};
 </script>
 
 <script>
-    /* ====== State & Utils ====== */
-    const tableBody  = document.getElementById('itemTableBody');
+    const tableBody = document.getElementById('itemTableBody');
     const productMap = new Map((products || []).map(p => [String(p.id), p]));
-    const esc = s => String(s||'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-    const fmt = n => (Number(n)||0).toLocaleString('vi-VN');
-    let comboCounts = new Map(Object.entries(saleForm?.comboCounts || {})); // Map<string,number>
+    const esc = s => String(s || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const fmt = n => (Number(n) || 0).toLocaleString('vi-VN');
+    let comboCounts = new Map(Object.entries(saleForm?.comboCounts || {}));
     let comboPidSet = new Set();
-    let buildSeq = 0; let aborter = null;
+    let buildSeq = 0;
+    let aborter = null;
 
-    /* ====== Money & index ====== */
-    function recalcRowTotal(tr){
-        const qty   = Number(tr.querySelector('.quantity')?.value || 0);
-        const price = Number(tr.querySelector('.price')?.value || 0);
-        tr.querySelector('.lineTotal').textContent = fmt(qty * price);
-    }
-    function recalcGrand(){
-        let t=0;
-        tableBody.querySelectorAll('tr[data-source]').forEach(tr=>{
-            const q=Number(tr.querySelector('.quantity')?.value||0);
-            const p=Number(tr.querySelector('.price')?.value||0);
-            t+=q*p;
-        });
-        document.getElementById('grandTotal').textContent = fmt(t);
-    }
-    function reindexAllRows(){
-        const rows = tableBody.querySelectorAll('tr[data-source="manual"]');
-        rows.forEach((tr,i)=>{
-            tr.querySelectorAll('input,select').forEach(el=>{
-                if(!el.name) return;
-                el.name = el.name.replace(/\[\d+]/, `[${i}]`);
-            });
-        });
-    }
+    function recalcRowTotal(tr){const q=Number(tr.querySelector('.quantity')?.value||0);const p=Number(tr.querySelector('.price')?.value||0);tr.querySelector('.lineTotal').textContent=fmt(q*p);}
+    function recalcGrand(){let t=0;tableBody.querySelectorAll('tr[data-source]').forEach(tr=>{const q=Number(tr.querySelector('.quantity')?.value||0);const p=Number(tr.querySelector('.price')?.value||0);t+=q*p;});document.getElementById('grandTotal').textContent=fmt(t);}
+    function reindexAllRows(){const rows=tableBody.querySelectorAll('tr[data-source="manual"]');rows.forEach((tr,i)=>{tr.querySelectorAll('input,select').forEach(el=>{if(!el.name)return;el.name=el.name.replace(/\[\d+]/,`[${i}]`);});});}
 
-    /* ====== Manual rows (chặn trùng combo) ====== */
     function buildManualOptions(currentPid){
-        const used = new Set(Array.from(tableBody.querySelectorAll('tr[data-source="manual"]'))
-            .map(tr=>tr.dataset.productId).filter(Boolean));
+        const used=new Set(Array.from(tableBody.querySelectorAll('tr[data-source="manual"]')).map(tr=>tr.dataset.productId).filter(Boolean));
         used.delete(String(currentPid));
-        return (products||[])
-            .filter(p=>!used.has(String(p.id)))
-            .map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+        return (products||[]).filter(p=>!used.has(String(p.id))).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
     }
     function refreshAllManualSelects(){
         tableBody.querySelectorAll('tr[data-source="manual"]').forEach(tr=>{
-            const sel=tr.querySelector('.product-select'); if(!sel) return;
-            const cur=sel.value;
-            sel.innerHTML = buildManualOptions(cur);
-            sel.value = cur;
+            const sel=tr.querySelector('.product-select'); if(!sel)return;
+            const cur=sel.value; sel.innerHTML=buildManualOptions(cur); sel.value=cur;
         });
     }
+
     function createManualRow({pid,price,stock,qty}){
-        const idx = tableBody.querySelectorAll('tr[data-source]').length;
-        const tr = document.createElement('tr');
+        const idx=tableBody.querySelectorAll('tr[data-source]').length;
+        const tr=document.createElement('tr');
         tr.dataset.productId=String(pid); tr.dataset.source='manual';
-        tr.innerHTML = `
+        tr.innerHTML=`
     <td class="px-3 py-2"><select name="details[${idx}].productId" class="w-full border rounded px-2 py-1 product-select"></select></td>
-    <td class="px-3 py-2 text-center"><span class="stock-display">${stock??'-'}</span></td>
+    <td class="px-3 py-2 text-center"><span class="stock-display">${stock ?? '-'}</span></td>
     <td class="px-3 py-2 text-center"><input type="number" name="details[${idx}].orderedQuantity" class="border px-2 py-1 w-full quantity" value="${qty}" min="1"></td>
     <td class="px-3 py-2 text-center"><input type="number" name="details[${idx}].price" class="border px-2 py-1 w-full price" value="${price}" readonly></td>
     <td class="px-3 py-2 text-right"><span class="lineTotal">0</span></td>
     <td class="px-3 py-2 text-center"><button type="button" class="text-red-600 text-lg btn-remove"><i class="ri-close-line"></i></button></td>`;
         tableBody.appendChild(tr);
         const sel=tr.querySelector('.product-select');
-        sel.innerHTML = buildManualOptions(pid);
-        sel.value=String(pid);
+        sel.innerHTML=buildManualOptions(pid); sel.value=String(pid);
 
-        sel.addEventListener('change', ()=>{
+        sel.addEventListener('change',()=>{
             tr.dataset.productId=sel.value;
             const p=productMap.get(String(sel.value))||{};
-            tr.querySelector('.stock-display').textContent=p.quantity??'-';
+            tr.querySelector('.stock-display').textContent=p.quantity ?? '-';
             tr.querySelector('.price').value=Number(p.listingPrice||0);
             refreshAllManualSelects(); recalcRowTotal(tr); recalcGrand();
         });
-        tr.querySelector('.quantity').addEventListener('input', e=>{
+        tr.querySelector('.quantity').addEventListener('input',e=>{
             const v=Number(e.target.value||0); e.target.value=isNaN(v)||v<1?1:v;
             recalcRowTotal(tr); recalcGrand();
         });
-        tr.querySelector('.btn-remove').addEventListener('click', ()=>{
+        tr.querySelector('.btn-remove').addEventListener('click',()=>{
             tr.remove(); refreshAllManualSelects(); reindexAllRows(); recalcGrand();
         });
 
         recalcRowTotal(tr); recalcGrand();
     }
 
-    /* ====== Combo rows ====== */
     function createComboRow(it){
         const pid=String(it.productId);
         const qty=Number(it.quantity||it.orderedQuantity||0);
-        const price=Number(it.price || (productMap.get(pid)?.listingPrice || 0));
-        const stock=(it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(pid)?.quantity??'-');
+        const price=Number(it.price||(productMap.get(pid)?.listingPrice||0));
+        const stock=(it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(pid)?.quantity ?? '-');
         const tr=document.createElement('tr');
         tr.dataset.productId=pid; tr.dataset.source='combo'; tr.classList.add('bg-amber-50');
         tr.innerHTML=`
@@ -236,15 +237,14 @@
     function patchComboRow(tr,it){
         const qty=Number(it.quantity||0);
         const price=Number(it.price ?? (productMap.get(String(it.productId))?.listingPrice||0));
-        const stock=(it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(String(it.productId))?.quantity??'-');
+        const stock=(it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(String(it.productId))?.quantity ?? '-');
         tr.querySelector('.stock-display').textContent=stock;
         tr.querySelector('.quantity').value=String(qty);
         tr.querySelector('.price').value=String(price);
         recalcRowTotal(tr);
     }
 
-    /* ====== Chips (view của comboCounts) ====== */
-    const chips = document.getElementById('comboChips');
+    const chips=document.getElementById('comboChips');
     function renderChips(){
         chips.innerHTML='';
         const entries=[...comboCounts.entries()];
@@ -261,68 +261,54 @@
             chips.appendChild(el);
         });
     }
-    chips.addEventListener('click', e=>{
-        const btn=e.target.closest('button'); if(!btn) return;
-        const id=btn.dataset.id, act=btn.dataset.act;
-        const cur=comboCounts.get(id)||0;
+    chips.addEventListener('click',e=>{
+        const btn=e.target.closest('button'); if(!btn)return;
+        const id=btn.dataset.id,act=btn.dataset.act; const cur=comboCounts.get(id)||0;
         if(act==='inc') comboCounts.set(id,cur+1);
         else if(act==='dec'){ if(cur>1) comboCounts.set(id,cur-1); else comboCounts.delete(id); }
         else if(act==='rm'){ comboCounts.delete(id); }
         renderChips(); rebuildFromCounts();
     });
 
-    /* ====== Expand theo counts ====== */
     async function rebuildFromCounts(){
-        // convert counts -> expanded array để call /combos/expand
-        const expanded=[];
-        comboCounts.forEach((n,id)=>{ for(let i=0;i<n;i++) expanded.push(Number(id)); });
-
-        // clear khi trống
+        const expanded=[]; comboCounts.forEach((n,id)=>{for(let i=0;i<n;i++) expanded.push(Number(id));});
         if(expanded.length===0){
             if(aborter) aborter.abort();
             tableBody.querySelectorAll('tr[data-source="combo"]').forEach(tr=>tr.remove());
-            comboPidSet = new Set();
-            refreshAllManualSelects(); reindexAllRows(); recalcGrand();
-            return;
+            comboPidSet=new Set(); refreshAllManualSelects(); reindexAllRows(); recalcGrand(); return;
         }
-
-        const my = ++buildSeq;
-        if(aborter) aborter.abort();
-        aborter = new AbortController();
-
+        const my=++buildSeq; if(aborter) aborter.abort(); aborter=new AbortController();
         let itemsRaw=[];
         try{
-            const res = await fetch('/combos/expand', {
+            const res=await fetch('/combos/expand',{
                 method:'POST',
                 headers:{'Content-Type':'application/json',[csrfHeader]:csrfToken},
-                body: JSON.stringify(expanded),
-                signal: aborter.signal
+                body:JSON.stringify(expanded),
+                signal:aborter.signal
             });
             if(!res.ok) throw new Error('expand failed');
-            itemsRaw = await res.json();
+            itemsRaw=await res.json();
         }catch(e){ return; }
         if(my!==buildSeq) return;
 
-        // gộp theo productId
         const agg=new Map();
         (itemsRaw||[]).forEach(it=>{
             const pid=String(it.productId);
             const cur=agg.get(pid);
             const row={
-                productId: pid,
-                productName: it.productName || productMap.get(pid)?.name || '',
-                quantity: Number(it.quantity || it.orderedQuantity || 0),
-                price: Number(it.price ?? (productMap.get(pid)?.listingPrice ?? 0)),
-                availableQuantity: (it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(pid)?.quantity ?? '-')
+                productId:pid,
+                productName:it.productName || productMap.get(pid)?.name || '',
+                quantity:Number(it.quantity||it.orderedQuantity||0),
+                price:Number(it.price ?? (productMap.get(pid)?.listingPrice ?? 0)),
+                availableQuantity:(it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(pid)?.quantity ?? '-')
             };
-            if(!cur) agg.set(pid,row); else cur.quantity += row.quantity;
+            if(!cur) agg.set(pid,row); else cur.quantity+=row.quantity;
         });
 
-        comboPidSet = new Set(agg.keys());
-
-        const cur = Array.from(tableBody.querySelectorAll('tr[data-source="combo"]'));
-        const byPid = new Map(cur.map(tr=>[tr.dataset.productId,tr]));
-        const nextPids = new Set(agg.keys());
+        comboPidSet=new Set(agg.keys());
+        const curRows=Array.from(tableBody.querySelectorAll('tr[data-source="combo"]'));
+        const byPid=new Map(curRows.map(tr=>[tr.dataset.productId,tr]));
+        const nextPids=new Set(agg.keys());
         const frag=document.createDocumentFragment();
 
         for(const [pid,row] of agg){
@@ -330,65 +316,38 @@
             if(ex) patchComboRow(ex,row);
             else frag.appendChild(createComboRow(row));
         }
-        for(const tr of cur){ if(!nextPids.has(tr.dataset.productId)) tr.remove(); }
+        for(const tr of curRows){ if(!nextPids.has(tr.dataset.productId)) tr.remove(); }
         if(frag.childNodes.length){
-            const firstManual = tableBody.querySelector('tr[data-source="manual"]');
-            if(firstManual) tableBody.insertBefore(frag, firstManual); else tableBody.appendChild(frag);
+            const firstManual=tableBody.querySelector('tr[data-source="manual"]');
+            if(firstManual) tableBody.insertBefore(frag,firstManual); else tableBody.appendChild(frag);
         }
-
         refreshAllManualSelects(); reindexAllRows(); recalcGrand();
     }
 
-    /* ====== Bootstrap ====== */
-    document.addEventListener('DOMContentLoaded', ()=>{
-        // render manual từ form
-        (saleForm?.details || []).forEach(d=>{
+    document.addEventListener('DOMContentLoaded',()=>{
+        (saleForm?.details||[]).forEach(d=>{
             const p=productMap.get(String(d.productId))||{};
-            createManualRow({
-                pid: d.productId,
-                price: Number(p.listingPrice || d.price || 0),
-                stock: p.quantity ?? '-',
-                qty: Number(d.orderedQuantity || 1)
-            });
+            createManualRow({pid:d.productId,price:Number(p.listingPrice||d.price||0),stock:p.quantity ?? '-',qty:Number(d.orderedQuantity||1)});
         });
         reindexAllRows(); refreshAllManualSelects(); recalcGrand();
 
-        // render chips từ comboCounts
-        renderChips();
-        rebuildFromCounts();
+        renderChips(); rebuildFromCounts();
 
-        // chọn combo để +1
-        document.getElementById('btnAddCombo').addEventListener('click', ()=>{
-            const sel=document.getElementById('comboAdder');
-            const v=sel.value; if(!v) return;
-            comboCounts.set(v, (comboCounts.get(v)||0) + 1);
-            sel.value='';
-            renderChips(); rebuildFromCounts();
+        document.getElementById('btnAddCombo').addEventListener('click',()=>{
+            const sel=document.getElementById('comboAdder'); const v=sel.value; if(!v)return;
+            comboCounts.set(v,(comboCounts.get(v)||0)+1); sel.value=''; renderChips(); rebuildFromCounts();
         });
 
-        // Add manual row
-        document.getElementById('btnAddRow').addEventListener('click', ()=>{
-            const used = new Set(Array.from(tableBody.querySelectorAll('tr[data-source="manual"]'))
-                .map(tr=>tr.dataset.productId));
-            const cand=(products||[]).find(p=>!used.has(String(p.id)));
-            if(!cand) return;
-            createManualRow({
-                pid:cand.id, price:cand.listingPrice||0, stock:cand.quantity??'-', qty:1
-            });
+        document.getElementById('btnAddRow').addEventListener('click',()=>{
+            const used=new Set(Array.from(tableBody.querySelectorAll('tr[data-source="manual"]')).map(tr=>tr.dataset.productId));
+            const cand=(products||[]).find(p=>!used.has(String(p.id))); if(!cand)return;
+            createManualRow({pid:cand.id,price:cand.listingPrice||0,stock:cand.quantity ?? '-',qty:1});
             reindexAllRows(); refreshAllManualSelects(); recalcGrand();
         });
 
-
-        // submit -> build hidden inputs comboCounts[ID]=N
-        document.getElementById('saleOrderForm').addEventListener('submit', ()=>{
-            const hidden = document.getElementById('comboCountsHidden');
-            hidden.innerHTML='';
-            comboCounts.forEach((n,id)=>{
-                const inp=document.createElement('input');
-                inp.type='hidden'; inp.name=`comboCounts[${id}]`; inp.value=String(n);
-                hidden.appendChild(inp);
-            });
-            // loại mọi input trong dòng combo (readonly)
+        document.getElementById('saleOrderForm').addEventListener('submit',()=>{
+            const hidden=document.getElementById('comboCountsHidden'); hidden.innerHTML='';
+            comboCounts.forEach((n,id)=>{const inp=document.createElement('input'); inp.type='hidden'; inp.name=`comboCounts[${id}]`; inp.value=String(n); hidden.appendChild(inp);});
             tableBody.querySelectorAll('tr[data-source="combo"] [name]').forEach(el=>el.remove());
             reindexAllRows();
         });

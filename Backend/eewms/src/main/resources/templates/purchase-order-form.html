@@ -386,20 +386,7 @@
         updateAddButtonVisibility();
     });
 
-    const userBtn = document.getElementById('userMenuBtn');
-    const dropdown = document.getElementById('userMenuDropdown');
-    if (userBtn && dropdown) {
-        userBtn.addEventListener('click', function () {
-            dropdown.classList.toggle('hidden');
-        });
 
-        document.addEventListener('click', function (event) {
-            if (!userBtn.contains(event.target) && !dropdown.contains(event.target)) {
-                dropdown.classList.add('hidden');
-            }
-        });
-
-    }
 
     function removeEmptyRows() {
         document.querySelectorAll('#itemTableBody tr').forEach(row => {

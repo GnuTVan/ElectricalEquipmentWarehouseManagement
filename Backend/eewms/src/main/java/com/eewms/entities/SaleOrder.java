@@ -68,6 +68,14 @@ public class SaleOrder {
             return label;
         }
     }
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", nullable = false, length = 16)
+    private PaymentStatus paymentStatus = PaymentStatus.NONE;
+
+    public enum PaymentStatus {
+        NONE,UNPAID, PARTIAL, PAID
+    }
     //danh sach combo
     @OneToMany(mappedBy = "saleOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude

@@ -350,4 +350,16 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         return orderRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
     }
+
+    @Override
+    @Transactional
+    public void updatePaymentStatus(Integer orderId, SaleOrder.PaymentStatus status) {
+        SaleOrder so = orderRepo.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("SaleOrder not found: " + orderId));
+        if (so.getPaymentStatus() != status) {
+            so.setPaymentStatus(status);
+            orderRepo.save(so);
+        }
+    }
+
 }

@@ -3,6 +3,7 @@ package com.eewms.services;
 import com.eewms.dto.SaleOrderRequestDTO;
 import com.eewms.dto.SaleOrderResponseDTO;
 import com.eewms.entities.SaleOrder;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.transaction.Transactional;
 
 import java.util.List;
@@ -16,4 +17,5 @@ public interface ISaleOrderService {
     SaleOrder getOrderEntityById(Integer id); // thêm để dùng tạo phiếu
     void updateOrderItems(Integer orderId, SaleOrderRequestDTO form);
     List<Long> getComboIdsExpanded(Integer soId);
+    void updatePaymentStatus(Integer orderId, SaleOrder.PaymentStatus status);
 }
