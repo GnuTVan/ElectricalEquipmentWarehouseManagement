@@ -100,7 +100,8 @@
 
                     <!-- Body -->
                     <div class="max-h-[70vh] overflow-y-auto px-6 py-5">
-                        <form id="addCustomerForm" th:action="@{/customers/save}" th:object="${customer}" method="post" novalidate>
+                        <form id="addCustomerForm" th:action="@{/customers/save}" th:object="${customer}" method="post"
+                              novalidate>
                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             <input type="hidden" th:field="*{id}" id="customerId"/>
                             <input type="hidden" name="status" value="ACTIVE" id="status"/>
@@ -111,7 +112,8 @@
                                     <label for="name" class="block text-sm font-medium text-gray-700">Họ tên</label>
                                     <input id="name" type="text" th:field="*{fullName}"
                                            class="mt-1 w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"/>
-                                    <p th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}" class="mt-1 text-xs text-red-600"></p>
+                                    <p th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"
+                                       class="mt-1 text-xs text-red-600"></p>
                                 </div>
 
                                 <!-- Email -->
@@ -119,7 +121,8 @@
                                     <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
                                     <input id="email" type="email" th:field="*{email}"
                                            class="mt-1 w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"/>
-                                    <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="mt-1 text-xs text-red-600"></p>
+                                    <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}"
+                                       class="mt-1 text-xs text-red-600"></p>
                                 </div>
 
                                 <!-- SĐT -->
@@ -127,7 +130,8 @@
                                     <label for="phone" class="block text-sm font-medium text-gray-700">SĐT</label>
                                     <input id="phone" type="text" th:field="*{phone}"
                                            class="mt-1 w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"/>
-                                    <p th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}" class="mt-1 text-xs text-red-600"></p>
+                                    <p th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"
+                                       class="mt-1 text-xs text-red-600"></p>
                                 </div>
 
                                 <!-- Địa chỉ -->
@@ -135,7 +139,8 @@
                                     <label for="address" class="block text-sm font-medium text-gray-700">Địa chỉ</label>
                                     <input id="address" type="text" th:field="*{address}"
                                            class="mt-1 w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"/>
-                                    <p th:if="${#fields.hasErrors('address')}" th:errors="*{address}" class="mt-1 text-xs text-red-600"></p>
+                                    <p th:if="${#fields.hasErrors('address')}" th:errors="*{address}"
+                                       class="mt-1 text-xs text-red-600"></p>
                                 </div>
 
                                 <!-- Mã số thuế -->
@@ -148,9 +153,12 @@
                                         <input type="text" th:field="*{taxCode}" id="taxCode"
                                                class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                                         <button type="button" id="btnFetchTax"
-                                                class="px-3 py-2 bg-gray-100 rounded border text-sm hover:bg-gray-200">Lấy</button>
+                                                class="px-3 py-2 bg-gray-100 rounded border text-sm hover:bg-gray-200">
+                                            Lấy
+                                        </button>
                                     </div>
-                                    <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('taxCode')}" th:errors="*{taxCode}"></p>
+                                    <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('taxCode')}"
+                                       th:errors="*{taxCode}"></p>
                                 </div>
 
                                 <!-- Ngân hàng -->
@@ -163,7 +171,8 @@
                                         <div id="bankSuggest"
                                              class="absolute z-50 mt-1 w-full bg-white border rounded shadow max-h-64 overflow-auto hidden"></div>
                                     </div>
-                                    <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankName')}" th:errors="*{bankName}"></p>
+                                    <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankName')}"
+                                       th:errors="*{bankName}"></p>
                                 </div>
                             </div>
                         </form>
@@ -172,9 +181,11 @@
                     <!-- Footer sticky -->
                     <div class="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-end gap-2">
                         <button type="button" onclick="closeAddModal()"
-                                class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy</button>
+                                class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy
+                        </button>
                         <button type="submit" form="addCustomerForm"
-                                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Lưu</button>
+                                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Lưu
+                        </button>
                     </div>
                 </div>
             </div>

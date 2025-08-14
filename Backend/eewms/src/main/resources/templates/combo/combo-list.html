@@ -6,17 +6,19 @@
 <div class="flex h-screen">
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-    <main class="flex-1 ml-64 transition-all duration-300 relative">
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
         <div th:replace="~{fragments/header :: header}"></div>
 
         <div class="flex justify-between items-center mb-4 px-6 py-6">
             <h1 class="text-2xl font-bold">Danh sách combo</h1>
             <div class="flex gap-2">
-                <a th:href="@{/combos/create}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">+ Thêm</a>
+                <a th:href="@{/combos/create}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">+
+                    Thêm</a>
                 <form th:action="@{/combos}" method="get" class="flex gap-2">
                     <input type="text" name="keyword" th:value="${keyword}" placeholder="Tìm theo tên hoặc mã..."
                            class="border px-3 py-2 rounded-md w-64"/>
-                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tìm</button>
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tìm
+                    </button>
                 </form>
             </div>
         </div>
@@ -34,7 +36,8 @@
                 </thead>
                 <tbody>
                 <tr th:each="c : ${combos}" class="border-b hover:bg-gray-50"
-                    th:data-id="${c.id}" th:data-status="${c.status}" th:data-name="${c.name}" th:data-description="${c.description}">
+                    th:data-id="${c.id}" th:data-status="${c.status}" th:data-name="${c.name}"
+                    th:data-description="${c.description}">
                     <td class="px-4 py-3" th:text="${c.code}"></td>
                     <td class="px-4 py-3" th:text="${c.name}"></td>
 
@@ -59,11 +62,13 @@
                     <td class="px-4 py-3 text-center">
                         <div class="flex items-center justify-center gap-3">
                             <!-- Xem -->
-                            <a th:href="@{/combos/{id}/view(id=${c.id})}" class="text-gray-700 hover:text-gray-900" title="Xem">
+                            <a th:href="@{/combos/{id}/view(id=${c.id})}" class="text-gray-700 hover:text-gray-900"
+                               title="Xem">
                                 <i class="ri-eye-line text-lg"></i>
                             </a>
                             <!-- Sửa -->
-                            <a th:href="@{/combos/{id}/edit(id=${c.id})}" class="text-blue-600 hover:text-blue-800" title="Sửa">
+                            <a th:href="@{/combos/{id}/edit(id=${c.id})}" class="text-blue-600 hover:text-blue-800"
+                               title="Sửa">
                                 <i class="ri-pencil-line text-lg"></i>
                             </a>
                         </div>
@@ -79,10 +84,10 @@
 </div>
 <script th:inline="javascript">
     function toggleComboStatus(checkbox) {
-        const comboId   = checkbox.dataset.id;
+        const comboId = checkbox.dataset.id;
         const newStatus = checkbox.checked ? 'ACTIVE' : 'INACTIVE';
 
-        const csrfToken  = document.querySelector('meta[name="_csrf"]').content;
+        const csrfToken = document.querySelector('meta[name="_csrf"]').content;
         const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
 
         fetch(`/combos/${comboId}/status`, {
@@ -91,7 +96,7 @@
                 'Content-Type': 'application/json',
                 [csrfHeader]: csrfToken
             },
-            body: JSON.stringify({ status: newStatus })
+            body: JSON.stringify({status: newStatus})
         })
             .then(res => res.ok ? res.text() : Promise.reject("Lỗi cập nhật"))
             .then(() => {

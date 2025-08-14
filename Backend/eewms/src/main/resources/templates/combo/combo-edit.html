@@ -4,159 +4,170 @@
 <head th:replace="~{fragments/common-head :: commonHead('Sửa combo')}"></head>
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
-  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-  <main class="flex-1 ml-64 transition-all duration-300 relative">
-    <div th:replace="~{fragments/header :: header}"></div>
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <div th:replace="~{fragments/header :: header}"></div>
 
-    <div class="max-w-4xl mx-auto px-6 py-6 bg-white rounded shadow">
+        <div class="max-w-4xl mx-auto px-6 py-6 bg-white rounded shadow">
 
-      <form th:action="@{|/combos/${comboId}/edit|}" th:object="${comboForm}" method="post">
-        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <form th:action="@{|/combos/${comboId}/edit|}" th:object="${comboForm}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block mb-1">Tên combo</label>
-            <input type="text" th:field="*{name}" class="w-full border rounded px-3 py-2" required/>
-          </div>
-          <div>
-            <label class="block mb-1">Trạng thái</label>
-            <select th:field="*{status}" class="w-full border rounded px-3 py-2">
-              <option value="ACTIVE">Đang hoạt động</option>
-              <option value="INACTIVE">Ngưng hoạt động</option>
-            </select>
-          </div>
-          <div class="col-span-2">
-            <label class="block mb-1">Mô tả</label>
-            <textarea th:field="*{description}" rows="2" class="w-full border rounded px-3 py-2"></textarea>
-          </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block mb-1">Tên combo</label>
+                        <input type="text" th:field="*{name}" class="w-full border rounded px-3 py-2" required/>
+                    </div>
+                    <div>
+                        <label class="block mb-1">Trạng thái</label>
+                        <select th:field="*{status}" class="w-full border rounded px-3 py-2">
+                            <option value="ACTIVE">Đang hoạt động</option>
+                            <option value="INACTIVE">Ngưng hoạt động</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block mb-1">Mô tả</label>
+                        <textarea th:field="*{description}" rows="2" class="w-full border rounded px-3 py-2"></textarea>
+                    </div>
+                </div>
+
+                <!-- Chọn & thêm SP -->
+                <div class="mt-6">
+                    <h3 class="font-semibold mb-2">Sản phẩm trong combo</h3>
+
+                    <div class="flex items-center gap-3 mb-3">
+                        <select id="addSelectProduct" class="border rounded px-3 py-2 min-w-[360px]">
+                            <option value="">-- Chọn sản phẩm --</option>
+                            <option th:each="p : ${products}" th:value="${p.id}"
+                                    th:text="${p.code + ' - ' + p.name}"></option>
+                        </select>
+                        <input id="addInputQty" type="number" min="1" max="999" value="1" inputmode="numeric"
+                               class="border rounded px-3 py-2 w-28"/>
+                        <button type="button" onclick="addSelectedProduct()"
+                                class="bg-gray-700 text-white px-3 py-2 rounded">Thêm
+                        </button>
+                    </div>
+
+                    <!-- Danh sách SP đã chọn -->
+                    <div id="selectedList" class="border rounded p-3 min-h-[80px] bg-gray-50">
+                        <p class="text-sm text-gray-500" data-empty
+                           th:classappend="${#lists.isEmpty(comboForm.details)} ? '' : ' hidden'">
+                            Chưa có sản phẩm nào.
+                        </p>
+
+                        <!-- Render các item hiện có từ comboForm.details -->
+                        <div th:each="d, st : ${comboForm.details}" data-item
+                             th:attr="data-pid=${d.productId}"
+                             class="flex items-center justify-between bg-white border rounded px-3 py-2 mb-2">
+                            <div class="font-medium" data-name>#pid</div>
+                            <div class="flex items-center gap-2">
+                                <input type="hidden"
+                                       th:name="|details[${st.index}].productId|" th:value="${d.productId}"
+                                       data-field="productId">
+                                <input type="number" min="1" max="999" inputmode="numeric"
+                                       th:name="|details[${st.index}].quantity|" th:value="${d.quantity}"
+                                       class="w-24 border rounded px-2 py-1 text-center"
+                                       data-field="quantity" oninput="limitQty(this)">
+                                <button type="button" class="text-red-600"
+                                        onclick="this.closest('[data-item]').remove(); reindex(document.getElementById('selectedList'))">
+                                    <i class="ri-close-line text-xl"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 mt-6">
+                    <a th:href="@{/combos}" class="bg-gray-500 text-white px-4 py-2 rounded">Hủy</a>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Lưu</button>
+                </div>
+            </form>
         </div>
 
-        <!-- Chọn & thêm SP -->
-        <div class="mt-6">
-          <h3 class="font-semibold mb-2">Sản phẩm trong combo</h3>
-
-          <div class="flex items-center gap-3 mb-3">
-            <select id="addSelectProduct" class="border rounded px-3 py-2 min-w-[360px]">
-              <option value="">-- Chọn sản phẩm --</option>
-              <option th:each="p : ${products}" th:value="${p.id}"
-                      th:text="${p.code + ' - ' + p.name}"></option>
-            </select>
-            <input id="addInputQty" type="number" min="1" max="999" value="1" inputmode="numeric"
-                   class="border rounded px-3 py-2 w-28"/>
-            <button type="button" onclick="addSelectedProduct()"
-                    class="bg-gray-700 text-white px-3 py-2 rounded">Thêm</button>
-          </div>
-
-          <!-- Danh sách SP đã chọn -->
-          <div id="selectedList" class="border rounded p-3 min-h-[80px] bg-gray-50">
-            <p class="text-sm text-gray-500" data-empty
-               th:classappend="${#lists.isEmpty(comboForm.details)} ? '' : ' hidden'">
-              Chưa có sản phẩm nào.
-            </p>
-
-            <!-- Render các item hiện có từ comboForm.details -->
-            <div th:each="d, st : ${comboForm.details}" data-item
-                 th:attr="data-pid=${d.productId}"
-                 class="flex items-center justify-between bg-white border rounded px-3 py-2 mb-2">
-              <div class="font-medium" data-name>#pid</div>
-              <div class="flex items-center gap-2">
-                <input type="hidden"
-                       th:name="|details[${st.index}].productId|" th:value="${d.productId}"
-                       data-field="productId">
-                <input type="number" min="1" max="999" inputmode="numeric"
-                       th:name="|details[${st.index}].quantity|" th:value="${d.quantity}"
-                       class="w-24 border rounded px-2 py-1 text-center"
-                       data-field="quantity" oninput="limitQty(this)">
-                <button type="button" class="text-red-600"
-                        onclick="this.closest('[data-item]').remove(); reindex(document.getElementById('selectedList'))">
-                  <i class="ri-close-line text-xl"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-2 mt-6">
-          <a th:href="@{/combos}" class="bg-gray-500 text-white px-4 py-2 rounded">Hủy</a>
-          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Lưu</button>
-        </div>
-      </form>
-    </div>
-
-    <div class="hidden" th:insert="~{fragments/footer :: footer}"></div>
-  </main>
+        <div class="hidden" th:insert="~{fragments/footer :: footer}"></div>
+    </main>
 </div>
 <!-- Script -->
 <script th:inline="javascript">
-  /*<![CDATA[*/
+    /*<![CDATA[*/
 
-  const MAX_QTY = 999;
+    const MAX_QTY = 999;
 
-  // Map id -> "CODE - NAME" từ model 'products'
-  const PRODUCT_TEXT = new Map([
-    /*[# th:each="p : ${products}"]*/
-    [ /*[[${p.id}]]*/, /*[[${p.code} + ' - ' + ${p.name}]]*/ ],
-    /*[/]*/
-  ]);
+    // Map id -> "CODE - NAME" từ model 'products'
+    const PRODUCT_TEXT = new Map([
+        /*[# th:each="p : ${products}"]*/
+        [ /*[[${p.id}]]*/, /*[[${p.code} + ' - ' + ${p.name}]]*/],
+        /*[/]*/
+    ]);
 
-  function limitQty(el){
-    let v = parseInt(el.value || '1', 10);
-    if (isNaN(v)) v = 1;
-    if (v < 1) v = 1;
-    if (v > MAX_QTY) v = MAX_QTY;
-    el.value = v;
-  }
-
-  function renderSelectedNames(){
-    document.querySelectorAll('#selectedList [data-item]').forEach(el => {
-      const pid = parseInt(el.dataset.pid, 10);
-      const nameEl = el.querySelector('[data-name]');
-      if (nameEl) nameEl.textContent = PRODUCT_TEXT.get(pid) || ('#' + pid);
-    });
-  }
-
-  function reindex(container){
-    const items = container.querySelectorAll('[data-item]');
-    items.forEach((el, i) => {
-      el.querySelector('input[data-field="productId"]').name = `details[${i}].productId`;
-      el.querySelector('input[data-field="quantity"]').name  = `details[${i}].quantity`;
-    });
-    const empty = container.querySelector('[data-empty]');
-    if (empty) empty.classList.toggle('hidden', items.length > 0);
-    renderSelectedNames();
-  }
-
-  function addSelectedProduct(){
-    const sel   = document.getElementById('addSelectProduct');
-    const qtyEl = document.getElementById('addInputQty');
-    const list  = document.getElementById('selectedList');
-
-    const pidStr = sel.value;
-    if (!pidStr) return;
-
-    const pid = parseInt(pidStr, 10);
-    let qty   = parseInt(qtyEl.value || '1', 10);
-    if (isNaN(qty) || qty < 1) { if (window.toastError) toastError('Số lượng phải ≥ 1'); qty = 1; }
-    if (qty > MAX_QTY) { qty = MAX_QTY; if (window.toastError) toastError('Tối đa ' + MAX_QTY); }
-
-    const existed = list.querySelector(`[data-item][data-pid="${pid}"]`);
-    if (existed) {
-      const q = existed.querySelector('input[data-field="quantity"]');
-      const cur = parseInt(q.value || '0', 10);
-      const next = Math.min(MAX_QTY, cur + qty);
-      if (next === cur) { if (window.toastError) toastError('Tối đa ' + MAX_QTY + ' mỗi sản phẩm'); return; }
-      q.value = next;
-      reindex(list);
-      sel.value=''; qtyEl.value='1';
-      return;
+    function limitQty(el) {
+        let v = parseInt(el.value || '1', 10);
+        if (isNaN(v)) v = 1;
+        if (v < 1) v = 1;
+        if (v > MAX_QTY) v = MAX_QTY;
+        el.value = v;
     }
 
-    const row = document.createElement('div');
-    row.className = 'flex items-center justify-between bg-white border rounded px-3 py-2 mb-2';
-    row.setAttribute('data-item','1');
-    row.setAttribute('data-pid', String(pid));
-    row.innerHTML = `
+    function renderSelectedNames() {
+        document.querySelectorAll('#selectedList [data-item]').forEach(el => {
+            const pid = parseInt(el.dataset.pid, 10);
+            const nameEl = el.querySelector('[data-name]');
+            if (nameEl) nameEl.textContent = PRODUCT_TEXT.get(pid) || ('#' + pid);
+        });
+    }
+
+    function reindex(container) {
+        const items = container.querySelectorAll('[data-item]');
+        items.forEach((el, i) => {
+            el.querySelector('input[data-field="productId"]').name = `details[${i}].productId`;
+            el.querySelector('input[data-field="quantity"]').name = `details[${i}].quantity`;
+        });
+        const empty = container.querySelector('[data-empty]');
+        if (empty) empty.classList.toggle('hidden', items.length > 0);
+        renderSelectedNames();
+    }
+
+    function addSelectedProduct() {
+        const sel = document.getElementById('addSelectProduct');
+        const qtyEl = document.getElementById('addInputQty');
+        const list = document.getElementById('selectedList');
+
+        const pidStr = sel.value;
+        if (!pidStr) return;
+
+        const pid = parseInt(pidStr, 10);
+        let qty = parseInt(qtyEl.value || '1', 10);
+        if (isNaN(qty) || qty < 1) {
+            if (window.toastError) toastError('Số lượng phải ≥ 1');
+            qty = 1;
+        }
+        if (qty > MAX_QTY) {
+            qty = MAX_QTY;
+            if (window.toastError) toastError('Tối đa ' + MAX_QTY);
+        }
+
+        const existed = list.querySelector(`[data-item][data-pid="${pid}"]`);
+        if (existed) {
+            const q = existed.querySelector('input[data-field="quantity"]');
+            const cur = parseInt(q.value || '0', 10);
+            const next = Math.min(MAX_QTY, cur + qty);
+            if (next === cur) {
+                if (window.toastError) toastError('Tối đa ' + MAX_QTY + ' mỗi sản phẩm');
+                return;
+            }
+            q.value = next;
+            reindex(list);
+            sel.value = '';
+            qtyEl.value = '1';
+            return;
+        }
+
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between bg-white border rounded px-3 py-2 mb-2';
+        row.setAttribute('data-item', '1');
+        row.setAttribute('data-pid', String(pid));
+        row.innerHTML = `
       <div class="font-medium" data-name>#${pid}</div>
       <div class="flex items-center gap-2">
         <input type="hidden" data-field="productId" value="${pid}">
@@ -168,17 +179,18 @@
           <i class="ri-close-line text-xl"></i>
         </button>
       </div>`;
-    list.appendChild(row);
+        list.appendChild(row);
 
-    reindex(list);
-    sel.value=''; qtyEl.value='1';
-  }
+        reindex(list);
+        sel.value = '';
+        qtyEl.value = '1';
+    }
 
-  document.addEventListener('DOMContentLoaded', function(){
-    renderSelectedNames();
-  });
+    document.addEventListener('DOMContentLoaded', function () {
+        renderSelectedNames();
+    });
 
-  /*]]>*/
+    /*]]>*/
 </script>
 
 </body>
