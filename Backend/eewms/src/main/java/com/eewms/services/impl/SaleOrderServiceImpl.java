@@ -199,17 +199,13 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         Set<Integer> pidCombo = comboAgg.keySet();
 
         if (form.getDetails() != null && !form.getDetails().isEmpty()) {
-            Set<Integer> pids = form.getDetails().stream()
+            Set<Integer> pods = form.getDetails().stream()
                     .map(SaleOrderDetailDTO::getProductId).collect(Collectors.toSet());
-            Map<Integer, Product> pmap = productRepo.findAllById(pids).stream()
+            Map<Integer, Product> pmap = productRepo.findAllById(pods).stream()
                     .collect(Collectors.toMap(Product::getId, p -> p));
 
             for (SaleOrderDetailDTO d : form.getDetails()) {
                 int pid = d.getProductId();
-                if (pidCombo.contains(pid)) {
-                    // Tuỳ yêu cầu: hoặc bỏ qua, hoặc throw
-                    throw new IllegalArgumentException("Sản phẩm " + pid + " đã nằm trong combo, không được chọn ở mục thủ công.");
-                }
                 Product p = pmap.get(pid);
                 if (p == null || p.getStatus() != Product.ProductStatus.ACTIVE) {
                     throw new IllegalArgumentException("Invalid/inactive product: " + pid);

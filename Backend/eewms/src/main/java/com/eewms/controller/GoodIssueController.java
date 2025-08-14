@@ -40,16 +40,25 @@ public class GoodIssueController {
     @GetMapping("/create-from-order/{orderId}")
     public String showCreateForm(@PathVariable("orderId") Integer orderId,
                                  Model model, RedirectAttributes ra) {
-        // dùng DTO để lấy cờ thiếu hàng đã tính sẵn
         var dto = saleOrderService.getById(orderId);
+        if (dto == null) {
+            ra.addFlashAttribute("error", "Không tìm thấy đơn hàng.");
+            return "redirect:/sale-orders";
+        }
         if (dto.isHasInsufficientStock()) {
             ra.addFlashAttribute("error", "Đơn hàng đang thiếu hàng. Không thể tạo phiếu xuất.");
             return "redirect:/sale-orders/" + orderId + "/edit";
         }
+        if (dto.getStatus() != SaleOrder.SaleOrderStatus.PENDING) {
+            ra.addFlashAttribute("error", "Đơn không còn ở trạng thái PENDING.");
+            return "redirect:/sale-orders/" + orderId + "/edit";
+        }
+
         SaleOrder saleOrder = saleOrderService.getOrderEntityById(orderId);
         model.addAttribute("saleOrder", saleOrder);
         return "good-issue-form";
     }
+
 
     // ✅ 3. Submit tạo phiếu xuất
     @PostMapping("/create")
@@ -59,17 +68,16 @@ public class GoodIssueController {
         try {
             String username = request.getUserPrincipal().getName();
             SaleOrder order = saleOrderService.getOrderEntityById(orderId);
-            GoodIssueNote gin = goodIssueService.createFromOrder(order, username);
-
-//            saleOrderService.updateOrderStatus(orderId, SaleOrder.SaleOrderStatus.DELIVERIED);
+            var gin = goodIssueService.createFromOrder(order, username); // service sẽ set DELIVERIED
 
             ra.addFlashAttribute("success", "✅ Tạo phiếu xuất kho thành công. Mã phiếu: " + gin.getGinCode());
-            return "redirect:/good-issue/view/" + gin.getGinId(); // chuyển sang chi tiết phiếu
+            return "redirect:/good-issue"; // 1 route duy nhất
         } catch (Exception e) {
             ra.addFlashAttribute("error", "Lỗi khi tạo phiếu xuất: " + e.getMessage());
-            return "redirect:/sale-orders/" + orderId + "/edit"; // QUAN TRỌNG: quay về đơn
+            return "redirect:/sale-orders/" + orderId + "/edit";
         }
     }
+
 
     @GetMapping("/view/{id}")
     public String view(@PathVariable Long id, Model model) {

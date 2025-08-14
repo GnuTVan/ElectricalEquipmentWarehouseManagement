@@ -86,10 +86,8 @@
 
                 <!-- Hoàn tất đơn hàng: POST /{id}/update -->
                 <form th:if="${saleOrder.status.name() == 'DELIVERIED'}"
-                      th:action="@{'/sale-orders/' + ${saleOrder.soId} + '/update'}"
-                      method="post" class="inline-block">
-                    <button type="submit"
-                            class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded">
+                      th:action="@{'/sale-orders/' + ${saleOrder.soId} + '/update'}" method="post">
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded">
                         Hoàn tất đơn hàng
                     </button>
                 </form>

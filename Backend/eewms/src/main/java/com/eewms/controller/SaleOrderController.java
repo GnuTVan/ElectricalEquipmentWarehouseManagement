@@ -100,30 +100,32 @@ public class SaleOrderController {
 
     // ========== EDIT (hợp nhất Status + Items) ==========
     @GetMapping("/{id}/edit")
-    public String editOrder(@PathVariable Integer id, Model model) {
-        // DTO phần header, trạng thái, button…
+    public String editOrder(@PathVariable Integer id, Model model, RedirectAttributes ra) {
         SaleOrderResponseDTO dto = saleOrderService.getById(id);
-
-        // COMPLETED → quay về list
-        if (dto.getStatus() == SaleOrder.SaleOrderStatus.COMPLETED) {
-            model.addAttribute("error", "Đơn hàng đã hoàn thành, không thể chỉnh sửa.");
+        if (dto == null) {
+            ra.addFlashAttribute("error", "Không tìm thấy đơn hàng.");
             return "redirect:/sale-orders";
         }
 
-        // Lấy entity + tách manual detail để đổ vào form
-        var orderEntity = saleOrderService.getOrderEntityById(id);
+        // !== PENDING → render readonly (detail-like) NGAY TRÊN ROUTE NÀY
+        if (dto.getStatus() != SaleOrder.SaleOrderStatus.PENDING) {
+            SaleOrder orderEntity = saleOrderService.getOrderEntityById(id);
+            model.addAttribute("saleOrder", orderEntity); // entity để view detail đọc soId/soCode/details
+            return "sale-order/sale-order-detail";
+        }
+
+        // ===== PENDING: render form edit như cũ =====
+        SaleOrder orderEntity = saleOrderService.getOrderEntityById(id);
+
         var manualDetails = orderEntity.getDetails().stream()
                 .filter(d -> d.getOrigin() == ItemOrigin.MANUAL)
                 .map(SaleOrderMapper::toDetailDTO)
                 .toList();
 
-        // Lấy comboIds (có lặp) từ bảng sale_order_combos để pre-select cho UI
         var expandedComboIds = saleOrderService.getComboIdsExpanded(id);
+        Map<Long, Integer> comboCounts = new LinkedHashMap<>();
+        for (Long cid : expandedComboIds) comboCounts.merge(cid, 1, Integer::sum);
 
-        Map<Long,Integer> comboCounts = new LinkedHashMap<>();
-        for (Long cid : expandedComboIds) {
-            comboCounts.merge(cid, 1, Integer::sum);
-        }
         var form = SaleOrderRequestDTO.builder()
                 .customerId(orderEntity.getCustomer() != null ? orderEntity.getCustomer().getId() : null)
                 .description(orderEntity.getDescription())
@@ -131,15 +133,16 @@ public class SaleOrderController {
                 .comboCounts(comboCounts)
                 .build();
 
-        model.addAttribute("saleOrder", dto);
+        model.addAttribute("saleOrder", dto); // DTO cho header/nút
         model.addAttribute("saleOrderForm", form);
         model.addAttribute("customers", customerService.findAll());
         model.addAttribute("products", productService.getAllActiveProducts());
         model.addAttribute("combos", cbRepo.findAll());
-
+        model.addAttribute("prExists", prRepo.existsBySaleOrder_SoId(id));
 
         return "sale-order/sale-order-edit";
     }
+
 
     // POST: lưu lại items (manual + comboIds)
     @PostMapping("/{id}/items/edit")
@@ -148,8 +151,19 @@ public class SaleOrderController {
                                    BindingResult br,
                                    Model model,
                                    RedirectAttributes ra) {
+        SaleOrder orderEntity = saleOrderService.getOrderEntityById(id);
+        if (orderEntity == null) {
+            ra.addFlashAttribute("error", "Không tìm thấy đơn hàng.");
+            return "redirect:/sale-orders";
+        }
+
+        // KHÔNG cho lưu khi không còn PENDING
+        if (orderEntity.getStatus() != SaleOrder.SaleOrderStatus.PENDING) {
+            ra.addFlashAttribute("error", "Đơn đã ở trạng thái " + orderEntity.getStatus() + ", không thể chỉnh sửa.");
+            return "redirect:/sale-orders/" + id + "/edit"; // quay về route edit (render readonly)
+        }
+
         if (br.hasErrors()) {
-            // render lại edit với đủ data
             SaleOrderResponseDTO dto = saleOrderService.getById(id);
             model.addAttribute("saleOrder", dto);
             model.addAttribute("customers", customerService.findAll());
@@ -165,8 +179,9 @@ public class SaleOrderController {
         } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());
         }
-        return "redirect:/sale-orders";
+        return "redirect:/sale-orders/" + id + "/edit"; // giữ một route
     }
+
 
     // Lưu trạng thái
 //    @PostMapping("/{id}/edit")

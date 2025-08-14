@@ -26,7 +26,8 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Chọn combo</label>
                         <select id="comboSelect" name="comboIds" multiple class="w-full border rounded px-3 py-2">
-                            <option th:each="cb : ${combos}" th:value="${cb.id}" th:text="${cb.code + ' - ' + cb.name}"></option>
+                            <option th:each="cb : ${combos}" th:value="${cb.id}"
+                                    th:text="${cb.code + ' - ' + cb.name}"></option>
                         </select>
                         <!-- Hidden inputs để submit comboIds có lặp -->
                         <div id="comboHiddenContainer"></div>
@@ -89,8 +90,8 @@
 <!-- CSRF + dữ liệu sản phẩm -->
 <script th:inline="javascript">
     const csrfHeader = /*[[${_csrf.headerName}]]*/ 'X-CSRF-TOKEN';
-    const csrfToken  = /*[[${_csrf.token}]]*/ '';
-    const products   = /*[[${products}]]*/ [];
+    const csrfToken = /*[[${_csrf.token}]]*/ '';
+    const products = /*[[${products}]]*/ [];
 </script>
 
 <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
@@ -99,67 +100,95 @@
 
 <style>
     /* Ẩn chip trùng (chip đại diện không có class này) */
-    .choices__list--multiple .choices__item.combo-dup{ display: none !important; }
+    .choices__list--multiple .choices__item.combo-dup {
+        display: none !important;
+    }
+
     /* Ẩn summary */
-    #comboSummary { display: none; }
+    #comboSummary {
+        display: none;
+    }
 </style>
 
 <script>
     /* =================== Utils =================== */
-    const tableBody  = document.getElementById('itemTableBody');
+    const tableBody = document.getElementById('itemTableBody');
     const productMap = new Map(products.map(p => [String(p.id), p]));
 
-    function fmt(n){ return (Number(n)||0).toLocaleString('vi-VN'); }
-    function esc(s){ return String(s||'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
-    function debounce(fn, t=160){ let id; return (...a)=>{ clearTimeout(id); id=setTimeout(()=>fn(...a), t); } }
+    function fmt(n) {
+        return (Number(n) || 0).toLocaleString('vi-VN');
+    }
+
+    function esc(s) {
+        return String(s || '').replace(/[&<>"']/g, ch => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[ch]));
+    }
+
+    function debounce(fn, t = 160) {
+        let id;
+        return (...a) => {
+            clearTimeout(id);
+            id = setTimeout(() => fn(...a), t);
+        }
+    }
 
     /* =================== Tính tiền & reindex =================== */
-    function recalcRowTotal(tr){
-        const qty   = Number(tr.querySelector('.quantity')?.value || 0);
+    function recalcRowTotal(tr) {
+        const qty = Number(tr.querySelector('.quantity')?.value || 0);
         const price = Number(tr.querySelector('.price')?.value || 0);
         tr.querySelector('.lineTotal').textContent = fmt(qty * price);
     }
-    function recalcGrand(){
+
+    function recalcGrand() {
         let total = 0;
-        tableBody.querySelectorAll('tr[data-product-id]').forEach(tr=>{
-            const qty   = Number(tr.querySelector('.quantity')?.value || 0);
+        tableBody.querySelectorAll('tr[data-product-id]').forEach(tr => {
+            const qty = Number(tr.querySelector('.quantity')?.value || 0);
             const price = Number(tr.querySelector('.price')?.value || 0);
             total += qty * price;
         });
         document.getElementById('grandTotal').textContent = fmt(total);
     }
-    function reindexAllRows(){
+
+    function reindexAllRows() {
         const rows = tableBody.querySelectorAll('tr[data-product-id]');
-        rows.forEach((tr, idx)=>{
-            tr.querySelectorAll('input, select').forEach(el=>{
-                if(!el.name) return;
+        rows.forEach((tr, idx) => {
+            tr.querySelectorAll('input, select').forEach(el => {
+                if (!el.name) return;
                 el.name = el.name.replace(/\[\d+]/, `[${idx}]`);
             });
         });
     }
 
     /* =================== Manual rows =================== */
-    function getUsedManualIds(){
+    function getUsedManualIds() {
         return Array.from(tableBody.querySelectorAll('tr[data-source="manual"]'))
-            .map(tr=>tr.dataset.productId).filter(Boolean);
+            .map(tr => tr.dataset.productId).filter(Boolean);
     }
-    function buildManualOptions(currentPid){
+
+    function buildManualOptions(currentPid) {
         const used = new Set(getUsedManualIds().filter(id => id !== String(currentPid)));
         return products
             .filter(p => !used.has(String(p.id)))
             .map(p => `<option value="${p.id}" data-price="${p.listingPrice}" data-stock="${p.quantity}">${esc(p.name)}</option>`)
             .join('');
     }
-    function refreshAllManualSelects(){
-        tableBody.querySelectorAll('tr[data-source="manual"]').forEach(tr=>{
+
+    function refreshAllManualSelects() {
+        tableBody.querySelectorAll('tr[data-source="manual"]').forEach(tr => {
             const sel = tr.querySelector('.product-select');
-            if(!sel) return;
+            if (!sel) return;
             const cur = sel.value;
             sel.innerHTML = buildManualOptions(cur);
             sel.value = cur;
         });
     }
-    function createManualRow({pid, price, stock, qty}){
+
+    function createManualRow({pid, price, stock, qty}) {
         const index = tableBody.querySelectorAll('tr[data-product-id]').length;
         const tr = document.createElement('tr');
         tr.dataset.productId = String(pid);
@@ -196,12 +225,13 @@
         recalcRowTotal(tr);
         return tr;
     }
-    function attachManualListeners(tr){
+
+    function attachManualListeners(tr) {
         const sel = tr.querySelector('.product-select');
         const qtyInput = tr.querySelector('.quantity');
         const priceInput = tr.querySelector('.price');
 
-        sel.addEventListener('change', ()=>{
+        sel.addEventListener('change', () => {
             const pid = sel.value;
             tr.dataset.productId = pid;
             const p = productMap.get(String(pid)) || {};
@@ -211,25 +241,29 @@
             recalcRowTotal(tr);
             recalcGrand();
         });
-        qtyInput.addEventListener('input', ()=>{
+        qtyInput.addEventListener('input', () => {
             const v = Number(qtyInput.value || 0);
             qtyInput.value = isNaN(v) || v < 1 ? 1 : v;
             recalcRowTotal(tr);
             recalcGrand();
         });
-        tr.querySelector('.btn-remove').addEventListener('click', ()=>{
+        tr.querySelector('.btn-remove').addEventListener('click', () => {
             tr.remove();
             refreshAllManualSelects();
             reindexAllRows();
             recalcGrand();
         });
     }
-    document.getElementById('btnAddRow').addEventListener('click', ()=>{
+
+    document.getElementById('btnAddRow').addEventListener('click', () => {
         const used = new Set(getUsedManualIds());
         const candidate = products.find(p => !used.has(String(p.id))); // cho phép trùng với combo
         const msg = document.getElementById('productLimitMsg');
 
-        if(!candidate){ msg.classList.remove('hidden'); return; }
+        if (!candidate) {
+            msg.classList.remove('hidden');
+            return;
+        }
         msg.classList.add('hidden');
 
         createManualRow({
@@ -244,9 +278,9 @@
     });
 
     /* =================== Combo rows (gộp theo product) =================== */
-    function createComboRow(it, {mount=true} = {}){
-        const pid   = String(it.productId);
-        const qty   = Number(it.quantity || 0);
+    function createComboRow(it, {mount = true} = {}) {
+        const pid = String(it.productId);
+        const qty = Number(it.quantity || 0);
         const price = Number(it.price ?? (productMap.get(pid)?.listingPrice ?? 0));
         const stock = (it.availableQuantity != null)
             ? Number(it.availableQuantity)
@@ -255,43 +289,44 @@
         const index = tableBody.querySelectorAll('tr[data-product-id]').length;
         const tr = document.createElement('tr');
         tr.dataset.productId = pid;
-        tr.dataset.source    = 'combo';
-        tr.dataset.key       = pid; // gộp theo productId
+        tr.dataset.source = 'combo';
+        tr.dataset.key = pid; // gộp theo productId
         tr.classList.add('bg-amber-50');
 
         tr.innerHTML = `
-    <td class="px-3 py-2">
-      <div class="flex items-center gap-2">
-        <span class="inline-flex text-[11px] px-2 py-0.5 rounded-full border border-amber-400 bg-amber-100 text-amber-800">
-          Từ combo
-        </span>
-        <input type="hidden" name="details[${index}].productId" value="${pid}">
-        <input type="hidden" name="details[${index}].source" value="COMBO">
-        <input type="hidden" name="details[${index}].comboId" value="">
-        <input type="hidden" name="details[${index}].comboName" value="">
-        <span class="font-medium">${esc(it.productName || productMap.get(pid)?.name || '(Sản phẩm)')}</span>
-      </div>
-    </td>
-    <td class="px-3 py-2 text-center align-middle"><span class="stock-display">${stock}</span></td>
-    <td class="px-3 py-2 text-center">
-      <input type="number" name="details[${index}].orderedQuantity" class="border px-2 py-1 w-full quantity" value="${qty}" min="1" readonly>
-    </td>
-    <td class="px-3 py-2 text-center">
-      <input type="number" name="details[${index}].price" class="border px-2 py-1 w-full price" value="${price}" readonly>
-    </td>
-    <td class="px-3 py-2 text-right"><span class="lineTotal">0</span></td>
-    <td class="px-3 py-2 text-center">
-      <button type="button" class="text-gray-300 cursor-not-allowed" title="Thuộc combo, không xoá được">
-        <i class="ri-lock-2-line"></i>
-      </button>
-    </td>
-  `;
+<td class="px-3 py-2">
+  <div class="flex items-center gap-2">
+    <span class="inline-flex text-[11px] px-2 py-0.5 rounded-full border border-amber-400 bg-amber-100 text-amber-800">
+      Từ combo
+    </span>
+    <input type="hidden" name="details[${index}].productId" value="${pid}">
+    <input type="hidden" name="details[${index}].fromCombo" value="true">
+    <input type="hidden" name="details[${index}].comboId" value="">
+    <input type="hidden" name="details[${index}].comboName" value="">
+    <span class="font-medium">${esc(it.productName || productMap.get(pid)?.name || '(Sản phẩm)')}</span>
+  </div>
+</td>
+<td class="px-3 py-2 text-center align-middle"><span class="stock-display">${stock}</span></td>
+<td class="px-3 py-2 text-center">
+  <input type="number" name="details[${index}].orderedQuantity" class="border px-2 py-1 w-full quantity" value="${qty}" min="1" readonly>
+</td>
+<td class="px-3 py-2 text-center">
+  <input type="number" name="details[${index}].price" class="border px-2 py-1 w-full price" value="${price}" readonly>
+</td>
+<td class="px-3 py-2 text-right"><span class="lineTotal">0</span></td>
+<td class="px-3 py-2 text-center">
+  <button type="button" class="text-gray-300 cursor-not-allowed" title="Thuộc combo, không xoá được">
+    <i class="ri-lock-2-line"></i>
+  </button>
+</td>
+`;
         recalcRowTotal(tr);
         if (mount) tableBody.appendChild(tr);
         return tr;
     }
-    function patchComboRow(tr, it){
-        const qty   = Number(it.quantity || 0);
+
+    function patchComboRow(tr, it) {
+        const qty = Number(it.quantity || 0);
         const price = Number(it.price ?? (productMap.get(String(it.productId))?.listingPrice ?? 0));
         const stock = (it.availableQuantity != null)
             ? Number(it.availableQuantity)
@@ -299,31 +334,33 @@
 
         tr.querySelector('.stock-display').textContent = stock;
         tr.querySelector('.quantity').value = String(qty);
-        tr.querySelector('.price').value    = String(price);
+        tr.querySelector('.price').value = String(price);
         recalcRowTotal(tr);
     }
 
     /* =================== Chip ×N & helpers =================== */
-    function getSelectedComboIdsExpanded(choicesInstance){
+    function getSelectedComboIdsExpanded(choicesInstance) {
         const values = choicesInstance.getValue(true) || []; // có lặp, ví dụ ["13","13","2"]
         return values.map(v => Number(v));
     }
-    function updateComboSummary(choicesInstance){
+
+    function updateComboSummary(choicesInstance) {
         const summaryDiv = document.getElementById('comboSummary'); // đang ẩn, nhưng cứ cập nhật
         const allOpts = Array.from(document.querySelectorAll('#comboSelect option'));
         const byId = new Map();
         const values = choicesInstance.getValue(true) || [];
-        for(const v of values){
+        for (const v of values) {
             const id = String(v);
             const opt = allOpts.find(o => o.value === id);
             const label = opt ? opt.textContent.trim() : `Combo ${id}`;
-            const cur = byId.get(id) || {count:0, label};
+            const cur = byId.get(id) || {count: 0, label};
             cur.count += 1;
             byId.set(id, cur);
         }
-        summaryDiv.textContent = Array.from(byId.values()).map(x=>`${x.label} × ${x.count}`).join(', ');
+        summaryDiv.textContent = Array.from(byId.values()).map(x => `${x.label} × ${x.count}`).join(', ');
     }
-    function applyComboChipCounts(choicesInstance){
+
+    function applyComboChipCounts(choicesInstance) {
         const values = choicesInstance.getValue(true) || [];
         const counts = new Map();
         for (const v of values) counts.set(v, (counts.get(v) || 0) + 1);
@@ -344,7 +381,9 @@
 
             const base = optionLabel(id);
             chips.forEach((chip, idx) => {
-                chip.childNodes.forEach(n => { if (n.nodeType === Node.TEXT_NODE) n.nodeValue = ''; });
+                chip.childNodes.forEach(n => {
+                    if (n.nodeType === Node.TEXT_NODE) n.nodeValue = '';
+                });
                 const text = `${base} × ${cnt}`;   // luôn hiển thị ×cnt (kể cả ×1)
                 if (chip.firstChild) chip.firstChild.textContent = text;
                 else chip.insertAdjacentText('afterbegin', text);
@@ -354,15 +393,16 @@
     }
 
     /* =================== Rebuild (gửi mảng có lặp, không tự nhân) =================== */
-    const rebuildComboRows = debounce(async function(expandedIds){
+    const rebuildComboRows = debounce(async function (expandedIds) {
         tableBody.style.visibility = 'hidden';
         try {
             const curRows = Array.from(tableBody.querySelectorAll('tr[data-source="combo"]'));
             const rowByPid = new Map(curRows.map(tr => [tr.dataset.productId, tr]));
 
-            if(!expandedIds || expandedIds.length === 0){
+            if (!expandedIds || expandedIds.length === 0) {
                 curRows.forEach(tr => tr.remove());
-                reindexAllRows(); recalcGrand();
+                reindexAllRows();
+                recalcGrand();
                 return;
             }
 
@@ -387,41 +427,43 @@
             const nextPids = new Set(items.map(it => it.productId));
             const frag = document.createDocumentFragment();
 
-            for (const it of items){
+            for (const it of items) {
                 const existed = rowByPid.get(it.productId);
-                if (existed){
+                if (existed) {
                     patchComboRow(existed, it);
                     existed.dataset._kept = '1';
                 } else {
-                    const tr = createComboRow(it, {mount:false});
+                    const tr = createComboRow(it, {mount: false});
                     frag.appendChild(tr);
                 }
             }
 
             // Xoá các dòng combo không còn
-            for (const tr of curRows){
+            for (const tr of curRows) {
                 if (!nextPids.has(tr.dataset.productId)) tr.remove();
             }
 
             // Chèn block mới trước manual (nếu có)
-            if (frag.childNodes.length){
+            if (frag.childNodes.length) {
                 const firstManual = tableBody.querySelector('tr[data-source="manual"]');
-                if(firstManual) tableBody.insertBefore(frag, firstManual);
+                if (firstManual) tableBody.insertBefore(frag, firstManual);
                 else tableBody.appendChild(frag);
             }
 
             reindexAllRows();
             recalcGrand();
-        } catch(e){
+        } catch (e) {
             console.error(e);
-            if(window.toastError) toastError('Không thể tải sản phẩm từ combo');
+            if (window.toastError) toastError('Không thể tải sản phẩm từ combo');
         } finally {
-            requestAnimationFrame(()=>{ tableBody.style.visibility = ''; });
+            requestAnimationFrame(() => {
+                tableBody.style.visibility = '';
+            });
         }
     }, 160);
 
     /* =================== Bootstrap =================== */
-    document.addEventListener('DOMContentLoaded', ()=>{
+    document.addEventListener('DOMContentLoaded', () => {
         const choices = new Choices('#comboSelect', {
             removeItemButton: true,
             shouldSort: false,
@@ -434,15 +476,16 @@
         const el = choices.passedElement.element;
 
         // Lưu thứ tự gốc để dropdown không “nhảy”
-        const MASTER_CHOICES = Array.from(el.querySelectorAll('option')).map(o=>({
+        const MASTER_CHOICES = Array.from(el.querySelectorAll('option')).map(o => ({
             value: o.value, label: o.textContent.trim()
         }));
 
-        function refreshDropdown(){
+        function refreshDropdown() {
             choices.clearChoices();
             choices.setChoices(MASTER_CHOICES, 'value', 'label', true); // giữ nguyên thứ tự
         }
-        function syncChipsAndTable(){
+
+        function syncChipsAndTable() {
             applyComboChipCounts(choices);
             updateComboSummary(choices); // đang ẩn nhưng cập nhật cho đồng bộ
             const expandedIds = getSelectedComboIdsExpanded(choices); // mảng có lặp
@@ -461,13 +504,13 @@
 
         // Khi remove: xoá hết chip cùng value, refresh, rồi sync
         let suppressRemoveHandler = false;
-        el.addEventListener('removeItem', (e)=>{
+        el.addEventListener('removeItem', (e) => {
             if (suppressRemoveHandler) return;
             const value = e.detail?.value;
             if (value == null) return;
 
             suppressRemoveHandler = true;
-            try{
+            try {
                 choices.removeActiveItemsByValue(String(value));
             } finally {
                 suppressRemoveHandler = false;
@@ -477,20 +520,24 @@
         });
 
         // Change (phòng hờ)
-        el.addEventListener('change', ()=>{ syncChipsAndTable(); });
+        el.addEventListener('change', () => {
+            syncChipsAndTable();
+        });
 
         // Submit: build hidden comboIds (có lặp)
         const form = document.getElementById('saleOrderForm');
-        form.addEventListener('submit', ()=>{
+        form.addEventListener('submit', () => {
             reindexAllRows();
             const container = document.getElementById('comboHiddenContainer');
             container.innerHTML = '';
             const originalName = el.getAttribute('name');
             el.removeAttribute('name'); // tránh browser chỉ gửi 1 lần
 
-            (choices.getValue(true) || []).forEach(v=>{
+            (choices.getValue(true) || []).forEach(v => {
                 const inp = document.createElement('input');
-                inp.type='hidden'; inp.name=originalName; inp.value=v;
+                inp.type = 'hidden';
+                inp.name = originalName;
+                inp.value = v;
                 container.appendChild(inp);
             });
         });

@@ -17,7 +17,7 @@
                 <a th:if="${saleOrder.status.name() == 'PENDING'
                    and !saleOrder.alreadyExported
                    and !saleOrder.hasInsufficientStock}"
-                   th:href="@{|/good-issues/create-from-order/${saleOrder.orderId}|}"
+                   th:href="@{|/good-issue/create-from-order/${saleOrder.orderId}|}"
                    class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white transition">
                     Tạo phiếu xuất
                 </a>
@@ -171,7 +171,6 @@
         used.delete(String(currentPid));
         return (products||[])
             .filter(p=>!used.has(String(p.id)))
-            .filter(p=>!comboPidSet.has(String(p.id)))
             .map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
     }
     function refreshAllManualSelects(){
@@ -337,10 +336,6 @@
             if(firstManual) tableBody.insertBefore(frag, firstManual); else tableBody.appendChild(frag);
         }
 
-        // dọn manual trùng
-        tableBody.querySelectorAll('tr[data-source="manual"]').forEach(tr=>{
-            if(comboPidSet.has(String(tr.dataset.productId))) tr.remove();
-        });
         refreshAllManualSelects(); reindexAllRows(); recalcGrand();
     }
 
@@ -375,13 +370,14 @@
         document.getElementById('btnAddRow').addEventListener('click', ()=>{
             const used = new Set(Array.from(tableBody.querySelectorAll('tr[data-source="manual"]'))
                 .map(tr=>tr.dataset.productId));
-            const cand=(products||[]).find(p=>!used.has(String(p.id)) && !comboPidSet.has(String(p.id)));
+            const cand=(products||[]).find(p=>!used.has(String(p.id)));
             if(!cand) return;
             createManualRow({
                 pid:cand.id, price:cand.listingPrice||0, stock:cand.quantity??'-', qty:1
             });
             reindexAllRows(); refreshAllManualSelects(); recalcGrand();
         });
+
 
         // submit -> build hidden inputs comboCounts[ID]=N
         document.getElementById('saleOrderForm').addEventListener('submit', ()=>{
