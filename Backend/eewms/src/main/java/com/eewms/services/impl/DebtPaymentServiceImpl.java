@@ -13,7 +13,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class DebtPaymentService {
+public class DebtPaymentServiceImpl {
 
     private final DebtPaymentRepository debtPaymentRepository;
     private final IDebtService debtService;

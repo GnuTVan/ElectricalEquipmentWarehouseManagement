@@ -8,16 +8,21 @@ import com.eewms.services.ImageUploadService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/account")
@@ -44,69 +49,147 @@ public class AccountController {
         return "auth/profile";
     }
 
+    // ===== Fallback: submit truyền thống (nếu tắt JS) =====
     @PostMapping("/update-profile")
     public String updateProfile(@Valid @ModelAttribute("profile") UserProfileDTO profileDTO,
                                 BindingResult result,
-                                @RequestParam("avatarFile") MultipartFile avatarFile,
+                                @RequestParam(value = "avatarFile", required = false) MultipartFile avatarFile,
                                 RedirectAttributes redirect,
                                 @AuthenticationPrincipal UserDetails userDetails,
                                 HttpSession session,
                                 Model model) {
 
-        // Lấy user hiện tại
         String currentUsername = userDetails.getUsername();
-        User currentUser = userService.findByUsername(currentUsername)
+        userService.findByUsername(currentUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
 
-        // 🔍 Kiểm tra email đã tồn tại chưa (phải khác user hiện tại)
-        Optional<User> userByEmail = userService.findByEmail(profileDTO.getEmail());
-        if (userByEmail.isPresent() && !userByEmail.get().getUsername().equals(currentUsername)) {
-            result.rejectValue("email", "error.profileDTO", "Email đã được sử dụng bởi người khác");
+        // Chỉ kiểm tra trùng khi có nhập
+        if (hasText(profileDTO.getEmail())) {
+            Optional<User> byEmail = userService.findByEmail(profileDTO.getEmail());
+            if (byEmail.isPresent() && !byEmail.get().getUsername().equals(currentUsername)) {
+                result.rejectValue("email", "error.profileDTO", "Email đã được sử dụng bởi người khác");
+            }
         }
-
-        // 🔍 Kiểm tra phone đã tồn tại chưa (phải khác user hiện tại)
-        if (profileDTO.getPhone() != null && !profileDTO.getPhone().isBlank()) {
-            Optional<User> userByPhone = userService.findByPhone(profileDTO.getPhone());
-            if (userByPhone.isPresent() && !userByPhone.get().getUsername().equals(currentUsername)) {
+        if (hasText(profileDTO.getPhone())) {
+            Optional<User> byPhone = userService.findByPhone(profileDTO.getPhone());
+            if (byPhone.isPresent() && !byPhone.get().getUsername().equals(currentUsername)) {
                 result.rejectValue("phone", "error.profileDTO", "Số điện thoại đã được sử dụng");
             }
         }
 
-        // 🔍 Kiểm tra lỗi validate từ annotation
         if (result.hasErrors()) {
             model.addAttribute("profile", profileDTO);
-            return "auth/profile"; // quay lại form
+            return "auth/profile";
         }
 
         try {
-            // ✅ Nếu có file avatar
-            if (!avatarFile.isEmpty()) {
-                // Kiểm tra định dạng file là ảnh
-                if (!avatarFile.getContentType().startsWith("image/")) {
+            // Chỉ xử lý file nếu có chọn
+            if (avatarFile != null && !avatarFile.isEmpty()) {
+                String ct = avatarFile.getContentType();
+                if (ct == null || !ct.startsWith("image/")) {
                     result.rejectValue("avatarUrl", "error.profileDTO", "File avatar phải là ảnh");
                     model.addAttribute("profile", profileDTO);
                     return "auth/profile";
                 }
-
                 String imageUrl = imageUploadService.uploadImage(avatarFile);
                 profileDTO.setAvatarUrl(imageUrl);
             }
 
-            // ✅ Cập nhật hồ sơ
             userService.updateUserProfile(currentUsername, profileDTO);
-
-            // ✅ Cập nhật timestamp avatar (để reload ảnh)
             session.setAttribute("avatarTimestamp", System.currentTimeMillis());
 
             redirect.addFlashAttribute("message", "Cập nhật hồ sơ thành công.");
             return "redirect:/account/info";
 
         } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Lỗi khi cập nhật hồ sơ: " + e.getMessage());
+            redirect.addFlashAttribute("error",
+                    "Lỗi khi cập nhật hồ sơ: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
             return "redirect:/account/info";
         }
     }
 
+    // ===== AJAX: không reload trang, trả JSON =====
+    @PostMapping(
+            value = "/update-profile/ajax",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseBody
+    public ResponseEntity<?> updateProfileAjax(@Valid @ModelAttribute("profile") UserProfileDTO profileDTO,
+                                               BindingResult result,
+                                               @RequestParam(value = "avatarFile", required = false) MultipartFile avatarFile,
+                                               @AuthenticationPrincipal UserDetails userDetails,
+                                               HttpSession session) {
+
+        String currentUsername = userDetails.getUsername();
+        User current = userService.findByUsername(currentUsername)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
+
+        // Chỉ kiểm tra trùng khi có nhập
+        if (hasText(profileDTO.getEmail())) {
+            Optional<User> byEmail = userService.findByEmail(profileDTO.getEmail());
+            if (byEmail.isPresent() && !byEmail.get().getUsername().equals(currentUsername)) {
+                result.rejectValue("email", "error.profileDTO", "Email đã được sử dụng bởi người khác");
+            }
+        }
+        if (hasText(profileDTO.getPhone())) {
+            Optional<User> byPhone = userService.findByPhone(profileDTO.getPhone());
+            if (byPhone.isPresent() && !byPhone.get().getUsername().equals(currentUsername)) {
+                result.rejectValue("phone", "error.profileDTO", "Số điện thoại đã được sử dụng");
+            }
+        }
+
+        if (result.hasErrors()) {
+            Map<String, String> errors = result.getFieldErrors().stream()
+                    .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage, (a, b) -> a));
+            return ResponseEntity.badRequest().body(Map.of("ok", false, "errors", errors));
+        }
+
+        try {
+            String newAvatar = null;
+            if (avatarFile != null && !avatarFile.isEmpty()) {
+                String ct = avatarFile.getContentType();
+                if (ct == null || !ct.startsWith("image/")) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "ok", false,
+                            "errors", Map.of("avatarUrl", "File avatar phải là ảnh")
+                    ));
+                }
+                newAvatar = imageUploadService.uploadImage(avatarFile);
+                profileDTO.setAvatarUrl(newAvatar);
+            }
+
+            userService.updateUserProfile(currentUsername, profileDTO);
+            if (newAvatar != null) {
+                session.setAttribute("avatarTimestamp", System.currentTimeMillis());
+            }
+
+            User refreshed = userService.findByUsername(currentUsername).orElse(current);
+
+            return ResponseEntity.ok(Map.of(
+                    "ok", true,
+                    "message", "Cập nhật hồ sơ thành công.",
+                    "profile", Map.of(
+                            "fullName", refreshed.getFullName(),
+                            "email", refreshed.getEmail(),
+                            "phone", refreshed.getPhone(),
+                            "address", refreshed.getAddress(),
+                            "avatarUrl", refreshed.getAvatarUrl()
+                    )
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "ok", false,
+                    "message", "Lỗi khi cập nhật hồ sơ: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName())
+            ));
+        }
+    }
+
+    private boolean hasText(String s) {
+        return s != null && !s.isBlank();
+    }
+
+    // ===== Đổi mật khẩu giữ nguyên =====
     @GetMapping("/change-password")
     public String showChangePasswordForm(Model model) {
         model.addAttribute("changePasswordDTO", new ChangePasswordDTO());
@@ -120,19 +203,14 @@ public class AccountController {
                                  RedirectAttributes redirect,
                                  Model model) {
 
-        // ✅ Kiểm tra không trùng mật khẩu cũ
         if (dto.getOldPassword().equals(dto.getNewPassword())) {
             result.rejectValue("newPassword", "error.newPassword", "Mật khẩu mới không được trùng với mật khẩu hiện tại");
         }
-
-        // ✅ So sánh mật khẩu mới và xác nhận
         if (!dto.getNewPassword().equals(dto.getConfirmPassword())) {
             result.rejectValue("confirmPassword", "error.confirmPassword", "Mật khẩu xác nhận không khớp");
         }
-
-        // ✅ Nếu có lỗi validate từ DTO hoặc confirm password
         if (result.hasErrors()) {
-            model.addAttribute("changePasswordDTO", dto); // giữ lại dữ liệu
+            model.addAttribute("changePasswordDTO", dto);
             return "auth/change-password";
         }
 
@@ -141,7 +219,6 @@ public class AccountController {
             redirect.addFlashAttribute("message", "Đổi mật khẩu thành công.");
             return "redirect:/account/info";
         } catch (Exception e) {
-            // ✅ Xử lý lỗi sai mật khẩu cũ, gắn lỗi thủ công
             result.rejectValue("oldPassword", "error.oldPassword", e.getMessage());
             model.addAttribute("changePasswordDTO", dto);
             return "auth/change-password";
