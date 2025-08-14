@@ -8,7 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface SaleOrderDetailRepository extends JpaRepository<SaleOrderDetail, Integer> {
+public interface SaleOrderDetailRepository extends JpaRepository<SaleOrderDetail, Long> {
     // Lấy tất cả chi tiết theo soId của đơn
     @Query("select d from SaleOrderDetail d where d.sale_order.soId = :soId")
     List<SaleOrderDetail> findBySaleOrderId(@Param("soId") Integer soId);

@@ -1,10 +1,17 @@
 package com.eewms.controller;
 
+import com.eewms.constant.ItemOrigin;
+import com.eewms.dto.SaleOrderDetailDTO;
+import com.eewms.dto.SaleOrderMapper;
 import com.eewms.dto.SaleOrderRequestDTO;
 import com.eewms.dto.SaleOrderResponseDTO;
 import com.eewms.entities.SaleOrder;
-import com.eewms.repository.purchaseRequest.PurchaseRequestRepository;
+import com.eewms.entities.SaleOrderCombo;
+import com.eewms.repository.ComboRepository;
+import com.eewms.repository.SaleOrderComboRepository;
+import com.eewms.repository.purchaseRequest.PurchaseRequestRepository; // ✅ đúng package bạn đưa
 import com.eewms.services.*;
+import com.eewms.utils.ComboJsonHelper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,6 +20,11 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/sale-orders")
@@ -24,29 +36,33 @@ public class SaleOrderController {
     private final IProductServices productService;
     private final IGoodIssueService goodIssueService;
     private final IComboService comboService;
-    private final PurchaseRequestRepository prRepo;
+    private final ComboJsonHelper comboJsonHelper;
 
-    // --- HIỂN THỊ DANH SÁCH ĐƠN ---
+    // ✅ thêm repo PR để check tồn tại
+    private final SaleOrderComboRepository saleOrderComboRepository;
+    private final PurchaseRequestRepository prRepo;
+    private final ComboRepository cbRepo;
+
+
+    // ========== LIST ==========
     @GetMapping
     public String listOrders(@RequestParam(value = "keyword", required = false) String keyword,
                              Model model) {
         if (!model.containsAttribute("saleOrderForm")) {
             model.addAttribute("saleOrderForm", new SaleOrderRequestDTO());
         }
-
         if (keyword != null && !keyword.isBlank()) {
             model.addAttribute("sale_orders", saleOrderService.searchByKeyword(keyword));
         } else {
             model.addAttribute("sale_orders", saleOrderService.getAllOrders());
         }
-
         model.addAttribute("customers", customerService.findAll());
-        model.addAttribute("products", productService.getAll());
+        model.addAttribute("products", productService.getAll()); // dùng cho list
         model.addAttribute("keyword", keyword);
         return "sale-order/sale-order-list";
     }
 
-    // --- HIỂN THỊ FORM TẠO ĐƠN ---
+    // ========== CREATE ==========
     @GetMapping("/create")
     public String showCreateForm(Model model) {
         model.addAttribute("saleOrderForm", new SaleOrderRequestDTO());
@@ -56,7 +72,6 @@ public class SaleOrderController {
         return "sale-order/sale-order-form";
     }
 
-    // --- XỬ LÝ TẠO ĐƠN ---
     @PostMapping("/create")
     public String createOrder(@ModelAttribute("saleOrderForm") @Valid SaleOrderRequestDTO dto,
                               BindingResult result,
@@ -68,11 +83,11 @@ public class SaleOrderController {
             model.addAttribute("products", productService.getAllActiveProducts());
             return "sale-order/sale-order-form";
         }
-
         try {
             String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
             SaleOrderResponseDTO createdOrder = saleOrderService.createOrder(dto, currentUsername);
-            if (createdOrder.getDescription() != null && createdOrder.getDescription().contains("thiếu hàng")) {
+            if (createdOrder.getDescription() != null
+                    && createdOrder.getDescription().toLowerCase().contains("thiếu hàng")) {
                 ra.addFlashAttribute("warning", "Đơn hàng đã tạo, tuy nhiên có sản phẩm thiếu hàng. Vui lòng nhập thêm để hoàn thành.");
             } else {
                 ra.addFlashAttribute("success", "Tạo đơn hàng thành công. Mã đơn: " + createdOrder.getOrderCode());
@@ -83,50 +98,110 @@ public class SaleOrderController {
         return "redirect:/sale-orders";
     }
 
-    // --- HIỂN THỊ FORM SỬA ĐƠN ---
+    // ========== EDIT (hợp nhất Status + Items) ==========
     @GetMapping("/{id}/edit")
     public String editOrder(@PathVariable Integer id, Model model) {
+        // DTO phần header, trạng thái, button…
         SaleOrderResponseDTO dto = saleOrderService.getById(id);
+
+        // COMPLETED → quay về list
         if (dto.getStatus() == SaleOrder.SaleOrderStatus.COMPLETED) {
             model.addAttribute("error", "Đơn hàng đã hoàn thành, không thể chỉnh sửa.");
             return "redirect:/sale-orders";
         }
-        model.addAttribute("saleOrder", dto);
-        model.addAttribute("statusOptions", SaleOrder.SaleOrderStatus.values());
-        model.addAttribute("customers", customerService.findAll());
-        model.addAttribute("products", productService.getAll());
 
-        boolean prExists = prRepo.existsBySaleOrder_SoId(id);
-        model.addAttribute("prExists", prExists);
+        // Lấy entity + tách manual detail để đổ vào form
+        var orderEntity = saleOrderService.getOrderEntityById(id);
+        var manualDetails = orderEntity.getDetails().stream()
+                .filter(d -> d.getOrigin() == ItemOrigin.MANUAL)
+                .map(SaleOrderMapper::toDetailDTO)
+                .toList();
+
+        // Lấy comboIds (có lặp) từ bảng sale_order_combos để pre-select cho UI
+        var expandedComboIds = saleOrderService.getComboIdsExpanded(id);
+
+        Map<Long,Integer> comboCounts = new LinkedHashMap<>();
+        for (Long cid : expandedComboIds) {
+            comboCounts.merge(cid, 1, Integer::sum);
+        }
+        var form = SaleOrderRequestDTO.builder()
+                .customerId(orderEntity.getCustomer() != null ? orderEntity.getCustomer().getId() : null)
+                .description(orderEntity.getDescription())
+                .details(manualDetails)
+                .comboCounts(comboCounts)
+                .build();
+
+        model.addAttribute("saleOrder", dto);
+        model.addAttribute("saleOrderForm", form);
+        model.addAttribute("customers", customerService.findAll());
+        model.addAttribute("products", productService.getAllActiveProducts());
+        model.addAttribute("combos", cbRepo.findAll());
+
 
         return "sale-order/sale-order-edit";
     }
 
-    // --- XỬ LÝ FORM SỬA ĐƠN ---
-    @PostMapping("/{id}/edit")
-    public String updateOrder(@PathVariable Integer id,
-                              @RequestParam SaleOrder.SaleOrderStatus status,
-                              RedirectAttributes ra) {
+    // POST: lưu lại items (manual + comboIds)
+    @PostMapping("/{id}/items/edit")
+    public String updateOrderItems(@PathVariable Integer id,
+                                   @ModelAttribute("saleOrderForm") @Valid SaleOrderRequestDTO form,
+                                   BindingResult br,
+                                   Model model,
+                                   RedirectAttributes ra) {
+        if (br.hasErrors()) {
+            // render lại edit với đủ data
+            SaleOrderResponseDTO dto = saleOrderService.getById(id);
+            model.addAttribute("saleOrder", dto);
+            model.addAttribute("customers", customerService.findAll());
+            model.addAttribute("products", productService.getAllActiveProducts());
+            model.addAttribute("combos", cbRepo.findAll());
+            model.addAttribute("prExists", prRepo.existsBySaleOrder_SoId(id));
+            return "sale-order/sale-order-edit";
+        }
+
         try {
-            saleOrderService.updateOrderStatus(id, status);
-            ra.addFlashAttribute("success", "Cập nhật đơn hàng thành công.");
+            saleOrderService.updateOrderItems(id, form);
+            ra.addFlashAttribute("success", "Cập nhật chi tiết đơn hàng thành công.");
         } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/sale-orders";
     }
+
+    // Lưu trạng thái
+//    @PostMapping("/{id}/edit")
+//    public String updateOrderStatusAction(@PathVariable Integer id,
+//                                          @RequestParam SaleOrder.SaleOrderStatus status,
+//                                          RedirectAttributes ra) {
+//        try {
+//            saleOrderService.updateOrderStatus(id, status);
+//            ra.addFlashAttribute("success", "Cập nhật đơn hàng thành công.");
+//        } catch (Exception e) {
+//            ra.addFlashAttribute("error", e.getMessage());
+//        }
+//        return "redirect:/sale-orders";
+//    }
+
+    @PostMapping("/{id}/update")
+    public String updateFinishedSaleOrder(@PathVariable Integer id, RedirectAttributes ra) {
+        try {
+            saleOrderService.updateOrderStatus(id, SaleOrder.SaleOrderStatus.COMPLETED);
+            ra.addFlashAttribute("success", "Đơn hàng đã hoàn tất.");
+        } catch (Exception e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/sale-orders";
+    }
+
+    // View completed
     @GetMapping("/{id}/view")
     public String viewOrderDetails(@PathVariable Integer id , Model model) {
-        // Lấy đơn hàng từ cơ sở dữ liệu
         SaleOrder saleOrder = saleOrderService.getOrderEntityById(id);
-
-        // Kiểm tra nếu trạng thái đơn hàng là "COMPLETED"
         if (saleOrder.getStatus() == SaleOrder.SaleOrderStatus.COMPLETED) {
             model.addAttribute("saleOrder", saleOrder);
-            return "sale-order/sale-order-detail";  // Chuyển tới trang chi tiết đơn hàng
+            return "sale-order/sale-order-detail";
         } else {
-            // Trường hợp khác, có thể redirect đến trang khác hoặc thông báo lỗi
-            return "redirect:/sale-orders";  // Quay lại danh sách đơn hàng
+            return "redirect:/sale-orders";
         }
     }
 }

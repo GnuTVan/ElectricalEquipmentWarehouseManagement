@@ -17,17 +17,20 @@ public class SaleOrderMapper {
     }
 
     // Tạo DTO sản phẩm từ chi tiết đơn hàng
-    public static SaleOrderDetailDTO toDetailDTO(SaleOrderDetail detail) {
-        Product product = detail.getProduct();
+    public static SaleOrderDetailDTO toDetailDTO(SaleOrderDetail d) {
         return SaleOrderDetailDTO.builder()
-                .productId(product.getId())
-                .productCode(product.getCode())
-                .productName(product.getName())
-                .price(detail.getPrice())
-                .orderedQuantity(detail.getOrderedQuantity())
-                .availableQuantity(product.getQuantity())
+                .productId(d.getProduct().getId())
+                .productCode(d.getProduct().getCode())
+                .productName(d.getProduct().getName())
+                .price(d.getPrice())                  // QUAN TRỌNG: map đúng
+                .orderedQuantity(d.getOrderedQuantity())  // QUAN TRỌNG: map đúng
+                .availableQuantity(d.getProduct().getQuantity())
+                .fromCombo(d.getCombo() != null)          // nếu có quan hệ detail -> combo
+                .comboId(d.getCombo() != null ? d.getCombo().getId() : null)
+                .comboName(d.getCombo() != null ? d.getCombo().getName() : null)
                 .build();
     }
+
 
     // Map SaleOrder → SaleOrderResponseDTO
     public static SaleOrderResponseDTO toOrderResponseDTO(SaleOrder order) {

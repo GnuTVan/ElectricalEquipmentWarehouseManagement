@@ -1,5 +1,6 @@
 package com.eewms.entities;
 
+import com.eewms.constant.ItemOrigin;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import lombok.*;
@@ -35,4 +36,13 @@ public class SaleOrderDetail {
 
     @Column(name = "price",nullable = false)
     private BigDecimal price;
+
+    // NEW
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ItemOrigin origin = ItemOrigin.MANUAL;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "combo_id") // có thể null nếu là manual
+    private Combo combo;
 }

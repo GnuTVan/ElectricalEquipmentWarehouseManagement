@@ -1,166 +1,402 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="vi">
-<head th:replace="~{fragments/common-head :: commonHead('Chi tiết đơn hàng bán')}"></head>
-
+<head th:replace="~{fragments/common-head :: commonHead('Sửa đơn hàng bán')}"></head>
 <body class="bg-gray-100 font-sans">
-<div class="flex h-screen">
-    <!-- Sidebar -->
+<div class="flex">
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-    <!-- Main -->
     <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
         <div th:replace="~{fragments/header :: header}"></div>
 
-        <div class="mb-4 px-6 py-6">
-            <div class="mb-2">
-                <h1 class="text-2xl font-bold text-gray-800">Chi tiết đơn hàng bán</h1>
-            </div>
+        <div class="px-6 py-6">
+            <div class="flex items-center justify-between mb-4">
+                <h1 class="text-2xl font-bold">
+                    Sửa đơn <span class="text-blue-700" th:text="${saleOrder.orderCode}">ORD000</span>
+                </h1>
 
-            <!-- Thông báo -->
-            <div th:if="${message}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4">
-                <span th:text="${message}"></span>
-            </div>
-
-            <div th:if="${error}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
-                <span th:text="${error}"></span>
-            </div>
-
-            <!-- Thông tin đơn -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                    <label class="text-sm font-medium">Mã đơn hàng</label>
-                    <input type="text" th:value="${saleOrder.orderCode}" readonly
-                           class="w-full border rounded px-3 py-2 bg-gray-100"/>
-                </div>
-                <div>
-                    <label class="text-sm font-medium">Khách hàng</label>
-                    <input type="text" th:value="${saleOrder.customerName}" readonly
-                           class="w-full border rounded px-3 py-2 bg-gray-100"/>
-                </div>
-                <div>
-                    <label class="text-sm font-medium">Trạng thái</label>
-                    <input type="hidden" id="orderStatus" th:value="${saleOrder.status}"/>
-                    <input type="text" th:value="${saleOrder.status}" readonly
-                           class="w-full border rounded px-3 py-2 bg-gray-100"/>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="text-sm font-medium">Ghi chú</label>
-                    <textarea readonly class="w-full border rounded px-3 py-2 bg-gray-100"
-                              th:text="${saleOrder.description}"></textarea>
-                </div>
-            </div>
-
-            <!-- Danh sách sản phẩm -->
-            <div class="mb-6">
-                <h2 class="text-lg font-semibold mb-2">Danh sách sản phẩm</h2>
-                <table class="min-w-full bg-white rounded shadow text-sm">
-                    <thead class="bg-gray-100">
-                    <tr>
-                        <th class="px-3 py-2 text-left">Sản phẩm</th>
-                        <th class="px-3 py-2 text-center">Số lượng bán ra</th>
-                        <th class="px-3 py-2 text-center">Tồn kho</th>
-                        <th class="px-3 py-2 text-center">Đơn giá</th>
-                        <th class="px-3 py-2 text-center">Thành tiền</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="item : ${saleOrder.details}" class="border-t product-row">
-                        <td class="px-3 py-2" th:text="${item.productName}"></td>
-                        <td class="text-center quantity-cell" th:text="${item.orderedQuantity}">0</td>
-                        <td class="text-center" th:text="${item.availableQuantity}">0</td>
-                        <td class="text-center price-cell" th:text="${item.price}">0</td>
-                        <td class="text-right line-total-cell">0</td>
-                    </tr>
-                    </tbody>
-                    <tfoot>
-                    <tr>
-                        <td colspan="4" class="text-right font-semibold px-3 py-2">Tổng tiền:</td>
-                        <td id="grandTotalCell" class="text-right font-bold px-3 py-2">0</td>
-                    </tr>
-                    </tfoot>
-                </table>
-            </div>
-
-            <!-- Hành động -->
-            <div class="text-right mt-4 space-x-2">
-                <!-- Nút Quay lại -->
-                <a th:href="@{/sale-orders}"
-                   class="inline-block bg-gray-500 hover:bg-gray-600 text-white px-5 py-2 rounded">
-                    <i class="ri-arrow-go-back-line mr-1"></i> Quay lại
-                </a>
-
-                <!-- Nút "Tạo phiếu xuất" chỉ khi: PENDING + không thiếu + chưa xuất -->
                 <a th:if="${saleOrder.status.name() == 'PENDING'
-           and !saleOrder.hasInsufficientStock
-           and !saleOrder.alreadyExported}"
-                   th:href="@{'/good-issue/create-from-order/' + ${saleOrder.orderId}}"
-                   class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded"
-                   id="createDeliveryBtn">
-                    <i class="ri-truck-line mr-1"></i> Tạo phiếu xuất
+                   and !saleOrder.alreadyExported
+                   and !saleOrder.hasInsufficientStock}"
+                   th:href="@{|/good-issues/create-from-order/${saleOrder.orderId}|}"
+                   class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white transition">
+                    Tạo phiếu xuất
                 </a>
-
-                <!-- Nếu đang thiếu hàng, hiển thị badge cảnh báo -->
-                <span th:if="${saleOrder.hasInsufficientStock}"
-                      class="inline-flex items-center px-3 py-2 rounded bg-yellow-100 text-yellow-800 border">
-  Thiếu hàng – hãy tạo yêu cầu mua
-</span>
-
-                <!-- Nút "Hoàn tất đơn hàng" khi trạng thái là DELIVERIED -->
-                <div th:if="${saleOrder.status.name() == 'DELIVERIED'}">
-                    <form th:action="@{'/sale-orders/' + ${saleOrder.orderId} + '/edit'}" method="post">
-                        <input type="hidden" name="status" value="COMPLETED"/>
-                        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded mt-1">
-                            <i class="ri-truck-line mr-1"></i> Hoàn tất đơn hàng
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Nút "Tạo yêu cầu mua" khi đơn hàng thiếu hàng -->
-
-                <div th:if="${saleOrder.hasInsufficientStock and !saleOrder.alreadyExported and !prExists}">
-                    <a th:href="@{'/admin/purchase-requests/create-from-sale-order/' + ${saleOrder.orderId}}"
-                       class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded inline-block">
-                        Tạo yêu cầu mua
-                    </a>
-                </div>
-
-                <!-- thêm badge khi đã có PR -->
-                <div th:if="${prExists}" class="inline-flex items-center px-3 py-2 rounded bg-gray-100 text-gray-700 border">
-                    Đã tạo yêu cầu mua
-                </div>
-                <!-- Hiển thị trạng thái hoàn tất đơn hàng -->
-                <span th:if="${saleOrder.status.name() == 'COMPLETED'}"
-                      class="bg-green-100 text-green-800 px-4 py-2 rounded">
-        Đơn hàng đã hoàn tất
-    </span>
             </div>
+
+            <form id="saleOrderForm"
+                  th:action="@{|/sale-orders/${saleOrder.orderId}/items/edit|}"
+                  method="post"
+                  th:object="${saleOrderForm}">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mã đơn hàng</label>
+                        <input type="text" class="w-full border rounded px-3 py-2 bg-gray-100"
+                               th:value="${saleOrder.orderCode}" readonly>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
+                        <input type="text" class="w-full border rounded px-3 py-2 bg-gray-100"
+                               th:value="${saleOrder.status}" readonly>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Khách hàng</label>
+                        <select th:field="*{customerId}" class="w-full border rounded px-3 py-2" required>
+                            <option value="">-- Chọn khách hàng --</option>
+                            <option th:each="c : ${customers}" th:value="${c.id}" th:text="${c.fullName}"></option>
+                        </select>
+                    </div>
+
+                    <!-- Picker mới: select + chip tự render -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Chọn combo</label>
+                        <div class="flex gap-2">
+                            <select id="comboAdder" class="w-full border rounded px-3 py-2">
+                                <option value="">Chọn combo</option>
+                                <option th:each="cb : ${combos}"
+                                        th:value="${cb.id}"
+                                        th:text="${cb.code + ' - ' + cb.name}">
+                                </option>
+                            </select>
+                            <button type="button" id="btnAddCombo"
+                                    class="px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">Thêm</button>
+                        </div>
+
+                        <!-- Chips hiển thị ×N -->
+                        <div id="comboChips" class="mt-2 flex flex-wrap gap-2"></div>
+
+                        <!-- Hidden inputs comboCounts[ID]=N (build khi submit) -->
+                        <div id="comboCountsHidden"></div>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
+                        <textarea th:field="*{description}" class="w-full border rounded px-3 py-2" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto bg-white rounded shadow">
+                    <table class="min-w-full text-sm">
+                        <thead>
+                        <tr class="bg-gray-50 text-left">
+                            <th class="px-3 py-2">Sản phẩm</th>
+                            <th class="px-3 py-2 text-center">Tồn</th>
+                            <th class="px-3 py-2 text-center">SL</th>
+                            <th class="px-3 py-2 text-center">Đơn giá</th>
+                            <th class="px-3 py-2 text-right">Thành tiền</th>
+                            <th class="px-3 py-2 text-center">Xóa</th>
+                        </tr>
+                        </thead>
+                        <tbody id="itemTableBody"></tbody>
+                        <tfoot>
+                        <tr>
+                            <td colspan="4" class="px-3 py-2 text-right font-semibold">Tổng tiền:</td>
+                            <td class="px-3 py-2 text-right font-bold" id="grandTotal">0</td>
+                            <td></td>
+                        </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="flex items-center justify-between mt-4">
+                    <button type="button" id="btnAddRow"
+                            class="px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">
+                        + Thêm sản phẩm
+                    </button>
+                </div>
+
+                <div class="mt-6 flex gap-3">
+                    <a th:href="@{/sale-orders}"
+                       class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">Quay lại</a>
+                    <button type="submit"
+                            class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white">
+                        Lưu đơn
+                    </button>
+                </div>
+            </form>
         </div>
     </main>
 </div>
 
+<div class="hidden" th:replace="~{fragments/footer :: footer}"></div>
+
+<script th:inline="javascript">
+    const csrfHeader = /*[[${_csrf.headerName}]]*/ 'X-CSRF-TOKEN';
+    const csrfToken  = /*[[${_csrf.token}]]*/ '';
+    const products   = /*[[${products}]]*/ [];
+    const saleForm   = /*[[${saleOrderForm}]]*/ {}; // { details, comboCounts:{id:n} }
+</script>
+
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        calculateAllLineTotals();
-    });
+    /* ====== State & Utils ====== */
+    const tableBody  = document.getElementById('itemTableBody');
+    const productMap = new Map((products || []).map(p => [String(p.id), p]));
+    const esc = s => String(s||'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const fmt = n => (Number(n)||0).toLocaleString('vi-VN');
+    let comboCounts = new Map(Object.entries(saleForm?.comboCounts || {})); // Map<string,number>
+    let comboPidSet = new Set();
+    let buildSeq = 0; let aborter = null;
 
-    function calculateAllLineTotals() {
-        const rows = document.querySelectorAll(".product-row");
-        let total = 0;
+    /* ====== Money & index ====== */
+    function recalcRowTotal(tr){
+        const qty   = Number(tr.querySelector('.quantity')?.value || 0);
+        const price = Number(tr.querySelector('.price')?.value || 0);
+        tr.querySelector('.lineTotal').textContent = fmt(qty * price);
+    }
+    function recalcGrand(){
+        let t=0;
+        tableBody.querySelectorAll('tr[data-source]').forEach(tr=>{
+            const q=Number(tr.querySelector('.quantity')?.value||0);
+            const p=Number(tr.querySelector('.price')?.value||0);
+            t+=q*p;
+        });
+        document.getElementById('grandTotal').textContent = fmt(t);
+    }
+    function reindexAllRows(){
+        const rows = tableBody.querySelectorAll('tr[data-source="manual"]');
+        rows.forEach((tr,i)=>{
+            tr.querySelectorAll('input,select').forEach(el=>{
+                if(!el.name) return;
+                el.name = el.name.replace(/\[\d+]/, `[${i}]`);
+            });
+        });
+    }
 
-        rows.forEach(row => {
-            const quantity = parseInt(row.querySelector(".quantity-cell").textContent) || 0;
-            const price = parseFloat(row.querySelector(".price-cell").textContent) || 0;
-            const lineTotal = quantity * price;
+    /* ====== Manual rows (chặn trùng combo) ====== */
+    function buildManualOptions(currentPid){
+        const used = new Set(Array.from(tableBody.querySelectorAll('tr[data-source="manual"]'))
+            .map(tr=>tr.dataset.productId).filter(Boolean));
+        used.delete(String(currentPid));
+        return (products||[])
+            .filter(p=>!used.has(String(p.id)))
+            .filter(p=>!comboPidSet.has(String(p.id)))
+            .map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+    }
+    function refreshAllManualSelects(){
+        tableBody.querySelectorAll('tr[data-source="manual"]').forEach(tr=>{
+            const sel=tr.querySelector('.product-select'); if(!sel) return;
+            const cur=sel.value;
+            sel.innerHTML = buildManualOptions(cur);
+            sel.value = cur;
+        });
+    }
+    function createManualRow({pid,price,stock,qty}){
+        const idx = tableBody.querySelectorAll('tr[data-source]').length;
+        const tr = document.createElement('tr');
+        tr.dataset.productId=String(pid); tr.dataset.source='manual';
+        tr.innerHTML = `
+    <td class="px-3 py-2"><select name="details[${idx}].productId" class="w-full border rounded px-2 py-1 product-select"></select></td>
+    <td class="px-3 py-2 text-center"><span class="stock-display">${stock??'-'}</span></td>
+    <td class="px-3 py-2 text-center"><input type="number" name="details[${idx}].orderedQuantity" class="border px-2 py-1 w-full quantity" value="${qty}" min="1"></td>
+    <td class="px-3 py-2 text-center"><input type="number" name="details[${idx}].price" class="border px-2 py-1 w-full price" value="${price}" readonly></td>
+    <td class="px-3 py-2 text-right"><span class="lineTotal">0</span></td>
+    <td class="px-3 py-2 text-center"><button type="button" class="text-red-600 text-lg btn-remove"><i class="ri-close-line"></i></button></td>`;
+        tableBody.appendChild(tr);
+        const sel=tr.querySelector('.product-select');
+        sel.innerHTML = buildManualOptions(pid);
+        sel.value=String(pid);
 
-            row.querySelector(".line-total-cell").textContent = lineTotal.toLocaleString("vi-VN");
-            total += lineTotal;
+        sel.addEventListener('change', ()=>{
+            tr.dataset.productId=sel.value;
+            const p=productMap.get(String(sel.value))||{};
+            tr.querySelector('.stock-display').textContent=p.quantity??'-';
+            tr.querySelector('.price').value=Number(p.listingPrice||0);
+            refreshAllManualSelects(); recalcRowTotal(tr); recalcGrand();
+        });
+        tr.querySelector('.quantity').addEventListener('input', e=>{
+            const v=Number(e.target.value||0); e.target.value=isNaN(v)||v<1?1:v;
+            recalcRowTotal(tr); recalcGrand();
+        });
+        tr.querySelector('.btn-remove').addEventListener('click', ()=>{
+            tr.remove(); refreshAllManualSelects(); reindexAllRows(); recalcGrand();
         });
 
-        const totalCell = document.getElementById("grandTotalCell");
-        if (totalCell) {
-            totalCell.textContent = total.toLocaleString("vi-VN");
-        }
+        recalcRowTotal(tr); recalcGrand();
     }
+
+    /* ====== Combo rows ====== */
+    function createComboRow(it){
+        const pid=String(it.productId);
+        const qty=Number(it.quantity||it.orderedQuantity||0);
+        const price=Number(it.price || (productMap.get(pid)?.listingPrice || 0));
+        const stock=(it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(pid)?.quantity??'-');
+        const tr=document.createElement('tr');
+        tr.dataset.productId=pid; tr.dataset.source='combo'; tr.classList.add('bg-amber-50');
+        tr.innerHTML=`
+   <td class="px-3 py-2"><span class="inline-flex text-[11px] px-2 py-0.5 rounded-full border border-amber-400 bg-amber-100 text-amber-800">Từ combo</span>
+   <span class="ml-2 font-medium">${esc(it.productName || productMap.get(pid)?.name || '(Sản phẩm)')}</span></td>
+   <td class="px-3 py-2 text-center"><span class="stock-display">${stock}</span></td>
+   <td class="px-3 py-2 text-center"><input type="number" class="border px-2 py-1 w-full quantity" value="${qty}" readonly></td>
+   <td class="px-3 py-2 text-center"><input type="number" class="border px-2 py-1 w-full price" value="${price}" readonly></td>
+   <td class="px-3 py-2 text-right"><span class="lineTotal">0</span></td>
+   <td class="px-3 py-2 text-center"><button type="button" class="text-gray-300 cursor-not-allowed"><i class="ri-lock-2-line"></i></button></td>`;
+        recalcRowTotal(tr); return tr;
+    }
+    function patchComboRow(tr,it){
+        const qty=Number(it.quantity||0);
+        const price=Number(it.price ?? (productMap.get(String(it.productId))?.listingPrice||0));
+        const stock=(it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(String(it.productId))?.quantity??'-');
+        tr.querySelector('.stock-display').textContent=stock;
+        tr.querySelector('.quantity').value=String(qty);
+        tr.querySelector('.price').value=String(price);
+        recalcRowTotal(tr);
+    }
+
+    /* ====== Chips (view của comboCounts) ====== */
+    const chips = document.getElementById('comboChips');
+    function renderChips(){
+        chips.innerHTML='';
+        const entries=[...comboCounts.entries()];
+        entries.forEach(([id,n])=>{
+            const opt=document.querySelector(`#comboAdder option[value="${CSS.escape(String(id))}"]`);
+            const label=opt?opt.textContent.trim():`Combo ${id}`;
+            const el=document.createElement('div');
+            el.className='inline-flex items-center gap-2 bg-teal-700 text-white px-3 py-1 rounded-full';
+            el.innerHTML=`
+      <span>${label} × ${n}</span>
+      <button type="button" class="px-2 rounded bg-white/20 hover:bg-white/30" data-act="inc" data-id="${id}">+</button>
+      <button type="button" class="px-2 rounded bg-white/20 hover:bg-white/30" data-act="dec" data-id="${id}">−</button>
+      <button type="button" class="px-2 rounded bg-white/20 hover:bg-white/30" data-act="rm"  data-id="${id}">×</button>`;
+            chips.appendChild(el);
+        });
+    }
+    chips.addEventListener('click', e=>{
+        const btn=e.target.closest('button'); if(!btn) return;
+        const id=btn.dataset.id, act=btn.dataset.act;
+        const cur=comboCounts.get(id)||0;
+        if(act==='inc') comboCounts.set(id,cur+1);
+        else if(act==='dec'){ if(cur>1) comboCounts.set(id,cur-1); else comboCounts.delete(id); }
+        else if(act==='rm'){ comboCounts.delete(id); }
+        renderChips(); rebuildFromCounts();
+    });
+
+    /* ====== Expand theo counts ====== */
+    async function rebuildFromCounts(){
+        // convert counts -> expanded array để call /combos/expand
+        const expanded=[];
+        comboCounts.forEach((n,id)=>{ for(let i=0;i<n;i++) expanded.push(Number(id)); });
+
+        // clear khi trống
+        if(expanded.length===0){
+            if(aborter) aborter.abort();
+            tableBody.querySelectorAll('tr[data-source="combo"]').forEach(tr=>tr.remove());
+            comboPidSet = new Set();
+            refreshAllManualSelects(); reindexAllRows(); recalcGrand();
+            return;
+        }
+
+        const my = ++buildSeq;
+        if(aborter) aborter.abort();
+        aborter = new AbortController();
+
+        let itemsRaw=[];
+        try{
+            const res = await fetch('/combos/expand', {
+                method:'POST',
+                headers:{'Content-Type':'application/json',[csrfHeader]:csrfToken},
+                body: JSON.stringify(expanded),
+                signal: aborter.signal
+            });
+            if(!res.ok) throw new Error('expand failed');
+            itemsRaw = await res.json();
+        }catch(e){ return; }
+        if(my!==buildSeq) return;
+
+        // gộp theo productId
+        const agg=new Map();
+        (itemsRaw||[]).forEach(it=>{
+            const pid=String(it.productId);
+            const cur=agg.get(pid);
+            const row={
+                productId: pid,
+                productName: it.productName || productMap.get(pid)?.name || '',
+                quantity: Number(it.quantity || it.orderedQuantity || 0),
+                price: Number(it.price ?? (productMap.get(pid)?.listingPrice ?? 0)),
+                availableQuantity: (it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(pid)?.quantity ?? '-')
+            };
+            if(!cur) agg.set(pid,row); else cur.quantity += row.quantity;
+        });
+
+        comboPidSet = new Set(agg.keys());
+
+        const cur = Array.from(tableBody.querySelectorAll('tr[data-source="combo"]'));
+        const byPid = new Map(cur.map(tr=>[tr.dataset.productId,tr]));
+        const nextPids = new Set(agg.keys());
+        const frag=document.createDocumentFragment();
+
+        for(const [pid,row] of agg){
+            const ex=byPid.get(pid);
+            if(ex) patchComboRow(ex,row);
+            else frag.appendChild(createComboRow(row));
+        }
+        for(const tr of cur){ if(!nextPids.has(tr.dataset.productId)) tr.remove(); }
+        if(frag.childNodes.length){
+            const firstManual = tableBody.querySelector('tr[data-source="manual"]');
+            if(firstManual) tableBody.insertBefore(frag, firstManual); else tableBody.appendChild(frag);
+        }
+
+        // dọn manual trùng
+        tableBody.querySelectorAll('tr[data-source="manual"]').forEach(tr=>{
+            if(comboPidSet.has(String(tr.dataset.productId))) tr.remove();
+        });
+        refreshAllManualSelects(); reindexAllRows(); recalcGrand();
+    }
+
+    /* ====== Bootstrap ====== */
+    document.addEventListener('DOMContentLoaded', ()=>{
+        // render manual từ form
+        (saleForm?.details || []).forEach(d=>{
+            const p=productMap.get(String(d.productId))||{};
+            createManualRow({
+                pid: d.productId,
+                price: Number(p.listingPrice || d.price || 0),
+                stock: p.quantity ?? '-',
+                qty: Number(d.orderedQuantity || 1)
+            });
+        });
+        reindexAllRows(); refreshAllManualSelects(); recalcGrand();
+
+        // render chips từ comboCounts
+        renderChips();
+        rebuildFromCounts();
+
+        // chọn combo để +1
+        document.getElementById('btnAddCombo').addEventListener('click', ()=>{
+            const sel=document.getElementById('comboAdder');
+            const v=sel.value; if(!v) return;
+            comboCounts.set(v, (comboCounts.get(v)||0) + 1);
+            sel.value='';
+            renderChips(); rebuildFromCounts();
+        });
+
+        // Add manual row
+        document.getElementById('btnAddRow').addEventListener('click', ()=>{
+            const used = new Set(Array.from(tableBody.querySelectorAll('tr[data-source="manual"]'))
+                .map(tr=>tr.dataset.productId));
+            const cand=(products||[]).find(p=>!used.has(String(p.id)) && !comboPidSet.has(String(p.id)));
+            if(!cand) return;
+            createManualRow({
+                pid:cand.id, price:cand.listingPrice||0, stock:cand.quantity??'-', qty:1
+            });
+            reindexAllRows(); refreshAllManualSelects(); recalcGrand();
+        });
+
+        // submit -> build hidden inputs comboCounts[ID]=N
+        document.getElementById('saleOrderForm').addEventListener('submit', ()=>{
+            const hidden = document.getElementById('comboCountsHidden');
+            hidden.innerHTML='';
+            comboCounts.forEach((n,id)=>{
+                const inp=document.createElement('input');
+                inp.type='hidden'; inp.name=`comboCounts[${id}]`; inp.value=String(n);
+                hidden.appendChild(inp);
+            });
+            // loại mọi input trong dòng combo (readonly)
+            tableBody.querySelectorAll('tr[data-source="combo"] [name]').forEach(el=>el.remove());
+            reindexAllRows();
+        });
+    });
 </script>
 </body>
 </html>

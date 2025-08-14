@@ -2,7 +2,10 @@ package com.eewms.dto;
 
 import jakarta.validation.Valid;
 import lombok.*;
+
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.validation.constraints.*;
 
@@ -18,8 +21,9 @@ public class SaleOrderRequestDTO {
     @Size(max = 255, message = "Mô tả không được vượt quá 255 ký tự")
     private String description;
 
-    @NotEmpty(message = "Cần có ít nhất 1 sản phẩm")
     private List<@Valid SaleOrderDetailDTO> details;
 
     private List<Long> comboIds;
+
+    private Map<Long, Integer> comboCounts = new LinkedHashMap<>();
 }

@@ -15,4 +15,5 @@ public interface ISaleOrderService {
     List<SaleOrderResponseDTO> searchByKeyword(String keyword);
     SaleOrder getOrderEntityById(Integer id); // thêm để dùng tạo phiếu
     void updateOrderItems(Integer orderId, SaleOrderRequestDTO form);
+    List<Long> getComboIdsExpanded(Integer soId);
 }

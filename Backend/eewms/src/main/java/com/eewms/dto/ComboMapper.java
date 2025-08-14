@@ -16,7 +16,7 @@ public class ComboMapper {
                 .status(combo.getStatus())
                 .details(combo.getDetails().stream()
                         .map(detail -> ComboDetailDTO.builder()
-                                .comboId(detail.getId())
+                                .comboId(detail.getCombo().getId())
                                 .productId(detail.getProduct().getId())
                                 .productName(detail.getProduct().getName())
                                 .quantity(detail.getQuantity())

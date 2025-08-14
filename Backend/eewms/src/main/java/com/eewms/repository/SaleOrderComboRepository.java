@@ -1,5 +1,6 @@
 package com.eewms.repository;
 
+import com.eewms.entities.SaleOrder;
 import com.eewms.entities.SaleOrderCombo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -16,4 +17,6 @@ public interface SaleOrderComboRepository extends JpaRepository<SaleOrderCombo, 
       order by coalesce(sum(c.quantity),0) desc
     """)
     List<Object[]> topCombos(LocalDateTime from, LocalDateTime to);
+    List<SaleOrderCombo> findBySaleOrder(SaleOrder saleOrder);
+    void deleteBySaleOrder(SaleOrder saleOrder);
 }

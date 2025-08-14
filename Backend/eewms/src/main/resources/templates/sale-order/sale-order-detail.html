@@ -1,101 +1,117 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="vi">
 <head th:replace="~{fragments/common-head :: commonHead('Chi tiết đơn hàng bán')}"></head>
+
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
     <!-- Sidebar -->
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-    <!-- Main content -->
+    <!-- Main -->
     <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
-        <!-- Header -->
         <div th:replace="~{fragments/header :: header}"></div>
 
-        <!-- Tiêu đề -->
-        <div class="mb-4">
-            <h1 class="text-2xl font-bold text-gray-800">Chi tiết đơn hàng bán</h1>
-        </div>
+        <div class="mb-4 px-6 py-6">
+            <div class="mb-2">
+                <h1 class="text-2xl font-bold text-gray-800">Chi tiết đơn hàng bán</h1>
+            </div>
 
-        <!-- Thông tin đơn -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-                <label class="text-sm font-medium">Mã đơn hàng</label>
-                <input type="text" th:value="${saleOrder.soCode}" readonly class="w-full border rounded px-3 py-2 bg-gray-100"/>
+            <!-- Flash -->
+            <div th:if="${message}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4">
+                <span th:text="${message}"></span>
             </div>
-            <div>
-                <label class="text-sm font-medium">Khách hàng</label>
-                <input type="text" th:value="${saleOrder.customer.fullName}" readonly class="w-full border rounded px-3 py-2 bg-gray-100"/>
+            <div th:if="${error}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
+                <span th:text="${error}"></span>
             </div>
-            <div>
-                <label class="text-sm font-medium">Trạng thái</label>
-                <input type="text" th:value="${saleOrder.status}" readonly class="w-full border rounded px-3 py-2 bg-gray-100"/>
-            </div>
-            <div class="md:col-span-2">
-                <label class="text-sm font-medium">Ghi chú</label>
-                <textarea readonly class="w-full border rounded px-3 py-2 bg-gray-100" th:text="${saleOrder.description}"></textarea>
-            </div>
-        </div>
 
-        <!-- Danh sách sản phẩm -->
-        <div class="mb-6">
-            <h2 class="text-lg font-semibold mb-2">Danh sách sản phẩm</h2>
-            <table class="min-w-full bg-white rounded shadow text-sm">
-                <thead class="bg-gray-100">
-                <tr>
-                    <th class="px-3 py-2 text-left">Sản phẩm</th>
-                    <th class="px-3 py-2 text-center">Số lượng bán ra</th>
-                    <th class="px-3 py-2 text-center">Đơn giá</th>
-                    <th class="px-3 py-2 text-center">Thành tiền</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="item : ${saleOrder.details}" class="border-t">
-                    <td class="px-3 py-2" th:text="${item.product.name}"></td>
-                    <td class="text-center px-3 py-2" th:text="${item.orderedQuantity}"></td>
-                    <td class="text-center px-3 py-2" th:text="${item.price}"></td>
-                    <td class="text-right px-3 py-2" th:text="${#numbers.formatDecimal(item.orderedQuantity * item.price, 0, 'POINT', 0, 'COMMA')}"></td>
-                </tr>
-                </tbody>
-                <tfoot>
-                <tr class="border-t">
-                    <td colspan="3" class="text-right font-semibold px-3 py-2">Tổng tiền:</td>
-                    <td class="text-right font-bold px-3 py-2" th:text="${#numbers.formatDecimal(saleOrder.totalAmount, 0, 'POINT', 0, 'COMMA')}"></td>
-                </tr>
-                </tfoot>
-            </table>
-        </div>
+            <!-- Header readonly -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="text-sm font-medium">Mã đơn hàng</label>
+                    <input type="text" th:value="${saleOrder.soCode}" readonly
+                           class="w-full border rounded px-3 py-2 bg-gray-100"/>
+                </div>
+                <div>
+                    <label class="text-sm font-medium">Khách hàng</label>
+                    <input type="text" th:value="${saleOrder.customer.fullName}" readonly
+                           class="w-full border rounded px-3 py-2 bg-gray-100"/>
+                </div>
+                <div>
+                    <label class="text-sm font-medium">Trạng thái</label>
+                    <input type="text" th:value="${saleOrder.status}" readonly
+                           class="w-full border rounded px-3 py-2 bg-gray-100"/>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-sm font-medium">Ghi chú</label>
+                    <textarea readonly class="w-full border rounded px-3 py-2 bg-gray-100"
+                              th:text="${saleOrder.description}"></textarea>
+                </div>
+            </div>
 
-        <!-- Nút quay lại -->
-        <div class="text-right">
-            <a th:href="@{/sale-orders}" class="inline-block bg-gray-500 hover:bg-gray-600 text-white px-5 py-2 rounded">
-                <i class="ri-arrow-go-back-line mr-1"></i> Quay lại
-            </a>
+            <!-- Danh sách sản phẩm -->
+            <div class="mb-6">
+                <h2 class="text-lg font-semibold mb-2">Danh sách sản phẩm</h2>
+                <table class="min-w-full bg-white rounded shadow text-sm">
+                    <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-3 py-2 text-left">Sản phẩm</th>
+                        <th class="px-3 py-2 text-center">Số lượng bán ra</th>
+                        <th class="px-3 py-2 text-center">Đơn giá</th>
+                        <th class="px-3 py-2 text-center">Thành tiền</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item : ${saleOrder.details}" class="border-t product-row">
+                        <td class="px-3 py-2" th:text="${item.product.name}"></td>
+                        <td class="text-center quantity-cell" th:text="${item.orderedQuantity}">0</td>
+                        <td class="text-center price-cell" th:text="${item.price}">0</td>
+                        <td class="text-right line-total-cell">0</td>
+                    </tr>
+                    </tbody>
+                    <tfoot>
+                    <tr>
+                        <td colspan="4" class="text-right font-semibold px-3 py-2">Tổng tiền:</td>
+                        <td id="grandTotalCell" class="text-right font-bold px-3 py-2">0</td>
+                    </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Actions -->
+            <div class="text-right mt-4 space-x-2">
+                <a th:href="@{/sale-orders}"
+                   class="inline-block bg-gray-500 hover:bg-gray-600 text-white px-5 py-2 rounded">
+                    Quay lại
+                </a>
+
+                <!-- Hoàn tất đơn hàng: POST /{id}/update -->
+                <form th:if="${saleOrder.status.name() == 'DELIVERIED'}"
+                      th:action="@{'/sale-orders/' + ${saleOrder.soId} + '/update'}"
+                      method="post" class="inline-block">
+                    <button type="submit"
+                            class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded">
+                        Hoàn tất đơn hàng
+                    </button>
+                </form>
+            </div>
         </div>
     </main>
 </div>
-<div th:replace="~{fragments/footer :: footer}"></div>
-
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const rows = document.querySelectorAll(".product-row");
         let total = 0;
-
         rows.forEach(row => {
-            const quantity = parseInt(row.querySelector(".quantity-cell").textContent) || 0;
-            const price = parseFloat(row.querySelector(".price-cell").textContent) || 0;
-            const lineTotal = quantity * price;
-
-            row.querySelector(".line-total-cell").textContent = lineTotal.toLocaleString("vi-VN");
-            total += lineTotal;
+            const q = parseInt(row.querySelector(".quantity-cell").textContent) || 0;
+            const p = parseFloat(row.querySelector(".price-cell").textContent) || 0;
+            const line = q * p;
+            row.querySelector(".line-total-cell").textContent = line.toLocaleString("vi-VN");
+            total += line;
         });
-
         const totalCell = document.getElementById("grandTotalCell");
-        if (totalCell) {
-            totalCell.textContent = total.toLocaleString("vi-VN");
-        }
+        if (totalCell) totalCell.textContent = total.toLocaleString("vi-VN");
     });
 </script>
-
 </body>
 </html>
