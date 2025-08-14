@@ -168,19 +168,12 @@
     }
 });
 
-  const userBtn = document.getElementById('userMenuBtn');
-  const dropdown = document.getElementById('userMenuDropdown');
-  if (userBtn && dropdown) {
-      userBtn.addEventListener('click', function () {
-          dropdown.classList.toggle('hidden');
-      });
-
-      document.addEventListener('click', function (event) {
-          if (!userBtn.contains(event.target) && !dropdown.contains(event.target)) {
-              dropdown.classList.add('hidden');
-          }
-      });
-  }
+  // Xử lý sự kiện khi nhấn phím Escape để đóng modal
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+      closeModal();
+    }
+  });
 </script>
 </body>
 </html>
