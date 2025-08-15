@@ -8,14 +8,19 @@
     <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
         <div th:replace="~{fragments/header :: header}"></div>
 
-        <div class="px-6 py-6">
+        <div class="px-6 py-6"
+             th:with="locked=${(saleOrder.status != null and saleOrder.status.name() != 'PENDING')
+                      or (saleOrder.paymentStatus != null and saleOrder.paymentStatus.name() != 'NONE_PAYMENT')}"
+             th:classappend="${locked} ? ' locked' : ''">
+
             <div class="flex items-center justify-between mb-4">
                 <h1 class="text-2xl font-bold">
                     Sửa đơn <span class="text-blue-700" th:text="${saleOrder.orderCode}">ORD000</span>
                 </h1>
 
                 <!-- Bước chọn phương thức thanh toán: chỉ hiển thị khi paymentStatus = NONE -->
-                <div th:if="${saleOrder.paymentStatus != null
+                <div th:if="${!locked
+    and saleOrder.paymentStatus != null
     and saleOrder.paymentStatus.name() == 'NONE_PAYMENT'
     and saleOrder.status != null
     and saleOrder.status.name() == 'PENDING'
@@ -154,7 +159,7 @@
                   th:action="@{|/sale-orders/${saleOrder.orderId}/items/edit|}"
                   method="post"
                   th:object="${saleOrderForm}">
-
+                <fieldset th:disabled="${locked}">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Mã đơn hàng</label>
@@ -170,7 +175,9 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Khách hàng</label>
-                        <select th:field="*{customerId}" class="w-full border rounded px-3 py-2" required>
+                        <select th:field="*{customerId}" class="w-full border rounded px-3 py-2" required
+                                th:disabled="${locked}">
+
                             <option value="">-- Chọn khách hàng --</option>
                             <option th:each="c : ${customers}" th:value="${c.id}" th:text="${c.fullName}"></option>
                         </select>
@@ -179,7 +186,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Chọn combo</label>
                         <div class="flex gap-2">
-                            <select id="comboAdder" class="w-full border rounded px-3 py-2">
+                            <select id="comboAdder" class="w-full border rounded px-3 py-2" th:disabled="${locked}">
                                 <option value="">Chọn combo</option>
                                 <option th:each="cb : ${combos}"
                                         th:value="${cb.id}"
@@ -187,7 +194,8 @@
                                 </option>
                             </select>
                             <button type="button" id="btnAddCombo"
-                                    class="px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">Thêm
+                                    class="px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+                                    th:if="${!locked}">Thêm
                             </button>
                         </div>
                         <div id="comboChips" class="mt-2 flex flex-wrap gap-2"></div>
@@ -196,7 +204,8 @@
 
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
-                        <textarea th:field="*{description}" class="w-full border rounded px-3 py-2" rows="2"></textarea>
+                        <textarea th:field="*{description}" class="w-full border rounded px-3 py-2" rows="2"
+                                  th:disabled="${locked}"></textarea>
                     </div>
                 </div>
 
@@ -225,7 +234,8 @@
 
                 <div class="flex items-center justify-between mt-4">
                     <button type="button" id="btnAddRow"
-                            class="px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">
+                            class="px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+                            th:if="${!locked}">
                         + Thêm sản phẩm
                     </button>
                 </div>
@@ -234,11 +244,12 @@
                     <a th:href="@{/sale-orders}"
                        class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">Quay lại</a>
                     <button type="submit"
-                            class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white">
+                            class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white"
+                            th:if="${!locked}">
                         Lưu đơn
                     </button>
                 </div>
-
+                </fieldset>
             </form>
         </div>
     </main>
@@ -251,6 +262,7 @@
     const csrfToken = /*[[${_csrf.token}]]*/ '';
     const products = /*[[${products}]]*/ [];
     const saleForm = /*[[${saleOrderForm}]]*/ {};
+    const LOCKED = /*[[${locked}]]*/ false;
 </script>
 
 <script>
@@ -294,18 +306,26 @@
         const sel=tr.querySelector('.product-select');
         sel.innerHTML=buildManualOptions(pid); sel.value=String(pid);
 
-        sel.addEventListener('change',()=>{
+        if (LOCKED) {                              // <-- KHÓA NGAY Ở ĐÂY
+            sel.disabled = true;                     // khóa dropdown Sản phẩm
+            tr.querySelector('.quantity').readOnly = true; // khóa ô SL
+            const rm = tr.querySelector('.btn-remove');
+            if (rm) {
+                rm.outerHTML = '<button type="button" class="text-gray-300 cursor-not-allowed"><i class="ri-lock-2-line"></i></button>'; // khóa nút Xóa
+            }
+        }
+        sel.addEventListener('change',()=>{ if (LOCKED) return;
             tr.dataset.productId=sel.value;
             const p=productMap.get(String(sel.value))||{};
             tr.querySelector('.stock-display').textContent=p.quantity ?? '-';
             tr.querySelector('.price').value=Number(p.listingPrice||0);
             refreshAllManualSelects(); recalcRowTotal(tr); recalcGrand();
         });
-        tr.querySelector('.quantity').addEventListener('input',e=>{
+        tr.querySelector('.quantity').addEventListener('input',e=>{ if (LOCKED) return;
             const v=Number(e.target.value||0); e.target.value=isNaN(v)||v<1?1:v;
             recalcRowTotal(tr); recalcGrand();
         });
-        tr.querySelector('.btn-remove').addEventListener('click',()=>{
+        tr.querySelector('.btn-remove')?.addEventListener('click', () => {
             tr.remove(); refreshAllManualSelects(); reindexAllRows(); recalcGrand();
         });
 
@@ -428,20 +448,34 @@
 
         renderChips(); rebuildFromCounts();
 
-        document.getElementById('btnAddCombo').addEventListener('click',()=>{
+        document.getElementById('btnAddCombo')?.addEventListener('click',()=>{
+            if (LOCKED) return;
             const sel=document.getElementById('comboAdder'); const v=sel.value; if(!v)return;
-            comboCounts.set(v,(comboCounts.get(v)||0)+1); sel.value=''; renderChips(); rebuildFromCounts();
+            comboCounts.set(v,(comboCounts.get(v)||0)+1); sel.value='';
+            renderChips(); rebuildFromCounts();
         });
 
-        document.getElementById('btnAddRow').addEventListener('click',()=>{
-            const used=new Set(Array.from(tableBody.querySelectorAll('tr[data-source="manual"]')).map(tr=>tr.dataset.productId));
-            const cand=(products||[]).find(p=>!used.has(String(p.id))); if(!cand)return;
-            createManualRow({pid:cand.id,price:cand.listingPrice||0,stock:cand.quantity ?? '-',qty:1});
-            reindexAllRows(); refreshAllManualSelects(); recalcGrand();
+        document.getElementById('btnAddRow')?.addEventListener('click', () => {
+            if (LOCKED) return;
+            const used = new Set(Array.from(tableBody.querySelectorAll('tr[data-source="manual"]'))
+                .map(tr => tr.dataset.productId));
+            const cand = (products || []).find(p => !used.has(String(p.id)));
+            if (!cand) return;
+            createManualRow({
+                pid: cand.id,
+                price: cand.listingPrice || 0,
+                stock: cand.quantity ?? '-',
+                qty: 1
+            });
+            reindexAllRows();
+            refreshAllManualSelects();
+            recalcGrand();
         });
 
-        document.getElementById('saleOrderForm').addEventListener('submit',()=>{
-            const hidden=document.getElementById('comboCountsHidden'); hidden.innerHTML='';
+
+        document.getElementById('saleOrderForm').addEventListener('submit',(e)=>{
+            if (LOCKED) { e.preventDefault(); return; }  // thêm dòng này
+            const hidden = document.getElementById('comboCountsHidden'); hidden.innerHTML='';
             comboCounts.forEach((n,id)=>{const inp=document.createElement('input'); inp.type='hidden'; inp.name=`comboCounts[${id}]`; inp.value=String(n); hidden.appendChild(inp);});
             tableBody.querySelectorAll('tr[data-source="combo"] [name]').forEach(el=>el.remove());
             reindexAllRows();
