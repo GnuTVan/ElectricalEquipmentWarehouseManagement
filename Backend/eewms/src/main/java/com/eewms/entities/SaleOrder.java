@@ -76,9 +76,11 @@ public class SaleOrder {
 
     //PAYOS
     public enum PaymentStatus {
-        PENDING, // Chưa thanh toán hoặc đang chờ thanh toán
-        PAID,    // Đã thanh toán
-        FAILED   // Thanh toán thất bại hoặc bị hủy
+        NONE_PAYMENT, // mới tạo đơn, chưa chọn luồng
+        UNPAID,       // bán công nợ
+        PENDING,      // chờ thanh toán qua PayOS
+        PAID,         // đã thanh toán
+        FAILED        // thanh toán thất bại/hủy
     }
 
     @Column(name = "payos_order_code", length = 100)
@@ -86,8 +88,13 @@ public class SaleOrder {
 
     //Mặc định là PENDING, với đơn thanh toán luôn thì override từ khâu khởi tạo đơn hàng
     @Enumerated(EnumType.STRING)
-    @Column(name = "payment_status", length = 20)
-    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
+    @Column(name = "payment_status", nullable = false, length = 20)
+    private PaymentStatus paymentStatus = PaymentStatus.NONE_PAYMENT;
+
+    @PrePersist
+    public void prePersist() {
+        if (paymentStatus == null) paymentStatus = PaymentStatus.NONE_PAYMENT;
+    }
 
     //Ghi chú thanh toán, vd: "Thanh toan don hang ORD-XXXXX, so tien xxxx vnd"
     @Column(name = "payment_note", length = 255)

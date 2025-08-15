@@ -143,7 +143,7 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         String paymentNote = String.format("Thanh toan don %s",
                 orderCode);
         saleOrder.setPaymentNote(paymentNote);
-        saleOrder.setPaymentStatus(SaleOrder.PaymentStatus.PENDING); // luôn khởi tạo PENDING
+        saleOrder.setPaymentStatus(SaleOrder.PaymentStatus.NONE_PAYMENT); // luôn khởi tạo PENDING
 
         String warnPay = null;
         String qr = null, link = null;

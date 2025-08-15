@@ -15,32 +15,67 @@
                 </h1>
 
                 <!-- Bước chọn phương thức thanh toán: chỉ hiển thị khi paymentStatus = NONE -->
-                <div th:if="${saleOrder.paymentStatus == 'NONE'
-             and saleOrder.status.name() == 'PENDING'
-             and !saleOrder.alreadyExported
-             and !saleOrder.hasInsufficientStock}"
+                <div th:if="${saleOrder.paymentStatus != null
+    and saleOrder.paymentStatus.name() == 'NONE_PAYMENT'
+    and saleOrder.status != null
+    and saleOrder.status.name() == 'PENDING'
+    and !saleOrder.alreadyExported
+    and !saleOrder.hasInsufficientStock}"
                      class="flex items-center gap-3">
-                    <button type="button"
-                            class="px-4 py-2 rounded bg-gray-300 text-gray-700 cursor-not-allowed"
-                            disabled>
-                        Thanh toán luôn (đang phát triển)
-                    </button>
-                    <form th:action="@{/sale-orders/{id}/actions/mark-unpaid(id=${saleOrder.orderId})}"
-                          method="post" class="inline">
+
+                    <!-- Thanh toán luôn (giữ nguyên) -->
+<!--                    <form th:action="@{/sale-orders/{id}/actions/mark-pending(id=${saleOrder.orderId})}" method="post">-->
+<!--                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">-->
+<!--                        <button type="submit" class="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white">-->
+<!--                            Thanh toán luôn-->
+<!--                        </button>-->
+<!--                    </form>-->
+
+                    <!-- Bán công nợ / Chưa thanh toán (THÊM MỚI) -->
+                    <form th:action="@{/sale-orders/{id}/actions/mark-unpaid(id=${saleOrder.orderId})}" method="post">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                        <button type="submit"
-                                class="px-4 py-2 rounded bg-amber-500 hover:bg-amber-600 text-white transition">
-                            Chưa thanh toán
+                        <button type="submit" class="px-4 py-2 rounded bg-amber-600 hover:bg-amber-700 text-white">
+                            Bán công nợ (Chưa thanh toán)
                         </button>
                     </form>
                 </div>
 
-                <!-- Sau khi chọn 'Chưa thanh toán' → chỉ hiện Tạo phiếu xuất -->
-                <a th:if="${saleOrder.paymentStatus == 'UNPAID'
-           and saleOrder.status.name() == 'PENDING'
-           and !saleOrder.alreadyExported
-           and !saleOrder.hasInsufficientStock}"
-                   th:href="@{|/good-issue/create-from-order/${saleOrder.orderId}|}">Tạo phiếu xuất</a>
+                <!-- B2: UNPAID → cho xuất kho ngay -->
+                <a th:if="${saleOrder.paymentStatus != null
+    and saleOrder.paymentStatus.name() == 'UNPAID'
+    and saleOrder.status != null
+    and saleOrder.status.name() == 'PENDING'
+    and !saleOrder.alreadyExported
+    and !saleOrder.hasInsufficientStock}"
+                   th:href="@{|/good-issue/create-from-order/${saleOrder.orderId}|}"
+                   class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">
+                    Tạo phiếu xuất
+                </a>
+
+<!--                &lt;!&ndash; B3: PENDING (PayOS) &ndash;&gt;-->
+<!--                <div th:if="${saleOrder.paymentStatus == 'PENDING'-->
+<!--            and saleOrder.status.name() == 'PENDING'-->
+<!--            and !saleOrder.alreadyExported-->
+<!--            and !saleOrder.hasInsufficientStock}"-->
+<!--                     class="flex items-center gap-3">-->
+
+<!--                    <a th:href="@{|/sale-orders/${saleOrder.orderId}/payos/invoice|}"-->
+<!--                       class="px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white">-->
+<!--                        In hóa đơn (PayOS)-->
+<!--                    </a>-->
+
+<!--                    &lt;!&ndash; Cho xuất kho chỉ khi đã PAID &ndash;&gt;-->
+<!--                    <a th:if="${saleOrder.paymentStatus == 'PAID'}"-->
+<!--                       th:href="@{|/good-issue/create-from-order/${saleOrder.orderId}|}"-->
+<!--                       class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">-->
+<!--                        Tạo phiếu xuất-->
+<!--                    </a>-->
+<!--                    <button th:if="${saleOrder.paymentStatus != 'PAID'}"-->
+<!--                            type="button" title="Chỉ xuất khi đã thanh toán"-->
+<!--                            class="px-4 py-2 rounded bg-gray-300 text-gray-600 cursor-not-allowed">-->
+<!--                        Tạo phiếu xuất-->
+<!--                    </button>-->
+<!--                </div>-->
 
                 <!-- Thiếu hàng: Tạo yêu cầu mua -->
                 <div th:if="${saleOrder.hasInsufficientStock and !saleOrder.alreadyExported and !prExists}">

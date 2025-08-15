@@ -48,6 +48,8 @@ public class SaleOrderMapper {
                 .totalAmount(order.getTotalAmount())
                 .createdBy(order.getCreatedByUser().getFullName())
                 .details(detailsDTOs)
+                .paymentStatus(order.getPaymentStatus())
+                .paymentNote(order.getPaymentNote())
                 .build();
     }
 }

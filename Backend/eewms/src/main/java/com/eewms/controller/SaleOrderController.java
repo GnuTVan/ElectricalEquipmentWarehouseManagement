@@ -254,10 +254,18 @@ public class SaleOrderController {
             return "redirect:/sale-orders";
         }
     }
-    @PostMapping("/{id}/actions/mark-unpaid") // ✅ đúng
+    @PostMapping("/{id}/actions/mark-unpaid")
     public String markUnpaid(@PathVariable Integer id, RedirectAttributes ra) {
+        saleOrderService.updatePaymentStatus(id, SaleOrder.PaymentStatus.UNPAID);
+        ra.addFlashAttribute("success", "Đơn đã chuyển sang UNPAID (bán công nợ).");
+        return "redirect:/sale-orders/" + id + "/edit";
+    }
+
+    @PostMapping("/{id}/actions/mark-pending")
+    public String markPending(@PathVariable Integer id, RedirectAttributes ra) {
+        Object PaymentStatus;
         saleOrderService.updatePaymentStatus(id, SaleOrder.PaymentStatus.PENDING);
-        ra.addFlashAttribute("success", "Đã gán trạng thái thanh toán: UNPAID cho đơn hàng.");
+        ra.addFlashAttribute("success", "Đơn đang chờ thanh toán (PENDING) qua PayOS.");
         return "redirect:/sale-orders/" + id + "/edit";
     }
 }
