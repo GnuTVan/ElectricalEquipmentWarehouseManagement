@@ -408,6 +408,10 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         dto.setHasInsufficientStock(stillMissing);
         dto.setAlreadyExported(exported);
 
+        // đảm bảo có thông tin thanh toán cho UI
+        dto.setPaymentStatus(saleOrder.getPaymentStatus());
+        dto.setPaymentNote(saleOrder.getPaymentNote());
+
         return dto;
     }
 
