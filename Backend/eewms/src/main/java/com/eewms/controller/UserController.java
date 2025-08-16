@@ -14,10 +14,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
 @Controller
 @RequestMapping("/admin/users")
@@ -31,24 +28,27 @@ public class UserController {
 
     // 1. Danh sách người dùng
     @GetMapping
-    public String listUsers(
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "keyword", required = false) String keyword,
-            Model model) {
-        System.out.println("🔍 Từ khóa tìm kiếm: " + keyword); // THÊM DÒNG NÀY
-
+    public String listUsers(@RequestParam(value = "page", defaultValue = "0") int page,
+                            @RequestParam(value = "keyword", required = false) String keyword,
+                            Model model) {
         Page<UserDTO> userPage = userService.searchUsers(page, keyword);
         model.addAttribute("users", userPage.getContent());
         model.addAttribute("userPage", userPage);
-        model.addAttribute("keyword", keyword); // giữ lại từ khóa tìm kiếm
+        model.addAttribute("keyword", keyword);
 
-        // ✅ Thêm dòng này:
-        model.addAttribute("userDTO", new UserDTO());
+        if (!model.containsAttribute("userDTO")) {
+            UserDTO userDTO = new UserDTO();
+            userDTO.setEnabled(false);
+            model.addAttribute("userDTO", userDTO);
+        }
+
         model.addAttribute("allRoles", userService.getAllRoles());
+
+        // ✅ CỜ MẶC ĐỊNH: KHÔNG CÓ LỖI
+        model.addAttribute("hasValidationErrors", false);
 
         return "user-list";
     }
-
 
     // 2. Hiển thị form tạo (không dùng nếu dùng modal)
     @GetMapping("/new")
@@ -58,7 +58,6 @@ public class UserController {
 
         model.addAttribute("userDTO", userDTO);
         model.addAttribute("allRoles", userService.getAllRoles());
-
         return "user-form";
     }
 
@@ -71,7 +70,7 @@ public class UserController {
                              Model model,
                              RedirectAttributes redirect) {
 
-        // Kiểm tra trùng username/email
+        // Validate trùng username/email
         if (userService.existsByUsername(userDTO.getUsername())) {
             result.rejectValue("username", "error.userDTO", "Tên đăng nhập đã tồn tại");
         }
@@ -79,19 +78,22 @@ public class UserController {
             result.rejectValue("email", "error.userDTO", "Email đã tồn tại");
         }
 
-        // Nếu có lỗi → trả về lại view kèm theo dữ liệu cần thiết
+        // Nếu có lỗi → trả về lại view kèm cờ mở modal
         if (result.hasErrors()) {
             Page<UserDTO> userPage = userService.searchUsers(page, keyword);
-
             model.addAttribute("users", userPage.getContent());
             model.addAttribute("userPage", userPage);
             model.addAttribute("keyword", keyword);
             model.addAttribute("allRoles", userService.getAllRoles());
 
+            // ✅ BÁO VIEW MỞ MODAL & BIẾT CÓ LỖI
+            model.addAttribute("openCreateModal", true);
+            model.addAttribute("hasValidationErrors", true);
+
             return "user-list";
         }
 
-        // Nếu không lỗi → tiếp tục xử lý tạo user
+        // Không lỗi → tiến hành tạo user
         try {
             userDTO.setEnabled(false);
             User user = UserMapper.toEntity(userDTO, roleRepository);
@@ -100,7 +102,8 @@ public class UserController {
             String token = verificationTokenService.createVerificationToken(user);
             emailService.sendActivationEmail(user, token);
 
-            redirect.addFlashAttribute("message", "Tạo người dùng " + userDTO.getUsername() + " thành công. Đã gửi email kích hoạt tới địa chỉ email: " + userDTO.getEmail());
+            redirect.addFlashAttribute("message", "Tạo người dùng " + userDTO.getUsername()
+                    + " thành công. Đã gửi email kích hoạt tới: " + userDTO.getEmail());
             redirect.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", "Lỗi khi tạo người dùng: " + e.getMessage());
@@ -108,7 +111,6 @@ public class UserController {
 
         return "redirect:/admin/users";
     }
-
 
     // 7. Bật / Tắt trạng thái
     @PostMapping("/{id}/toggle-status")
@@ -120,15 +122,16 @@ public class UserController {
             // Nếu đang tắt → chuẩn bị bật
             if (!user.isEnabled()) {
                 if (user.getPassword() == null || user.getPassword().isBlank()) {
-                    redirect.addFlashAttribute("message", "Không thể bật tài khoản" + user.getUsername() + " vì người dùng" + user.getFullName() + " chưa kích hoạt qua email.");
+                    redirect.addFlashAttribute("message",
+                            "Không thể bật tài khoản " + user.getUsername()
+                                    + " vì người dùng " + user.getFullName() + " chưa kích hoạt qua email.");
                     redirect.addFlashAttribute("messageType", "error");
                     return "redirect:/admin/users";
                 }
             }
 
-            // Thực hiện đảo trạng thái
             userService.toggleEnabledStatus(id);
-            redirect.addFlashAttribute("message", "Cập nhật trạng thái tài khoản" + user.getUsername() + " thành công.");
+            redirect.addFlashAttribute("message", "Cập nhật trạng thái tài khoản " + user.getUsername() + " thành công.");
             redirect.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
             redirect.addFlashAttribute("message", "Lỗi khi cập nhật trạng thái: " + e.getMessage());
@@ -138,17 +141,14 @@ public class UserController {
         return "redirect:/admin/users";
     }
 
-    //8. reset password
+    // 8. reset password
     @PostMapping("/reset-password/{id}")
     public String resetPassword(@PathVariable Long id, RedirectAttributes redirect) {
         try {
             User user = userService.findUserById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng."));
 
-            // Tạo token mới
             String token = verificationTokenService.createVerificationToken(user);
-
-            // Gửi email đặt lại mật khẩu
             emailService.sendResetPasswordEmail(user, token);
 
             redirect.addFlashAttribute("message", "Đã gửi email đặt lại mật khẩu cho người dùng " + user.getUsername());

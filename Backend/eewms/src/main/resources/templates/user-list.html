@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
 <head th:replace="~{fragments/common-head :: commonHead('Danh sách người dùng')}"></head>
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
@@ -15,18 +14,18 @@
         <div class="flex justify-between items-center mb-6 p-6">
             <h1 class="text-2xl font-bold text-gray-800">Danh sách người dùng</h1>
             <div class="flex items-center space-x-2">
-                <a onclick="openModal()"
+                <!-- 🔑 Nhấn + Thêm sẽ reset form & xoá lỗi cũ -->
+                <a onclick="openModal(false)"
                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer">+ Thêm</a>
-                <form th:action="@{/admin/users}" method="get" class="flex gap-2">
 
+                <form th:action="@{/admin/users}" method="get" class="flex gap-2">
                     <input type="text" name="keyword" th:value="${keyword}" placeholder="Tìm kiếm..."
                            class="border px-3 py-2 rounded-md w-64"/>
-                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tìm
-                    </button>
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tìm</button>
                 </form>
-
             </div>
         </div>
+
         <div th:if="${message}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4">
             <p th:text="${message}"></p>
         </div>
@@ -39,7 +38,6 @@
             <table class="min-w-full table-auto text-sm">
                 <thead class="bg-gray-200 text-gray-700">
                 <tr>
-
                     <th class="px-4 py-3 text-left">ID</th>
                     <th class="px-4 py-3 text-left">Họ và tên</th>
                     <th class="px-4 py-3 text-left">Tên tài khoản</th>
@@ -67,9 +65,9 @@
                     <td class="px-4 py-3" th:text="${user.phone}"></td>
                     <td class="px-4 py-3" th:text="${user.address}"></td>
                     <td class="px-4 py-3">
-                    <span th:each="role : ${user.roleNames}"
-                          th:text="${role}"
-                          class="inline-block mr-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs uppercase font-medium"></span>
+                        <span th:each="role : ${user.roleNames}"
+                              th:text="${role}"
+                              class="inline-block mr-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs uppercase font-medium"></span>
                     </td>
                     <td class="px-4 py-3">
                         <div class="flex items-center gap-2">
@@ -81,12 +79,9 @@
                                 <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition duration-200 transform peer-checked:translate-x-5"></div>
                             </label>
                             <span class="text-sm font-medium text-gray-700 min-w-[120px] inline-block"
-                                  th:text="${user.enabled ? 'Đang hoạt động' : 'Ngưng hoạt động'}">
-                        </span>
-
+                                  th:text="${user.enabled ? 'Đang hoạt động' : 'Ngưng hoạt động'}"></span>
                         </div>
                     </td>
-
                     <td class="px-4 py-3 text-center">
                         <form th:action="@{/admin/users/reset-password/{id}(id=${user.id})}" method="post">
                             <button type="submit"
@@ -99,62 +94,51 @@
                 </tr>
                 </tbody>
             </table>
+
             <!-- Pagination -->
             <div class="flex justify-center mt-6">
-
                 <ul class="inline-flex space-x-1">
-                    <!-- Nút về đầu -->
-                    <!-- Nút về đầu -->
                     <li th:if="${userPage.totalPages > 1}">
                         <a th:href="@{/admin/users(page=0, keyword=${keyword})}"
                            class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">«</a>
                     </li>
-
-                    <!-- Nút về trước -->
                     <li th:if="${userPage.hasPrevious()}">
                         <a th:href="@{/admin/users(page=${userPage.number - 1}, keyword=${keyword})}"
                            class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">‹</a>
                     </li>
-
-                    <!-- Các số trang -->
                     <li th:each="i : ${#numbers.sequence(0, userPage.totalPages - 1)}">
                         <a th:href="@{/admin/users(page=${i}, keyword=${keyword})}"
                            th:text="${i + 1}"
                            th:classappend="${userPage.number == i} ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'"
                            class="px-3 py-1 rounded text-sm font-medium"></a>
                     </li>
-
-                    <!-- Nút tiếp theo -->
                     <li th:if="${userPage.hasNext()}">
                         <a th:href="@{/admin/users(page=${userPage.number + 1}, keyword=${keyword})}"
                            class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">›</a>
                     </li>
-
-                    <!-- Nút đến cuối -->
                     <li>
                         <a th:href="@{/admin/users(page=${userPage.totalPages - 1}, keyword=${keyword})}"
                            class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">»</a>
                     </li>
-
                 </ul>
             </div>
-
         </div>
 
-        <!-- Modal Thêm User (KHÔNG có password, CÓ email) -->
+        <!-- Modal Thêm User -->
         <div id="userModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
             <div class="bg-white w-full max-w-md rounded shadow p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-semibold">Thêm người dùng</h2>
-                    <button onclick="closeModal()"><i class="ri-close-line text-2xl"></i></button>
+                    <button type="button" onclick="closeModal()"><i class="ri-close-line text-2xl"></i></button>
                 </div>
+
                 <form th:action="@{/admin/users}" th:object="${userDTO}" method="post">
                     <!-- Họ tên -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium">Họ tên</label>
                         <input type="text" th:field="*{fullName}" class="w-full border rounded px-3 py-2"/>
                         <p th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"
-                           class="text-red-600 text-sm mt-1"></p>
+                           class="text-red-600 text-sm mt-1 server-error"></p>
                     </div>
 
                     <!-- Tên đăng nhập -->
@@ -162,74 +146,135 @@
                         <label class="block text-sm font-medium">Tên đăng nhập</label>
                         <input type="text" th:field="*{username}" class="w-full border rounded px-3 py-2"/>
                         <p th:if="${#fields.hasErrors('username')}" th:errors="*{username}"
-                           class="text-red-600 text-sm mt-1"></p>
+                           class="text-red-600 text-sm mt-1 server-error"></p>
                     </div>
+
                     <!-- Email -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium">Email</label>
                         <input type="email" th:field="*{email}" class="w-full border rounded px-3 py-2"/>
                         <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}"
-                           class="text-red-600 text-sm mt-1"></p>
+                           class="text-red-600 text-sm mt-1 server-error"></p>
                     </div>
-                    <div class="mb-4"><label class="block text-sm font-medium">Chức vụ</label><select
-                            th:field="*{roleIds}" class="w-full border rounded px-3 py-2">
-                        <option th:each="role : ${allRoles}" th:value="${role.id}"
-                                th:text="${#strings.replace(role.name, 'ROLE_', '')}"></option>
-                    </select></div>
+
+                    <!-- Chức vụ -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium">Chức vụ</label>
+                        <select th:field="*{roleIds}" class="w-full border rounded px-3 py-2">
+                            <option th:each="role : ${allRoles}" th:value="${role.id}"
+                                    th:text="${#strings.replace(role.name, 'ROLE_', '')}"></option>
+                        </select>
+                        <p th:if="${#fields.hasErrors('roleIds')}" th:errors="*{roleIds}"
+                           class="text-red-600 text-sm mt-1 server-error"></p>
+                    </div>
+
                     <div class="flex justify-end space-x-2">
-                        <button type="button" onclick="closeModal()" class="bg-gray-500 text-white px-4 py-2 rounded">
-                            Hủy
-                        </button>
+                        <button type="button" onclick="closeModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Hủy</button>
                         <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Lưu</button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- Modal Sửa User (không cần thay đổi gì) -->
-        <!-- giữ nguyên như hiện tại -->
-
+        <!-- Cắm cờ để JS biết có lỗi/ cần mở modal -->
+        <div id="userModalFlag"
+             th:attr="data-has-errors=${hasValidationErrors}"></div>
 
     </main>
-
 </div>
+
 <div th:replace="~{fragments/footer :: footer}"></div>
-<script>
-    function openModal() {
-        document.getElementById('userModal').classList.remove('hidden');
+
+<!-- JS -->
+<script th:inline="javascript">
+    /** Xóa sạch dữ liệu & lỗi trong form tạo user (hard reset) */
+    function clearCreateForm() {
+      const modal = document.getElementById('userModal');
+      if (!modal) return;
+      const form = modal.querySelector('form');
+      if (!form) return;
+
+      // Xóa các input text/email/tel/textarea
+      form.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], textarea')
+          .forEach(el => {
+            el.value = '';
+            el.removeAttribute('value'); // ngăn DOM cũ giữ lại
+          });
+
+      // Reset select roleIds về option đầu
+      const roleSelect = form.querySelector('select[name="roleIds"]');
+      if (roleSelect) roleSelect.selectedIndex = 0;
+
+      // Xóa thông báo lỗi render bởi Thymeleaf
+      form.querySelectorAll('.server-error').forEach(el => el.textContent = '');
     }
 
-function closeModal() {
-    document.getElementById('userModal').classList.add('hidden');
-}
+    /** Mở modal
+     * @param {boolean} reset - true: mở mới tinh, false: giữ dữ liệu (dùng cho case validate fail)
+     */
+    function openModal(reset = false) {
+      const modal = document.getElementById('userModal');
+      if (!modal) return;
+      if (reset) clearCreateForm();      // bấm +Thêm → mở trắng
+      modal.classList.remove('hidden');
+    }
 
-function toggleUserStatus(checkbox, event) {
-    event.preventDefault(); // CHẶN hành vi mặc định gây nhảy
+    /** Đóng modal + chuẩn bị lần mở sau là form trắng */
+    function closeModal() {
+      const modal = document.getElementById('userModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        clearCreateForm();               // đóng lại là dọn form
+      }
+    }
 
-    const userId = checkbox.dataset.id;
-    const newStatus = checkbox.checked;
-    const csrfToken = document.querySelector('meta[name="_csrf"]').content;
-    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+    /** Toggle trạng thái user */
+    function toggleUserStatus(checkbox, event) {
+      event.preventDefault();
 
-    fetch(`/admin/users/${userId}/toggle-status`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            [csrfHeader]: csrfToken
-        },
-        body: JSON.stringify({enabled: newStatus})
-    })
-        .then(res => res.ok ? res.text() : Promise.reject("Lỗi cập nhật"))
-        .then(() => {
-            const label = checkbox.closest("td").querySelector("span");
-            label.innerText = newStatus ? "Đang hoạt động" : "Ngưng hoạt động";
-        })
-        .catch(() => {
-            checkbox.checked = !checkbox.checked;
-            alert("Cập nhật trạng thái thất bại.");
-        });
-}
+      const userId = checkbox.dataset.id;
+      const newStatus = checkbox.checked;
 
+      // CSRF (nếu có Spring Security)
+      const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+      const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+
+      const headers = {'Content-Type': 'application/json'};
+      if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
+
+      fetch(`/admin/users/${userId}/toggle-status`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({enabled: newStatus})
+      })
+      .then(res => res.ok ? res.text() : Promise.reject("Lỗi cập nhật"))
+      .then(() => {
+          const label = checkbox.closest("td").querySelector("span");
+          label.innerText = newStatus ? "Đang hoạt động" : "Ngưng hoạt động";
+          checkbox.checked = newStatus;
+      })
+      .catch(() => {
+          checkbox.checked = !newStatus;
+          alert("Cập nhật trạng thái thất bại.");
+      });
+    }
+
+    /** Auto-open modal khi có lỗi validate từ server */
+    document.addEventListener('DOMContentLoaded', function() {
+      const flagEl = document.getElementById('userModalFlag'); // <div id="userModalFlag" data-has-errors="true|false">
+      const hasErrorsFlag = flagEl ? (flagEl.dataset.hasErrors === 'true') : false;
+      const shouldOpen = /*[[${openCreateModal}]]*/ false;     // boolean từ Controller
+
+      if (hasErrorsFlag || shouldOpen) {
+        // Giữ nguyên dữ liệu để người dùng thấy lỗi và sửa
+        openModal(false);
+      }
+    });
+
+    /** UX: nhấn ESC để đóng modal và clear form */
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeModal();
+    });
 </script>
 
 </body>
