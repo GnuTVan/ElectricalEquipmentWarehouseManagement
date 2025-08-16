@@ -18,4 +18,6 @@ public interface ISaleOrderService {
     void updateOrderItems(Integer orderId, SaleOrderRequestDTO form);
     List<Long> getComboIdsExpanded(Integer soId);
     void updatePaymentStatus(Integer orderId, SaleOrder.PaymentStatus status);
+    void regeneratePayOsOrder(Integer saleOrderId);
+
 }

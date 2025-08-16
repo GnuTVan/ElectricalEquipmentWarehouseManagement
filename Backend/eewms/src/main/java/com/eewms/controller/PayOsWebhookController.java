@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.web.servlet.view.RedirectView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -99,6 +101,17 @@ public class PayOsWebhookController {
 
             SaleOrder order = saleOrderOpt.get();
             PaymentStatus newStatus = mapPayOsStatus(status);
+// === Anti-downgrade (THÊM NGAY DƯỚI ĐÂY) ===
+            PaymentStatus current = order.getPaymentStatus();
+            if (current == PaymentStatus.PAID && newStatus != PaymentStatus.PAID) {
+                log.info("[PayOS] Skip downgrade from {} to {} (orderCode={})", current, newStatus, orderCode);
+                return ResponseEntity.ok("skip-downgrade");
+            }
+// Tuỳ chọn: tránh FAILED -> PENDING khi webhook cũ tới muộn
+            if (current == PaymentStatus.FAILED && newStatus == PaymentStatus.PENDING) {
+                log.info("[PayOS] Skip downgrade from FAILED to PENDING (orderCode={})", orderCode);
+                return ResponseEntity.ok("skip-downgrade");
+            }
 
             if (order.getPaymentStatus() == newStatus) {
                 log.info("[PayOS] Order {} already {}", orderCode, newStatus);
@@ -125,4 +138,93 @@ public class PayOsWebhookController {
         }
         return PaymentStatus.PENDING;
     }
+
+    @GetMapping({"/payos/return", "/payos/return/"})
+    public RedirectView handleReturn(@RequestParam(required = false) String code,
+                                     @RequestParam(required = false) String id,
+                                     @RequestParam(required = false, defaultValue = "false") boolean cancel,
+                                     @RequestParam(required = false) String status,
+                                     @RequestParam(required = false, name = "orderCode") String orderCode,
+                                     RedirectAttributes ra) {
+        log.info("[PayOS] RETURN code={}, id={}, cancel={}, status={}, orderCode={}", code, id, cancel, status, orderCode);
+
+        if (orderCode == null) {
+            ra.addFlashAttribute("message", "Không có mã orderCode từ PayOS."+ orderCode + " / " + code);
+            ra.addFlashAttribute("messageType", "warning");
+
+            return new RedirectView("/sale-orders");
+        }
+
+        var soOpt = saleOrderRepository.findByPayOsOrderCode(orderCode);
+        if (soOpt.isEmpty()) {
+            ra.addFlashAttribute("error", "Không tìm thấy đơn với orderCode: " + orderCode);
+            return new RedirectView("/sale-orders");
+        }
+
+        var so = soOpt.get();
+        var current = so.getPaymentStatus();
+        PaymentStatus newStatus;
+
+        if (cancel || "CANCELLED".equalsIgnoreCase(status) || "FAILED".equalsIgnoreCase(status)) {
+            newStatus = PaymentStatus.FAILED;
+        } else if ("00".equals(code) && "PAID".equalsIgnoreCase(status)) {
+            newStatus = PaymentStatus.PAID;
+        } else {
+            newStatus = PaymentStatus.PENDING; // chờ webhook nếu chưa xác định
+        }
+
+        if (!(current == PaymentStatus.PAID && newStatus != PaymentStatus.PAID)) {
+            if (newStatus != current) {
+                so.setPaymentStatus(newStatus);
+                saleOrderRepository.save(so);
+                log.info("[PayOS] RETURN set {} -> {} (orderCode={})", current, newStatus, orderCode);
+            }
+        } else {
+            log.info("[PayOS] RETURN skip downgrade {} -> {} (orderCode={})", current, newStatus, orderCode);
+        }
+
+        if (newStatus == PaymentStatus.PAID) {
+            ra.addFlashAttribute("message", "Thanh toán thành công" + (id != null ? " (Mã GD: " + id + ")" : "") + ".");
+            ra.addFlashAttribute("messageType", "success");
+        } else if (newStatus == PaymentStatus.FAILED) {
+            ra.addFlashAttribute("error", "Giao dịch đã bị huỷ/không thành công.");
+        } else {
+            ra.addFlashAttribute("info", "Thanh toán đang được xác nhận. Vui lòng đợi hệ thống cập nhật.");
+        }
+
+        return new RedirectView("/sale-orders/" + so.getSoId() + "/edit");
+    }
+
+    @GetMapping({"/payos/cancel", "/payos/cancel/"})
+    public RedirectView handleCancel(@RequestParam(required = false, name = "orderCode") String orderCode,
+                                     RedirectAttributes ra) {
+        if (orderCode == null || orderCode.isBlank()) {
+            ra.addFlashAttribute("warning", "Huỷ giao dịch – thiếu orderCode.");
+            return new RedirectView("/sale-orders");
+        }
+
+        var soOpt = saleOrderRepository.findByPayOsOrderCode(orderCode);
+        if (soOpt.isEmpty()) {
+            ra.addFlashAttribute("error", "Không tìm thấy đơn với orderCode: " + orderCode);
+            return new RedirectView("/sale-orders");
+        }
+
+        var so = soOpt.get();
+        if (so.getPaymentStatus() != PaymentStatus.PAID) {           // anti-downgrade
+            if (so.getPaymentStatus() != PaymentStatus.UNPAID) {
+                so.setPaymentStatus(PaymentStatus.UNPAID);
+                saleOrderRepository.save(so);
+                log.info("[PayOS] CANCEL -> set UNPAID (orderCode={})", orderCode);
+            } else {
+                log.info("[PayOS] CANCEL -> already UNPAID (orderCode={})", orderCode);
+            }
+        } else {
+            log.info("[PayOS] CANCEL ignored, already PAID (orderCode={})", orderCode);
+        }
+
+        ra.addFlashAttribute("error", "Bạn đã huỷ giao dịch (" + orderCode + ").");
+        return new RedirectView("/sale-orders/" + so.getSoId() + "/edit");
+    }
+
+
 }

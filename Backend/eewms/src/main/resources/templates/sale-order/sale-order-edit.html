@@ -45,17 +45,30 @@
                     </form>
                 </div>
 
-                <!-- B2: UNPAID → cho xuất kho ngay -->
-                <a th:if="${saleOrder.paymentStatus != null
+                <!-- B2: UNPAID → cho xuất kho ngay + Cho phép TẠO LẠI MÃ QR -->
+                <div th:if="${saleOrder.paymentStatus != null
     and saleOrder.paymentStatus.name() == 'UNPAID'
     and saleOrder.status != null
     and saleOrder.status.name() == 'PENDING'
     and !saleOrder.alreadyExported
     and !saleOrder.hasInsufficientStock}"
-                   th:href="@{|/good-issue/create-from-order/${saleOrder.orderId}|}"
-                   class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">
-                    Tạo phiếu xuất
-                </a>
+                     class="flex items-center gap-3">
+
+                    <a th:href="@{|/good-issue/create-from-order/${saleOrder.orderId}|}"
+                       class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">
+                        Tạo phiếu xuất
+                    </a>
+
+                    <!-- NÚT MỚI: Tạo lại mã QR -->
+                    <form th:action="@{|/sale-orders/${saleOrder.orderId}/actions/refresh-qr|}" method="post"
+                          onsubmit="return confirm('Tạo lại mã QR mới? Mã cũ sẽ không dùng nữa.');">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button type="submit" class="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white">
+                            Tạo lại mã QR
+                        </button>
+                    </form>
+                </div>
+
 
                 <!-- B3: PENDING (PayOS) -->
                 <div th:if="${saleOrder.paymentStatus != null

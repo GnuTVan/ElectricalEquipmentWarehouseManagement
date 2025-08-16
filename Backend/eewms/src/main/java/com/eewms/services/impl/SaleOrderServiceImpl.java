@@ -468,5 +468,37 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
             orderRepo.save(so);
         }
     }
+    @Override
+    public void regeneratePayOsOrder(Integer saleOrderId) {
+        SaleOrder so = orderRepo.findById(saleOrderId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
+
+        if (so.getPaymentStatus() == SaleOrder.PaymentStatus.PAID) {
+            throw new IllegalStateException("Đơn đã thanh toán, không thể tạo lại QR");
+        }
+
+        // Sinh orderCode mới dạng số (PayOS yêu cầu numeric)
+        long newOrderCode = Long.parseLong(
+                (System.currentTimeMillis() % 1000000000000L) + "" + (int)(Math.random() * 900 + 100)
+        );
+
+        long amount = so.getTotalAmount() != null ? so.getTotalAmount().longValue() : 0L;
+        String desc = ("SO#" + so.getSoCode()).length() > 25 ? ("SO#" + so.getSoCode()).substring(0,25) : ("SO#" + so.getSoCode());
+
+        var resp = payOsService.createOrder(String.valueOf(newOrderCode), amount, desc);
+        if (resp == null || !resp.isSuccess()) {
+            throw new IllegalStateException("PayOS không trả về liên kết thanh toán hợp lệ");
+        }
+
+        // Cập nhật đơn: gắn mã PayOS mới, set PENDING, lưu link/QR
+        so.setPayOsOrderCode(String.valueOf(newOrderCode));
+        so.setPaymentStatus(SaleOrder.PaymentStatus.PENDING);
+        // nếu bạn có field riêng paymentLink/qrCode thì set; nếu chưa, tạm dùng paymentNote
+        String link = resp.getCheckoutUrl() != null ? resp.getCheckoutUrl() : resp.getPaymentLink();
+        if (link != null) {
+            so.setPaymentNote(link);
+        }
+        orderRepo.save(so);
+    }
 
 }

@@ -256,16 +256,86 @@ public class SaleOrderController {
     }
     @PostMapping("/{id}/actions/mark-unpaid")
     public String markUnpaid(@PathVariable Integer id, RedirectAttributes ra) {
+        SaleOrder so = saleOrderService.getOrderEntityById(id);
+        if (so == null) {
+            ra.addFlashAttribute("error", "Không tìm thấy đơn hàng.");
+            return "redirect:/sale-orders";
+        }
+
+        if (so.getPaymentStatus() == SaleOrder.PaymentStatus.PAID) {
+            ra.addFlashAttribute("warning", "Đơn đã thanh toán, không thể chuyển sang công nợ.");
+            return "redirect:/sale-orders/" + id + "/edit";
+        }
+
         saleOrderService.updatePaymentStatus(id, SaleOrder.PaymentStatus.UNPAID);
         ra.addFlashAttribute("success", "Đơn đã chuyển sang UNPAID (bán công nợ).");
         return "redirect:/sale-orders/" + id + "/edit";
     }
 
+
     @PostMapping("/{id}/actions/mark-pending")
     public String markPending(@PathVariable Integer id, RedirectAttributes ra) {
-        Object PaymentStatus;
+        SaleOrder so = saleOrderService.getOrderEntityById(id);
+        if (so == null) {
+            ra.addFlashAttribute("error", "Không tìm thấy đơn hàng.");
+            return "redirect:/sale-orders";
+        }
+
+        if (so.getPaymentStatus() == SaleOrder.PaymentStatus.PAID) {
+            ra.addFlashAttribute("warning", "Đơn đã thanh toán, không thể chuyển về chờ thanh toán.");
+            return "redirect:/sale-orders/" + id + "/edit";
+        }
+
+        if (!payOsEnabled) {
+            ra.addFlashAttribute("error", "Thanh toán PayOS đang tắt. Vui lòng bật cấu hình hoặc chọn bán công nợ.");
+            return "redirect:/sale-orders/" + id + "/edit";
+        }
+
+        // Chỉ cho NONE_PAYMENT hoặc FAILED sang PENDING để tránh vòng lặp rối
+        if (so.getPaymentStatus() != SaleOrder.PaymentStatus.NONE_PAYMENT
+                && so.getPaymentStatus() != SaleOrder.PaymentStatus.FAILED) {
+            ra.addFlashAttribute("warning", "Trạng thái hiện tại không cho phép chuyển sang chờ thanh toán.");
+            return "redirect:/sale-orders/" + id + "/edit";
+        }
+
         saleOrderService.updatePaymentStatus(id, SaleOrder.PaymentStatus.PENDING);
-        ra.addFlashAttribute("success", "Đơn đang chờ thanh toán (PENDING) qua PayOS.");
+        ra.addFlashAttribute("info", "Đã chuyển sang chờ thanh toán. Vui lòng quét QR để hoàn tất.");
         return "redirect:/sale-orders/" + id + "/edit";
     }
+    @PostMapping("/{id}/actions/refresh-qr")
+    public String refreshQr(@PathVariable Integer id, RedirectAttributes ra) {
+        // Không cho nếu PayOS đang tắt
+        if (!payOsEnabled) {
+            ra.addFlashAttribute("error", "PayOS đang tắt. Không thể tạo lại mã QR.");
+            return "redirect:/sale-orders/" + id + "/edit";
+        }
+
+        SaleOrder so = saleOrderService.getOrderEntityById(id);
+        if (so == null) {
+            ra.addFlashAttribute("error", "Không tìm thấy đơn hàng.");
+            return "redirect:/sale-orders";
+        }
+
+        // Không cho nếu đã thanh toán
+        if (so.getPaymentStatus() == SaleOrder.PaymentStatus.PAID) {
+            ra.addFlashAttribute("warning", "Đơn đã thanh toán, không thể tạo lại QR.");
+            return "redirect:/sale-orders/" + id + "/edit";
+        }
+
+        // Khuyến nghị: chỉ cho từ UNPAID hoặc FAILED → PENDING (tạo lại QR)
+        if (so.getPaymentStatus() != SaleOrder.PaymentStatus.UNPAID
+                && so.getPaymentStatus() != SaleOrder.PaymentStatus.FAILED) {
+            ra.addFlashAttribute("warning", "Chỉ có thể tạo lại QR khi đơn đang UNPAID hoặc FAILED.");
+            return "redirect:/sale-orders/" + id + "/edit";
+        }
+
+        try {
+            saleOrderService.regeneratePayOsOrder(id); // triển khai ở Service
+            ra.addFlashAttribute("success", "Đã tạo lại mã QR. Vui lòng quét để thanh toán.");
+        } catch (Exception e) {
+            ra.addFlashAttribute("error", "Không tạo được mã QR: " + e.getMessage());
+        }
+        return "redirect:/sale-orders/" + id + "/edit";
+    }
+
 }

@@ -33,12 +33,14 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/webhooks/payos").permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/payos/return", "/payos/return/",
+                                "/payos/cancel", "/payos/cancel/").permitAll()
                         // Public/static
                         .requestMatchers("/", "/landing/**",
                                 "/css/**", "/js/**", "/images/**", "/assets/**",
                                 "/login", "/activate", "/activate/**").permitAll()
 
-                        .requestMatchers("/**").permitAll()
                         // Common authenticated
                         .requestMatchers("/account/info", "/account/update-profile", "/api/tax-lookup/**").authenticated()
                         //Purchase Requests: STAFF được 2 GET cụ thể (đặt TRƯỚC rule rộng cho Manager)
