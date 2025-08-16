@@ -15,14 +15,26 @@ import java.time.LocalDate;
                 @Index(name = "idx_debt_document", columnList = "document_type, document_id")
         }
 )
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Debt {
 
     public enum Status { UNPAID, PARTIAL, PAID, OVERDUE }
-    public enum PartyType { SUPPLIER, CUSTOMER }
-    public enum DocumentType { WAREHOUSE_RECEIPT, SALES_INVOICE, OTHER }
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    public enum PartyType { SUPPLIER, CUSTOMER }
+
+    public enum DocumentType {
+        WAREHOUSE_RECEIPT,   // phiếu nhập kho
+        SALES_INVOICE,       // hóa đơn bán hàng
+        GOOD_ISSUE,          // phiếu xuất kho (thêm mới)
+        OTHER                // khác
+    }
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     // === NEW: dùng chung cho NCC & KH ===
@@ -43,7 +55,7 @@ public class Debt {
 
     // === Các field cũ vẫn giữ nguyên ===
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "supplier_id", nullable = false)  // hiện tại vẫn là NCC
+    @JoinColumn(name = "supplier_id", nullable = false)
     private Supplier supplier;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -79,8 +91,10 @@ public class Debt {
     @PrePersist
     public void prePersist() {
         var now = java.time.LocalDateTime.now();
-        this.createdAt = now; this.updatedAt = now;
+        this.createdAt = now;
+        this.updatedAt = now;
     }
+
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = java.time.LocalDateTime.now();

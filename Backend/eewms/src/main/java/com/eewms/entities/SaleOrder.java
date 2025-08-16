@@ -5,7 +5,6 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -52,7 +51,6 @@ public class SaleOrder {
     @ToString.Exclude
     private List<SaleOrderDetail> details;
 
-
     @Getter
     public enum SaleOrderStatus {
         PENDING("Đang chuẩn bị"),
@@ -65,16 +63,14 @@ public class SaleOrder {
         SaleOrderStatus(String label) {
             this.label = label;
         }
-
     }
 
-    //danh sach combo
+    // Danh sách combo
     @OneToMany(mappedBy = "saleOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private java.util.List<SaleOrderCombo> combos = new java.util.ArrayList<>();
 
-
-    //PAYOS
+    // PAYOS
     public enum PaymentStatus {
         NONE_PAYMENT, // mới tạo đơn, chưa chọn luồng
         UNPAID,       // bán công nợ
@@ -86,7 +82,7 @@ public class SaleOrder {
     @Column(name = "payos_order_code", length = 100)
     private String payOsOrderCode;
 
-    //Mặc định là PENDING, với đơn thanh toán luôn thì override từ khâu khởi tạo đơn hàng
+    // Mặc định là PENDING, với đơn thanh toán luôn thì override từ khâu khởi tạo đơn hàng
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_status", nullable = false, length = 20)
     private PaymentStatus paymentStatus = PaymentStatus.NONE_PAYMENT;
@@ -96,7 +92,12 @@ public class SaleOrder {
         if (paymentStatus == null) paymentStatus = PaymentStatus.NONE_PAYMENT;
     }
 
-    //Ghi chú thanh toán, vd: "Thanh toan don hang ORD-XXXXX, so tien xxxx vnd"
+    // Ghi chú thanh toán, vd: "Thanh toan don hang ORD-XXXXX, so tien xxxx vnd"
     @Column(name = "payment_note", length = 255)
     private String paymentNote;
+
+    // ======= Convenience getter cho công nợ =======
+    public Long getId() {
+        return (soId != null) ? soId.longValue() : null;
+    }
 }

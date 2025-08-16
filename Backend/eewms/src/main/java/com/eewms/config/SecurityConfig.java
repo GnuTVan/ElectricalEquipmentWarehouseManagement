@@ -54,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers("/settings/**").hasRole("ADMIN")
                         .requestMatchers("/admin/warehouses/**").hasRole("ADMIN")
 
+
                         //MANAGER
                         .requestMatchers("/admin/suppliers/**").hasAnyRole("MANAGER")
                         .requestMatchers("/admin/purchase-orders/**").hasAnyRole("MANAGER")

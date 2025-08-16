@@ -1,15 +1,18 @@
 package com.eewms.services.impl;
 
+import com.eewms.dto.WarehouseDTO;
 import com.eewms.entities.Warehouse;
 import com.eewms.repository.WarehouseRepository;
 import com.eewms.services.IWarehouseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class WarehouseServiceImpl implements IWarehouseService {
 
     private final WarehouseRepository warehouseRepository;
@@ -25,21 +28,43 @@ public class WarehouseServiceImpl implements IWarehouseService {
     }
 
     @Override
-    public Warehouse save(Warehouse warehouse) {
-        if (warehouse.getId() != null) {
-            Warehouse existing = getById(warehouse.getId());
-            existing.setName(warehouse.getName());
-            existing.setDescription(warehouse.getDescription());
-            return warehouseRepository.save(existing);
+    public Warehouse save(WarehouseDTO dto) {
+        String name = dto.getName() == null ? "" : dto.getName().trim();
+        String description = dto.getDescription() == null ? null : dto.getDescription().trim();
+
+        if (name.isEmpty()) {
+            throw new IllegalArgumentException("Tên kho là bắt buộc");
+        }
+
+        if (dto.getId() == null) {
+            // CREATE
+            if (warehouseRepository.existsByNameIgnoreCase(name)) {
+                throw new IllegalArgumentException("Tên kho đã tồn tại: " + name);
+            }
+            Warehouse w = new Warehouse();
+            w.setName(name);
+            w.setDescription(description);
+            w.setStatus(dto.getStatus() == null ? true : dto.getStatus());
+            return warehouseRepository.save(w);
         } else {
-            return warehouseRepository.save(warehouse); // tạo mới
+            // UPDATE
+            if (warehouseRepository.existsByNameIgnoreCaseAndIdNot(name, dto.getId())) {
+                throw new IllegalArgumentException("Tên kho đã tồn tại: " + name);
+            }
+            Warehouse existing = getById(dto.getId());
+            existing.setName(name);
+            existing.setDescription(description);
+            if (dto.getStatus() != null) {
+                existing.setStatus(dto.getStatus());
+            }
+            return warehouseRepository.save(existing);
         }
     }
 
     @Override
     public void toggleStatus(Long id) {
         Warehouse warehouse = getById(id);
-        warehouse.setStatus(!warehouse.getStatus());
+        warehouse.setStatus(!Boolean.TRUE.equals(warehouse.getStatus()));
         warehouseRepository.save(warehouse);
     }
 }

@@ -1,6 +1,5 @@
 package com.eewms.dto;
 
-import com.eewms.entities.GoodIssueNote;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -19,6 +18,19 @@ public class GoodIssueNoteDTO {
     private LocalDateTime issueDate;
     private String description;
     private BigDecimal totalAmount;
-    private String saleOrderCode; // <== thêm dòng này
+
+    // ================== Liên kết đơn bán ==================
+    private String saleOrderCode; // mã đơn bán
+    private Long saleOrderId;     // NEW: id đơn bán (dùng để tạo công nợ)
+
+    // ================== Chi tiết xuất ====================
     private List<GoodIssueDetailDTO> details;
+
+    // ================== Công nợ / Thanh toán =============
+    private String status;                 // trạng thái thanh toán
+    private Long debtId;                   // id công nợ (nếu đã có)
+    private BigDecimal remainingAmount;    // số tiền còn lại (total - paid)
+
+    @Builder.Default
+    private boolean hasDebt = false;       // có công nợ chưa? (default false)
 }

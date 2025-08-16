@@ -2,10 +2,12 @@ package com.eewms.services.impl;
 
 import com.eewms.entities.Debt;
 import com.eewms.entities.DebtPayment;
+import com.eewms.entities.SaleOrder;
 import com.eewms.entities.WarehouseReceipt;
 import com.eewms.repository.DebtPaymentRepository;
 import com.eewms.repository.DebtRepository;
 import com.eewms.repository.PurchaseOrderItemRepository;
+import com.eewms.repository.SaleOrderRepository;
 import com.eewms.repository.warehouseReceipt.WarehouseReceiptItemRepository;
 import com.eewms.repository.warehouseReceipt.WarehouseReceiptRepository;
 import com.eewms.services.IDebtService;
@@ -23,9 +25,9 @@ public class DebtServiceImpl implements IDebtService {
     private final DebtRepository debtRepository;
     private final DebtPaymentRepository debtPaymentRepository;
     private final WarehouseReceiptRepository warehouseReceiptRepository;
-
     private final WarehouseReceiptItemRepository warehouseReceiptItemRepository;
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
+    private final SaleOrderRepository saleOrderRepository;
 
     @Override
     @Transactional
@@ -56,11 +58,9 @@ public class DebtServiceImpl implements IDebtService {
                 .partyType(Debt.PartyType.SUPPLIER)
                 .documentType(Debt.DocumentType.WAREHOUSE_RECEIPT)
                 .documentId(wr.getId())
-
                 .supplier(supplier)
                 .warehouseReceipt(wr)
                 .purchaseOrder(po)
-
                 .totalAmount(total)
                 .paidAmount(BigDecimal.ZERO)
                 .status(Debt.Status.UNPAID)
@@ -79,6 +79,47 @@ public class DebtServiceImpl implements IDebtService {
         }
         return debt;
     }
+
+    /** ================== NEW: Công nợ cho đơn bán ================== */
+    @Transactional
+    public Debt createDebtForSaleOrder(Long saleOrderId, int termDays) {
+        var order = saleOrderRepository.findById(saleOrderId.intValue())
+                .orElseThrow(() -> new IllegalArgumentException("SaleOrder not found: " + saleOrderId));
+
+        // Tổng tiền từ đơn bán
+        BigDecimal total = (order.getTotalAmount() != null) ? order.getTotalAmount() : BigDecimal.ZERO;
+
+        // Check duplicate
+        var existed = debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.SALES_INVOICE, order.getId());
+        if (existed.isPresent()) return existed.get();
+
+        LocalDate invoiceDate = (order.getOrderDate() != null) ? order.getOrderDate().toLocalDate() : LocalDate.now();
+        LocalDate dueDate = invoiceDate.plusDays(Math.max(0, termDays));
+
+        Debt debt = Debt.builder()
+                .partyType(Debt.PartyType.CUSTOMER)
+                .documentType(Debt.DocumentType.SALES_INVOICE)
+                .documentId(order.getId())
+                .customerId(order.getCustomer() != null ? order.getCustomer().getId() : null)
+                .totalAmount(total)
+                .paidAmount(BigDecimal.ZERO)
+                .status(Debt.Status.UNPAID)
+                .invoiceDate(invoiceDate)
+                .dueDate(dueDate)
+                .note("Công nợ từ đơn bán " + order.getSoCode())
+                .build();
+
+        debt = debtRepository.save(debt);
+
+        if (termDays == 0) {
+            pay(debt.getId(), total, DebtPayment.Method.CASH, invoiceDate,
+                    "AUTO-IMMEDIATE", "Auto pay on sale order confirm");
+        } else {
+            recomputeAndSave(debt);
+        }
+        return debt;
+    }
+    /** ============================================================= */
 
     @Override
     @Transactional

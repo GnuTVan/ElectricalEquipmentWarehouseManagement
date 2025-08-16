@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{fragments/common-head :: commonHead('Chi tiết công nợ')}"></head>
+
+<body class="bg-gray-100 font-sans">
+<div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <!-- Main -->
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <!-- Header -->
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <!-- Page header -->
+        <div class="px-6 py-6">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Chi tiết công nợ</h1>
+                    <p class="text-sm text-gray-500 mt-1">
+                        Mã chứng từ:
+                        <span class="font-mono"
+                              th:text="${debt.documentType} + ' #' + ${debt.documentId}"></span>
+                    </p>
+                </div>
+                <div class="flex gap-2">
+                    <!-- Back button theo nguồn công nợ -->
+                    <a th:if="${debt.warehouseReceipt != null}"
+                       th:href="@{'/admin/warehouse-receipts/view/' + ${debt.warehouseReceipt.id}}"
+                       class="px-3 py-2 rounded border bg-white hover:bg-gray-50">← Quay lại phiếu nhập</a>
+
+                    <a th:if="${debt.documentType?.name() == 'SALES_INVOICE'}"
+                       th:href="@{'/good-issue'}"
+                       class="px-3 py-2 rounded border bg-white hover:bg-gray-50">← Quay lại phiếu xuất</a>
+
+                    <a th:if="${debt.warehouseReceipt == null and debt.documentType?.name() != 'SALES_INVOICE'}"
+                       th:href="@{'/admin/debts'}"
+                       class="px-3 py-2 rounded border bg-white hover:bg-gray-50">← Danh sách công nợ</a>
+                </div>
+            </div>
+
+            <!-- Flash message -->
+            <div th:if="${message}" th:classappend="${messageType == 'success'} ? 'bg-green-50 border-green-200 text-green-800' :
+                                             ${messageType == 'warning'} ? 'bg-amber-50 border-amber-200 text-amber-800' :
+                                             ${messageType == 'danger'} ? 'bg-red-50 border-red-200 text-red-800' :
+                                                                          'bg-gray-50 border-gray-200 text-gray-700'"
+                 class="border rounded px-4 py-3 mb-5">
+                <span th:text="${message}"></span>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Thông tin công nợ -->
+                <section class="lg:col-span-2 bg-white rounded-xl shadow p-6">
+                    <h2 class="text-lg font-semibold mb-4">Thông tin công nợ</h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                        <div>
+                            <div class="text-gray-500">Đối tượng</div>
+                            <div class="font-medium" th:text="${debt.partyType}"></div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">Trạng thái</div>
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold"
+                                  th:classappend="${debt.status?.name() == 'PAID'} ? 'bg-green-50 text-green-700 border border-green-200' :
+                                   ${debt.status?.name() == 'PARTIAL'} ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                   ${debt.status?.name() == 'OVERDUE'} ? 'bg-red-50 text-red-700 border border-red-200' :
+                                                                         'bg-gray-50 text-gray-700 border border-gray-200'"
+                                  th:text="${debt.status}">
+              </span>
+                        </div>
+
+                        <div th:if="${debt.supplier != null}">
+                            <div class="text-gray-500">Nhà cung cấp</div>
+                            <div class="font-medium" th:text="${debt.supplier.name}"></div>
+                        </div>
+                        <div th:if="${debt.customerId != null}">
+                            <div class="text-gray-500">Khách hàng (ID)</div>
+                            <div class="font-medium" th:text="${debt.customerId}"></div>
+                        </div>
+
+                        <div>
+                            <div class="text-gray-500">Loại chứng từ</div>
+                            <div class="font-medium" th:text="${debt.documentType}"></div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">Mã chứng từ</div>
+                            <div class="font-medium" th:text="${debt.documentId}"></div>
+                        </div>
+
+                        <div>
+                            <div class="text-gray-500">Ngày hóa đơn</div>
+                            <div class="font-medium" th:text="${#temporals.format(debt.invoiceDate, 'dd/MM/yyyy')}"></div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">Hạn thanh toán</div>
+                            <div class="font-medium" th:text="${#temporals.format(debt.dueDate, 'dd/MM/yyyy')}"></div>
+                        </div>
+
+                        <div>
+                            <div class="text-gray-500">Tổng tiền</div>
+                            <div class="font-semibold"
+                                 th:text="${#numbers.formatDecimal(debt.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">Đã thanh toán</div>
+                            <div class="font-semibold"
+                                 th:text="${#numbers.formatDecimal(debt.paidAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></div>
+                        </div>
+
+                        <div>
+                            <div class="text-gray-500">Còn lại</div>
+                            <div class="font-semibold"
+                                 th:with="remain=${debt.totalAmount.subtract(debt.paidAmount)}"
+                                 th:text="${#numbers.formatDecimal(remain > 0 ? remain : 0, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></div>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <div class="text-gray-500">Ghi chú</div>
+                            <div class="font-normal" th:text="${debt.note} ?: '-'"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Form thanh toán & hạn -->
+                <aside class="bg-white rounded-xl shadow p-6">
+                    <h2 class="text-lg font-semibold mb-4">Thao tác</h2>
+
+                    <!-- Thanh toán công nợ -->
+                    <form th:action="@{'/admin/debts/' + ${debt.id} + '/pay'}" method="post" class="space-y-3 mb-6">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Số tiền</label>
+                            <input type="number" name="amount" min="1" step="1" required
+                                   class="w-full border rounded px-3 py-2"
+                                   th:attr="max=${debt.totalAmount.subtract(debt.paidAmount)}" />
+                            <p class="text-xs text-gray-500 mt-1">
+                                Còn lại:
+                                <span th:with="remain=${debt.totalAmount.subtract(debt.paidAmount)}"
+                                      th:text="${#numbers.formatDecimal(remain > 0 ? remain : 0, 0, 'COMMA', 0, 'POINT')}"></span> VNĐ
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Phương thức</label>
+                            <select name="method" class="w-full border rounded px-3 py-2">
+                                <option value="CASH">Tiền mặt</option>
+                                <option value="BANK">Chuyển khoản</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Ngày thanh toán</label>
+                                <input type="date" name="paymentDate" class="w-full border rounded px-3 py-2"
+                                       th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}" />
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Mã tham chiếu</label>
+                                <input type="text" name="referenceNo" class="w-full border rounded px-3 py-2"
+                                       placeholder="Số CT/UNC..." />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Ghi chú</label>
+                            <textarea name="note" rows="2" class="w-full border rounded px-3 py-2"
+                                      placeholder="Nội dung thanh toán..."></textarea>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="submit"
+                                    class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+                                Xác nhận thanh toán
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Cập nhật hạn thanh toán -->
+                    <form th:action="@{'/admin/debts/' + ${debt.id} + '/due-date'}" method="post" class="space-y-3">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Cập nhật hạn thanh toán</label>
+                            <div class="flex gap-2">
+                                <input type="date" name="dueDate"
+                                       class="flex-1 border rounded px-3 py-2"
+                                       th:value="${#temporals.format(debt.dueDate, 'yyyy-MM-dd')}" />
+                                <button type="submit"
+                                        class="px-4 py-2 rounded border bg-white hover:bg-gray-50">
+                                    Lưu hạn
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </aside>
+            </div>
+
+            <!-- Lịch sử thanh toán (nếu có quan hệ payments) -->
+            <section class="mt-6 bg-white rounded-xl shadow p-6" th:if="${debt.payments != null}">
+                <h2 class="text-lg font-semibold mb-4">Lịch sử thanh toán</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full table-auto text-sm">
+                        <thead class="bg-gray-100 text-gray-700 font-semibold">
+                        <tr>
+                            <th class="px-4 py-2 text-left">Ngày</th>
+                            <th class="px-4 py-2 text-left">Phương thức</th>
+                            <th class="px-4 py-2 text-left">Số tiền</th>
+                            <th class="px-4 py-2 text-left">Tham chiếu</th>
+                            <th class="px-4 py-2 text-left">Ghi chú</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="p : ${debt.payments}" class="border-t">
+                            <td class="px-4 py-2" th:text="${#temporals.format(p.paymentDate, 'dd/MM/yyyy')}"></td>
+                            <td class="px-4 py-2" th:text="${p.method}"></td>
+                            <td class="px-4 py-2" th:text="${#numbers.formatDecimal(p.amount,0,'COMMA',0,'POINT')} + ' VNĐ'"></td>
+                            <td class="px-4 py-2" th:text="${p.referenceNo} ?: '-'"></td>
+                            <td class="px-4 py-2" th:text="${p.note} ?: '-'"></td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(debt.payments)}">
+                            <td class="px-4 py-4 text-gray-500" colspan="5">Chưa có khoản thanh toán nào.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

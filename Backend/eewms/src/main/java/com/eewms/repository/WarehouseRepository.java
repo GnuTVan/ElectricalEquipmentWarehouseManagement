@@ -4,5 +4,6 @@ import com.eewms.entities.Warehouse;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WarehouseRepository extends JpaRepository<Warehouse, Long> {
-    boolean existsByName(String name);
+    boolean existsByNameIgnoreCase(String name);
+    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
 }

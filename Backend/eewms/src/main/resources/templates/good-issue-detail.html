@@ -32,6 +32,16 @@
             </a>
         </div>
 
+        <!-- Thông báo flash -->
+        <div th:if="${message}"
+             th:classappend="${messageType == 'success'} ? 'bg-green-50 border-green-200 text-green-800' :
+                             ${messageType == 'warning'} ? 'bg-amber-50 border-amber-200 text-amber-800' :
+                             ${messageType == 'danger'} ? 'bg-red-50 border-red-200 text-red-800' :
+                                                          'bg-gray-50 border-gray-200 text-gray-700'"
+             class="border rounded px-4 py-3 mb-5">
+            <span th:text="${message}"></span>
+        </div>
+
         <!-- Thông tin chung -->
         <div class="bg-white p-6 rounded shadow mb-8">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -84,7 +94,6 @@
                     <td th:text="${#numbers.formatDecimal(detail.total, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'" class="px-4 py-2 border-b"></td>
                 </tr>
                 </tbody>
-
             </table>
             <tfoot>
             <tr class="bg-gray-50 font-semibold">
@@ -92,8 +101,114 @@
                 <td class="px-4 py-2" th:text="${#numbers.formatDecimal(note.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
             </tr>
             </tfoot>
-
         </div>
+
+        <!-- ==================== CÔNG NỢ KHÁCH HÀNG (thêm mới) ==================== -->
+        <section class="mt-6 bg-white rounded shadow p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold">Công nợ khách hàng</h2>
+                <span th:if="${debt != null}" class="text-sm">
+                  Trạng thái: <strong th:text="${debt.status}"></strong>
+                </span>
+            </div>
+
+            <!-- CHƯA có công nợ: hiện nút Tạo công nợ -->
+            <div th:if="${debt == null}">
+                <p class="text-gray-600 mb-3">Đơn hàng này chưa tạo công nợ.</p>
+                <form th:if="${note.saleOrderId != null}"
+                      th:action="@{/admin/debts/create-from-sale-order/{soId}(soId=${note.saleOrderId})}"
+                      method="post"
+                      class="flex items-center gap-3">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <!-- Để tạo xong quay lại trang này -->
+                    <input type="hidden" name="ginId" th:value="${note.id}"/>
+
+                    <label class="text-sm text-gray-600">Kỳ hạn (ngày):</label>
+                    <input type="number" name="termDays" value="30" min="0"
+                           class="border rounded px-3 py-2 w-28"/>
+
+                    <button type="submit"
+                            class="px-3 py-2 rounded bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100">
+                        Tạo công nợ
+                    </button>
+                </form>
+                <p th:if="${note.saleOrderId == null}" class="text-xs text-gray-400 mt-2">
+                    (Thiếu saleOrderId — cần map vào DTO/Mapper)
+                </p>
+            </div>
+
+            <!-- ĐÃ có công nợ: hiển thị số liệu + form thanh toán -->
+            <div th:if="${debt != null}">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                    <div>
+                        <div class="text-gray-500">Tổng tiền</div>
+                        <div class="font-semibold"
+                             th:text="${#numbers.formatDecimal(debt.totalAmount,0,'COMMA',0,'POINT')} + ' VNĐ'"></div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500">Đã thanh toán</div>
+                        <div class="font-semibold"
+                             th:text="${#numbers.formatDecimal(debt.paidAmount,0,'COMMA',0,'POINT')} + ' VNĐ'"></div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500">Còn lại</div>
+                        <div class="font-semibold"
+                             th:text="${#numbers.formatDecimal(remaining,0,'COMMA',0,'POINT')} + ' VNĐ'"></div>
+                    </div>
+                </div>
+
+                <hr class="my-4"/>
+
+                <!-- Form thanh toán công nợ -->
+                <form th:action="@{'/admin/debts/' + ${debt.id} + '/pay'}" method="post"
+                      class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <!-- để thanh toán xong quay lại trang này -->
+                    <input type="hidden" name="ginId" th:value="${note.id}"/>
+
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">Số tiền</label>
+                        <input type="number" name="amount" min="1" step="1" required
+                               class="w-full border rounded px-3 py-2"
+                               th:attr="max=${remaining}"/>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">Phương thức</label>
+                        <select name="method" class="w-full border rounded px-3 py-2">
+                            <option value="CASH">Tiền mặt</option>
+                            <option value="BANK">Chuyển khoản</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">Ngày thanh toán</label>
+                        <input type="date" name="paymentDate" class="w-full border rounded px-3 py-2"
+                               th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"/>
+                    </div>
+
+                    <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Mã tham chiếu</label>
+                            <input type="text" name="referenceNo" class="w-full border rounded px-3 py-2"
+                                   placeholder="Số CT/UNC..."/>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Ghi chú</label>
+                            <input type="text" name="note" class="w-full border rounded px-3 py-2"
+                                   placeholder="Nội dung..."/>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-3 flex justify-end">
+                        <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+                            Xác nhận thanh toán
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+        <!-- ================== /CÔNG NỢ KHÁCH HÀNG ================== -->
     </main>
 </div>
 
