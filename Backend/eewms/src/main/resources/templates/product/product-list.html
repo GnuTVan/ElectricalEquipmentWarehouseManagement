@@ -305,8 +305,16 @@
 
                                 <div class="col-span-2">
                                     <label class="text-sm text-gray-700">Nhà cung cấp</label>
-                                    <select id="editSupplierIds" multiple th:field="*{supplierIds}"
-                                            class="w-full"></select>
+                                    <select id="editSupplierIds"
+                                            multiple
+                                            th:field="*{supplierIds}"
+                                            class="w-full"
+                                            th:disabled="${#lists.isEmpty(suppliers)}">
+                                        <option th:if="${#lists.isEmpty(suppliers)}" value=""></option>
+                                        <option th:each="s : ${suppliers}"
+                                                th:value="${s.id}"
+                                                th:text="${s.name}"></option>
+                                    </select>
                                     <p th:if="${#fields.hasErrors('supplierIds')}" th:errors="*{supplierIds}"
                                        class="text-xs text-red-500 mt-1"></p>
                                     <p th:if="${#lists.isEmpty(suppliers)}" class="text-xs text-red-500 mt-1">Không có
