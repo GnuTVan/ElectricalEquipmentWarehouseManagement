@@ -3,17 +3,16 @@ package com.eewms.services.impl;
 import com.eewms.dto.GoodIssueMapper;
 import com.eewms.dto.GoodIssueNoteDTO;
 import com.eewms.entities.*;
+import com.eewms.repository.DebtRepository;
 import com.eewms.repository.GoodIssueNoteRepository;
 import com.eewms.repository.ProductRepository;
 import com.eewms.repository.SaleOrderRepository;
 import com.eewms.repository.UserRepository;
 import com.eewms.services.IGoodIssueService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -25,6 +24,7 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final SaleOrderRepository saleOrderRepository;
+    private final DebtRepository debtRepository; // tra công nợ
 
     @Override
     public GoodIssueNote createFromOrder(SaleOrder order, String username) {
@@ -76,8 +76,7 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
         saleOrderRepository.save(order);
 
         productRepository.saveAll(details.stream().map(GoodIssueDetail::getProduct).toList()); // lưu lại tồn kho
-        // Nếu bạn có sẵn orderRepo hoặc muốn đúng tầng:
-        goodIssueRepository.save(note);  // đã có dòng này
+        goodIssueRepository.save(note);
 
         return note;
     }
@@ -86,14 +85,29 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
     public GoodIssueNoteDTO getById(Long id) {
         GoodIssueNote gin = goodIssueRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu xuất kho"));
-        return GoodIssueMapper.toNoteDTO(gin);
+        GoodIssueNoteDTO dto = GoodIssueMapper.toNoteDTO(gin);
+
+        // ==== Trạng thái thanh toán theo ĐƠN BÁN (SALES_INVOICE) ====
+        dto.setStatus(resolvePaymentStatus(gin));
+
+        // ==== Gán thông tin công nợ cho UI (debtId, remainingAmount, hasDebt) ====
+        fillDebtInfo(dto, gin);
+
+        return dto;
     }
 
     @Override
     public List<GoodIssueNoteDTO> getAllNotes() {
         List<GoodIssueNote> notes = goodIssueRepository.findAll();
         return notes.stream()
-                .map(GoodIssueMapper::toNoteDTO)
+                .map(gin -> {
+                    GoodIssueNoteDTO dto = GoodIssueMapper.toNoteDTO(gin);
+                    // Trạng thái thanh toán
+                    dto.setStatus(resolvePaymentStatus(gin));
+                    // Thông tin công nợ
+                    fillDebtInfo(dto, gin);
+                    return dto;
+                })
                 .toList();
     }
 
@@ -102,5 +116,52 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
         return String.format("GIN%05d", count);
     }
 
+    // ===== Xác định trạng thái thanh toán =====
+    private String resolvePaymentStatus(GoodIssueNote gin) {
+        // Ưu tiên liên kết qua đơn bán: documentType = SALES_INVOICE, documentId = saleOrder.id
+        Long docId = (gin.getSaleOrder() != null) ? gin.getSaleOrder().getId() : null;
 
+        if (docId == null) {
+            // Không có đơn bán => chưa cấu hình công nợ cho GIN này
+            return "Chưa thanh toán";
+        }
+
+        return getPaymentStatusForDocument(Debt.DocumentType.SALES_INVOICE, docId);
+    }
+
+    private String getPaymentStatusForDocument(Debt.DocumentType type, Long documentId) {
+        return debtRepository.findByDocumentTypeAndDocumentId(type, documentId)
+                .map(debt -> debt.getPaidAmount().compareTo(debt.getTotalAmount()) >= 0
+                        ? "Đã thanh toán" : "Chưa thanh toán")
+                .orElse("Chưa thanh toán");
+    }
+
+    // ===== Gán dữ liệu công nợ cho DTO (cột "Công nợ") =====
+    private void fillDebtInfo(GoodIssueNoteDTO dto, GoodIssueNote gin) {
+        // Lấy id đơn bán để tra công nợ
+        Long saleOrderId = (gin.getSaleOrder() != null) ? gin.getSaleOrder().getId() : null;
+
+        if (saleOrderId == null) {
+            // Không có đơn bán → không có thông tin công nợ
+            dto.setDebtId(null);
+            dto.setRemainingAmount(BigDecimal.ZERO);
+            dto.setHasDebt(false);
+            return;
+        }
+
+        debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.SALES_INVOICE, saleOrderId)
+                .ifPresentOrElse(debt -> {
+                    BigDecimal remaining = debt.getTotalAmount().subtract(debt.getPaidAmount());
+                    if (remaining.compareTo(BigDecimal.ZERO) < 0) remaining = BigDecimal.ZERO;
+
+                    dto.setDebtId(debt.getId());
+                    dto.setRemainingAmount(remaining);
+                    dto.setHasDebt(remaining.compareTo(BigDecimal.ZERO) > 0); // còn nợ thì true
+                }, () -> {
+                    // Chưa có record Debt → có thể là đơn bán công nợ nhưng chưa sinh công nợ
+                    dto.setDebtId(null);
+                    dto.setRemainingAmount(gin.getTotalAmount() != null ? gin.getTotalAmount() : BigDecimal.ZERO);
+                    dto.setHasDebt(false);
+                });
+    }
 }
