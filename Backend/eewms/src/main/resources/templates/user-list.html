@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/common-head :: commonHead('Danh sách người dùng')}"></head>
 <body class="bg-gray-100 font-sans">
@@ -17,13 +18,15 @@
                 <a onclick="openModal()"
                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer">+ Thêm</a>
                 <form th:action="@{/admin/users}" method="get" class="flex gap-2">
+
                     <input type="text" name="keyword" th:value="${keyword}" placeholder="Tìm kiếm..."
                            class="border px-3 py-2 rounded-md w-64"/>
-                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tìm</button>
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tìm
+                    </button>
                 </form>
+
             </div>
         </div>
-
         <div th:if="${message}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4">
             <p th:text="${message}"></p>
         </div>
@@ -36,6 +39,7 @@
             <table class="min-w-full table-auto text-sm">
                 <thead class="bg-gray-200 text-gray-700">
                 <tr>
+
                     <th class="px-4 py-3 text-left">ID</th>
                     <th class="px-4 py-3 text-left">Họ và tên</th>
                     <th class="px-4 py-3 text-left">Tên tài khoản</th>
@@ -63,9 +67,9 @@
                     <td class="px-4 py-3" th:text="${user.phone}"></td>
                     <td class="px-4 py-3" th:text="${user.address}"></td>
                     <td class="px-4 py-3">
-                        <span th:each="role : ${user.roleNames}"
-                              th:text="${role}"
-                              class="inline-block mr-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs uppercase font-medium"></span>
+                    <span th:each="role : ${user.roleNames}"
+                          th:text="${role}"
+                          class="inline-block mr-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs uppercase font-medium"></span>
                     </td>
                     <td class="px-4 py-3">
                         <div class="flex items-center gap-2">
@@ -77,7 +81,9 @@
                                 <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition duration-200 transform peer-checked:translate-x-5"></div>
                             </label>
                             <span class="text-sm font-medium text-gray-700 min-w-[120px] inline-block"
-                                  th:text="${user.enabled ? 'Đang hoạt động' : 'Ngưng hoạt động'}"></span>
+                                  th:text="${user.enabled ? 'Đang hoạt động' : 'Ngưng hoạt động'}">
+                        </span>
+
                         </div>
                     </td>
 
@@ -93,223 +99,137 @@
                 </tr>
                 </tbody>
             </table>
-
             <!-- Pagination -->
             <div class="flex justify-center mt-6">
+
                 <ul class="inline-flex space-x-1">
+                    <!-- Nút về đầu -->
+                    <!-- Nút về đầu -->
                     <li th:if="${userPage.totalPages > 1}">
                         <a th:href="@{/admin/users(page=0, keyword=${keyword})}"
                            class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">«</a>
                     </li>
+
+                    <!-- Nút về trước -->
                     <li th:if="${userPage.hasPrevious()}">
                         <a th:href="@{/admin/users(page=${userPage.number - 1}, keyword=${keyword})}"
                            class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">‹</a>
                     </li>
+
+                    <!-- Các số trang -->
                     <li th:each="i : ${#numbers.sequence(0, userPage.totalPages - 1)}">
                         <a th:href="@{/admin/users(page=${i}, keyword=${keyword})}"
                            th:text="${i + 1}"
                            th:classappend="${userPage.number == i} ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'"
                            class="px-3 py-1 rounded text-sm font-medium"></a>
                     </li>
+
+                    <!-- Nút tiếp theo -->
                     <li th:if="${userPage.hasNext()}">
                         <a th:href="@{/admin/users(page=${userPage.number + 1}, keyword=${keyword})}"
                            class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">›</a>
                     </li>
+
+                    <!-- Nút đến cuối -->
                     <li>
                         <a th:href="@{/admin/users(page=${userPage.totalPages - 1}, keyword=${keyword})}"
                            class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">»</a>
                     </li>
+
                 </ul>
             </div>
+
         </div>
 
-        <!-- Modal Thêm User -->
-        <div id="userModal"
-             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-             th:classappend="${hasAddError} ? '' : ' hidden'">
+        <!-- Modal Thêm User (KHÔNG có password, CÓ email) -->
+        <div id="userModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
             <div class="bg-white w-full max-w-md rounded shadow p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-semibold">Thêm người dùng</h2>
-                    <button type="button" onclick="closeModal()"><i class="ri-close-line text-2xl"></i></button>
+                    <button onclick="closeModal()"><i class="ri-close-line text-2xl"></i></button>
                 </div>
-
-                <!-- Submit truyền thống vẫn trỏ /admin/users (fallback).
-                     JS sẽ chặn submit và gọi /admin/users/ajax. -->
-                <form id="addUserForm" th:action="@{/admin/users}" th:object="${userDTO}" method="post">
+                <form th:action="@{/admin/users}" th:object="${userDTO}" method="post">
                     <!-- Họ tên -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium">Họ tên</label>
                         <input type="text" th:field="*{fullName}" class="w-full border rounded px-3 py-2"/>
-                        <p id="err_fullName" class="text-red-600 text-sm mt-1">
-                            <span th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></span>
-                        </p>
+                        <p th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"
+                           class="text-red-600 text-sm mt-1"></p>
                     </div>
 
                     <!-- Tên đăng nhập -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium">Tên đăng nhập</label>
                         <input type="text" th:field="*{username}" class="w-full border rounded px-3 py-2"/>
-                        <p id="err_username" class="text-red-600 text-sm mt-1">
-                            <span th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></span>
-                        </p>
+                        <p th:if="${#fields.hasErrors('username')}" th:errors="*{username}"
+                           class="text-red-600 text-sm mt-1"></p>
                     </div>
-
                     <!-- Email -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium">Email</label>
                         <input type="email" th:field="*{email}" class="w-full border rounded px-3 py-2"/>
-                        <p id="err_email" class="text-red-600 text-sm mt-1">
-                            <span th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
-                        </p>
+                        <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}"
+                           class="text-red-600 text-sm mt-1"></p>
                     </div>
-
-                    <!-- Chức vụ -->
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium">Chức vụ</label>
-                        <select th:field="*{roleIds}" class="w-full border rounded px-3 py-2">
-                            <option th:each="role : ${allRoles}" th:value="${role.id}"
-                                    th:text="${#strings.replace(role.name, 'ROLE_', '')}"></option>
-                        </select>
-                    </div>
-
+                    <div class="mb-4"><label class="block text-sm font-medium">Chức vụ</label><select
+                            th:field="*{roleIds}" class="w-full border rounded px-3 py-2">
+                        <option th:each="role : ${allRoles}" th:value="${role.id}"
+                                th:text="${#strings.replace(role.name, 'ROLE_', '')}"></option>
+                    </select></div>
                     <div class="flex justify-end space-x-2">
-                        <button type="button" onclick="closeModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Hủy</button>
+                        <button type="button" onclick="closeModal()" class="bg-gray-500 text-white px-4 py-2 rounded">
+                            Hủy
+                        </button>
                         <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Lưu</button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- (tuỳ chọn) Footer -->
-        <div th:replace="~{fragments/footer :: footer}"></div>
-    </main>
-</div>
+        <!-- Modal Sửa User (không cần thay đổi gì) -->
+        <!-- giữ nguyên như hiện tại -->
 
+
+    </main>
+
+</div>
+<div th:replace="~{fragments/footer :: footer}"></div>
 <script>
     function openModal() {
-      document.getElementById('userModal').classList.remove('hidden');
-    }
-    function closeModal() {
-      document.getElementById('userModal').classList.add('hidden');
+        document.getElementById('userModal').classList.remove('hidden');
     }
 
-    function toggleUserStatus(checkbox, event) {
-      event.preventDefault();
-      const userId = checkbox.dataset.id;
-      const newStatus = checkbox.checked;
-      const csrfToken = document.querySelector('meta[name="_csrf"]').content;
-      const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+function closeModal() {
+    document.getElementById('userModal').classList.add('hidden');
+}
 
-      fetch(`/admin/users/${userId}/toggle-status`, {
+function toggleUserStatus(checkbox, event) {
+    event.preventDefault(); // CHẶN hành vi mặc định gây nhảy
+
+    const userId = checkbox.dataset.id;
+    const newStatus = checkbox.checked;
+    const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+
+    fetch(`/admin/users/${userId}/toggle-status`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          [csrfHeader]: csrfToken
+            'Content-Type': 'application/json',
+            [csrfHeader]: csrfToken
         },
         body: JSON.stringify({enabled: newStatus})
-      })
-      .then(res => res.ok ? res.text() : Promise.reject("Lỗi cập nhật"))
-      .then(() => {
-        const label = checkbox.closest("td").querySelector("span");
-        label.innerText = newStatus ? "Đang hoạt động" : "Ngưng hoạt động";
-      })
-      .catch(() => {
-        checkbox.checked = !checkbox.checked;
-        alert("Cập nhật trạng thái thất bại.");
-      });
-    }
+    })
+        .then(res => res.ok ? res.text() : Promise.reject("Lỗi cập nhật"))
+        .then(() => {
+            const label = checkbox.closest("td").querySelector("span");
+            label.innerText = newStatus ? "Đang hoạt động" : "Ngưng hoạt động";
+        })
+        .catch(() => {
+            checkbox.checked = !checkbox.checked;
+            alert("Cập nhật trạng thái thất bại.");
+        });
+}
 
-    // ====== AJAX SUBMIT: Tạo người dùng không reload ======
-    function clearFormErrors() {
-      ['fullName','username','email'].forEach(f => {
-        const el = document.getElementById('err_' + f);
-        if (el) el.textContent = '';
-      });
-    }
-
-    function showFormErrors(errors) {
-      Object.entries(errors || {}).forEach(([field, msg]) => {
-        const el = document.getElementById('err_' + field);
-        if (el) el.textContent = msg;
-      });
-    }
-
-    function prependUserRow(u) {
-      if (!u) return;
-      const tbody = document.querySelector('table tbody');
-      if (!tbody) return;
-
-      const roles = (u.roleNames || []).map(r =>
-        `<span class="inline-block mr-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs uppercase font-medium">${r}</span>`
-      ).join('');
-
-      const statusText = u.enabled ? 'Đang hoạt động' : 'Ngưng hoạt động';
-
-      const tr = document.createElement('tr');
-      tr.className = 'border-b hover:bg-gray-50';
-      tr.innerHTML = `
-        <td class="px-4 py-3">${u.id ?? ''}</td>
-        <td class="px-4 py-3">${u.fullName ?? ''}</td>
-        <td class="px-4 py-3">${u.username ?? ''}</td>
-        <td class="px-4 py-3">${u.email ?? ''}</td>
-        <td class="px-4 py-3">${u.phone ?? ''}</td>
-        <td class="px-4 py-3">${u.address ?? ''}</td>
-        <td class="px-4 py-3">${roles}</td>
-        <td class="px-4 py-3">
-          <div class="flex items-center gap-2">
-            <label class="inline-flex relative items-center cursor-pointer">
-              <input type="checkbox" ${u.enabled ? 'checked' : ''} class="sr-only peer"
-                     onchange="toggleUserStatus(this, event)">
-              <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-green-500 transition duration-300"></div>
-              <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition duration-200 transform peer-checked:translate-x-5"></div>
-            </label>
-            <span class="text-sm font-medium text-gray-700 min-w-[120px] inline-block">${statusText}</span>
-          </div>
-        </td>
-        <td class="px-4 py-3 text-center">
-          <span class="text-gray-400 text-xs">Vừa thêm</span>
-        </td>
-      `;
-      tbody.prepend(tr);
-    }
-
-    (function bindAjaxSubmit() {
-      const form = document.getElementById('addUserForm');
-      if (!form) return;
-
-      form.addEventListener('submit', async function (e) {
-        e.preventDefault(); // Không reload
-        clearFormErrors();
-
-        const csrfToken = document.querySelector('meta[name="_csrf"]').content;
-        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
-
-        const body = new URLSearchParams(new FormData(form));
-        try {
-          const res = await fetch('/admin/users/ajax', {
-            method: 'POST',
-            headers: { 'Accept': 'application/json', [csrfHeader]: csrfToken },
-            body
-          });
-
-          const data = await res.json();
-
-          if (!res.ok || data.ok === false) {
-            showFormErrors(data.errors || {});
-            return; // giữ nguyên modal, không nháy trang
-          }
-
-          // Thành công
-          form.reset();
-          closeModal();
-          prependUserRow(data.user);
-          // Nếu bạn có toastr, có thể bật: toastr.success(data.message || 'Tạo người dùng thành công');
-        } catch (err) {
-          // Nếu muốn: toastr.error('Có lỗi mạng. Vui lòng thử lại.');
-          console.error(err);
-        }
-      });
-    })();
 </script>
 
 </body>
