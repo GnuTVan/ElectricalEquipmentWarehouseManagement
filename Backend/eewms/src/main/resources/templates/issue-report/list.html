@@ -269,16 +269,6 @@
       // Reset về trang 1 khi submit filter
       form.addEventListener('submit', ()=> { if (pageInput) pageInput.value = 0; });
 
-      const btn = document.getElementById("userMenuBtn");
-    const dropdown = document.getElementById("userMenuDropdown");
-        btn?.addEventListener("click", () => {
-        dropdown?.classList.toggle("hidden");
-        });
-        document.addEventListener("click", (event) => {
-        if (!event.target.closest("#userMenuWrapper")) {
-        dropdown?.classList.add("hidden");
-        }
-        });
 
     </script>
   </main>
