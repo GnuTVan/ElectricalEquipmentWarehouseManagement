@@ -63,13 +63,14 @@
                     <td class="px-4 py-2" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
                     <td class="px-4 py-2" th:text="${order.createdBy}"></td>
                     <td class="px-4 py-2" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
-                    <td class="px-4 py-2">
-                        <span class="px-2 py-1 rounded text-xs font-medium"
-                              th:classappend="${order.status == 'CANCELLED'} ? 'bg-red-100 text-red-700' :
-                                 (${order.status == 'DELIVERIED'} ? 'bg-yellow-100 text-yellow-700' :
-                                 (${order.status == 'COMPLETED'} ? 'bg-green-100 text-green-700' :
+                    <td class="px-4 py-2 w-36 text-center">
+                        <span class="inline-block w-full truncate px-2 py-1 rounded text-xs font-medium"
+                              th:classappend="
+                                    ${order.status.name() == 'CANCELLED'} ? 'bg-red-100 text-red-700' :
+                                 (${order.status.name() == 'DELIVERIED'} ? 'bg-yellow-100 text-yellow-700' :
+                                 (${order.status.name() == 'COMPLETED'} ? 'bg-green-100 text-green-700' :
                                  'bg-gray-100 text-gray-700'))"
-                              th:text="${order.status}">
+                              th:text="${order.status.label}">
                         </span>
                     </td>
                     <td class="px-4 py-2 text-center">
