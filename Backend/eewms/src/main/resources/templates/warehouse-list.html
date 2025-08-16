@@ -3,39 +3,45 @@
 <head th:replace="~{fragments/common-head :: commonHead('Quản lý kho')}"></head>
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
+    <!-- Sidebar -->
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
+    <!-- Main content -->
     <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <!-- Header -->
         <div th:replace="~{fragments/header :: header}"></div>
 
-        <div class="flex justify-between items-center mb-4 px-6 py-6">
-            <h1 class="text-2xl font-bold">Danh sách kho</h1>
-            <button id="openAddModal" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm rounded">
-                <i class="ri-add-line mr-1"></i> Thêm kho
-            </button>
+        <div class="flex justify-between items-center mb-6 p-6">
+            <h1 class="text-2xl font-bold text-gray-800">Danh sách kho</h1>
+            <div class="flex items-center space-x-2">
+                <!-- Nhấn + Thêm: mở modal trắng (reset) -->
+                <a onclick="openWarehouseModal(true)"
+                   class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer">+ Thêm</a>
+            </div>
         </div>
 
-        <div class="bg-white shadow-sm rounded-md overflow-x-auto">
-            <table class="min-w-full text-sm text-gray-700">
-                <thead class="bg-gray-50 border-b border-gray-200">
+        <!-- Bảng -->
+        <div class="bg-white rounded shadow overflow-x-auto">
+            <table class="min-w-full table-auto text-sm">
+                <thead class="bg-gray-200 text-gray-700">
                 <tr>
-                    <th class="px-4 py-2 text-left">#</th>
-                    <th class="px-4 py-2 text-left">Tên kho</th>
-                    <th class="px-4 py-2 text-left">Mô tả</th>
-                    <th class="px-4 py-2 text-center">Trạng thái</th>
-                    <th class="px-4 py-2 text-center">Hành động</th>
+                    <th class="px-4 py-3 text-left">#</th>
+                    <th class="px-4 py-3 text-left">Tên kho</th>
+                    <th class="px-4 py-3 text-left">Mô tả</th>
+                    <th class="px-4 py-3 text-center">Trạng thái</th>
+                    <th class="px-4 py-3 text-center">Hành động</th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="w, stat : ${warehouses}" class="hover:bg-gray-50 border-b">
-                    <td class="px-4 py-2" th:text="${stat.count}">1</td>
-                    <td class="px-4 py-2" th:text="${w.name}">Tên kho</td>
-                    <td class="px-4 py-2" th:text="${w.description} ?: 'Không có mô tả'">Mô tả</td>
-                    <td class="px-4 py-2 text-center">
-                        <span th:if="${w.status}" class="text-green-700 bg-green-100 px-2 py-1 rounded-full text-xs">Hoạt động</span>
-                        <span th:if="${!w.status}" class="text-red-700 bg-red-100 px-2 py-1 rounded-full text-xs">Ngừng</span>
+                <tr th:each="w, stat : ${warehouses}" class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-3" th:text="${stat.count}"></td>
+                    <td class="px-4 py-3" th:text="${w.name}"></td>
+                    <td class="px-4 py-3" th:text="${w.description} ?: 'Không có mô tả'"></td>
+                    <td class="px-4 py-3 text-center">
+                        <span th:if="${w.status}" class="inline-block bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Hoạt động</span>
+                        <span th:if="${!w.status}" class="inline-block bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs">Ngừng</span>
                     </td>
-                    <td class="px-4 py-2 text-center">
+                    <td class="px-4 py-3 text-center">
                         <div class="flex justify-center items-center gap-2">
                             <form th:action="@{/admin/warehouses/toggle/{id}(id=${w.id})}" method="post"
                                   onsubmit="return confirm('Bạn chắc muốn thay đổi trạng thái kho này?')">
@@ -48,7 +54,7 @@
                             </form>
                             <button type="button"
                                     class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded"
-                                    th:onclick="|showEditModal(${w.id}, '__${#strings.escapeJavaScript(w.name)}__', '__${#strings.escapeJavaScript(w.description)}__')|">
+                                    th:onclick="|showWarehouseEditModal(${w.id}, '__${#strings.escapeJavaScript(w.name)}__', '__${#strings.escapeJavaScript(w.description)}__')|">
                                 Sửa
                             </button>
                         </div>
@@ -60,76 +66,154 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Cắm cờ để JS biết có lỗi/ cần mở modal -->
+        <div id="warehouseModalFlag"
+             th:attr="data-has-errors=${hasValidationErrors}"></div>
+
     </main>
 </div>
 
+<!-- Footer -->
 <div th:replace="~{fragments/footer :: footer}"></div>
 
-<!-- Modal thêm kho -->
-<div id="addModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
-    <div class="bg-white p-6 rounded-lg shadow w-full max-w-md">
-        <h2 class="text-lg font-semibold mb-4">Thêm kho mới</h2>
-        <form th:action="@{/admin/warehouses}" method="post" th:object="${form}">
+<!-- Modal Thêm kho -->
+<div id="warehouseModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white w-full max-w-md rounded shadow p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold">Thêm kho</h2>
+            <button type="button" onclick="closeWarehouseModal()"><i class="ri-close-line text-2xl"></i></button>
+        </div>
+
+        <form th:action="@{/admin/warehouses}" th:object="${form}" method="post" id="warehouseCreateForm" autocomplete="off">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
             <div class="mb-4">
-                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Tên kho</label>
-                <input type="text" th:field="*{name}" id="name" class="w-full px-3 py-2 border rounded" required maxlength="100"/>
-                <p class="text-red-600 text-sm" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
+                <label class="block text-sm font-medium">Tên kho</label>
+                <input type="text" th:field="*{name}" class="w-full border rounded px-3 py-2" autocomplete="new-password"/>
+                <p th:if="${#fields.hasErrors('name')}" th:errors="*{name}"
+                   class="text-red-600 text-sm mt-1 server-error"></p>
             </div>
+
             <div class="mb-4">
-                <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
-                <textarea th:field="*{description}" id="description" rows="3" class="w-full px-3 py-2 border rounded" maxlength="250"></textarea>
+                <label class="block text-sm font-medium">Mô tả</label>
+                <textarea th:field="*{description}" class="w-full border rounded px-3 py-2" rows="3" autocomplete="off"></textarea>
             </div>
-            <div class="flex justify-end">
-                <button type="button" onclick="closeAddModal()" class="mr-2 px-4 py-2 bg-gray-300 rounded">Huỷ</button>
-                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Lưu</button>
+
+            <div class="flex justify-end space-x-2">
+                <button type="button" onclick="closeWarehouseModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Hủy</button>
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Lưu</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal sửa kho -->
-<div id="editModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
-    <div class="bg-white p-6 rounded-lg shadow w-full max-w-md">
-        <h2 class="text-lg font-semibold mb-4">Chỉnh sửa kho</h2>
-        <form th:action="@{/admin/warehouses/update}" method="post">
+<!-- Modal Sửa kho -->
+<div id="warehouseEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white w-full max-w-md rounded shadow p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold">Chỉnh sửa kho</h2>
+            <button type="button" onclick="closeWarehouseEditModal()"><i class="ri-close-line text-2xl"></i></button>
+        </div>
+
+        <form th:action="@{/admin/warehouses/update}" method="post" id="warehouseEditForm" autocomplete="off">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            <input type="hidden" name="id" id="editId">
+            <input type="hidden" name="id" id="editId"/>
+
             <div class="mb-4">
-                <label for="editName" class="block text-sm font-medium text-gray-700 mb-1">Tên kho</label>
-                <input type="text" name="name" id="editName" class="w-full px-3 py-2 border rounded" required maxlength="100"/>
-                <!-- Khi trả về lỗi update, controller cũng trả về view này, nhưng lỗi đang bind theo "form".
-                     Nếu muốn hiển thị lỗi ngay trong modal Sửa, có thể nâng cấp JS để mở lại modal & đổ thông báo. -->
+                <label class="block text-sm font-medium">Tên kho</label>
+                <input type="text" name="name" id="editName" class="w-full border rounded px-3 py-2" autocomplete="new-password"/>
             </div>
+
             <div class="mb-4">
-                <label for="editDescription" class="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
-                <textarea name="description" id="editDescription" rows="3" class="w-full px-3 py-2 border rounded" maxlength="250"></textarea>
+                <label class="block text-sm font-medium">Mô tả</label>
+                <textarea name="description" id="editDescription" class="w-full border rounded px-3 py-2" rows="3" autocomplete="off"></textarea>
             </div>
-            <div class="flex justify-end">
-                <button type="button" onclick="closeEditModal()" class="mr-2 px-4 py-2 bg-gray-300 rounded">Huỷ</button>
-                <button type="submit" class="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700">Lưu thay đổi</button>
+
+            <div class="flex justify-end space-x-2">
+                <button type="button" onclick="closeWarehouseEditModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Hủy</button>
+                <button type="submit" class="bg-yellow-600 text-white px-4 py-2 rounded">Lưu thay đổi</button>
             </div>
         </form>
     </div>
 </div>
 
+<!-- JS -->
 <script>
-    const addModal = document.getElementById("addModal");
-    document.getElementById("openAddModal").addEventListener("click", () => {
-        addModal.classList.remove("hidden");
-        addModal.classList.add("flex");
-    });
-    function closeAddModal() { addModal.classList.add("hidden"); addModal.classList.remove("flex"); }
+    /** Xoá sạch dữ liệu & lỗi trong form tạo kho */
+    function clearWarehouseCreateForm() {
+      const modal = document.getElementById('warehouseModal');
+      if (!modal) return;
+      const form = modal.querySelector('#warehouseCreateForm');
+      if (!form) return;
 
-    const editModal = document.getElementById("editModal");
-    function showEditModal(id, name, description) {
-        document.getElementById("editId").value = id;
-        document.getElementById("editName").value = name || "";
-        document.getElementById("editDescription").value = description || "";
-        editModal.classList.remove("hidden");
-        editModal.classList.add("flex");
+      form.querySelectorAll('input[type="text"], textarea').forEach(el => {
+        el.value = '';
+        el.removeAttribute('value');
+      });
+
+      form.querySelectorAll('.server-error').forEach(el => el.textContent = '');
     }
-    function closeEditModal() { editModal.classList.add("hidden"); editModal.classList.remove("flex"); }
+
+    /** Mở modal Thêm kho
+     * @param {boolean} reset - true: mở trắng; false: giữ dữ liệu (khi validate fail server)
+     */
+    function openWarehouseModal(reset = false) {
+      const modal = document.getElementById('warehouseModal');
+      if (!modal) return;
+      if (reset) clearWarehouseCreateForm();
+      modal.classList.remove('hidden');
+    }
+
+    /** Đóng modal Thêm kho + reset để lần sau trống */
+    function closeWarehouseModal() {
+      const modal = document.getElementById('warehouseModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        clearWarehouseCreateForm();
+      }
+    }
+
+    /** Modal Sửa kho */
+    function showWarehouseEditModal(id, name, description) {
+      const modal = document.getElementById('warehouseEditModal');
+      const form  = document.getElementById('warehouseEditForm');
+      if (!modal || !form) return;
+
+      form.reset();
+      form.querySelector('#editId').value = id;
+      form.querySelector('#editName').value = name || '';
+      form.querySelector('#editDescription').value = description || '';
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeWarehouseEditModal() {
+      const modal = document.getElementById('warehouseEditModal');
+      const form  = document.getElementById('warehouseEditForm');
+      if (modal) modal.classList.add('hidden');
+      if (form) form.reset();
+    }
+
+    // Auto-open modal tạo khi có lỗi validate từ server (pattern giống trang tài khoản)
+    document.addEventListener('DOMContentLoaded', function () {
+      const flagEl = document.getElementById('warehouseModalFlag'); // <div data-has-errors="true|false">
+      const hasErrorsFlag = flagEl ? (flagEl.dataset.hasErrors === 'true') : false;
+      const shouldOpen = /*[[${openCreateModal}]]*/ false; // boolean từ Controller
+
+      if (hasErrorsFlag || shouldOpen) {
+        // Giữ nguyên dữ liệu + lỗi render bởi Thymeleaf để người dùng sửa
+        openWarehouseModal(false);
+      }
+    });
+
+    // ESC -> đóng modal (UX)
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeWarehouseModal();
+        closeWarehouseEditModal();
+      }
+    });
 </script>
 </body>
 </html>

@@ -17,24 +17,32 @@ public class WarehouseController {
 
     private final IWarehouseService warehouseService;
 
+    // List + form
     @GetMapping
-    public String listWarehouses(Model model,
-                                 @ModelAttribute("form") WarehouseDTO form) {
+    public String listWarehouses(Model model, @ModelAttribute("form") WarehouseDTO form) {
         model.addAttribute("warehouses", warehouseService.getAll());
-        // nếu không có "form" từ redirect thì tạo mới để binding form add
         if (!model.containsAttribute("form")) {
             model.addAttribute("form", new WarehouseDTO());
+        }
+        // cờ mặc định
+        if (!model.containsAttribute("hasValidationErrors")) {
+            model.addAttribute("hasValidationErrors", false);
+        }
+        if (!model.containsAttribute("openCreateModal")) {
+            model.addAttribute("openCreateModal", false);
         }
         return "warehouse-list";
     }
 
-    // Thêm kho mới
+    // Tạo kho
     @PostMapping
     public String createWarehouse(@ModelAttribute("form") @Valid WarehouseDTO dto,
                                   BindingResult br,
                                   Model model) {
         if (br.hasErrors()) {
             model.addAttribute("warehouses", warehouseService.getAll());
+            model.addAttribute("hasValidationErrors", true);
+            model.addAttribute("openCreateModal", true);
             return "warehouse-list";
         }
         try {
@@ -43,17 +51,20 @@ public class WarehouseController {
         } catch (IllegalArgumentException ex) {
             br.rejectValue("name", "duplicate", ex.getMessage());
             model.addAttribute("warehouses", warehouseService.getAll());
+            model.addAttribute("hasValidationErrors", true);
+            model.addAttribute("openCreateModal", true);
             return "warehouse-list";
         }
     }
 
-    // Cập nhật kho (sửa)
+    // Cập nhật kho (Modal Sửa – nếu muốn auto open khi lỗi, ta sẽ thêm sau)
     @PostMapping("/update")
     public String updateWarehouse(@ModelAttribute("form") @Valid WarehouseDTO dto,
                                   BindingResult br,
                                   Model model) {
         if (br.hasErrors()) {
             model.addAttribute("warehouses", warehouseService.getAll());
+            // Ở bước này chưa auto-open modal Sửa để tránh phức tạp front-end
             return "warehouse-list";
         }
         try {
@@ -66,7 +77,7 @@ public class WarehouseController {
         }
     }
 
-    // Bật / Tắt kho
+    // Bật/Tắt kho
     @PostMapping("/toggle/{id}")
     public String toggleStatus(@PathVariable Long id) {
         warehouseService.toggleStatus(id);

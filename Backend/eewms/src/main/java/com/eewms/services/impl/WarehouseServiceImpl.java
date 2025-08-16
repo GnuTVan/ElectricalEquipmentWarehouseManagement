@@ -32,7 +32,12 @@ public class WarehouseServiceImpl implements IWarehouseService {
         String name = dto.getName() == null ? "" : dto.getName().trim();
         String description = dto.getDescription() == null ? null : dto.getDescription().trim();
 
-        if (dto.getId() == null) { // CREATE
+        if (name.isEmpty()) {
+            throw new IllegalArgumentException("Tên kho là bắt buộc");
+        }
+
+        if (dto.getId() == null) {
+            // CREATE
             if (warehouseRepository.existsByNameIgnoreCase(name)) {
                 throw new IllegalArgumentException("Tên kho đã tồn tại: " + name);
             }
@@ -41,14 +46,17 @@ public class WarehouseServiceImpl implements IWarehouseService {
             w.setDescription(description);
             w.setStatus(dto.getStatus() == null ? true : dto.getStatus());
             return warehouseRepository.save(w);
-        } else { // UPDATE
+        } else {
+            // UPDATE
             if (warehouseRepository.existsByNameIgnoreCaseAndIdNot(name, dto.getId())) {
                 throw new IllegalArgumentException("Tên kho đã tồn tại: " + name);
             }
             Warehouse existing = getById(dto.getId());
             existing.setName(name);
             existing.setDescription(description);
-            if (dto.getStatus() != null) existing.setStatus(dto.getStatus());
+            if (dto.getStatus() != null) {
+                existing.setStatus(dto.getStatus());
+            }
             return warehouseRepository.save(existing);
         }
     }
