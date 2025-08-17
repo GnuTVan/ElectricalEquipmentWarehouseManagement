@@ -80,7 +80,7 @@
                 <a th:if="${order.status.name()!='HOAN_THANH' and order.status.name()!='HUY'}"
                    th:href="@{/admin/purchase-orders/edit/{id}(id=${order.id})}"
                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded">
-                  <i class="ri-edit-line text-base"></i> Sửa / Nhận đợt
+                  <i class="ri-edit-line text-base"></i> Sửa
                 </a>
 
                 <!-- Duyệt: chỉ hiện khi CHO_DUYỆT -->
