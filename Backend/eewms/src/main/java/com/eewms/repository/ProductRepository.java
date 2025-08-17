@@ -127,4 +127,18 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
       from Product p
     """)
     BigDecimal sumInventoryValue();
+
+    // imports: org.springframework.data.jpa.repository.Query;
+
+    @Query("""
+    select distinct p
+    from Product p
+    left join fetch p.category c
+    left join fetch p.brand b
+    left join fetch p.unit u
+    left join fetch p.images i
+    where p.status = com.eewms.entities.Product$ProductStatus.ACTIVE
+""")
+    List<Product> findAllActiveWithSetting();
+
 }
