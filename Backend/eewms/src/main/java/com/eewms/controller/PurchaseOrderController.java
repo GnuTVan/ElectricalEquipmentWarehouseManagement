@@ -175,8 +175,7 @@ public class PurchaseOrderController {
 
     @GetMapping("/edit/{id}")
     public String showEditForm(@PathVariable Long id, Model model) {
-        PurchaseOrder order = orderService.findById(id)
-                .orElseThrow(() -> new InventoryException("Không tìm thấy đơn hàng"));
+        PurchaseOrder order = orderService.getForEdit(id);
 
         // Nếu đơn đã hoàn thành hoặc huỷ → chỉ xem, không sửa
         boolean readOnly = order.getStatus() == PurchaseOrderStatus.HOAN_THANH
@@ -230,8 +229,7 @@ public class PurchaseOrderController {
                 return "purchase-order-edit";
             }
 
-            PurchaseOrder order = orderService.findById(dto.getId())
-                    .orElseThrow(() -> new InventoryException("Không tìm thấy đơn hàng"));
+            PurchaseOrder order = orderService.getForEdit(dto.getId());
 
             // Không cho sửa đơn đã hoàn thành hoặc huỷ
             if (order.getStatus() == PurchaseOrderStatus.HOAN_THANH) {

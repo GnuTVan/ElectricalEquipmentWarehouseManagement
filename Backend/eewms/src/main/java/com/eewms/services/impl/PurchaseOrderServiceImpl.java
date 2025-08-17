@@ -132,4 +132,12 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService {
         return orderRepo.searchWithFilters(keyword, status, from, to, pageable)
                 .map(PurchaseOrderMapper::toDTO);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PurchaseOrder getForEdit(Long id) {
+        return orderRepo.findByIdForEdit(id)
+                .orElseThrow(() -> new InventoryException("Không tìm thấy đơn hàng: " + id));
+    }
+
 }
