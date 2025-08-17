@@ -37,7 +37,7 @@
                     <td class="px-6 py-3 text-right" th:text="${#numbers.formatDecimal(r.paid, 0, 'DEFAULT', 0, 'DEFAULT')}">0</td>
                     <td class="px-6 py-3 text-right font-semibold" th:text="${#numbers.formatDecimal(r.remain, 0, 'DEFAULT', 0, 'DEFAULT')}">0</td>
                     <td class="px-6 py-3" th:text="${r.dueDate != null ? #temporals.format(r.dueDate, 'dd/MM/yyyy') : ''}"></td>
-                    <td class="px-6 py-3" th:text="${r.status}">UNPAID</td>
+                    <td class="px-6 py-3" th:text="${r.status.label}">UNPAID</td>
                     <td class="px-6 py-3 text-center space-x-3">
                         <a th:if="${r.receiptId != null}"
                            th:href="@{'/admin/warehouse-receipts/view/' + ${r.receiptId}}"

@@ -19,6 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.eewms.exception.InventoryException;
 import org.springframework.beans.factory.annotation.Value;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -388,15 +391,20 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<SaleOrderResponseDTO> getAllOrders() {
-        return orderRepo.findAll().stream()
-                .map(SaleOrderMapper::toOrderResponseDTO)
-                .collect(Collectors.toList());
+        // Dùng paging + EntityGraph (customer, createdByUser) để tránh LAZY ngoài TX.
+        Pageable pageable = PageRequest.of(0, 200, Sort.by(Sort.Direction.DESC, "soId"));
+        return orderRepo.findAllByOrderBySoIdDesc(pageable)
+                .map(SaleOrderMapper::toOrderListDTO) // LITE: không truy cập details
+                .getContent();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public SaleOrderResponseDTO getById(Integer orderId) {
-        SaleOrder saleOrder = orderRepo.findById(orderId)
+        // Fetch-join details + product để mapper chi tiết không bị LAZY
+        SaleOrder saleOrder = orderRepo.findByIdWithDetails(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
         SaleOrderResponseDTO dto = SaleOrderMapper.toOrderResponseDTO(saleOrder);
@@ -441,9 +449,11 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<SaleOrderResponseDTO> searchByKeyword(String keyword) {
+        // Tìm kiếm cho trang list → dùng LITE để tránh LAZY
         return orderRepo.searchByKeyword(keyword).stream()
-                .map(SaleOrderMapper::toOrderResponseDTO)
+                .map(SaleOrderMapper::toOrderListDTO)
                 .collect(Collectors.toList());
     }
 
@@ -454,7 +464,7 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
 
     @Override
     public SaleOrder getOrderEntityById(Integer id) {
-        return orderRepo.findById(id)
+        return orderRepo.findByIdWithDetails(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
     }
 
@@ -468,6 +478,7 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
             orderRepo.save(so);
         }
     }
+
     @Override
     public void regeneratePayOsOrder(Integer saleOrderId) {
         SaleOrder so = orderRepo.findById(saleOrderId)
@@ -479,11 +490,11 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
 
         // Sinh orderCode mới dạng số (PayOS yêu cầu numeric)
         long newOrderCode = Long.parseLong(
-                (System.currentTimeMillis() % 1000000000000L) + "" + (int)(Math.random() * 900 + 100)
+                (System.currentTimeMillis() % 1000000000000L) + "" + (int) (Math.random() * 900 + 100)
         );
 
         long amount = so.getTotalAmount() != null ? so.getTotalAmount().longValue() : 0L;
-        String desc = ("SO#" + so.getSoCode()).length() > 25 ? ("SO#" + so.getSoCode()).substring(0,25) : ("SO#" + so.getSoCode());
+        String desc = ("SO#" + so.getSoCode()).length() > 25 ? ("SO#" + so.getSoCode()).substring(0, 25) : ("SO#" + so.getSoCode());
 
         var resp = payOsService.createOrder(String.valueOf(newOrderCode), amount, desc);
         if (resp == null || !resp.isSuccess()) {

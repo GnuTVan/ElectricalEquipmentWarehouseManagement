@@ -1,6 +1,7 @@
 package com.eewms.dto;
 
 import com.eewms.entities.SaleOrder;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -15,6 +16,7 @@ public class SaleOrderResponseDTO {
     private Integer orderId;
     private String orderCode;
     private String customerName;
+    private Long customerId;
     private String description;
     private SaleOrder.SaleOrderStatus status;
     private LocalDateTime orderDate;
@@ -29,5 +31,5 @@ public class SaleOrderResponseDTO {
     private String paymentLink;         // Link thanh toán từ PayOS
     private SaleOrder.PaymentStatus paymentStatus;
     private String paymentNote;          // Nội dung CK
-
+    private String payOsOrderCode;
 }

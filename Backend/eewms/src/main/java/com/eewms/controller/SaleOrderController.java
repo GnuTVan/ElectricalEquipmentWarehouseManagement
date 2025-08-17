@@ -115,17 +115,13 @@ public class SaleOrderController {
 
         // !== PENDING → render readonly (detail-like) NGAY TRÊN ROUTE NÀY
         if (dto.getStatus() != SaleOrder.SaleOrderStatus.PENDING) {
-            SaleOrder orderEntity = saleOrderService.getOrderEntityById(id);
-            model.addAttribute("saleOrder", orderEntity); // entity để view detail đọc soId/soCode/details
+            model.addAttribute("saleOrder", dto); // dùng DTO đã có details
             return "sale-order/sale-order-detail";
         }
 
-        // ===== PENDING: render form edit như cũ =====
-        SaleOrder orderEntity = saleOrderService.getOrderEntityById(id);
-
-        var manualDetails = orderEntity.getDetails().stream()
-                .filter(d -> d.getOrigin() == ItemOrigin.MANUAL)
-                .map(SaleOrderMapper::toDetailDTO)
+        // ===== PENDING: render form edit — DÙNG DTO, KHÔNG chạm entity/details LAZY =====
+        var manualDetails = dto.getDetails().stream()
+                .filter(d -> !Boolean.TRUE.equals(d.isFromCombo())) // chỉ giữ dòng manual
                 .toList();
 
         var expandedComboIds = saleOrderService.getComboIdsExpanded(id);
@@ -133,8 +129,8 @@ public class SaleOrderController {
         for (Long cid : expandedComboIds) comboCounts.merge(cid, 1, Integer::sum);
 
         var form = SaleOrderRequestDTO.builder()
-                .customerId(orderEntity.getCustomer() != null ? orderEntity.getCustomer().getId() : null)
-                .description(orderEntity.getDescription())
+                .customerId(dto.getCustomerId())
+                .description(dto.getDescription())
                 .details(manualDetails)
                 .comboCounts(comboCounts)
                 .build();
@@ -148,19 +144,16 @@ public class SaleOrderController {
 
         // (MỚI) — hiển thị QR ở màn EDIT khi đơn còn PENDING (có refresh từ PayOS nếu thiếu)
         if (dto.getStatus() == SaleOrder.SaleOrderStatus.PENDING) {
-            // Lấy entity để đọc note & mã order PayOS
-            SaleOrder ent = saleOrderService.getOrderEntityById(id);
-
             // Lấy từ DTO trước (nếu bạn đã đổ sẵn khi tạo đơn)
-            String qr   = dto.getQrCodeUrl();
+            String qr = dto.getQrCodeUrl();
             String link = dto.getPaymentLink();
 
             // Nếu DTO chưa có QR/link, nhưng đã có mã PayOS → gọi PayOS để refresh
-            if (payOsEnabled && (qr == null || link == null) && ent.getPayOsOrderCode() != null) {
+            if (payOsEnabled && (qr == null || link == null) && dto.getPayOsOrderCode() != null) {
                 try {
-                    var pr = payOsService.getOrder(ent.getPayOsOrderCode());
+                    var pr = payOsService.getOrder(dto.getPayOsOrderCode());
                     if (pr != null) {
-                        if (qr == null)   qr   = pr.getQrCode();
+                        if (qr == null) qr = pr.getQrCode();
                         if (link == null) link = pr.getPaymentLink();
                     }
                 } catch (Exception e) {
@@ -172,7 +165,7 @@ public class SaleOrderController {
             model.addAttribute("qrCodeUrl", qr);
             model.addAttribute("paymentLink", link);
             model.addAttribute("paymentStatus", dto.getPaymentStatus()); // hoặc ent.getPaymentStatus().name()
-            model.addAttribute("paymentNote", ent.getPaymentNote());
+            model.addAttribute("paymentNote", dto.getPaymentNote());
         }
 
         return "sale-order/sale-order-edit";
@@ -254,6 +247,7 @@ public class SaleOrderController {
             return "redirect:/sale-orders";
         }
     }
+
     @PostMapping("/{id}/actions/mark-unpaid")
     public String markUnpaid(@PathVariable Integer id, RedirectAttributes ra) {
         SaleOrder so = saleOrderService.getOrderEntityById(id);
@@ -302,6 +296,7 @@ public class SaleOrderController {
         ra.addFlashAttribute("info", "Đã chuyển sang chờ thanh toán. Vui lòng quét QR để hoàn tất.");
         return "redirect:/sale-orders/" + id + "/edit";
     }
+
     @PostMapping("/{id}/actions/refresh-qr")
     public String refreshQr(@PathVariable Integer id, RedirectAttributes ra) {
         // Không cho nếu PayOS đang tắt

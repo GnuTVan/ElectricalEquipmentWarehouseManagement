@@ -15,14 +15,29 @@ import java.time.LocalDate;
                 @Index(name = "idx_debt_document", columnList = "document_type, document_id")
         }
 )
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Debt {
 
-    public enum Status { UNPAID, PARTIAL, PAID, OVERDUE }
+    public enum Status {
+        UNPAID("Chưa thanh toán"),
+        PARTIAL("Thanh toán một phần"),
+        PAID("Đã thanh toán"),
+        OVERDUE("Quá hạn");
+
+        private final String label;
+
+        Status(String label) {
+            this.label = label;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+    }
+
 
     public enum PartyType { SUPPLIER, CUSTOMER }
 
