@@ -165,6 +165,10 @@ public class PurchaseOrderController {
         PurchaseOrder order = orderService.findById(id)
                 .orElseThrow(() -> new InventoryException("Không tìm thấy đơn hàng"));
 
+        if (order.getStatus() == PurchaseOrderStatus.HOAN_THANH) {
+            return "redirect:/admin/purchase-orders/" + id;
+        }
+
         boolean readOnly = order.getStatus() == PurchaseOrderStatus.HOAN_THANH
                 || order.getStatus() == PurchaseOrderStatus.HUY;
 
