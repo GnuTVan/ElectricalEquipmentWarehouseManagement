@@ -1,178 +1,117 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="vi">
-
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml" lang="vi">
 <head th:replace="~{fragments/common-head :: commonHead('Mua hàng')}"></head>
-
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
-  <!-- Sidebar -->
   <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-  <!-- Main content -->
   <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
-    <!-- Header -->
     <div th:replace="~{fragments/header :: header}"></div>
 
-<!--    Bỏ cái này đi-->
-    <!-- thong bao loi -->
-    <div th:if="${error}" id="alertError" class="mb-4 bg-red-100 text-red-800 px-4 py-2 rounded">
-      <p th:text="${error}"></p>
-    </div>
-
-    <div th:if="${message}" id="alertSuccess" class="mb-4 bg-green-100 text-green-800 px-4 py-2 rounded">
-      <p th:text="${message}"></p>
-    </div>
-<div class="px-6 py-6">
-    <!-- Page Title + Button -->
-    <div class="flex justify-between items-center mb-4">
-      <h1 class="text-2xl font-bold text-gray-800">Danh sách đơn hàng nhập</h1>
-      <a href="/admin/purchase-orders/create"
-         class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center">
-        <i class="ri-add-line mr-1"></i> Thêm đơn hàng
-      </a>
-    </div>
-  <form method="get" class="mb-4 flex items-center gap-2">
-    <input type="text" name="keyword" th:value="${keyword}" placeholder="Từ khóa (mã/ người tạo)"
-           class="border p-2 rounded w-60"/>
-    <select name="status" class="border p-2 rounded">
-      <option value="">-- Trạng thái --</option>
-      <option th:each="st : ${T(com.eewms.constant.PurchaseOrderStatus).values()}"
-              th:value="${st}" th:text="${st}" th:selected="${status == st}">
-      </option>
-    </select>
-    <input type="datetime-local" name="from" th:value="${from}" class="border p-2 rounded"/>
-    <input type="datetime-local" name="to" th:value="${to}" class="border p-2 rounded"/>
-    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Lọc</button>
-  </form>
-</div>
-    <!-- Purchase Order Table -->
-    <div class="overflow-x-auto bg-white rounded-lg shadow">
-      <table class="min-w-full table-auto text-sm">
-        <thead class="bg-gray-100 text-left">
-        <tr>
-          <th class="px-4 py-3 font-semibold">STT</th>
-          <th class="px-4 py-3 font-semibold">Mã đơn</th>
-          <th class="px-4 py-3 font-semibold">Nhà cung cấp</th>
-          <th class="px-4 py-3 font-semibold">Ngày tạo</th>
-          <th class="px-4 py-3 font-semibold">Người tạo</th>
-          <th class="px-4 py-3 font-semibold">Thành tiền</th>
-          <th class="px-4 py-3 font-semibold">Trạng thái</th>
-          <th class="px-4 py-3 font-semibold text-center">Hành động</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="order, iStat : ${orders}" class="border-t">
-          <td class="px-4 py-2" th:text="${iStat.index + 1}"></td>
-          <td class="px-4 py-2 font-medium text-blue-600" th:text="${order.code}"></td>
-          <td class="px-4 py-2" th:text="${order.supplierName}"></td>
-          <td class="px-4 py-2" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
-          <!-- dùng createdByName -->
-          <td class="px-4 py-2" th:text="${order.createdByName}"></td>
-          <!-- dùng totalAmount -->
-          <td class="px-4 py-2" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
-          <!-- dùng status (nếu không có statusLabel) -->
-          <td class="px-4 py-2">
-            <span class="px-2 py-1 rounded text-xs font-medium"
-                  th:classappend="${order.status == 'HUY'} ? 'bg-red-100 text-red-700' :
-                     (${order.status == 'DA_GIAO_MOT_PHAN'} ? 'bg-yellow-100 text-yellow-700' :
-                     (${order.status == 'HOAN_THANH'} ? 'bg-green-100 text-green-700' :
-                     'bg-gray-100 text-gray-700'))"
-                  th:text="${order.status}">
-
-            </span>
-          </td>
-          <td class="px-4 py-2 text-center">
-            <div class="flex justify-center items-center space-x-2">
-              <a th:href="@{/admin/purchase-orders/edit/{id}(id=${order.id})}"
-                 class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded shadow transition duration-200">
-                <i class="ri-edit-line text-base"></i>
-                Sửa
-              </a>
-              <button th:if="${order.status.name() == 'HOAN_THANH'}"
-                      type="button"
-                      th:attr="data-order-id=${order.id}"
-                      onclick="confirmImport(this)"
-                      class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm rounded shadow transition duration-200">
-                <i class="ri-box-2-fill text-base"></i> Nhập kho
-              </button>
-            </div>
-          </td>
-        </tr>
-        </tbody>
-      </table>
-      <div class="mt-4 flex justify-center space-x-2">
-        <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
-           th:href="@{'/admin/purchase-orders'(page=${i}, keyword=${keyword}, status=${status}, from=${from}, to=${to})}"
-           th:text="${i + 1}"
-           th:class="'px-3 py-1 border rounded ' + (${i} == ${currentPage} ? 'bg-blue-600 text-white' : 'bg-white text-blue-600')">
+    <div class="px-6 py-6">
+      <div class="flex justify-between items-center mb-4">
+        <h1 class="text-2xl font-bold text-gray-800">Danh sách đơn hàng nhập</h1>
+        <a href="/admin/purchase-orders/create" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center">
+          <i class="ri-add-line mr-1"></i> Thêm đơn hàng
         </a>
       </div>
-    </div>
 
-    <!-- Modal xác nhận -->
-    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden z-50">
-      <div class="bg-white p-6 rounded shadow w-full max-w-sm">
-        <h2 class="text-lg font-semibold mb-4">Xác nhận nhập kho</h2>
-        <p class="mb-4 text-gray-700">Bạn có chắc chắn muốn tạo phiếu nhập kho cho đơn hàng này không?</p>
-        <div class="flex justify-end gap-3">
-          <button onclick="closeModal()"
-                  class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded">Hủy</button>
-          <a id="confirmBtn"
-             href="/admin/warehouse-receipts/form?purchaseOrderId={id}"
-             class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">Xác nhận</a>
+      <div th:if="${message}" id="alertSuccess" class="mb-4 bg-green-100 text-green-800 px-4 py-2 rounded" th:text="${message}"></div>
+      <div th:if="${error}" id="alertError" class="mb-4 bg-red-100 text-red-800 px-4 py-2 rounded" th:text="${error}"></div>
+
+      <form method="get" class="mb-4 flex items-center gap-2">
+        <input type="text" name="keyword" th:value="${keyword}" placeholder="Từ khóa (mã/ người tạo)" class="border p-2 rounded w-60"/>
+        <select name="status" class="border p-2 rounded">
+          <option value="">-- Trạng thái --</option>
+          <option th:each="st : ${T(com.eewms.constant.PurchaseOrderStatus).values()}" th:value="${st}" th:text="${st}" th:selected="${status == st}"></option>
+        </select>
+        <input type="datetime-local" name="from" th:value="${from}" class="border p-2 rounded"/>
+        <input type="datetime-local" name="to" th:value="${to}" class="border p-2 rounded"/>
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Lọc</button>
+      </form>
+
+      <div class="overflow-x-auto bg-white rounded-lg shadow">
+        <table class="min-w-full table-auto text-sm">
+          <thead class="bg-gray-100 text-left">
+          <tr>
+            <th class="px-4 py-3 font-semibold">STT</th>
+            <th class="px-4 py-3 font-semibold">Mã đơn</th>
+            <th class="px-4 py-3 font-semibold">Nhà cung cấp</th>
+            <th class="px-4 py-3 font-semibold">Ngày tạo</th>
+            <th class="px-4 py-3 font-semibold">Người tạo</th>
+            <th class="px-4 py-3 font-semibold">Thành tiền</th>
+            <th class="px-4 py-3 font-semibold">Trạng thái</th>
+            <th class="px-4 py-3 font-semibold text-center">Hành động</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="order, iStat : ${orders}" class="border-t">
+            <td class="px-4 py-2" th:text="${iStat.index + 1}"></td>
+            <td class="px-4 py-2 font-medium text-blue-600" th:text="${order.code}"></td>
+            <td class="px-4 py-2" th:text="${order.supplierName}"></td>
+            <td class="px-4 py-2" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+            <td class="px-4 py-2" th:text="${order.createdByName}"></td>
+            <td class="px-4 py-2" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+            <td class="px-4 py-2">
+              <span class="px-2 py-1 rounded text-xs font-medium"
+                    th:classappend="${order.status.name()=='HUY'} ? 'bg-red-100 text-red-700' :
+                                    (${order.status.name()=='DA_GIAO_MOT_PHAN'} ? 'bg-yellow-100 text-yellow-700' :
+                                    (${order.status.name()=='HOAN_THANH'} ? 'bg-green-100 text-green-700' :
+                                    (${order.status.name()=='CHO_DUYET'} ? 'bg-purple-100 text-purple-700' :
+                                    'bg-gray-100 text-gray-700')))"
+                    th:text="${order.status}">
+              </span>
+            </td>
+            <td class="px-4 py-2 text-center">
+              <div class="flex flex-wrap justify-center items-center gap-2">
+                <a th:href="@{/admin/purchase-orders/edit/{id}(id=${order.id})}"
+                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded">
+                  <i class="ri-edit-line text-base"></i> Sửa
+                </a>
+
+                <!-- Chỉ Manager thấy nút duyệt (render quyền ở server/thymeleaf nếu cần) -->
+                <div sec:authorize="hasRole('MANAGER')">
+                  <form th:if="${order.status.name()=='CHO_DUYET'}" th:action="@{'/admin/purchase-orders/' + ${order.id} + '/approve'}" method="post">
+                    <button type="submit" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded">Duyệt</button>
+                  </form>
+
+                  <form th:action="@{'/admin/purchase-orders/' + ${order.id} + '/cancel'}" method="post" onsubmit="return askReason(this);">
+                    <input type="hidden" name="reason"/>
+                    <button type="submit" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded">Hủy</button>
+                  </form>
+                </div>
+              </div>
+
+      </div>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+
+        <div class="mt-4 flex justify-center space-x-2">
+          <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+             th:href="@{'/admin/purchase-orders'(page=${i}, keyword=${keyword}, status=${status}, from=${from}, to=${to})}"
+             th:text="${i + 1}"
+             th:class="'px-3 py-1 border rounded ' + (${i} == ${currentPage} ? 'bg-blue-600 text-white' : 'bg-white text-blue-600')">
+          </a>
         </div>
       </div>
     </div>
-
   </main>
 </div>
-<!-- Footer -->
 <div th:replace="~{fragments/footer :: footer}"></div>
 
-
 <script>
-
-  document.addEventListener("DOMContentLoaded", function () {
-      const alert = document.getElementById('alertSuccess');
-      if (alert) {
-          setTimeout(() => {
-              alert.classList.add('hidden');
-          }, 3000);
-      }
-  });
-  //chuyen nhap kho
-  function confirmImport(button) {
-  const orderId = button.getAttribute('data-order-id');
-  const confirmBtn = document.getElementById('confirmBtn');
-  confirmBtn.href = `/admin/warehouse-receipts/form?purchaseOrderId=${orderId}`;
-  document.getElementById('confirmModal').classList.remove('hidden');
+  function askReason(form){
+    const reason = prompt("Nhập lý do hủy:");
+    if (reason === null) return false;
+    if (!reason.trim()){ alert("Vui lòng nhập lý do."); return false; }
+    form.querySelector('input[name=reason]').value = reason.trim();
+    return true;
   }
-
-  function closeModal() {
-    document.getElementById('confirmModal').classList.add('hidden');
-  }
-
-  document.addEventListener("DOMContentLoaded", function () {
-    const alert = document.getElementById('alertSuccess');
-    if (alert) {
-        setTimeout(() => {
-            alert.classList.add('hidden');
-        }, 3000);
-    }
-
-    const error = document.getElementById('alertError');
-    if (error) {
-        setTimeout(() => {
-            error.classList.add('hidden');
-        }, 3000);
-    }
-});
-
-  // Xử lý sự kiện khi nhấn phím Escape để đóng modal
-  document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape') {
-      closeModal();
-    }
+  document.addEventListener("DOMContentLoaded", () => {
+    setTimeout(()=>document.getElementById('alertSuccess')?.classList.add('hidden'),3000);
+    setTimeout(()=>document.getElementById('alertError')?.classList.add('hidden'),3000);
   });
 </script>
 </body>

@@ -1,420 +1,183 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="vi">
 <head th:replace="~{fragments/common-head :: commonHead('Tạo đơn hàng nhập')}"></head>
-
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
-    <!-- Sidebar -->
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-    <!-- Main content -->
     <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
-        <!-- Header -->
         <div th:replace="~{fragments/header :: header}"></div>
 
         <div class="px-4 py-4">
-            <!-- Form Title -->
-            <div class="mb-2">
-                <h1 class="text-2xl font-bold text-gray-800">Tạo đơn hàng nhập</h1>
-            </div>
-
-            <!-- Nút Quay lại -->
+            <div class="mb-2"><h1 class="text-2xl font-bold text-gray-800">Tạo đơn hàng nhập</h1></div>
             <div class="mb-6">
                 <a href="/admin/purchase-orders"
-                   class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm font-medium rounded hover:bg-gray-100 hover:text-black transition-shadow shadow-sm">
+                   class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-100">
                     <i class="ri-arrow-left-line mr-2"></i> Quay lại
                 </a>
             </div>
-        </div>
 
-        <div class="px-4 py-4">
-            <form th:action="@{/admin/purchase-orders}" method="post" enctype="multipart/form-data"
-                  th:object="${orderDTO}">
+            <form th:action="@{/admin/purchase-orders}" method="post" enctype="multipart/form-data" th:object="${orderDTO}">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <!-- ★ FIX: Giữ createdByName để không choke validate -->
+                <input type="hidden" th:field="*{createdByName}"/>
+
+                <div th:if="${#fields.hasErrors('*')}" class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                    <ul class="list-disc ml-5 text-sm">
+                        <li th:each="err : ${#fields.errors('*')}" th:text="${err}"></li>
+                    </ul>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <!-- ✅ Sửa: th:field cho supplierId -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nhà cung cấp</label>
                         <select th:field="*{supplierId}" class="w-full border rounded px-3 py-2" required>
                             <option value="">-- Chọn nhà cung cấp --</option>
                             <option th:each="s : ${suppliers}" th:value="${s.id}" th:text="${s.name}"></option>
                         </select>
+                        <p class="text-red-600 text-sm mt-1" th:if="${#fields.hasErrors('supplierId')}" th:errors="*{supplierId}"></p>
                     </div>
 
-                    <!-- ✅ Sửa: file chứng từ đổi thành attachmentFile -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Chứng từ</label>
                         <input type="file" th:field="*{attachmentFile}" class="w-full border rounded px-3 py-2">
                     </div>
 
-                    <!-- ✅ Sửa: ghi chú -->
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
                         <textarea th:field="*{note}" rows="3" class="w-full border rounded px-3 py-2"></textarea>
                     </div>
-                    <div>
-                        <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
-                        <select name="status" id="status" class="form-select w-full" th:field="*{status}">
-                            <option th:value="CHO_GIAO_HANG">Chờ giao hàng</option>
-                            <option th:value="DA_GIAO_MOT_PHAN">Đã giao một phần</option>
-                            <option th:value="HOAN_THANH">Hoàn thành</option>
-                            <option th:value="HUY">Hủy</option>
-                        </select>
-                    </div>
                 </div>
 
-                <!-- Product Items Table -->
                 <div class="mb-6">
-                    <h2 class="text-lg font-semibold text-gray-800 mb-2">Danh sách sản phẩm</h2>
-                    <table class="min-w-full table-auto text-sm bg-white rounded shadow">
-                        <thead class="bg-gray-100">
-                        <tr>
-                            <th class="px-3 py-2 text-left">Sản phẩm</th>
-                            <th class="px-3 py-2 text-left">Số lượng</th>
-                            <th class="px-3 py-2 text-left">Đơn giá</th>
-                            <th class="px-3 py-2 text-right">Thành tiền</th>
-                            <th class="px-3 py-2 text-center">Xóa</th>
-                        </tr>
-                        </thead>
-                        <tbody id="itemTableBody"></tbody>
-                        <tfoot>
-                        <tr>
-                            <td colspan="3" class="px-3 py-2 text-right font-bold">Tổng tiền:</td>
-                            <td class="px-3 py-2 text-right font-bold" id="grandTotal">0</td>
-                            <td></td>
-                        </tr>
-                        </tfoot>
-                    </table>
-                    <button type="button" id="btnAddItem" onclick="addItemRow()"
-                            class="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
-                        <i class="ri-add-line mr-1"></i> Thêm sản phẩm
-                    </button>
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-lg font-semibold text-gray-800">Danh sách sản phẩm</h2>
+                        <button type="button" id="btnAddItem" onclick="addItemRow()"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">
+                            <i class="ri-add-line mr-1"></i> Thêm sản phẩm
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded shadow">
+                        <table class="min-w-full table-auto text-sm">
+                            <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-3 py-2 text-left">Sản phẩm</th>
+                                <th class="px-3 py-2 text-right">Số lượng</th>
+                                <th class="px-3 py-2 text-right">Đơn giá</th>
+                                <th class="px-3 py-2 text-right">Thành tiền</th>
+                                <th class="px-3 py-2 text-center">Xóa</th>
+                            </tr>
+                            </thead>
+                            <tbody id="itemTableBody"></tbody>
+                            <tfoot>
+                            <tr class="border-t">
+                                <td colspan="3" class="px-3 py-2 text-right font-bold">Tổng tiền:</td>
+                                <td class="px-3 py-2 text-right font-bold" id="grandTotal">0</td>
+                                <td></td>
+                            </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <p class="text-red-600 text-sm mt-1" th:if="${#fields.hasErrors('items')}" th:errors="*{items}"></p>
                 </div>
 
                 <div class="text-right">
-                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">Lưu đơn
-                        hàng
-                    </button>
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">Lưu đơn hàng</button>
                 </div>
             </form>
         </div>
     </main>
 </div>
 
+<!-- ★ FIX: Khóa giá ở UI: hiển thị span + gửi hidden; EP GIÁ = originPrice khi đổi SP -->
 <script th:inline="javascript">
-    const products = /*[[${products}]]*/ [];
-
-    // --- NEW: state & refs ---
-    let supplierLock = null; // null = chưa khóa, chỉ khóa sau khi chọn sp đầu tiên hoặc chọn NCC
+    const ALL_PRODUCTS = /*[[${products}]]*/ [];
     const supplierSelect = document.querySelector('[name="supplierId"]');
-    const tableBody = document.getElementById('itemTableBody');
-    const addBtn = document.getElementById('btnAddItem');
+    const tbody = document.getElementById('itemTableBody');
+    const grandTotalEl = document.getElementById('grandTotal');
+    let rows = [];
 
-    // --- NEW: helpers ---
-    function getAllowedProducts() {
-        if (!supplierLock) return products;
-        return products.filter(p => (p.supplierIds || []).some(id => String(id) === String(supplierLock)));
-    }
-
-    function getAllowedCount() {
-        return getAllowedProducts().length;
-    }
-
-    function getRemainingCount(excludeSelect = null) {
-        const allowed = getAllowedProducts();
-        const selected = getSelectedProductIds(excludeSelect);
-        return allowed.filter(p => !selected.has(String(p.id))).length;
-    }
-
-    function updateAddButtonVisibility() {
-        const remain = getRemainingCount();           // còn bao nhiêu SP chưa dùng
-        const rows = tableBody.querySelectorAll('tr').length;
-        const limit = supplierLock ? getAllowedCount() : Infinity; // chỉ giới hạn khi đã lock
-        const canAdd = remain > 0 && rows < limit;
-        if (addBtn) addBtn.style.display = canAdd ? '' : 'none';
-    }
-
-    function isRowEmpty(row) {
-        const sel = row.querySelector('.product-select');
-        return !sel || !sel.value;
-    }
-
-    function trimOrPadRowsTo(limit, opts = {pad: true}) {
-        const {pad = true} = opts;
-        let rows = Array.from(tableBody.querySelectorAll('tr'));
-        let current = rows.length;
-
-        // Trim: xóa dòng TRỐNG từ cuối cho tới khi ≤ limit
-        for (let i = rows.length - 1; i >= 0 && current > limit; i--) {
-            if (isRowEmpty(rows[i])) {
-                rows[i].remove();
-                current--;
-            }
-        }
-        // Không đụng dòng đã chọn nếu vẫn dư
-
-        // Pad: chỉ khi được phép
-        if (pad) {
-            while (current < limit && getRemainingCount() > 0) {
-                addItemRow();
-                current++;
-            }
-        }
-        updateAddButtonVisibility();
-    }
-
-    function autofillRemainingProducts() {
-        const allowed = getAllowedProducts();
-        const already = getSelectedProductIds();
-        const queue = allowed.filter(p => !already.has(String(p.id))); // các SP chưa dùng
-
-        // Fill các dòng trống bằng các SP còn lại trong queue
-        document.querySelectorAll('#itemTableBody select.product-select').forEach(sel => {
-            if (sel.value) return; // dòng đã chọn thì bỏ qua
-            const next = queue.shift();
-            if (!next) return;
-            sel.value = String(next.id);
-            updatePrice(sel);
-        });
-
-        // Cập nhật option để loại trùng trên các select khác
-        refreshAllProductSelects(false);
-        updateAddButtonVisibility();
-    }
-
-    // --- Selected products helper ---
-    function getSelectedProductIds(excludeSelect = null) {
-        const ids = new Set();
-        document.querySelectorAll('#itemTableBody select.product-select').forEach(sel => {
-            if (excludeSelect && sel === excludeSelect) return;
-            const v = sel.value?.trim();
-            if (v) ids.add(String(v));
-        });
-        return ids;
-    }
-
-    // function buildOptions(allowed, ) {
-    //     const opts = allowed.map(p =>
-    //         `<option value="${p.id}" data-price="${Number(p.originPrice)}" data-suppliers="${(p.supplierIds || []).join(',')}">
-    //   ${p.name}
-    // </option>`
-    //     ).join('');
-    //     return `<option value="">-- Chọn sản phẩm --</option>` + opts;
-    // }
-    function buildOptions(allowed, currentSelectedId = null, excludeIds = new Set()) {
-        const opts = allowed
-            .filter(p => {
-                const pid = String(p.id);
-                // Giữ lại option nếu là currentSelectedId; còn lại loại các pid đã chọn
-                return currentSelectedId && pid === String(currentSelectedId) ? true : !excludeIds.has(pid);
-            })
-            .map(p =>
-                `<option value="${p.id}" data-price="${Number(p.originPrice)}"
-               data-suppliers="${(p.supplierIds || []).join(',')}">${p.name}</option>`
-            ).join('');
-        return `<option value="">-- Chọn sản phẩm --</option>` + opts;
-    }
-
-    function refreshAllProductSelects(resetIfInvalid = false) {
-        const allowed = getAllowedProducts();
-        document.querySelectorAll('#itemTableBody select.product-select').forEach(sel => {
-            const current = sel.value || '';
-            const exclude = getSelectedProductIds(sel); // loại những sp đang được chọn ở select khác
-            sel.innerHTML = buildOptions(allowed, current, exclude);
-
-            if (current && allowed.some(p => String(p.id) === String(current))) {
-                sel.value = current;
-            } else if (resetIfInvalid) {
-                sel.value = '';
-            }
-            updatePrice(sel);
-        });
-        updateAddButtonVisibility();
+    function fmt(n){ return (Number(n)||0).toLocaleString('vi-VN'); }
+    function filteredProducts() {
+      const sId = Number(supplierSelect?.value || 0);
+      if (!sId) return [];
+      return (ALL_PRODUCTS || []).filter(p => Array.isArray(p.supplierIds) && p.supplierIds.includes(sId));
     }
 
     function addItemRow() {
-        const rows = tableBody.querySelectorAll('tr').length;
-        const limit = supplierLock ? getAllowedCount() : Infinity;
-        if (getRemainingCount() <= 0 || rows >= limit) {
-            updateAddButtonVisibility();
-            return;
-        }
+      const prods = filteredProducts();
+      if (prods.length === 0) { alert('Nhà cung cấp này chưa có sản phẩm liên kết!'); return; }
+      rows.push({ productId: prods[0].id, qty: 1, price: prods[0].originPrice ?? 0 });
+      render();
+    }
+    function removeRow(i){ rows.splice(i,1); render(); }
 
-        const table = document.getElementById('itemTableBody');
-        const index = table.children.length;
+    function onChangeProduct(i, val){
+      const prods = filteredProducts();
+      const p = prods.find(x => x.id === Number(val));
+      rows[i].productId = Number(val);
+      rows[i].price = p ? (p.originPrice ?? 0) : 0;     // ★ FIX: Ép giá = originPrice
+      render();                                          // ★ FIX: rerender để cập nhật hidden + tổng
+    }
+    function onChangeQty(i, val){ rows[i].qty = Math.max(1, Number(val)||0); renderTotals(); }
 
-        const row = document.createElement('tr');
-
-        // --- CHANGED: dùng allowed theo supplierLock ---
-        const allowed = getAllowedProducts();
-        const exclude = getSelectedProductIds(); // loại sp đã chọn ở các dòng khác
-        const productOptions = buildOptions(allowed, null, exclude);
-
-        row.innerHTML = `
-        <td class="px-2 py-1">
-          <select name="items[${index}].productId" class="w-full border rounded px-2 py-1 product-select"
-                  onchange="onProductChange(this)">
-              ${productOptions}
-          </select>
-        </td>
-        <td class="px-2 py-1">
-            <input type="number" name="items[${index}].contractQuantity" class="border px-2 py-1 w-full quantity" value="1" min="1" oninput="calculateTotal(this)">
-        </td>
-        <td class="px-2 py-1">
-            <input type="number" name="items[${index}].price" class="border px-2 py-1 w-full price" readonly>
-        </td>
-        <td class="px-2 py-1 text-right">
-            <span class="lineTotal">0</span>
-        </td>
-        <td class="px-2 py-1 text-center">
-            <button type="button" onclick="this.closest('tr').remove(); onRowRemoved()" class="text-red-600 text-lg">
-                <i class="ri-close-line"></i>
-            </button>
-        </td>`;
-
-        table.appendChild(row);
-        const select = row.querySelector('.product-select');
-        updatePrice(select);
-        recalculateTotal();
-        updateAddButtonVisibility();
+    function render(){
+      const prods = filteredProducts();
+      rows = rows.filter(r => prods.some(p => p.id === r.productId));
+      if (rows.length === 0 && prods.length > 0) {
+        rows.push({ productId: prods[0].id, qty: 1, price: prods[0].originPrice ?? 0 });
+      }
+      tbody.innerHTML = '';
+      rows.forEach((r,i) => {
+        const options = prods.map(p => `<option value="${p.id}" ${p.id===r.productId?'selected':''}>${p.name}</option>`).join('');
+        const amount = (Number(r.qty)||0) * (Number(r.price)||0);
+        const tr = document.createElement('tr');
+        tr.className = "border-t";
+        tr.innerHTML = `
+          <td class="px-3 py-2">
+            <select class="border rounded px-2 py-1 w-64" name="items[${i}].productId"
+                    onchange="onChangeProduct(${i}, this.value)">${options}</select>
+          </td>
+          <td class="px-3 py-2 text-right">
+            <input type="number" min="1" class="border rounded px-2 py-1 w-28 text-right"
+                   name="items[${i}].contractQuantity" value="${r.qty}"
+                   oninput="onChangeQty(${i}, this.value)"/>
+          </td>
+          <td class="px-3 py-2 text-right">
+            <!-- ★ FIX: KHÓA GIÁ 100%: chỉ hiển thị + gửi hidden -->
+            <span class="inline-block w-32 text-right">${fmt(r.price)}</span>
+            <input type="hidden" name="items[${i}].price" value="${Number(r.price)||0}"/>
+          </td>
+          <td class="px-3 py-2 text-right"><span>${fmt(amount)}</span></td>
+          <td class="px-3 py-2 text-center">
+            <button type="button" class="px-2 py-1 bg-red-600 text-white rounded" onclick="removeRow(${i})">X</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+      renderTotals();
     }
 
-    function updatePrice(selectElement) {
-        const selectedOption = selectElement.options[selectElement.selectedIndex];
-        const priceRaw = selectedOption ? selectedOption.dataset.price : 0;
-        const originPrice = parseFloat(priceRaw || 0);
-
-        const row = selectElement.closest('tr');
-        const priceInput = row.querySelector('.price');
-        priceInput.value = isNaN(originPrice) ? 0 : originPrice.toFixed(0);
-        calculateTotal(priceInput);
+    function renderTotals(){
+      const total = rows.reduce((s,r)=> s + (Number(r.qty)||0)*(Number(r.price)||0), 0);
+      grandTotalEl.textContent = fmt(total);
     }
 
-    function calculateTotal(inputElement) {
-        const row = inputElement.closest('tr');
-        const qty = parseFloat(row.querySelector('.quantity').value || 0);
-        const price = parseFloat(row.querySelector('.price').value || 0);
-        const total = qty * price;
-        row.querySelector('.lineTotal').textContent = total.toFixed(0);
-        recalculateTotal();
-    }
+    supplierSelect?.addEventListener('change', () => { rows = []; render(); });
 
-    function recalculateTotal() {
-        const rows = document.querySelectorAll('#itemTableBody tr');
-        let total = 0;
-        rows.forEach(row => {
-            const lineTotal = parseFloat(row.querySelector('.lineTotal').textContent || 0);
-            total += lineTotal;
-        });
-        document.getElementById('grandTotal').textContent = total.toFixed(0);
-    }
-
-    // --- NEW: chọn sản phẩm (kèm update price ở đây nhé)---
-    function onProductChange(selectElement) {
-        updatePrice(selectElement);
-
-        if (!supplierLock && selectElement.value) {
-            const opt = selectElement.selectedOptions[0];
-            const suppliersCsv = opt?.dataset?.suppliers || '';
-            const supplierIds = suppliersCsv ? suppliersCsv.split(',').map(s => s.trim()).filter(Boolean) : [];
-            if (supplierIds.length > 0) {
-                // Lock NCC theo sản phẩm đầu tiên nếu dropdown NCC đang trống
-                supplierLock = supplierSelect?.value ? supplierSelect.value : supplierIds[0];
-                if (supplierSelect) supplierSelect.value = supplierLock;
-
-                refreshAllProductSelects(false);
-
-                const limit = getAllowedCount();
-                const rowsBefore = tableBody.querySelectorAll('tr').length;
-
-                // CHỈ khi đang dư dòng mới trim + autofill
-                if (rowsBefore > limit) {
-                    trimOrPadRowsTo(limit, {pad: false});
-                    autofillRemainingProducts();
-                }
-            }
-        } else {
-            // Đã lock từ trước hoặc thay đổi lựa chọn sau đó:
-            // chỉ refresh để loại trùng, KHÔNG pad, KHÔNG autofill
-            refreshAllProductSelects(false);
-        }
-
-        updateAddButtonVisibility();
-    }
-
-    // --- NEW: xóa dòng ---
-    function onRowRemoved() {
-        recalculateTotal();
-        // Nếu xóa hết & chưa chọn NCC → bỏ khóa để lần thêm sau lại thấy tất cả
-        if (!supplierSelect?.value && document.querySelectorAll('#itemTableBody tr').length === 0) {
-            supplierLock = null;
-            refreshAllProductSelects(true);
-            addItemRow();
-        }
-        updateAddButtonVisibility();
-    }
-
-    // --- NEW: khởi tạo dòng đầu tiên nếu chưa có ---
-    document.addEventListener('DOMContentLoaded', () => {
-        if (document.querySelectorAll('#itemTableBody tr').length === 0) {
-            addItemRow();
-        }
-        updateAddButtonVisibility();
+    document.querySelector('form')?.addEventListener('submit', (e) => {
+      if (rows.length === 0) { e.preventDefault(); alert('Vui lòng thêm ít nhất 1 sản phẩm.'); return; }
+      for (const r of rows) {
+        if (!r.productId || (Number(r.qty)||0) < 1) { e.preventDefault(); alert('Dữ liệu dòng chưa hợp lệ.'); return; }
+      }
     });
 
-
-    // --- NEW: đổi NCC ---
-    supplierSelect?.addEventListener('change', () => {
-        const newSupplier = supplierSelect.value || null;
-
-        supplierLock = newSupplier; // có thể null
-        refreshAllProductSelects(true);
-
-        if (supplierLock) {
-            const limit = getAllowedCount();
-            const rowsBefore = tableBody.querySelectorAll('tr').length;
-
-            // CHỈ khi dư dòng mới trim + autofill
-            if (rowsBefore > limit) {
-                trimOrPadRowsTo(limit, {pad: false});
-                autofillRemainingProducts();
-            }
-        } else {
-            // Chưa chọn NCC: nếu chưa có dòng nào thì tạo 1 dòng trống để thao tác
-            if (document.querySelectorAll('#itemTableBody tr').length === 0) addItemRow();
-        }
-
-        updateAddButtonVisibility();
-    });
-
-
-
-    function removeEmptyRows() {
-        document.querySelectorAll('#itemTableBody tr').forEach(row => {
-            const select = row.querySelector('.product-select');
-            if (!select || !select.value) {
-                row.remove();
-            }
-        });
-    }
-
-    function renumberRows() {
-        const rows = document.querySelectorAll('#itemTableBody tr');
-        rows.forEach((row, idx) => {
-            row.querySelectorAll('select[name], input[name]').forEach(el => {
-                const oldName = el.getAttribute('name');
-                if (!oldName) return;
-                // thay thế chỉ số items[<số>] thành items[idx]
-                const newName = oldName.replace(/items\[\d+\]/, `items[${idx}]`);
-                el.setAttribute('name', newName);
-            });
-        });
-    }
-
-    // Xoá dòng trống + reindex ngay trước khi submit
-    document.querySelector('form')?.addEventListener('submit', function () {
-        removeEmptyRows();
-        renumberRows();
-    });
+    render();
+    window.addItemRow = addItemRow;
+    window.onChangeProduct = onChangeProduct;
+    window.onChangeQty = onChangeQty;
+    window.removeRow = removeRow;
 </script>
 </body>
 </html>
