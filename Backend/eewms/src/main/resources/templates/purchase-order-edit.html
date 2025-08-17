@@ -1,66 +1,108 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="vi">
 <head th:replace="~{fragments/common-head :: commonHead('Sửa đơn hàng nhập')}"></head>
-
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
-    <!-- Sidebar -->
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-    <!-- Main -->
     <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
         <div th:replace="~{fragments/header :: header}"></div>
 
-        <div class="mb-2 px-6 py-6">
-            <h1 class="text-2xl font-bold text-gray-800">Sửa đơn hàng nhập</h1>
-        </div>
+        <div class="mb-2 px-6 py-6"><h1 class="text-2xl font-bold text-gray-800">Sửa đơn hàng nhập</h1></div>
 
-        <!-- Thông báo đơn đã hoàn tất -->
-        <!--  Thông báo thành công (màu xanh) -->
-        <div th:if="${message}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4">
-            <span th:text="${message}"></span>
-        </div>
+        <div th:if="${message}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4"><span th:text="${message}"></span></div>
+        <div th:if="${error}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4"><span th:text="${error}"></span></div>
 
-        <!-- Thông báo lỗi (màu đỏ) -->
-        <div th:if="${error}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
-            <span th:text="${error}"></span>
-        </div>
         <div class="mb-4 px-6 py-6">
-            <form th:action="@{/admin/purchase-orders/update}" method="post" enctype="multipart/form-data"
-                  th:object="${orderDTO}">
+
+            <!-- ★ Nếu đã HOÀN_THÀNH → controller đã redirect sang trang chi tiết.
+                 Giữ banner đề phòng (nếu bạn muốn cho HỦY hiển thị chỉ-đọc). -->
+            <div th:if="${orderDTO.status?.name() == 'HUY'}"
+                 class="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded">
+                Đơn hàng đã bị hủy. Bạn chỉ có thể xem thông tin chi tiết.
+                <a th:href="@{/admin/purchase-orders/{id}(id=${orderDTO.id})}" class="underline">Xem chi tiết</a>
+            </div>
+
+            <!-- ==========================================================
+                 FORM 1: LƯU THAY ĐỔI TRƯỚC KHI DUYỆT (chỉ khi CHO_DUYET)
+                 ★ KHÔNG cho sửa giá – giá lấy theo originPrice của sản phẩm
+                 ========================================================== -->
+            <form th:if="${orderDTO.status?.name() == 'CHO_DUYET'}"
+                  th:action="@{'/admin/purchase-orders/' + ${orderDTO.id} + '/update-before-approve'}"
+                  method="post" th:object="${orderDTO}">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                 <input type="hidden" th:field="*{id}"/>
 
-                <!-- Thông tin đơn -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div>
                         <label class="text-sm font-medium">Nhà cung cấp</label>
-                        <input type="text" th:value="${orderDTO.supplierName}" readonly
-                               class="w-full border rounded px-3 py-2 bg-gray-100"/>
-                    </div>
-                    <div>
-                        <label class="text-sm font-medium">Tệp chứng từ (nếu cần cập nhật)</label>
-                        <input type="file" th:field="*{attachmentFile}" class="w-full border rounded px-3 py-2"
-                               th:disabled="${readOnly}"/>
+                        <select th:field="*{supplierId}" class="w-full border rounded px-3 py-2" required>
+                            <option value="">-- Chọn nhà cung cấp --</option>
+                            <option th:each="s : ${suppliers}" th:value="${s.id}" th:text="${s.name}"></option>
+                        </select>
                     </div>
                     <div class="md:col-span-2">
                         <label class="text-sm font-medium">Ghi chú</label>
-                        <textarea th:field="*{note}" rows="3"
-                                  class="w-full border rounded px-3 py-2"
-                                  th:disabled="${readOnly}"></textarea>
+                        <textarea th:field="*{note}" rows="2" class="w-full border rounded px-3 py-2"></textarea>
                     </div>
                     <div>
-                        <label class="text-sm font-medium">Trạng thái</label>
-                        <select th:field="*{status}" class="w-full border rounded px-3 py-2"
-                                th:disabled="${readOnly}">
-                            <option th:value="CHO_GIAO_HANG">Chờ giao hàng</option>
-                            <option th:value="DA_GIAO_MOT_PHAN">Đã giao một phần</option>
-                            <option th:value="HOAN_THANH">Hoàn thành</option>
-                            <option th:value="HUY">Huỷ</option>
-                        </select>
+                        <label class="text-sm font-medium">Trạng thái hiện tại</label>
+                        <input type="text" th:value="${orderDTO.status}" class="w-full border rounded px-3 py-2 bg-gray-100" readonly/>
                     </div>
                 </div>
 
-                <!-- Danh sách sản phẩm -->
+                <div class="mb-2 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold">Danh sách sản phẩm</h2>
+                    <button type="button" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm"
+                            onclick="addRowEdit()"><i class="ri-add-line mr-1"></i> Thêm sản phẩm</button>
+                </div>
+
+                <div class="mb-6">
+                    <table class="min-w-full bg-white rounded shadow text-sm">
+                        <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-3 py-2 text-left">Sản phẩm</th>
+                            <th class="px-3 py-2 text-center">SL hợp đồng</th>
+                            <th class="px-3 py-2 text-center">Đơn giá</th>
+                            <th class="px-3 py-2 text-center">Đã giao</th>
+                            <th class="px-3 py-2 text-center">Xóa</th>
+                        </tr>
+                        </thead>
+                        <tbody id="editItemsBody"><!-- render bằng JS --></tbody>
+                    </table>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <a href="/admin/purchase-orders" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded">Quay lại</a>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">
+                        Lưu thay đổi (trước khi duyệt)
+                    </button>
+                </div>
+            </form>
+
+            <!-- ==========================================================
+                 FORM 2: NHẬN ĐỢT (khi KHÔNG còn CHO_DUYET)
+                 ★ Không cho sửa giá (chỉ hiển thị + hidden input giá)
+                 ========================================================== -->
+            <form th:if="${orderDTO.status?.name() != 'CHO_DUYET'}"
+                  th:action="@{/admin/purchase-orders/{id}/receive(id=${orderDTO.id})}" method="post" th:object="${orderDTO}">
+                <input type="hidden" th:field="*{id}"/>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="text-sm font-medium">Nhà cung cấp</label>
+                        <input type="text" th:value="${orderDTO.supplierName}" readonly class="w-full border rounded px-3 py-2 bg-gray-100"/>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="text-sm font-medium">Ghi chú</label>
+                        <textarea th:field="*{note}" rows="2" class="w-full border rounded px-3 py-2" disabled></textarea>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium">Trạng thái hiện tại</label>
+                        <input type="text" th:value="${orderDTO.status}" class="w-full border rounded px-3 py-2 bg-gray-100" readonly/>
+                    </div>
+                </div>
+
                 <div class="mb-6">
                     <h2 class="text-lg font-semibold mb-2">Danh sách sản phẩm</h2>
                     <table class="min-w-full bg-white rounded shadow text-sm">
@@ -76,108 +118,185 @@
                         </thead>
                         <tbody>
                         <tr th:each="item, iStat : *{items}" class="border-t">
-                            <!-- Tên sản phẩm -->
                             <td class="px-3 py-2">
-        <span th:each="p : ${products}"
-              th:if="${p.id == item.productId}"
-              th:text="${p.name}"></span>
-                                <input type="hidden" th:name="'items[' + ${iStat.index} + '].productId'"
-                                       th:value="${item.productId}"/>
+                                <span th:text="${productNameById[item.productId]}">SP</span>
+                                <input type="hidden" th:name="'items[' + ${iStat.index} + '].productId'" th:value="${item.productId}"/>
                             </td>
-
-                            <!-- SL hợp đồng -->
                             <td class="text-center">
-                                <input type="number" th:name="'items[' + ${iStat.index} + '].contractQuantity'"
-                                       th:value="${item.contractQuantity}" readonly
-                                       class="text-center w-16 border px-1 bg-gray-100"/>
+                                <input type="number" th:name="'items[' + ${iStat.index} + '].contractQuantity'" th:value="${item.contractQuantity}" readonly class="text-center w-20 border px-1 bg-gray-100"/>
                             </td>
-
-                            <!-- Giá -->
                             <td class="text-center">
-                                <span th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
-                                <input type="hidden" th:name="'items[' + ${iStat.index} + '].price'"
-                                       th:value="${item.price}"/>
+                                <!-- ★ KHÔNG CHO SỬA GIÁ: chỉ hiển thị + hidden -->
+                                <span th:text="${#numbers.formatDecimal(item.price,2,'COMMA',2,'POINT')} + ' VNĐ'"></span>
+                                <input type="hidden" th:name="'items[' + ${iStat.index} + '].price'" th:value="${item.price}"/>
                             </td>
-
-                            <!-- SL đã giao (readonly) -->
                             <td class="text-center">
                                 <span th:text="${item.actualQuantity != null ? item.actualQuantity : 0}">0</span>
-                                <input type="hidden" th:name="'items[' + ${iStat.index} + '].actualQuantity'"
-                                       th:value="${item.actualQuantity}"/>
+                                <input type="hidden" th:name="'items[' + ${iStat.index} + '].actualQuantity'" th:value="${item.actualQuantity}"/>
                             </td>
-
-                            <!-- SL giao thêm lần này -->
                             <td class="text-center">
-                                <input type="number"
-                                       th:name="'items[' + ${iStat.index} + '].deliveryQuantity'"
-                                       th:value="0"
-                                       th:disabled="${readOnly}"
-                                       class="delivery-qty text-center w-24 border px-1"
-                                       min="0"/>
+                                <input type="number" th:name="'items[' + ${iStat.index} + '].deliveryQuantity'" th:value="0"
+                                       class="delivery-qty text-center w-24 border px-1" min="0"
+                                       th:disabled="${readOnly || isLockedByStatus}"/>
                             </td>
-
-                            <!-- Còn thiếu -->
                             <td class="text-center text-red-600 font-medium">
                                 <span th:text="${item.contractQuantity - (item.actualQuantity != null ? item.actualQuantity : 0)}"></span>
                             </td>
                         </tr>
-
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Nút lưu -->
-                <div class="text-right">
+                <div class="flex justify-between mt-4">
+                    <a href="/admin/purchase-orders" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded">Quay lại</a>
                     <button type="submit"
-                            th:disabled="${readOnly}"
-                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">
-                        <i class="ri-save-line mr-1"></i> Lưu cập nhật
+                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded"
+                            th:disabled="${readOnly || isLockedByStatus}">
+                        <i class="ri-truck-fill mr-1"></i> Ghi nhận đợt giao hàng
                     </button>
                 </div>
+            </form>
+
+            <!-- ==========================================================
+                 FORM 3: NHẬP NHANH (tạo 1 phiếu cho phần còn lại) – luôn tách form
+                 ========================================================== -->
+            <form class="mt-3"
+                  th:action="@{'/admin/purchase-orders/' + ${orderDTO.id} + '/fast-complete'}"
+                  method="post"
+                  onsubmit="return confirm('Bạn có chắc chắn là đã nhận đủ hàng theo hợp đồng?');">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded"
+                        th:disabled="${readOnly || isLockedByStatus}">
+                    <i class="ri-rocket-line mr-1"></i> Nhập nhanh
+                </button>
             </form>
         </div>
     </main>
 </div>
-<!-- Footer -->
-<div class="hidden" th:insert="~{fragments/footer :: footer}"></div>
-<script th:inline="javascript">
-    // ===== Bật/tắt input "Giao lần này" theo trạng thái =====
-    const READ_ONLY = /*[[${readOnly}]]*/ false;
-    const statusSelect = document.querySelector('[name="status"]');
-    const getDeliveryInputs = () => document.querySelectorAll('input[name^="items"][name$=".deliveryQuantity"]');
 
-    function toggleDeliveryInputs() {
-      if (READ_ONLY) {
-        getDeliveryInputs().forEach(inp => inp.disabled = true);
-        return;
-      }
-      const st = statusSelect?.value;
-      const allow = (st === 'DA_GIAO_MOT_PHAN' || st === 'HOAN_THANH');
-      getDeliveryInputs().forEach(inp => inp.disabled = !allow);
+<div class="hidden" th:insert="~{fragments/footer :: footer}"></div>
+
+<!-- ==========================================================
+     JS: Render danh sách sản phẩm khi CHO_DUYET
+     ★ KHÔNG CHO SỬA GIÁ: hiển thị span + hidden input
+     ========================================================== -->
+<script th:inline="javascript">
+    const READ_ONLY = /*[[${readOnly}]]*/ false;
+    const LOCK = /*[[${isLockedByStatus}]]*/ false;
+
+    // Dữ liệu từ server
+    const ALL_PRODUCTS = /*[[${products}]]*/ []; // [{id,name,originPrice,supplierIds:[...]}]
+    const INITIAL_ITEMS = /*[[${orderDTO.items}]]*/ []; // [{productId,contractQuantity,price,actualQuantity},...]
+    const supplierSelect = document.querySelector('[name="supplierId"]'); // chỉ tồn tại ở form CHO_DUYET
+
+    function productsBySupplier() {
+      const sid = Number(supplierSelect?.value || 0);
+      return ALL_PRODUCTS.filter(p => Array.isArray(p.supplierIds) && p.supplierIds.includes(sid));
+    }
+    function priceOf(productId){
+      const p = ALL_PRODUCTS.find(x => x.id === Number(productId));
+      return Number(p?.originPrice || 0); // ★ GIÁ CỐ ĐỊNH TỪ PRODUCT
     }
 
-    document.addEventListener('DOMContentLoaded', toggleDeliveryInputs);
-    statusSelect?.addEventListener('change', toggleDeliveryInputs);
+    function renderEditRows(items) {
+      const tbody = document.getElementById('editItemsBody');
+      if (!tbody) return;
 
-    // Đảm bảo input không disabled trước khi submit (để post giá trị)
-    const form = document.querySelector('form');
-    form?.addEventListener('submit', () => {
-      const st = statusSelect?.value;
-      const allow = !READ_ONLY && (st === 'DA_GIAO_MOT_PHAN' || st === 'HOAN_THANH');
-      if (allow) getDeliveryInputs().forEach(inp => inp.disabled = false);
-    });
+      const prods = productsBySupplier();
+      const safeItems = items.filter(it => prods.some(p => p.id === it.productId));
+      tbody.innerHTML = '';
 
-    // ===== Giữ phần toggle menu người dùng như cũ =====
-    const userBtn = document.getElementById('userMenuBtn');
-    const dropdown = document.getElementById('userMenuDropdown');
-    if (userBtn && dropdown) {
-      userBtn.addEventListener('click', function () { dropdown.classList.toggle('hidden'); });
-      document.addEventListener('click', function (event) {
-        if (!userBtn.contains(event.target) && !dropdown.contains(event.target)) {
-          dropdown.classList.add('hidden');
-        }
+      safeItems.forEach((it, i) => {
+        // ★ ÉP giá = originPrice mỗi lần render để đảm bảo không thể chỉnh
+        const fixedPrice = priceOf(it.productId);
+        const options = prods.map(p => `<option value="${p.id}" ${p.id===it.productId?'selected':''}>${p.name}</option>`).join('');
+        const tr = document.createElement('tr');
+        tr.className = 'border-t';
+        tr.innerHTML = `
+          <td class="px-3 py-2">
+            <select class="border rounded px-2 py-1 w-64" name="items[${i}].productId"
+                    onchange="onChangeProductEdit(${i}, this.value)">${options}</select>
+          </td>
+          <td class="text-center">
+            <input type="number" min="1" class="text-center w-20 border px-1"
+                   name="items[${i}].contractQuantity" value="${it.contractQuantity ?? 1}"/>
+          </td>
+          <td class="text-center">
+            <!-- ★ KHÔNG CHO SỬA GIÁ: hiển thị + hidden -->
+            <span>${fixedPrice.toLocaleString('vi-VN')}</span> VNĐ
+            <input type="hidden" name="items[${i}].price" value="${fixedPrice}"/>
+          </td>
+          <td class="text-center">
+            <span>${it.actualQuantity ?? 0}</span>
+            <input type="hidden" name="items[${i}].actualQuantity" value="${it.actualQuantity ?? 0}"/>
+          </td>
+          <td class="text-center">
+            <button type="button" class="px-2 py-1 bg-red-600 text-white rounded" data-idx="${i}" onclick="removeRowEdit(this)">X</button>
+          </td>`;
+        tbody.appendChild(tr);
       });
     }
+
+    let editItems = (INITIAL_ITEMS || []).map(x => ({
+      productId: Number(x.productId),
+      contractQuantity: Number(x.contractQuantity || 1),
+      // ★ Không dùng price từ client nhập: vẫn lưu để hiển thị ban đầu, nhưng khi render luôn bị ghi đè = originPrice
+      price: Number(x.price || 0),
+      actualQuantity: Number(x.actualQuantity || 0)
+    }));
+
+    function addRowEdit(){
+      const prods = productsBySupplier();
+      if (prods.length === 0) { alert('Nhà cung cấp này chưa có sản phẩm liên kết!'); return; }
+      editItems.push({
+        productId: prods[0].id,
+        contractQuantity: 1,
+        price: Number(prods[0].originPrice || 0),
+        actualQuantity: 0
+      });
+      renderEditRows(editItems);
+    }
+    function removeRowEdit(btn){
+      const i = Number(btn.getAttribute('data-idx'));
+      editItems.splice(i,1);
+      renderEditRows(editItems);
+    }
+    function onChangeProductEdit(i, newVal){
+      editItems[i].productId = Number(newVal);
+      // ★ Khi đổi sản phẩm → tự set lại price = originPrice (giữ nguyên nguyên tắc “không cho sửa giá”)
+      editItems[i].price = priceOf(editItems[i].productId);
+      renderEditRows(editItems);
+    }
+
+    supplierSelect?.addEventListener('change', () => {
+      const prods = productsBySupplier();
+      editItems = editItems.filter(it => prods.some(p => p.id === it.productId));
+      if (editItems.length === 0 && prods.length > 0) {
+        editItems.push({ productId: prods[0].id, contractQuantity: 1, price: Number(prods[0].originPrice || 0), actualQuantity: 0 });
+      }
+      renderEditRows(editItems);
+    });
+
+    if (document.getElementById('editItemsBody')) {
+      if ((!editItems || editItems.length === 0) && productsBySupplier().length > 0) {
+        const p0 = productsBySupplier()[0];
+        editItems = [{ productId: p0.id, contractQuantity: 1, price: Number(p0.originPrice || 0), actualQuantity: 0 }];
+      }
+      renderEditRows(editItems);
+    }
+
+    // An toàn: chặn submit nhận đợt khi bị khóa
+    document.querySelectorAll('form[action*="/receive"]').forEach(f => {
+      f.addEventListener('submit', (e) => {
+        if (READ_ONLY || LOCK) { e.preventDefault(); alert("Đơn hàng không ở trạng thái cho phép nhận."); }
+      });
+    });
+
+    // expose
+    window.addRowEdit = addRowEdit;
+    window.removeRowEdit = removeRowEdit;
+    window.onChangeProductEdit = onChangeProductEdit;
 </script>
 </body>
 </html>

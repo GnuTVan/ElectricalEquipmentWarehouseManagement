@@ -19,6 +19,7 @@ import org.springframework.http.HttpMethod;
 @EnableWebSecurity // Vẫn cần cho bảo mật web/URL
 @EnableMethodSecurity // Bật bảo mật phương thức
 @RequiredArgsConstructor
+
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
@@ -53,20 +54,20 @@ public class SecurityConfig {
                         .requestMatchers("/admin/users/**").hasRole("ADMIN")
                         .requestMatchers("/settings/**").hasRole("ADMIN")
                         .requestMatchers("/admin/warehouses/**").hasRole("ADMIN")
-
+                        .requestMatchers("/**").permitAll()
 
                         //MANAGER
                         .requestMatchers("/admin/suppliers/**").hasAnyRole("MANAGER")
                         .requestMatchers("/admin/purchase-orders/**").hasAnyRole("MANAGER")
                         .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/**").hasAnyRole("MANAGER") // sau 2 rule Staff ở trên
                         .requestMatchers("/admin/warehouse-receipts/**").hasAnyRole("MANAGER")
-                        .requestMatchers("/products/**").hasAnyRole("MANAGER")
-                        .requestMatchers("/product-list/**").hasAnyRole("MANAGER")
+
 
                         //MANAGER + ADMIN
                         .requestMatchers("/admin/reports/issues/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/admin/reports/receipts/**").hasAnyRole("ADMIN", "MANAGER")
-
+                        .requestMatchers("/products/**").hasAnyRole("ADMIN","MANAGER")
+                        .requestMatchers("/product-list/**").hasAnyRole("ADMIN","MANAGER")
                         //STAFF
                         .requestMatchers("/debts/**").hasAnyRole("MANAGER", "STAFF") //Manager cũng được xem công nợ
                         .requestMatchers("/sale-orders/**").hasAnyRole("STAFF")

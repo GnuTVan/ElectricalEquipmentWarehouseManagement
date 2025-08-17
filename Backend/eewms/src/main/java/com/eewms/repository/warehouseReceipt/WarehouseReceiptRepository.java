@@ -14,7 +14,8 @@ import java.util.Optional;
 
 public interface WarehouseReceiptRepository extends JpaRepository<WarehouseReceipt, Long> {
     Optional<WarehouseReceipt> findByCode(String code);
-    boolean existsByPurchaseOrder(PurchaseOrder purchaseOrder);
+    Optional<WarehouseReceipt> findByRequestId(String requestId);
+
 
     @Query("""
            select r

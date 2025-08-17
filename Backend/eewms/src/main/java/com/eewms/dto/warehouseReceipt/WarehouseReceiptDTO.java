@@ -18,14 +18,16 @@ public class WarehouseReceiptDTO {
     @NotNull(message = "Vui lòng chọn đơn hàng")
     private Long purchaseOrderId;
 
-    @NotNull(message = "Vui lòng chọn kho")
-    private Long warehouseId;
+    // ❌ BỎ nếu bạn không còn dùng kho đích:
+    // private Long warehouseId;
 
     private String note;
 
     private LocalDateTime createdAt;
-
     private String createdByName;
+
+    // ✅ thêm để idempotent
+    private String requestId;
 
     private List<WarehouseReceiptItemDTO> items;
 }
