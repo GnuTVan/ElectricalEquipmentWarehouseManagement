@@ -11,10 +11,10 @@ import com.eewms.repository.ComboRepository;
 import com.eewms.repository.ProductRepository;
 import com.eewms.services.IComboService;
 import com.eewms.utils.NameUtils;
-import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -149,25 +149,41 @@ public class ComboServiceImpl implements IComboService {
 
 
     @Override
+    @Transactional(readOnly = true)
     public ComboDTO getById(Long id) {
-        Combo c = comboRepository.findById(id)
+        Combo c = comboRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy combo: " + id));
         return ComboMapper.toDTO(c);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ComboDTO> getAll() {
-        return comboRepository.findAll().stream()
+        return comboRepository.findAllWithDetails()
+                .stream()
                 .map(ComboMapper::toDTO)
                 .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ComboDTO> searchByKeyword(String keyword) {
         if (keyword == null || keyword.isBlank()) return getAll();
-        return comboRepository
-                .findByNameContainingIgnoreCaseOrCodeContainingIgnoreCase(keyword, keyword)
-                .stream().map(ComboMapper::toDTO).toList();
+
+        // Bước 1: tìm danh sách thô (chưa đụng details)
+        var firstPass = comboRepository
+                .findByNameContainingIgnoreCaseOrCodeContainingIgnoreCase(keyword, keyword);
+
+        // Bước 2: lấy ids và fetch-join theo ids
+        var ids = firstPass.stream()
+                .map(Combo::getId)
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+
+        if (ids.isEmpty()) return java.util.List.of();
+
+        var combos = comboRepository.findAllWithDetailsByIds(ids);
+        return combos.stream().map(ComboMapper::toDTO).toList();
     }
 
     @Override
@@ -178,11 +194,14 @@ public class ComboServiceImpl implements IComboService {
         c.setStatus(status);
         comboRepository.save(c);
     }
+
     @Override
+    @Transactional(readOnly = true)
     public List<ComboDTO> getAllActive() {
-        return comboRepository.findByStatus(Combo.ComboStatus.ACTIVE)
-                .stream().map(ComboMapper::toDTO).toList();
+        List<Combo> combos = comboRepository.findAllWithDetailsByStatus(Combo.ComboStatus.ACTIVE);
+        return combos.stream().map(ComboMapper::toDTO).toList();
     }
+
     @Override
     public List<ComboDetailDTO> expandAsComboDetailDTO(List<Long> comboIds) {
         if (comboIds == null || comboIds.isEmpty()) return List.of();
@@ -190,11 +209,13 @@ public class ComboServiceImpl implements IComboService {
         // 1) Đếm số lần cho từng comboId (giữ duplicates)
         Map<Long, Integer> timesByComboId = new LinkedHashMap<>();
         for (Long id : comboIds) {
-            timesByComboId.merge(id, 1, Integer::sum);
+            if (id != null) timesByComboId.merge(id, 1, Integer::sum);
         }
+        if (timesByComboId.isEmpty()) return List.of();
 
         // 2) Chỉ fetch theo tập unique id
-        List<Combo> combos = comboRepository.findAllById(timesByComboId.keySet()).stream()
+        var combos = comboRepository.findAllWithDetailsByIds(timesByComboId.keySet())
+                .stream()
                 .filter(c -> c.getStatus() == Combo.ComboStatus.ACTIVE)
                 .toList();
 
@@ -207,8 +228,7 @@ public class ComboServiceImpl implements IComboService {
 
             for (ComboDetail d : c.getDetails()) {
                 Product p = d.getProduct();
-                if (p == null) continue;
-                if (p.getStatus() != Product.ProductStatus.ACTIVE) continue;
+                if (p == null || p.getStatus() != Product.ProductStatus.ACTIVE) continue;
 
                 int pid = p.getId();
                 int addQty = (d.getQuantity() == null ? 0 : d.getQuantity()) * times;
@@ -216,12 +236,12 @@ public class ComboServiceImpl implements IComboService {
                 ComboDetailDTO cur = acc.get(pid);
                 if (cur == null) {
                     cur = ComboDetailDTO.builder()
-                            .comboId(c.getId()) // (không còn nhiều ý nghĩa vì đã gộp theo sản phẩm)
+                            .comboId(c.getId())
                             .productId(pid)
                             .productName(p.getName())
                             .quantity(addQty)
-                            .price(p.getListingPrice())            // BigDecimal
-                            .availableQuantity(p.getQuantity())    // tồn kho hiện tại
+                            .price(p.getListingPrice())
+                            .availableQuantity(p.getQuantity())
                             .build();
                     acc.put(pid, cur);
                 } else {
@@ -240,8 +260,10 @@ public class ComboServiceImpl implements IComboService {
         String maxCode = comboRepository.findMaxCodeLike(prefix + "%");
         int nextNumber = 1;
         if (maxCode != null) {
-            try { nextNumber = Integer.parseInt(maxCode.replace(prefix, "")) + 1; }
-            catch (NumberFormatException ignored) {}
+            try {
+                nextNumber = Integer.parseInt(maxCode.replace(prefix, "")) + 1;
+            } catch (NumberFormatException ignored) {
+            }
         }
         // Lặp đến khi không đụng unique
         String code;
@@ -255,6 +277,7 @@ public class ComboServiceImpl implements IComboService {
     private String normalizeCode(String code) {
         return code == null ? "" : code.trim().toUpperCase();
     }
+
     private String normalizeName(String name) {
         return name == null ? "" : name.trim();
     }

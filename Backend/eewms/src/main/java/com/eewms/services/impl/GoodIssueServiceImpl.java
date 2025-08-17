@@ -11,6 +11,7 @@ import com.eewms.repository.UserRepository;
 import com.eewms.services.IGoodIssueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -82,9 +83,11 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public GoodIssueNoteDTO getById(Long id) {
-        GoodIssueNote gin = goodIssueRepository.findById(id)
+        GoodIssueNote gin = goodIssueRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu xuất kho"));
+
         GoodIssueNoteDTO dto = GoodIssueMapper.toNoteDTO(gin);
 
         // ==== Trạng thái thanh toán theo ĐƠN BÁN (SALES_INVOICE) ====
@@ -98,7 +101,7 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
 
     @Override
     public List<GoodIssueNoteDTO> getAllNotes() {
-        List<GoodIssueNote> notes = goodIssueRepository.findAll();
+        List<GoodIssueNote> notes = goodIssueRepository.findAllWithDetails();
         return notes.stream()
                 .map(gin -> {
                     GoodIssueNoteDTO dto = GoodIssueMapper.toNoteDTO(gin);
