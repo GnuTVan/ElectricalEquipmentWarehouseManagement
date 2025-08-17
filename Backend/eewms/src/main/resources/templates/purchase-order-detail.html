@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{fragments/common-head :: commonHead('Chi tiết đơn mua hàng')}"></head>
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <!-- Main -->
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <!-- Header -->
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <section class="p-6 space-y-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-gray-800">Chi tiết đơn mua hàng</h1>
+                <a th:href="@{/admin/purchase-orders}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                    Quay lại
+                </a>
+            </div>
+
+            <!-- ========== Thông tin chung ========== -->
+            <div class="bg-white shadow rounded-lg p-6 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p><span class="font-semibold">Mã đơn:</span>
+                            <span th:text="${order.code}">PO-XXXXX</span>
+                        </p>
+                        <p><span class="font-semibold">Nhà cung cấp:</span>
+                            <span th:text="${order.supplier != null ? order.supplier.name : ''}">NCC</span>
+                        </p>
+                        <p><span class="font-semibold">Trạng thái:</span>
+                            <span th:text="${order.status}">TRANG_THAI</span>
+                        </p>
+                    </div>
+                    <div>
+                        <!-- ★ FIX: dùng đúng field *_Name -->
+                        <p><span class="font-semibold">Người tạo:</span>
+                            <span th:text="${order.createdByName}">Creator</span>
+                        </p>
+                        <p><span class="font-semibold">Ngày tạo:</span>
+                            <span th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2025 12:00</span>
+                        </p>
+
+                        <div th:if="${order.approvedByName != null}">
+                            <p><span class="font-semibold">Người duyệt:</span>
+                                <span th:text="${order.approvedByName}">Manager</span>
+                            </p>
+                            <p><span class="font-semibold">Ngày duyệt:</span>
+                                <span th:text="${order.approvedAt != null ? #temporals.format(order.approvedAt, 'dd/MM/yyyy HH:mm') : ''}"></span>
+                            </p>
+                        </div>
+
+                        <div th:if="${order.canceledByName != null}">
+                            <p><span class="font-semibold text-red-700">Người hủy:</span>
+                                <span th:text="${order.canceledByName}">Manager</span>
+                            </p>
+                            <p><span class="font-semibold text-red-700">Ngày hủy:</span>
+                                <span th:text="${order.canceledAt != null ? #temporals.format(order.canceledAt, 'dd/MM/yyyy HH:mm') : ''}"></span>
+                            </p>
+                            <p><span class="font-semibold text-red-700">Lý do hủy:</span>
+                                <span th:text="${order.cancelReason}"></span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:if="${order.note != null && !#strings.isEmpty(order.note)}" class="pt-2">
+                    <p><span class="font-semibold">Ghi chú:</span>
+                        <span th:text="${order.note}"></span>
+                    </p>
+                </div>
+
+                <div th:if="${order.attachmentUrl != null}" class="pt-2">
+                    <a class="text-blue-600 underline" th:href="${order.attachmentUrl}" target="_blank">Xem chứng từ đính kèm</a>
+                </div>
+            </div>
+
+            <!-- ========== Danh sách sản phẩm ========== -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-lg font-semibold mb-4">Danh sách sản phẩm</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full border border-gray-200 text-sm">
+                        <thead class="bg-gray-100">
+                        <tr>
+                            <th class="border p-2 text-left">Tên sản phẩm</th>
+                            <th class="border p-2 text-right">Số lượng hợp đồng</th>
+                            <th class="border p-2 text-right">Đã giao</th>
+                            <th class="border p-2 text-right">Đơn giá</th>
+                            <th class="border p-2 text-right">Thành tiền</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="it : ${order.items}">
+                            <td class="border p-2" th:text="${it.product != null ? it.product.name : 'SP'}">SP</td>
+                            <td class="border p-2 text-right" th:text="${it.contractQuantity != null ? it.contractQuantity : 0}">0</td>
+                            <td class="border p-2 text-right" th:text="${it.actualQuantity != null ? it.actualQuantity : 0}">0</td>
+
+                            <!-- ★ FIX: format BigDecimal an toàn -->
+                            <td class="border p-2 text-right"
+                                th:text="${#numbers.formatDecimal((it.price != null ? it.price : T(java.math.BigDecimal).ZERO), 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0</td>
+
+                            <!-- ★ FIX: tránh mơ hồ valueOf(Integer) – ép Long rõ ràng -->
+                            <td class="border p-2 text-right"
+                                th:text="${#numbers.formatDecimal(
+                                   (it.price != null ? it.price : T(java.math.BigDecimal).ZERO)
+                                     .multiply(T(java.math.BigDecimal)
+                                     .valueOf( (it.contractQuantity != null) ? it.contractQuantity.longValue() : 0L )),
+                                   0, 'COMMA', 0, 'POINT')}">0</td>
+                        </tr>
+                        </tbody>
+                        <tfoot>
+                        <tr class="bg-gray-50 font-semibold">
+                            <td colspan="4" class="border p-2 text-right">Tổng cộng:</td>
+                            <td class="border p-2 text-right"
+                                th:text="${#numbers.formatDecimal(order.totalAmount != null ? order.totalAmount : T(java.math.BigDecimal).ZERO, 0, 'COMMA', 0, 'POINT')}">0</td>
+                        </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+
+        </section>
+    </main>
+</div>
+</body>
+</html>
