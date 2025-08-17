@@ -9,33 +9,45 @@
         const message = /*[[${message}]]*/ null;
         const messageType = /*[[${messageType}]]*/ null;
 
+        async function __refreshNotifBadgeFromServer(){
+            try{
+                const r = await fetch('/admin/notifications/unread-count', { headers: { 'Accept':'application/json' } });
+                if(!r.ok) return;
+                const {count} = await r.json();
+                const badge = document.getElementById('notifBadge');
+                if(!badge) return;
+                const n = parseInt(count||0,10)||0;
+                badge.textContent = n;
+                badge.classList.toggle('hidden', n===0);
+            }catch(e){}
+        }
+
         if (message && messageType) {
             toastr.options = {
                 closeButton: true,
                 progressBar: true,
                 positionClass: "toast-top-right"
             };
-            toastr[messageType](message);
+            toastr[String(messageType).toLowerCase()](message);
 
-            // --- Gửi lưu lịch sử thông báo (best-effort) ---
+            // --- Lưu lịch sử thông báo theo user hiện tại ---
             try {
                 const csrfH = document.querySelector('meta[name="_csrf_header"]')?.content;
                 const csrfT = document.querySelector('meta[name="_csrf"]')?.content;
-                const headers = {'Content-Type': 'application/json'};
+                const headers = {'Content-Type': 'application/json', 'Accept':'application/json'};
                 if (csrfH && csrfT) headers[csrfH] = csrfT;
 
-                fetch('/admin/notifications', {
+                // Đổi endpoint: ghi log cho user hiện tại
+                fetch('/admin/notifications/log', {
                     method: 'POST',
                     headers,
-                    body: JSON.stringify({ type: String(messageType).toLowerCase(), message: message })
+                    body: JSON.stringify({
+                        type: String(messageType).toLowerCase(),
+                        message: message
+                    })
                 }).then(() => {
-                    // Cập nhật badge ngay sau khi lưu thành công
-                    if (window.__notif_inc) {
-                        window.__notif_inc();
-                    } else {
-                        // notification-bell.js chưa sẵn sàng → đặt cờ tăng bù
-                        sessionStorage.setItem('notif_inc_pending', '1');
-                    }
+                    // Làm mới badge từ server để đồng bộ
+                    __refreshNotifBadgeFromServer();
                 }).catch(()=>{});
             } catch(e) { /* noop */ }
         }

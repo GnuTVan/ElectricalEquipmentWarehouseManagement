@@ -43,7 +43,7 @@ public class SecurityConfig {
                                 "/login", "/activate", "/activate/**").permitAll()
 
                         // Common authenticated
-                        .requestMatchers("/account/info", "/account/update-profile", "/api/tax-lookup/**").authenticated()
+                        .requestMatchers("/account/info", "/account/update-profile", "/api/tax-lookup/**", "/admin/notifications/**").authenticated()
                         //Purchase Requests: STAFF được 2 GET cụ thể (đặt TRƯỚC rule rộng cho Manager)
                         .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/create-from-sale-order/**")
                         .hasAnyRole("ADMIN", "MANAGER", "STAFF")
@@ -54,7 +54,6 @@ public class SecurityConfig {
                         .requestMatchers("/admin/users/**").hasRole("ADMIN")
                         .requestMatchers("/settings/**").hasRole("ADMIN")
                         .requestMatchers("/admin/warehouses/**").hasRole("ADMIN")
-                        .requestMatchers("/**").permitAll()
 
                         //MANAGER
                         .requestMatchers("/admin/suppliers/**").hasAnyRole("MANAGER")
