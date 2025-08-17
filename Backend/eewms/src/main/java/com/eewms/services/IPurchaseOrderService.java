@@ -45,4 +45,7 @@ public interface IPurchaseOrderService {
 
     //edit truoc khi duyet
     PurchaseOrder updateBeforeApprove(PurchaseOrderDTO dto);
+
+    @Transactional(readOnly = true)
+    PurchaseOrder getForEdit(Long id);
 }

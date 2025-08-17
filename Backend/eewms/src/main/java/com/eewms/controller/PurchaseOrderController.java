@@ -162,8 +162,7 @@ public class PurchaseOrderController {
     /* ====== EDIT (hiển thị & nhận đợt) ====== */
     @GetMapping("/edit/{id}")
     public String showEdit(@PathVariable Long id, Model model, RedirectAttributes redirect) {
-        PurchaseOrder order = orderService.findById(id)
-                .orElseThrow(() -> new InventoryException("Không tìm thấy đơn hàng"));
+        PurchaseOrder order = orderService.getForEdit(id);
 
         if (order.getStatus() == PurchaseOrderStatus.HOAN_THANH) {
             return "redirect:/admin/purchase-orders/" + id;

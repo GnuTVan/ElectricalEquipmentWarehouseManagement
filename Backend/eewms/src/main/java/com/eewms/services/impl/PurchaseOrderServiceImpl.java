@@ -452,4 +452,11 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService {
 
         return orderRepo.save(po);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PurchaseOrder getForEdit(Long id) {
+        return orderRepo.findByIdForEdit(id)
+                .orElseThrow(() -> new InventoryException("Không tìm thấy đơn hàng: " + id));
+    }
 }
