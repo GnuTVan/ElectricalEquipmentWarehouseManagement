@@ -71,14 +71,14 @@ public class SecurityConfig {
                         .requestMatchers("/admin/reports/receipts/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/products/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/product-list/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/combos/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/combo-list/**").hasAnyRole("ADMIN", "MANAGER")
                         //STAFF
                         .requestMatchers("/debts/**").hasAnyRole("MANAGER", "STAFF") //Manager cũng được xem công nợ
                         .requestMatchers("/sale-orders/**").hasAnyRole("STAFF")
                         .requestMatchers("/good-issue/**").hasAnyRole("STAFF")
                         .requestMatchers("/customers/**").hasAnyRole("STAFF")
                         .requestMatchers("/customer-list/**").hasAnyRole("STAFF")
-                        .requestMatchers("/combos/**").hasAnyRole("STAFF")
-                        .requestMatchers("/combo-list/**").hasAnyRole("STAFF")
 
 
                         //Purchase Requests (Y/C Mua) (POST): Staff chỉ được POST create; các POST khác chỉ Manager/Admin
