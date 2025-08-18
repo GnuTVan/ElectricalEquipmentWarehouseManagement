@@ -36,10 +36,6 @@ public class UserDTO {
     private String phone;
 
     @Email(message = "Email không hợp lệ")
-    @Pattern(
-            regexp = "^[\\w.%+-]+@gmail\\.com$",
-            message = "Email phải có đuôi @gmail.com"
-    )
     @Size(max = 100, message = "Email tối đa 100 ký tự")
     private String email;
 

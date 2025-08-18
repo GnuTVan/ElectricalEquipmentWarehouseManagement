@@ -38,6 +38,7 @@ public class AccountController {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
 
         UserProfileDTO profileDTO = UserProfileDTO.builder()
+                .username(user.getUsername())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
@@ -170,6 +171,7 @@ public class AccountController {
                     "ok", true,
                     "message", "Cập nhật hồ sơ thành công.",
                     "profile", Map.of(
+                            "username", refreshed.getUsername(),
                             "fullName", refreshed.getFullName(),
                             "email", refreshed.getEmail(),
                             "phone", refreshed.getPhone(),
