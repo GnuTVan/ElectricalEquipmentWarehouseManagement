@@ -30,16 +30,37 @@ public interface IUserService {
 
     void changePassword(String username, String oldPassword, String newPassword);
 
-
     void updateUserProfile(String username, UserProfileDTO dto);
 
 
     Page<User> findAllUsersPaginated(Pageable pageable);
 
     Page<UserDTO> searchUsers(int page, String keyword);
+
     boolean existsByEmail(String email);
+
     Optional<User> findByEmail(String email);
+
     Optional<User> findByPhone(String phone);
 
+    /**
+     * Public flow (forgot-password):
+     * - Tìm user theo email
+     * - Sinh token RESET_PASSWORD
+     * - Gửi email kèm link reset
+     */
+    void initiatePasswordResetByEmail(String email);
 
+    /**
+     * Admin flow:
+     * - Tìm user theo ID
+     * - Sinh token RESET_PASSWORD
+     * - Gửi email kèm link reset
+     */
+    void initiatePasswordResetForUserId(Long userId);
+
+    /**
+     * Cập nhật mật khẩu mới cho user (BCrypt encode)
+     */
+    void updatePassword(Long userId, String rawPassword);
 }

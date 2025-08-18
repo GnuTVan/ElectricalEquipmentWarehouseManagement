@@ -40,7 +40,11 @@ public class SecurityConfig {
                         // Public/static
                         .requestMatchers("/", "/landing/**",
                                 "/css/**", "/js/**", "/images/**", "/assets/**",
-                                "/login", "/activate", "/activate/**").permitAll()
+                                "/login",
+                                "/activate", "/activate/**",
+                                "forgot-password",
+                                "reset-password", "/reset-password/**"
+                        ).permitAll()
 
                         // Common authenticated
                         .requestMatchers("/account/info", "/account/update-profile", "/api/tax-lookup/**", "/admin/notifications/**").authenticated()
@@ -65,8 +69,8 @@ public class SecurityConfig {
                         //MANAGER + ADMIN
                         .requestMatchers("/admin/reports/issues/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/admin/reports/receipts/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers("/products/**").hasAnyRole("ADMIN","MANAGER")
-                        .requestMatchers("/product-list/**").hasAnyRole("ADMIN","MANAGER")
+                        .requestMatchers("/products/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/product-list/**").hasAnyRole("ADMIN", "MANAGER")
                         //STAFF
                         .requestMatchers("/debts/**").hasAnyRole("MANAGER", "STAFF") //Manager cũng được xem công nợ
                         .requestMatchers("/sale-orders/**").hasAnyRole("STAFF")

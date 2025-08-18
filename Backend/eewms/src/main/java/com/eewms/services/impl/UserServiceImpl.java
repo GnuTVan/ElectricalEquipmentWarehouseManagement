@@ -7,14 +7,19 @@ import com.eewms.entities.Role;
 import com.eewms.entities.User;
 import com.eewms.repository.RoleRepository;
 import com.eewms.repository.UserRepository;
+import com.eewms.services.IEmailService;
 import com.eewms.services.IUserService;
+import com.eewms.services.IVerificationTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.eewms.entities.VerificationToken.TokenType;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +30,8 @@ public class UserServiceImpl implements IUserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final IVerificationTokenService tokenService;
+    private final IEmailService emailService;
 
     @Override
     public List<User> findAllUsers() {
@@ -142,5 +149,32 @@ public class UserServiceImpl implements IUserService {
     @Override
     public Optional<User> findByPhone(String phone) {
         return userRepository.findByPhone(phone);
+    }
+
+    @Override
+    @Transactional
+    public void initiatePasswordResetByEmail(String email) {
+        userRepository.findByEmail(email).ifPresent(user -> {
+            String token = tokenService.createToken(user, TokenType.RESET_PASSWORD, Duration.ofHours(2));
+            emailService.sendResetPasswordEmail(user, token);
+        });
+    }
+
+    @Override
+    @Transactional
+    public void initiatePasswordResetForUserId(Long userId) {
+        userRepository.findById(userId).ifPresent(user -> {
+            String token = tokenService.createToken(user, TokenType.RESET_PASSWORD, Duration.ofHours(2));
+            emailService.sendResetPasswordEmail(user, token);
+        });
+    }
+
+    @Override
+    @Transactional
+    public void updatePassword(Long userId, String rawPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
+        user.setPassword(passwordEncoder.encode(rawPassword));
+        userRepository.save(user);
     }
 }
