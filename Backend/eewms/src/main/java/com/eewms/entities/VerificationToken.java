@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class VerificationToken {
+    public enum TokenType { ACTIVATION, RESET_PASSWORD }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,11 +21,16 @@ public class VerificationToken {
     @Column(unique = true, nullable = false)
     private String token;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 32)
+    private TokenType type;
+
     private LocalDateTime expiryDate;
 
-    private boolean used;
+    @Column(nullable = false)
+    private boolean used = false;
 }

@@ -22,6 +22,9 @@ public class Warehouse {
     @Column(length = 250)
     private String description;
 
+    @Column(length = 250)
+    private String address;
+
     @Column(nullable = false)
     private Boolean status = true;
 

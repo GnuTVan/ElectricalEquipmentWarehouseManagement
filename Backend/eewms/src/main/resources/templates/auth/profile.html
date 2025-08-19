@@ -1,18 +1,7 @@
     <!DOCTYPE html>
     <html xmlns:th="http://www.thymeleaf.org">
-    <head>
-        <title>Thông tin tài khoản | Thiết bị điện Hải Phòng</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
-        <style>
-            @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
-            body { font-family: 'Be Vietnam Pro', sans-serif; }
-            .sidebar-nav::-webkit-scrollbar { width: 4px; }
-            .sidebar-nav::-webkit-scrollbar-thumb { background-color: #4a5568; border-radius: 20px; }
-        </style>
-    </head>
+    <head th:replace="~{fragments/common-head :: commonHead('Thông tin tài khoản')}"></head>
+
     <body class="bg-gray-100 font-sans">
     <div class="flex h-screen">
         <!-- Sidebar -->
@@ -56,9 +45,20 @@
                                 <p th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}" class="text-red-500 text-sm mt-1"></p>
                             </div>
                             <div>
+                                <label class="font-medium">Tên đăng nhập</label>
+                                <input th:field="*{username}" type="text"
+                                       class="w-full border rounded px-3 py-2"
+                                       placeholder="Tên đăng nhập"
+                                       maxlength="100"
+                                       pattern="^[a-zA-Z0-9_.-]*$"
+                                       title="Chỉ gồm chữ, số, ., _, -"/>
+                                <p th:if="${#fields.hasErrors('username')}" th:errors="*{username}"
+                                   class="text-red-500 text-sm mt-1"></p>
+                            </div>
+                            <div>
                                 <label class="font-medium">Email</label>
-                                <input th:field="*{email}" type="email" class="w-full border rounded px-3 py-2" />
-                                <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-red-500 text-sm mt-1"></p>
+                                <input th:field="*{email}" type="email" class="w-full border rounded px-3 py-2 cursor-not-allowed" readonly disabled/>
+<!--                                <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-red-500 text-sm mt-1"></p>-->
                             </div>
                             <div>
                                 <label class="font-medium">Số điện thoại</label>
@@ -102,20 +102,7 @@
             <div th:replace="~{fragments/footer :: footer}"></div>
         </main>
     </div>
-    <script>
-        const btn = document.getElementById("userMenuBtn");
-        const dropdown = document.getElementById("userMenuDropdown");
 
-        btn?.addEventListener("click", () => {
-            dropdown?.classList.toggle("hidden");
-        });
-
-        document.addEventListener("click", (event) => {
-            if (!event.target.closest("#userMenuWrapper")) {
-                dropdown?.classList.add("hidden");
-            }
-        });
-    </script>
     </body>
     </html>
     //1

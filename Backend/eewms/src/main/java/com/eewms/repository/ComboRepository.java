@@ -13,9 +13,11 @@ import java.util.Optional;
 public interface ComboRepository extends JpaRepository<Combo, Long> {
 
     Optional<Combo> findByCode(String code);
+
     List<Combo> findByStatus(Combo.ComboStatus status);
 
     boolean existsByCodeIgnoreCase(String code);
+
     @Query("select (count(c)>0) from Combo c where lower(c.code)=lower(:code) and c.id <> :id")
     boolean existsByCodeIgnoreCaseAndIdNot(@Param("code") String code, @Param("id") Long id);
 
@@ -29,4 +31,44 @@ public interface ComboRepository extends JpaRepository<Combo, Long> {
 
     @Query("SELECT MAX(c.code) FROM Combo c WHERE c.code LIKE :pattern")
     String findMaxCodeLike(@Param("pattern") String pattern);
+
+    // === FETCH JOIN: tránh LazyInitializationException khi map DTO ===
+    @Query("""
+                select distinct c
+                from Combo c
+                left join fetch c.details d
+                left join fetch d.product p
+                where c.status = :status
+            """)
+    List<Combo> findAllWithDetailsByStatus(@Param("status") Combo.ComboStatus status);
+
+    // (tuỳ chọn) Khi cần load 1 combo kèm details theo id
+    @Query("""
+                select distinct c
+                from Combo c
+                left join fetch c.details d
+                left join fetch d.product p
+                where c.id = :id
+            """)
+    Optional<Combo> findByIdWithDetails(@Param("id") Long id);
+
+    // === FETCH JOIN: lấy tất cả, không lọc status ===
+    @Query("""
+            select distinct c
+            from Combo c
+            left join fetch c.details d
+            left join fetch d.product p
+            """)
+    List<Combo> findAllWithDetails();
+
+    // === FETCH JOIN: theo tập id (phục vụ search & expandAsComboDetailDTO) ===
+    @Query("""
+            select distinct c
+            from Combo c
+            left join fetch c.details d
+            left join fetch d.product p
+            where c.id in :ids
+            """)
+    List<Combo> findAllWithDetailsByIds(@Param("ids") java.util.Set<Long> ids);
+
 }

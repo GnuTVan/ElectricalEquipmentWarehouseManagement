@@ -39,10 +39,14 @@ public class SecurityConfig {
                         // Public/static
                         .requestMatchers("/", "/landing/**",
                                 "/css/**", "/js/**", "/images/**", "/assets/**",
-                                "/login", "/activate", "/activate/**").permitAll()
+                                "/login",
+                                "/activate", "/activate/**",
+                                "forgot-password",
+                                "reset-password", "/reset-password/**"
+                        ).permitAll()
 
                         // Common authenticated
-                        .requestMatchers("/account/info", "/account/update-profile", "/api/tax-lookup/**").authenticated()
+                        .requestMatchers("/account/info", "/account/update-profile", "/api/tax-lookup/**", "/admin/notifications/**").authenticated()
                         //Purchase Requests: STAFF được 2 GET cụ thể (đặt TRƯỚC rule rộng cho Manager)
                         .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/create-from-sale-order/**")
                         .hasAnyRole("ADMIN", "MANAGER", "STAFF")
@@ -54,27 +58,26 @@ public class SecurityConfig {
                         .requestMatchers("/settings/**").hasRole("ADMIN")
                         .requestMatchers("/admin/warehouses/**").hasRole("ADMIN")
 
-
                         //MANAGER
                         .requestMatchers("/admin/suppliers/**").hasAnyRole("MANAGER")
                         .requestMatchers("/admin/purchase-orders/**").hasAnyRole("MANAGER")
                         .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/**").hasAnyRole("MANAGER") // sau 2 rule Staff ở trên
                         .requestMatchers("/admin/warehouse-receipts/**").hasAnyRole("MANAGER")
-                        .requestMatchers("/products/**").hasAnyRole("MANAGER")
-                        .requestMatchers("/product-list/**").hasAnyRole("MANAGER")
+
 
                         //MANAGER + ADMIN
                         .requestMatchers("/admin/reports/issues/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/admin/reports/receipts/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers("/**").permitAll()
+                        .requestMatchers("/products/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/product-list/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/combos/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/combo-list/**").hasAnyRole("ADMIN", "MANAGER")
                         //STAFF
                         .requestMatchers("/debts/**").hasAnyRole("MANAGER", "STAFF") //Manager cũng được xem công nợ
                         .requestMatchers("/sale-orders/**").hasAnyRole("STAFF")
                         .requestMatchers("/good-issue/**").hasAnyRole("STAFF")
                         .requestMatchers("/customers/**").hasAnyRole("STAFF")
                         .requestMatchers("/customer-list/**").hasAnyRole("STAFF")
-                        .requestMatchers("/combos/**").hasAnyRole("STAFF")
-                        .requestMatchers("/combo-list/**").hasAnyRole("STAFF")
 
 
                         //Purchase Requests (Y/C Mua) (POST): Staff chỉ được POST create; các POST khác chỉ Manager/Admin

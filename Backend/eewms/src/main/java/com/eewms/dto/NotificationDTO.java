@@ -7,7 +7,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor @AllArgsConstructor @Builder
 public class NotificationDTO {
     private Long id;
+    private Long userNotificationId;
     private String type;
     private String message;
     private LocalDateTime createdAt;
+    private Boolean read;
 }

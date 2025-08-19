@@ -1,15 +1,14 @@
 <aside id="sidebar" th:fragment="sidebar"
        class="w-64 bg-[#1e293b] text-white flex flex-col fixed h-full transition-transform duration-300 transform"
-       xmlns:th="http://www.w3.org/1999/xhtml">
+       xmlns:th="http://www.w3.org/1999/xhtml"
+       xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
     <!-- Logo and Title -->
     <div class="p-6 text-center border-b border-gray-700">
         <a th:href="@{/landing-page}" class="flex items-center justify-center">
             <img th:src="@{/images/logo.png}" alt="Logo"
-                 class="w-20 h-20 object-cover rounded hover:opacity-80 transition" />
+                 class="w-20 h-20 object-cover rounded hover:opacity-80 transition"/>
         </a>
-
-        <!--        <h1 class="text-2xl font-bold">Thiết bị điện</h1>-->
-        <!--        <h2 class="text-2xl font-bold">Hải Phòng</h2>-->
+=
         <p class="mt-2 text-l text-gray-200 font-bold">
             Vai trò:
             <span th:switch="${#authentication.authorities[0].authority}">
@@ -25,13 +24,6 @@
     <!-- Navigation Links -->
     <nav class="flex-1 overflow-y-auto sidebar-nav px-4 py-4">
         <ul class="space-y-2">
-<!--            <li>-->
-<!--                <a href="/landing-page"-->
-<!--                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">-->
-<!--                    <i class="ri-home-5-line w-6 text-lg"></i>-->
-<!--                    <span>Landing Page</span>-->
-<!--                </a>-->
-<!--            </li>-->
             <li>
                 <a th:href="@{/dashboard}"
                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
@@ -39,21 +31,21 @@
                     <span>Trang chủ</span>
                 </a>
             </li>
-            <li>
+            <li sec:authorize="hasRole('ADMIN')">
                 <a th:href="@{/admin/users}"
                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-account-circle-line w-6 text-lg"></i>
                     <span>Tài khoản</span>
                 </a>
             </li>
-            <li>
+            <li sec:authorize="hasAnyRole('ADMIN','MANAGER')">
                 <a th:href="@{/products}"
                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-archive-line w-6 text-lg"></i>
                     <span>Sản phẩm</span>
                 </a>
             </li>
-            <li>
+            <li sec:authorize="hasAnyRole('ADMIN','MANAGER')">
                 <div class="flex flex-col">
                     <button type="button"
                             data-submenu-id="setting-submenu"
@@ -90,7 +82,7 @@
             </li>
 
             <!-- Đối tác (dropdown) -->
-            <li>
+            <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
                 <div class="flex flex-col">
                     <button type="button"
                             data-submenu-id="partner-submenu"
@@ -115,38 +107,39 @@
                     </ul>
                 </div>
             </li>
-            <li>
+            <!-- Mua hàng -->
+            <li sec:authorize="hasRole('MANAGER')">
                 <a th:href="@{/admin/purchase-orders}"
                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-shopping-basket-line w-6 text-lg"></i>
                     <span>Mua hàng</span>
                 </a>
             </li>
-            <li>
+            <!-- Bán hàng-->
+            <li sec:authorize="hasRole('STAFF')">
                 <a th:href="@{/sale-orders}"
                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-shopping-cart-2-line w-6 text-lg"></i>
                     <span>Bán hàng</span>
                 </a>
             </li>
-
             <!-- Công nợ -->
-            <li>
+            <li sec:authorize="hasAnyRole('MANAGER','STAFF')">
                 <a th:href="@{/debts}"
                    class="menu-link flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-file-text-line w-6 text-lg"></i>
                     <span>Công nợ</span>
                 </a>
             </li>
-
-
-            <li>
+            <!-- Yêu cầu mua hàng -->
+            <li sec:authorize="hasRole('MANAGER')">
                 <a th:href="@{/admin/purchase-requests}"
                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-shopping-basket-line w-6 text-lg"></i>
                     <span>Yếu cầu mua hàng</span>
                 </a>
             </li>
+            <!-- Trả hàng?-->
             <li>
                 <a href="#"
                    class="hidden flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
@@ -154,6 +147,7 @@
                     <span>Trả hàng</span>
                 </a>
             </li>
+            <!-- Phiếu kho?-->
             <li>
                 <a href="#"
                    class="hidden flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
@@ -165,7 +159,7 @@
                 </a>
             </li>
             <!-- Phiếu xuất nhập kho (dropdown) -->
-            <li>
+            <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
                 <div class="flex flex-col">
                     <button type="button"
                             data-submenu-id="inventory-submenu"
@@ -179,22 +173,27 @@
                     </button>
                     <ul id="inventory-submenu"
                         class="ml-8 mt-1 space-y-1 overflow-hidden transition-all duration-300 max-h-0">
-                        <li>
-                            <a th:href="@{/admin/warehouse-receipts}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Nhập kho</a>
+                        <li sec:authorize="hasAnyRole('ADMIN','MANAGER')">
+                            <a th:href="@{/admin/warehouse-receipts}"
+                               class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Nhập kho</a>
                         </li>
-                        <li>
-                            <a th:href="@{/good-issue}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Xuất kho</a>
+                        <li sec:authorize="hasAnyRole('ADMIN','STAFF')">
+                            <a th:href="@{/good-issue}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Xuất
+                                kho</a>
                         </li>
                     </ul>
                 </div>
             </li>
-            <li>
-                <a th:href="@{/combos}" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+            <!-- Combo -->
+            <li sec:authorize="hasAnyRole('ADMIN','MANAGER')">
+                <a th:href="@{/combos}"
+                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-building-4-line w-6 text-lg"></i>
                     <span>Combo</span>
                 </a>
             </li>
-            <li>
+            <!-- Báo cáo -->
+            <li sec:authorize="hasAnyRole('ADMIN','MANAGER')">
                 <div class="flex flex-col">
                     <button type="button"
                             data-submenu-id="report-submenu"
@@ -209,15 +208,16 @@
                     <ul id="report-submenu"
                         class="ml-8 mt-1 space-y-1 overflow-hidden transition-all duration-300 max-h-0">
                         <li>
-                            <a th:href="@{/admin/reports/receipts}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Báo cáo nhập kho</a>
+                            <a th:href="@{/admin/reports/receipts}"
+                               class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Báo cáo nhập kho</a>
                         </li>
                         <li>
-                            <a th:href="@{/admin/reports/issues}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Báo cáo xuất kho</a>
+                            <a th:href="@{/admin/reports/issues}"
+                               class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Báo cáo xuất kho</a>
                         </li>
                     </ul>
                 </div>
             </li>
-
         </ul>
     </nav>
 </aside>

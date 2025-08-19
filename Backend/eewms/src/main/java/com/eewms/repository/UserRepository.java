@@ -12,6 +12,7 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username); // dùng cho đăng nhập
     boolean existsByUsername(String username);
+    boolean existsByUsernameAndIdNot(String username, Long id);
 
     @Query("""
 SELECT DISTINCT u FROM User u

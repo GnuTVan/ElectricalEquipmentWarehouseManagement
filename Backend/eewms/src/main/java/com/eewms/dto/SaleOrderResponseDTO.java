@@ -1,6 +1,7 @@
 package com.eewms.dto;
 
 import com.eewms.entities.SaleOrder;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -17,6 +18,7 @@ public class SaleOrderResponseDTO {
     private String orderCode;
 
     private String customerName;
+    private Long customerId;
     private String customerPhone;   // <<< NEW: Số điện thoại khách hàng
 
     private String description;
@@ -29,8 +31,9 @@ public class SaleOrderResponseDTO {
     private boolean alreadyExported;
 
     // Thông tin thanh toán
-    private String qrCodeUrl;            // URL ảnh QR từ PayOS
-    private String paymentLink;          // Link thanh toán từ PayOS
+    private String qrCodeUrl;           // URL ảnh QR từ PayOS
+    private String paymentLink;         // Link thanh toán từ PayOS
     private SaleOrder.PaymentStatus paymentStatus;
     private String paymentNote;          // Nội dung CK
+    private String payOsOrderCode;
 }

@@ -1,6 +1,9 @@
 package com.eewms.repository;
 
 import com.eewms.entities.SaleOrder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -49,4 +52,20 @@ public interface SaleOrderRepository extends JpaRepository<SaleOrder, Integer> {
     //findByPayOsOrderCode: để webhook controller gọi khi muốn tìm đơn hàng khớp với orderCode PayOS gửi về.
     Optional<SaleOrder> findByPayOsOrderCode(String payOsOrderCode);
 
+    //LIST: nạp sẵn customer & createdByUser, KHÔNG nạp details( Dùng cho View List
+    @EntityGraph(attributePaths = {"customer", "createdByUser"})
+    Page<SaleOrder> findAllByOrderBySoIdDesc(Pageable pageable);
+
+            //VIEW: fetch-join details + product (+ customer, createdByUser) dùng cho màn chi tiết
+            @Query("""
+    select distinct so
+    from SaleOrder so
+    left join fetch so.customer c
+    left join fetch so.createdByUser u
+    left join fetch so.details d
+    left join fetch d.product p
+    left join fetch d.combo cb
+    where so.soId = :id
+""")
+    Optional<SaleOrder> findByIdWithDetails(@Param("id") Integer id);
 }

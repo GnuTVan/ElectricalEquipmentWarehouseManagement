@@ -17,6 +17,7 @@ import com.eewms.repository.SupplierRepository;
 import com.eewms.services.IProductServices;
 import com.eewms.services.ImageUploadService;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -42,7 +43,7 @@ public class ProductServicesImpl implements IProductServices {
     private Sort mapSort(String sort) {
         if (sort == null || sort.isBlank()) return Sort.unsorted();
         Sort byPrice = switch (sort) {
-            case "priceAsc"  -> Sort.by("listingPrice").ascending();
+            case "priceAsc" -> Sort.by("listingPrice").ascending();
             case "priceDesc" -> Sort.by("listingPrice").descending();
             default -> Sort.unsorted();
         };
@@ -81,22 +82,29 @@ public class ProductServicesImpl implements IProductServices {
         dto.setStatus(product.getStatus());
         dto.setQuantity(product.getQuantity());
 
-        dto.setCategory(SettingDTO.builder()
-                .id(product.getCategory().getId())
-                .name(product.getCategory().getName())
-                .build());
+        // 🔒 An toàn với LAZY khi open-in-view=false
+        if (product.getCategory() != null && Hibernate.isInitialized(product.getCategory())) {
+            dto.setCategory(SettingDTO.builder()
+                    .id(product.getCategory().getId())
+                    .name(product.getCategory().getName())
+                    .build());
+        }
+        if (product.getBrand() != null && Hibernate.isInitialized(product.getBrand())) {
+            dto.setBrand(SettingDTO.builder()
+                    .id(product.getBrand().getId())
+                    .name(product.getBrand().getName())
+                    .build());
+        }
+        if (product.getUnit() != null && Hibernate.isInitialized(product.getUnit())) {
+            dto.setUnit(SettingDTO.builder()
+                    .id(product.getUnit().getId())
+                    .name(product.getUnit().getName())
+                    .build());
+        }
 
-        dto.setBrand(SettingDTO.builder()
-                .id(product.getBrand().getId())
-                .name(product.getBrand().getName())
-                .build());
-
-        dto.setUnit(SettingDTO.builder()
-                .id(product.getUnit().getId())
-                .name(product.getUnit().getName())
-                .build());
-
-        if (product.getImages() != null && !product.getImages().isEmpty()) {
+        if (product.getImages() != null
+                && Hibernate.isInitialized(product.getImages())
+                && !product.getImages().isEmpty()) {
             dto.setImages(product.getImages().stream()
                     .map(img -> ImageDTO.builder()
                             .id(img.getId())
@@ -172,8 +180,11 @@ public class ProductServicesImpl implements IProductServices {
         if (dto.getUploadedImageUrls() != null && !dto.getUploadedImageUrls().isEmpty()) {
             List<Image> oldImages = imageRepo.findByProductId(saved.getId());
             for (Image img : oldImages) {
-                try { imageUploadService.deleteImageByUrl(img.getImageUrl()); }
-                catch (Exception e) { System.err.println("Không thể xoá ảnh khỏi Cloudinary: " + img.getImageUrl()); }
+                try {
+                    imageUploadService.deleteImageByUrl(img.getImageUrl());
+                } catch (Exception e) {
+                    System.err.println("Không thể xoá ảnh khỏi Cloudinary: " + img.getImageUrl());
+                }
             }
             imageRepo.deleteAll(oldImages);
 
@@ -274,8 +285,11 @@ public class ProductServicesImpl implements IProductServices {
     public List<ProductDetailsDTO> getAll() throws InventoryException {
         return productRepo.findAll().stream()
                 .map(p -> {
-                    try { return getById(p.getId()); }
-                    catch (InventoryException e) { throw new RuntimeException(e); }
+                    try {
+                        return getById(p.getId());
+                    } catch (InventoryException e) {
+                        throw new RuntimeException(e);
+                    }
                 })
                 .collect(Collectors.toList());
     }
@@ -301,8 +315,11 @@ public class ProductServicesImpl implements IProductServices {
     public List<ProductDetailsDTO> searchByKeyword(String keyword) {
         return productRepo.searchByKeyword(keyword).stream()
                 .map(p -> {
-                    try { return getById(p.getId()); }
-                    catch (InventoryException e) { throw new RuntimeException(e); }
+                    try {
+                        return getById(p.getId());
+                    } catch (InventoryException e) {
+                        throw new RuntimeException(e);
+                    }
                 })
                 .collect(Collectors.toList());
     }
@@ -318,16 +335,20 @@ public class ProductServicesImpl implements IProductServices {
                 .toList();
 
         for (Image img : toDelete) {
-            try { imageUploadService.deleteImageByUrl(img.getImageUrl()); }
-            catch (Exception e) { System.err.println("Không thể xoá ảnh khỏi Cloudinary: " + img.getImageUrl()); }
+            try {
+                imageUploadService.deleteImageByUrl(img.getImageUrl());
+            } catch (Exception e) {
+                System.err.println("Không thể xoá ảnh khỏi Cloudinary: " + img.getImageUrl());
+            }
         }
         imageRepo.deleteAll(toDelete);
     }
 
     // ===== Landing legacy (không phân trang) – giữ nguyên để tương thích =====
     @Override
+    @Transactional(readOnly = true)
     public List<ProductDetailsDTO> getAllActiveProducts() {
-        List<Product> products = productRepo.findByStatus(Product.ProductStatus.ACTIVE);
+        List<Product> products = productRepo.findAllActiveWithSetting();
         return products.stream().map(this::toLandingDTO).toList();
     }
 
@@ -337,8 +358,11 @@ public class ProductServicesImpl implements IProductServices {
         List<Product> products = productRepo.searchByKeywordAndCategory(keyword, categoryId);
         return products.stream()
                 .map(p -> {
-                    try { return getById(p.getId()); }
-                    catch (InventoryException e) { throw new RuntimeException(e); }
+                    try {
+                        return getById(p.getId());
+                    } catch (InventoryException e) {
+                        throw new RuntimeException(e);
+                    }
                 })
                 .collect(Collectors.toList());
     }

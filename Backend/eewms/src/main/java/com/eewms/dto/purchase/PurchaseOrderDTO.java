@@ -27,7 +27,6 @@ public class PurchaseOrderDTO {
 
     private String supplierName; // ✅ Thêm tên nhà cung cấp để hiển thị
 
-    @NotBlank(message = "Vui lòng nhập người tạo đơn")
     private String createdByName;
 
     private String note;

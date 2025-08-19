@@ -385,13 +385,17 @@
 
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="text-sm text-gray-700">Mã SP</label>
+                                    <label class="text-sm text-gray-700">Mã SP
+                                        <span class="text-red-500">*</span>
+                                    </label>
                                     <input type="text" th:field="*{code}" class="w-full border rounded px-3 py-2"/>
                                     <p th:if="${#fields.hasErrors('code')}" th:errors="*{code}"
                                        class="text-xs text-red-500 mt-1"></p>
                                 </div>
                                 <div>
-                                    <label class="text-sm text-gray-700">Tên</label>
+                                    <label class="text-sm text-gray-700">Tên
+                                        <span class="text-red-500">*</span>
+                                    </label>
                                     <input type="text" th:field="*{name}" class="w-full border rounded px-3 py-2"/>
                                     <p th:if="${#fields.hasErrors('name')}" th:errors="*{name}"
                                        class="text-xs text-red-500 mt-1"></p>
@@ -404,14 +408,18 @@
                                 </div>
 
                                 <div>
-                                    <label class="text-sm text-gray-700">Giá gốc</label>
+                                    <label class="text-sm text-gray-700">Giá gốc
+                                        <span class="text-red-500">*</span>
+                                    </label>
                                     <input type="number" th:field="*{originPrice}"
                                            class="w-full border rounded px-3 py-2"/>
                                     <p th:if="${#fields.hasErrors('originPrice')}" th:errors="*{originPrice}"
                                        class="text-xs text-red-500 mt-1"></p>
                                 </div>
                                 <div>
-                                    <label class="text-sm text-gray-700">Giá niêm yết</label>
+                                    <label class="text-sm text-gray-700">Giá niêm yết
+                                        <span class="text-red-500">*</span>
+                                    </label>
                                     <input type="number" th:field="*{listingPrice}"
                                            class="w-full border rounded px-3 py-2"/>
                                     <p th:if="${#fields.hasErrors('listingPrice')}" th:errors="*{listingPrice}"
@@ -421,7 +429,9 @@
                                 <input type="hidden" name="status" value="ACTIVE"/>
 
                                 <div>
-                                    <label class="text-sm text-gray-700">Số lượng</label>
+                                    <label class="text-sm text-gray-700">Số lượng
+                                        <span class="text-red-500">*</span>
+                                    </label>
                                     <input type="number" th:field="*{quantity}"
                                            class="w-full border rounded px-3 py-2"/>
                                     <p th:if="${#fields.hasErrors('quantity')}" th:errors="*{quantity}"
@@ -450,7 +460,7 @@
                                         thương hiệu nào đang hoạt động</p>
                                 </div>
 
-                                <div class="col-span-2">
+                                <div>
                                     <label class="text-sm text-gray-700">Danh mục</label>
                                     <select th:field="*{categoryId}" class="w-full border rounded px-3 py-2"
                                             th:disabled="${#lists.isEmpty(categories)}">
@@ -463,7 +473,9 @@
                                 </div>
 
                                 <div class="col-span-2">
-                                    <label class="text-sm text-gray-700">Nhà cung cấp</label>
+                                    <label class="text-sm text-gray-700">Nhà cung cấp
+                                        <span class="text-red-500">*</span>
+                                    </label>
                                     <select id="addSupplierIds" multiple th:field="*{supplierIds}" class="w-full">
                                         <option th:each="s : ${suppliers}" th:value="${s.id}"
                                                 th:text="${s.name}"></option>

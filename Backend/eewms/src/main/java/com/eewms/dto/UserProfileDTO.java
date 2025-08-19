@@ -1,5 +1,6 @@
 package com.eewms.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
@@ -14,6 +15,11 @@ public class UserProfileDTO {
     // Cho phép để trống; nếu nhập thì tối đa 250 ký tự
     @Size(max = 250, message = "Họ tên tối đa 250 ký tự")
     private String fullName;
+
+    @NotBlank(message = "Tên đăng nhập không được để trống")
+    @Size(max = 100, message = "Tên đăng nhập tối đa 100 ký tự")
+    @Pattern(regexp = "^[a-zA-Z0-9_.-]*$", message = "Tên đăng nhập không chứa ký tự đặc biệt")
+    private String username;
 
     // Cho phép để trống; nếu nhập thì phải là gmail.com và tối đa 100 ký tự
     @Pattern(

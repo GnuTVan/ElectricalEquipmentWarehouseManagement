@@ -14,16 +14,19 @@ public class ComboMapper {
                 .name(combo.getName())
                 .description(combo.getDescription())
                 .status(combo.getStatus())
-                .details(combo.getDetails().stream()
-                        .map(detail -> ComboDetailDTO.builder()
-                                .comboId(detail.getCombo().getId())
-                                .productId(detail.getProduct().getId())
-                                .productName(detail.getProduct().getName())
-                                .quantity(detail.getQuantity())
-                                .availableQuantity(detail.getProduct().getQuantity())
-                                .price(detail.getProduct().getListingPrice())
-                                .build())
-                        .collect(Collectors.toList()))
+                .details(
+                        combo.getDetails() == null ? java.util.List.of() :
+                                combo.getDetails().stream()
+                                        .map(detail -> ComboDetailDTO.builder()
+                                                .comboId(combo.getId())
+                                                .productId(detail.getProduct() != null ? detail.getProduct().getId() : null)
+                                                .productName(detail.getProduct() != null ? detail.getProduct().getName() : null)
+                                                .quantity(detail.getQuantity())
+                                                .availableQuantity(detail.getProduct() != null ? detail.getProduct().getQuantity() : null)
+                                                .price(detail.getProduct() != null ? detail.getProduct().getListingPrice() : null)
+                                                .build())
+                                        .collect(Collectors.toList())
+                )
                 .build();
     }
 }

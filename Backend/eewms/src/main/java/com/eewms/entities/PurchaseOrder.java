@@ -18,11 +18,9 @@ import java.util.List;
 @Builder
 public class PurchaseOrder {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Ví dụ: P00001, P00002,...
     @Column(nullable = false, unique = true, length = 20)
     private String code;
 
@@ -38,25 +36,43 @@ public class PurchaseOrder {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private PurchaseOrderStatus status = PurchaseOrderStatus.CHO_GIAO_HANG;
+    private PurchaseOrderStatus status; // bỏ default cứng
 
     @Column(columnDefinition = "TEXT")
     private String note;
 
-    // Tổng tiền đơn hàng
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 
-    // URL chứng từ đính kèm
     @Column(name = "attachment_url", length = 500)
     private String attachmentUrl;
 
     @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PurchaseOrderItem> items = new ArrayList<>();
 
-    // Gán createdAt khi tạo
+    // ✅ audit duyệt/hủy
+    @Column(name = "approved_by", length = 100)
+    private String approvedByName;
+
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
+    @Column(name = "canceled_by", length = 100)
+    private String canceledByName;
+
+    @Column(name = "canceled_at")
+    private LocalDateTime canceledAt;
+
+    @Column(name = "cancel_reason", columnDefinition = "TEXT")
+    private String cancelReason;
+
+    // ✅ optimistic locking
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @PrePersist
     public void prePersist() {
-        this.createdAt = LocalDateTime.now();
+        if (this.createdAt == null) this.createdAt = LocalDateTime.now();
     }
 }
