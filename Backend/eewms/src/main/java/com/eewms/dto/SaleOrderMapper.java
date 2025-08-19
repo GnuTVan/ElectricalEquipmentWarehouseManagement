@@ -82,14 +82,6 @@ public class SaleOrderMapper {
     public static SaleOrderResponseDTO toOrderResponseDTO(SaleOrder order) {
         if (order == null) return null;
 
-        List<SaleOrderDetailDTO> detailsDTOs =
-                order.getDetails() == null ? List.of()
-                        : order.getDetails().stream()
-                        .filter(Objects::nonNull)
-                        .map(SaleOrderMapper::toDetailDTO)
-                        .collect(Collectors.toList());
-        if (order == null) return null;
-
         // An toàn với LAZY: chỉ truy cập details nếu đã được initialize
         List<SaleOrderDetail> details =
                 (order.getDetails() != null && Hibernate.isInitialized(order.getDetails()))

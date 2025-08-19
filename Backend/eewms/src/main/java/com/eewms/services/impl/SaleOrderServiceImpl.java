@@ -166,6 +166,10 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         saleOrder.setTotalAmount(totalAmount);
 
         // ===== 4) PayOS (giữ nguyên)
+        String paymentNote = String.format("Thanh toan don %s",
+                orderCode);
+        saleOrder.setPaymentNote(paymentNote);
+        saleOrder.setPaymentStatus(SaleOrder.PaymentStatus.NONE_PAYMENT); // luôn khởi tạo PENDING
         log.info("[PayOS][switch] enabled={}", payOsEnabled);
         String warnPay = null;
         String qr = null, link = null;

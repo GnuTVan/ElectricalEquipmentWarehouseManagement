@@ -111,6 +111,11 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
                 .toList();
     }
 
+    @Override
+    public GoodIssueNoteDTO prepareFromSaleOrder(SaleOrder order) {
+        return null;
+    }
+
     private String generateGINCode() {
         long count = goodIssueRepository.count() + 1;
         return String.format("GIN%05d", count);
