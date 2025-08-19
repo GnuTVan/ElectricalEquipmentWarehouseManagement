@@ -105,14 +105,14 @@
                         <div class="flex justify-center items-center space-x-2">
                             <!-- PENDING: Sửa + Xóa -->
                             <a th:if="${order.status.name() == 'PENDING'}"
-                               th:href="@{/sale-orders/{id}/edit(id=${order.soId})}"
+                               th:href="@{/sale-orders/{id}/edit(id=${order.orderId})}"
                                class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded shadow">
                                 <i class="ri-edit-line text-base"></i>
                                 Sửa
                             </a>
 
                             <form th:if="${order.status.name() == 'PENDING'}"
-                                  th:action="@{/sale-orders/{id}/delete(id=${order.soId})}"
+                                  th:action="@{/sale-orders/{id}/delete(id=${order.orderId})}"
                                   method="post"
                                   onsubmit="return confirm('Bạn có chắc muốn xóa đơn này?');"
                                   class="inline-flex">
@@ -126,7 +126,7 @@
 
                             <!-- DELIVERIED / COMPLETED: Xem đơn -->
                             <a th:if="${order.status.name() != 'PENDING'}"
-                               th:href="@{/sale-orders/{id}/view(id=${order.soId})}"
+                               th:href="@{/sale-orders/{id}/view(id=${order.orderId})}"
                                class="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-500 hover:bg-slate-600 text-white text-sm rounded shadow">
                                 <i class="ri-eye-line text-base"></i>
                                 Xem đơn
