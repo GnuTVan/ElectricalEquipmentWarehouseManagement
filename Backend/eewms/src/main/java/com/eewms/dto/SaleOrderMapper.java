@@ -1,14 +1,21 @@
 package com.eewms.dto;
 
-import com.eewms.entities.*;
+import com.eewms.entities.Combo;
+import com.eewms.entities.Customer;
+import com.eewms.entities.Product;
+import com.eewms.entities.SaleOrder;
+import com.eewms.entities.SaleOrderDetail;
+import com.eewms.entities.User;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class SaleOrderMapper {
 
-    // Tạo SaleOrderDetail từ DTO + Product
     public static SaleOrderDetail toOrderDetail(SaleOrderDetailDTO dto, Product product) {
+        if (dto == null || product == null) return null;
+
         SaleOrderDetail detail = new SaleOrderDetail();
         detail.setProduct(product);
         detail.setOrderedQuantity(dto.getOrderedQuantity());
@@ -16,42 +23,55 @@ public class SaleOrderMapper {
         return detail;
     }
 
-    // Tạo DTO sản phẩm từ chi tiết đơn hàng
     public static SaleOrderDetailDTO toDetailDTO(SaleOrderDetail d) {
+        if (d == null) return null;
+
+        Product p = d.getProduct();
+        Combo combo = d.getCombo();
+
         return SaleOrderDetailDTO.builder()
-                .productId(d.getProduct().getId())
-                .productCode(d.getProduct().getCode())
-                .productName(d.getProduct().getName())
-                .price(d.getPrice())                  // QUAN TRỌNG: map đúng
-                .orderedQuantity(d.getOrderedQuantity())  // QUAN TRỌNG: map đúng
-                .availableQuantity(d.getProduct().getQuantity())
-                .fromCombo(d.getCombo() != null)          // nếu có quan hệ detail -> combo
-                .comboId(d.getCombo() != null ? d.getCombo().getId() : null)
-                .comboName(d.getCombo() != null ? d.getCombo().getName() : null)
+                .productId(p != null ? p.getId() : null)
+                .productCode(p != null ? p.getCode() : null)
+                .productName(p != null ? p.getName() : null)
+                .price(d.getPrice())
+                .orderedQuantity(d.getOrderedQuantity())
+                .availableQuantity(p != null ? p.getQuantity() : null)
+                .fromCombo(combo != null)
+                .comboId(combo != null ? combo.getId() : null)
+                .comboName(combo != null ? combo.getName() : null)
                 .build();
     }
 
-
-    // Map SaleOrder → SaleOrderResponseDTO
+    /** Map SaleOrder → SaleOrderResponseDTO */
     public static SaleOrderResponseDTO toOrderResponseDTO(SaleOrder order) {
-        List<SaleOrderDetailDTO> detailsDTOs = order.getDetails().stream()
-                .map(SaleOrderMapper::toDetailDTO)
-                .collect(Collectors.toList());
+        if (order == null) return null;
+
+        List<SaleOrderDetailDTO> detailsDTOs =
+                order.getDetails() == null ? List.of()
+                        : order.getDetails().stream()
+                        .filter(Objects::nonNull)
+                        .map(SaleOrderMapper::toDetailDTO)
+                        .collect(Collectors.toList());
+
+        Customer c = order.getCustomer();
+        User u = order.getCreatedByUser();
 
         return SaleOrderResponseDTO.builder()
-                .orderId(order.getSoId())
+                .soId(order.getSoId())
+                .orderId(order.getSoId()) // <-- đảm bảo không null ở nơi còn dùng orderId
                 .orderCode(order.getSoCode())
-                .customerName(order.getCustomer().getFullName())
+                .customerName(c != null ? c.getFullName() : null)
+                .customerPhone(c != null ? c.getPhone() : null) // đã thêm cột Phone trước đó
                 .description(order.getDescription())
                 .status(order.getStatus())
                 .orderDate(order.getOrderDate())
                 .totalAmount(order.getTotalAmount())
-                .createdBy(order.getCreatedByUser().getFullName())
-                .details(detailsDTOs)
+                .createdBy(u != null
+                        ? (u.getFullName() != null ? u.getFullName() : u.getUsername())
+                        : null)
                 .paymentStatus(order.getPaymentStatus())
                 .paymentNote(order.getPaymentNote())
+                .details(detailsDTOs)
                 .build();
     }
 }
-
-

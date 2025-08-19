@@ -1,5 +1,6 @@
 package com.eewms.services.impl;
 
+import com.eewms.dto.GoodIssueDetailDTO;
 import com.eewms.dto.GoodIssueMapper;
 import com.eewms.dto.GoodIssueNoteDTO;
 import com.eewms.entities.*;
@@ -10,12 +11,17 @@ import com.eewms.repository.SaleOrderRepository;
 import com.eewms.repository.UserRepository;
 import com.eewms.services.IGoodIssueService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GoodIssueServiceImpl implements IGoodIssueService {
@@ -24,61 +30,160 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final SaleOrderRepository saleOrderRepository;
-    private final DebtRepository debtRepository; // tra công nợ
+    private final DebtRepository debtRepository;
+
+    /* ============ NEW ============ */
+    /** Chuẩn bị dữ liệu xem trước phiếu xuất từ đơn bán (không lưu DB). */
+    @Override
+    public GoodIssueNoteDTO prepareFromSaleOrder(SaleOrder order) {
+        if (order == null) throw new RuntimeException("Không tìm thấy đơn hàng để lập phiếu xuất.");
+        GoodIssueNoteDTO dto = new GoodIssueNoteDTO();
+        dto.setSaleOrderId(order.getSoId() != null ? order.getSoId().longValue() : null);
+        dto.setSaleOrderCode(order.getSoCode());
+        dto.setCustomerName(order.getCustomer() != null ? order.getCustomer().getFullName() : null);
+        dto.setIssueDate(LocalDateTime.now());
+        dto.setDescription(order.getDescription());
+
+        List<GoodIssueDetailDTO> items = new ArrayList<>();
+        BigDecimal total = BigDecimal.ZERO;
+        if (order.getDetails() != null) {
+            for (SaleOrderDetail d : order.getDetails()) {
+                BigDecimal price = Optional.ofNullable(d.getPrice()).orElse(BigDecimal.ZERO);
+                int qty = Optional.ofNullable(d.getOrderedQuantity()).orElse(0);
+                BigDecimal line = price.multiply(BigDecimal.valueOf(qty));
+                items.add(GoodIssueDetailDTO.builder()
+                        .productName(d.getProduct() != null ? d.getProduct().getName() : null)
+                        .price(price)
+                        .quantity(qty)
+                        .total(line)
+                        .build());
+                total = total.add(line);
+            }
+        }
+        dto.setDetails(items);
+        dto.setTotalAmount(total);
+        return dto;
+    }
+    /* ============ /NEW ============ */
 
     @Override
+    @Transactional
     public GoodIssueNote createFromOrder(SaleOrder order, String username) {
-        // Tìm user đang đăng nhập
-        User currentUser = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+        if (order == null) throw new RuntimeException("Thiếu entity đơn bán (order=null).");
+        if (order.getSoId() == null) throw new RuntimeException("Thiếu khóa đơn bán (soId=null).");
 
-        // Tạo phiếu xuất kho
-        GoodIssueNote note = new GoodIssueNote();
+        final Integer soId = order.getSoId();
+
+        // Re-load order (managed & fetch details)
+        final SaleOrder managedOrder = saleOrderRepository.findById(soId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn bán: soId=" + soId));
+
+        // Validate dữ liệu "bắt buộc" (không kiểm tồn ở đây để cho phép xuất một phần)
+        baseValidate(managedOrder);
+
+        // Chặn lập trùng phiếu xuất cho cùng đơn (nếu business của bạn cấm)
+        if (goodIssueRepository.existsBySaleOrder_SoId(soId)) {
+            throw new RuntimeException("Đơn này đã được lập phiếu xuất trước đó.");
+        }
+
+        // Người tạo
+        final User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng: " + username));
+
+        final GoodIssueNote note = new GoodIssueNote();
         note.setGinCode(generateGINCode());
-        note.setCustomer(order.getCustomer());
-        note.setDescription("Phiếu xuất từ đơn hàng #" + order.getSoCode());
+        note.setCustomer(managedOrder.getCustomer());
+        note.setDescription("Phiếu xuất từ đơn hàng #" + managedOrder.getSoCode());
         note.setIssueDate(LocalDateTime.now());
         note.setCreatedBy(currentUser);
-        note.setSaleOrder(order); // Gán đơn hàng gốc
+        note.setSaleOrder(managedOrder);
 
-        // Tạo chi tiết phiếu xuất và trừ kho
-        List<GoodIssueDetail> details = order.getDetails().stream().map(orderDetail -> {
-            Product product = orderDetail.getProduct();
-            int orderedQty = orderDetail.getOrderedQuantity();
+        final List<GoodIssueDetail> details = new ArrayList<>();
+        BigDecimal total = BigDecimal.ZERO;
 
-            if (product.getQuantity() < orderedQty) {
-                throw new RuntimeException("Không đủ hàng trong kho cho sản phẩm: " + product.getName());
+        boolean isPartial = false;      // có xuất thiếu so với đặt không?
+        boolean hasAnyExport = false;   // có xuất được dòng nào không?
+
+        for (SaleOrderDetail od : managedOrder.getDetails()) {
+            final Product p = od.getProduct();
+            final int orderedQty = Optional.ofNullable(od.getOrderedQuantity()).orElse(0);
+            final int stock = Optional.ofNullable(p.getQuantity()).orElse(0);
+            if (orderedQty <= 0) continue;
+
+            // Cho phép xuất một phần
+            final int exportQty = Math.min(orderedQty, stock);
+
+            if (exportQty <= 0) {
+                isPartial = true; // dòng này không xuất được
+                continue;
+            }
+            if (exportQty < orderedQty) isPartial = true;
+
+            // Trừ kho theo số thực xuất
+            int updated = productRepository.decrementStock(p.getId(), exportQty);
+            if (updated == 0) {
+                throw new RuntimeException("Không đủ hàng cho sản phẩm: " + p.getName());
             }
 
-            // Trừ kho
-            product.setQuantity(product.getQuantity() - orderedQty);
-            productRepository.save(product);
+            final BigDecimal price = Optional.ofNullable(od.getPrice()).orElse(BigDecimal.ZERO);
 
-            // Tạo chi tiết xuất kho
-            GoodIssueDetail detail = GoodIssueDetail.builder()
-                    .product(product)
-                    .price(orderDetail.getPrice())
-                    .quantity(orderedQty)
+            GoodIssueDetail d = GoodIssueDetail.builder()
+                    .product(p)
+                    .price(price)
+                    .quantity(exportQty)
                     .build();
-            detail.setGoodIssueNote(note); // Gán ngược về phiếu xuất
-            return detail;
-        }).toList();
+            d.setGoodIssueNote(note);
+            details.add(d);
 
-        // Tính tổng tiền
-        BigDecimal total = details.stream()
-                .map(d -> d.getPrice().multiply(BigDecimal.valueOf(d.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            total = total.add(price.multiply(BigDecimal.valueOf(exportQty)));
+            hasAnyExport = true;
+        }
+
+        if (!hasAnyExport) {
+            throw new RuntimeException("Không có tồn kho để xuất cho bất kỳ sản phẩm nào trong đơn.");
+        }
 
         note.setDetails(details);
         note.setTotalAmount(total);
 
-        order.setStatus(SaleOrder.SaleOrderStatus.DELIVERIED);
-        saleOrderRepository.save(order);
+        // Cập nhật trạng thái đơn theo kết quả xuất
+        managedOrder.setStatus(isPartial
+                ? SaleOrder.SaleOrderStatus.PARTLY_DELIVERED   // <-- SỬA TÊN ENUM Ở ĐÂY NẾU DỰ ÁN CỦA BẠN KHÁC
+                : SaleOrder.SaleOrderStatus.DELIVERIED);
+        saleOrderRepository.save(managedOrder);
 
-        productRepository.saveAll(details.stream().map(GoodIssueDetail::getProduct).toList()); // lưu lại tồn kho
-        goodIssueRepository.save(note);
+        try {
+            GoodIssueNote saved = goodIssueRepository.save(note);
+            goodIssueRepository.flush();
+            log.info("[GIN][create] soId={} ginCode={} total={} status={}",
+                    soId, saved.getGinCode(), saved.getTotalAmount(), managedOrder.getStatus());
+            return saved;
+        } catch (DataIntegrityViolationException dive) {
+            throw new RuntimeException("Lưu phiếu xuất thất bại: "
+                    + (dive.getMostSpecificCause() != null ? dive.getMostSpecificCause().getMessage()
+                    : "Vi phạm ràng buộc dữ liệu"));
+        } catch (Exception ex) {
+            throw new RuntimeException("Lỗi hệ thống khi lưu phiếu xuất: "
+                    + (ex.getMessage() != null ? ex.getMessage() : "Xem log server"));
+        }
+    }
 
-        return note;
+    /** Validate bắt buộc cho đơn: có KH và chi tiết, số lượng đặt > 0 */
+    private void baseValidate(SaleOrder so) {
+        if (so.getCustomer() == null) {
+            throw new RuntimeException("Đơn hàng chưa chọn khách hàng.");
+        }
+        if (so.getDetails() == null || so.getDetails().isEmpty()) {
+            throw new RuntimeException("Đơn hàng không có chi tiết.");
+        }
+        int i = 0;
+        for (SaleOrderDetail d : so.getDetails()) {
+            i++;
+            if (d.getProduct() == null)             throw new RuntimeException("Dòng " + i + " thiếu product.");
+            if (d.getProduct().getId() == null)     throw new RuntimeException("Dòng " + i + " thiếu productId.");
+            if (d.getOrderedQuantity() == null || d.getOrderedQuantity() <= 0)
+                throw new RuntimeException("Dòng " + i + " số lượng không hợp lệ.");
+        }
     }
 
     @Override
@@ -86,46 +191,33 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
         GoodIssueNote gin = goodIssueRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu xuất kho"));
         GoodIssueNoteDTO dto = GoodIssueMapper.toNoteDTO(gin);
-
-        // ==== Trạng thái thanh toán theo ĐƠN BÁN (SALES_INVOICE) ====
         dto.setStatus(resolvePaymentStatus(gin));
-
-        // ==== Gán thông tin công nợ cho UI (debtId, remainingAmount, hasDebt) ====
         fillDebtInfo(dto, gin);
-
         return dto;
     }
 
     @Override
     public List<GoodIssueNoteDTO> getAllNotes() {
         List<GoodIssueNote> notes = goodIssueRepository.findAll();
-        return notes.stream()
-                .map(gin -> {
-                    GoodIssueNoteDTO dto = GoodIssueMapper.toNoteDTO(gin);
-                    // Trạng thái thanh toán
-                    dto.setStatus(resolvePaymentStatus(gin));
-                    // Thông tin công nợ
-                    fillDebtInfo(dto, gin);
-                    return dto;
-                })
-                .toList();
+        List<GoodIssueNoteDTO> out = new ArrayList<>(notes.size());
+        for (GoodIssueNote gin : notes) {
+            GoodIssueNoteDTO dto = GoodIssueMapper.toNoteDTO(gin);
+            dto.setStatus(resolvePaymentStatus(gin));
+            fillDebtInfo(dto, gin);
+            out.add(dto);
+        }
+        return out;
     }
 
     private String generateGINCode() {
-        long count = goodIssueRepository.count() + 1;
-        return String.format("GIN%05d", count);
+        return "GIN" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmssSSS"));
     }
 
-    // ===== Xác định trạng thái thanh toán =====
     private String resolvePaymentStatus(GoodIssueNote gin) {
-        // Ưu tiên liên kết qua đơn bán: documentType = SALES_INVOICE, documentId = saleOrder.id
-        Long docId = (gin.getSaleOrder() != null) ? gin.getSaleOrder().getId() : null;
-
-        if (docId == null) {
-            // Không có đơn bán => chưa cấu hình công nợ cho GIN này
-            return "Chưa thanh toán";
-        }
-
+        Long docId = (gin.getSaleOrder() != null && gin.getSaleOrder().getSoId() != null)
+                ? gin.getSaleOrder().getSoId().longValue()
+                : null;
+        if (docId == null) return "Chưa thanh toán";
         return getPaymentStatusForDocument(Debt.DocumentType.SALES_INVOICE, docId);
     }
 
@@ -136,13 +228,12 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
                 .orElse("Chưa thanh toán");
     }
 
-    // ===== Gán dữ liệu công nợ cho DTO (cột "Công nợ") =====
     private void fillDebtInfo(GoodIssueNoteDTO dto, GoodIssueNote gin) {
-        // Lấy id đơn bán để tra công nợ
-        Long saleOrderId = (gin.getSaleOrder() != null) ? gin.getSaleOrder().getId() : null;
+        Long saleOrderId = (gin.getSaleOrder() != null && gin.getSaleOrder().getSoId() != null)
+                ? gin.getSaleOrder().getSoId().longValue()
+                : null;
 
         if (saleOrderId == null) {
-            // Không có đơn bán → không có thông tin công nợ
             dto.setDebtId(null);
             dto.setRemainingAmount(BigDecimal.ZERO);
             dto.setHasDebt(false);
@@ -153,12 +244,10 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
                 .ifPresentOrElse(debt -> {
                     BigDecimal remaining = debt.getTotalAmount().subtract(debt.getPaidAmount());
                     if (remaining.compareTo(BigDecimal.ZERO) < 0) remaining = BigDecimal.ZERO;
-
                     dto.setDebtId(debt.getId());
                     dto.setRemainingAmount(remaining);
-                    dto.setHasDebt(remaining.compareTo(BigDecimal.ZERO) > 0); // còn nợ thì true
+                    dto.setHasDebt(remaining.compareTo(BigDecimal.ZERO) > 0);
                 }, () -> {
-                    // Chưa có record Debt → có thể là đơn bán công nợ nhưng chưa sinh công nợ
                     dto.setDebtId(null);
                     dto.setRemainingAmount(gin.getTotalAmount() != null ? gin.getTotalAmount() : BigDecimal.ZERO);
                     dto.setHasDebt(false);

@@ -12,9 +12,13 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class SaleOrderResponseDTO {
+    private Integer soId;
     private Integer orderId;
     private String orderCode;
+
     private String customerName;
+    private String customerPhone;   // <<< NEW: Số điện thoại khách hàng
+
     private String description;
     private SaleOrder.SaleOrderStatus status;
     private LocalDateTime orderDate;
@@ -25,9 +29,8 @@ public class SaleOrderResponseDTO {
     private boolean alreadyExported;
 
     // Thông tin thanh toán
-    private String qrCodeUrl;           // URL ảnh QR từ PayOS
-    private String paymentLink;         // Link thanh toán từ PayOS
+    private String qrCodeUrl;            // URL ảnh QR từ PayOS
+    private String paymentLink;          // Link thanh toán từ PayOS
     private SaleOrder.PaymentStatus paymentStatus;
     private String paymentNote;          // Nội dung CK
-
 }

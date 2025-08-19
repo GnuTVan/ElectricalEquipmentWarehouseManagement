@@ -3,16 +3,10 @@ package com.eewms.controller;
 import com.eewms.dto.GoodIssueNoteDTO;
 import com.eewms.entities.GoodIssueNote;
 import com.eewms.entities.SaleOrder;
-import com.eewms.entities.User;
 import com.eewms.services.IGoodIssueService;
 import com.eewms.services.ISaleOrderService;
-import com.eewms.repository.GoodIssueNoteRepository;
-import com.eewms.repository.UserRepository;
-
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -25,67 +19,102 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GoodIssueController {
 
-    private final ISaleOrderService saleOrderService;
     private final IGoodIssueService goodIssueService;
+    private final ISaleOrderService saleOrderService;
 
-    // ✅ 1. Danh sách phiếu xuất
+    /** Danh sách phiếu xuất */
     @GetMapping
     public String listGoodIssues(Model model) {
         List<GoodIssueNoteDTO> list = goodIssueService.getAllNotes();
         model.addAttribute("good_issues", list);
+        // view nằm trực tiếp dưới templates/
         return "good-issue-list";
     }
 
-    // ✅ 2. Form tạo phiếu xuất từ đơn hàng
-    @GetMapping("/create-from-order/{orderId}")
-    public String showCreateForm(@PathVariable("orderId") Integer orderId,
-                                 Model model, RedirectAttributes ra) {
-        var dto = saleOrderService.getById(orderId);
+    /** Xem chi tiết phiếu xuất */
+    @GetMapping("/view/{id}")
+    public String view(@PathVariable Long id, Model model, RedirectAttributes ra) {
+        GoodIssueNoteDTO dto = goodIssueService.getById(id);
         if (dto == null) {
+            ra.addFlashAttribute("error", "Không tìm thấy phiếu xuất.");
+            return "redirect:/good-issue";
+        }
+        model.addAttribute("note", dto);
+        model.addAttribute("items", dto.getDetails());
+        model.addAttribute("showPrint", true); // chỉ hiện nút In PDF khi đã lưu
+        // view nằm trực tiếp dưới templates/
+        return "good-issue-detail";
+    }
+
+    /** Trang xem trước phiếu xuất (chưa lưu) khi bấm Tạo phiếu xuất từ đơn - bản cũ theo 'order' */
+    @GetMapping("/create-from-order/{orderId}")
+    public String previewFromOrder(@PathVariable Integer orderId,
+                                   Model model,
+                                   RedirectAttributes ra) {
+        SaleOrder order = saleOrderService.getOrderEntityById(orderId);
+        if (order == null) {
             ra.addFlashAttribute("error", "Không tìm thấy đơn hàng.");
             return "redirect:/sale-orders";
         }
-        if (dto.isHasInsufficientStock()) {
-            ra.addFlashAttribute("error", "Đơn hàng đang thiếu hàng. Không thể tạo phiếu xuất.");
-            return "redirect:/sale-orders/" + orderId + "/edit";
-        }
-        if (dto.getStatus() != SaleOrder.SaleOrderStatus.PENDING) {
-            ra.addFlashAttribute("error", "Đơn không còn ở trạng thái PENDING.");
-            return "redirect:/sale-orders/" + orderId + "/edit";
-        }
-
-        SaleOrder saleOrder = saleOrderService.getOrderEntityById(orderId);
-        model.addAttribute("saleOrder", saleOrder);
+        model.addAttribute("saleOrder", order);
+        model.addAttribute("showPrint", false); // ẩn nút In PDF ở màn xem trước
+        // view nằm trực tiếp dưới templates/
         return "good-issue-form";
     }
 
-
-    // ✅ 3. Submit tạo phiếu xuất
-    @PostMapping("/create")
+    /** Lưu phiếu xuất thật sự từ đơn hàng (từ màn xem trước) - bản cũ theo 'order' */
+    @PostMapping("/create-from-order")
     public String createGoodIssue(@RequestParam("orderId") Integer orderId,
-                                  HttpServletRequest request,
                                   RedirectAttributes ra) {
-        try {
-            String username = request.getUserPrincipal().getName();
-            SaleOrder order = saleOrderService.getOrderEntityById(orderId);
-            var gin = goodIssueService.createFromOrder(order, username); // service sẽ set DELIVERIED
-
-            ra.addFlashAttribute("success", "✅ Tạo phiếu xuất kho thành công. Mã phiếu: " + gin.getGinCode());
-            return "redirect:/good-issue"; // 1 route duy nhất
-        } catch (Exception e) {
-            ra.addFlashAttribute("error", "Lỗi khi tạo phiếu xuất: " + e.getMessage());
-            return "redirect:/sale-orders/" + orderId + "/edit";
+        SaleOrder order = saleOrderService.getOrderEntityById(orderId);
+        if (order == null) {
+            ra.addFlashAttribute("error", "Không tìm thấy đơn hàng.");
+            return "redirect:/sale-orders";
         }
+
+        String currentUsername =
+                SecurityContextHolder.getContext().getAuthentication().getName();
+        GoodIssueNote gin = goodIssueService.createFromOrder(order, currentUsername);
+
+        ra.addFlashAttribute("success", "Đã lưu phiếu xuất: " + gin.getGinCode());
+        // LƯU Ý: dùng đúng getter id của entity
+        return "redirect:/good-issue/view/" + gin.getGinId();
     }
 
+    // ===========================
+    //  BỔ SUNG ENDPOINT THEO YÊU CẦU
+    // ===========================
 
-    @GetMapping("/view/{id}")
-    public String view(@PathVariable Long id, Model model) {
-        GoodIssueNoteDTO dto = goodIssueService.getById(id);
+    /** Trang xem trước phiếu xuất khi bấm Tạo phiếu xuất từ đơn bán hàng (đường dẫn 'create-from-sale') */
+    @GetMapping("/create-from-sale/{orderId}")
+    public String previewFromSale(@PathVariable("orderId") Integer orderId,
+                                  Model model,
+                                  RedirectAttributes ra) {
+        SaleOrder order = saleOrderService.getOrderEntityById(orderId);
+        if (order == null) {
+            ra.addFlashAttribute("error", "Không tìm thấy đơn hàng.");
+            return "redirect:/sale-orders";
+        }
+        model.addAttribute("saleOrder", order);
+        model.addAttribute("showPrint", false);
+        return "good-issue-form";
+    }
 
-        model.addAttribute("note", dto);
-        model.addAttribute("items", dto.getDetails());
+    /** Lưu phiếu xuất tạo từ đơn bán hàng (đường dẫn 'create-from-sale') */
+    @PostMapping("/create-from-sale")
+    public String saveFromSale(@RequestParam("orderId") Integer orderId,
+                               RedirectAttributes ra) {
+        SaleOrder order = saleOrderService.getOrderEntityById(orderId);
+        if (order == null) {
+            ra.addFlashAttribute("error", "Không tìm thấy đơn hàng.");
+            return "redirect:/sale-orders";
+        }
 
-        return "good-issue-detail";
+        String currentUsername =
+                SecurityContextHolder.getContext().getAuthentication().getName();
+        GoodIssueNote gin = goodIssueService.createFromOrder(order, currentUsername);
+
+        ra.addFlashAttribute("success", "Đã lưu phiếu xuất: " + gin.getGinCode());
+        return "redirect:/good-issue/view/" + gin.getGinId();
     }
 }

@@ -11,25 +11,48 @@
     <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
         <!-- Header -->
         <div th:replace="~{fragments/header :: header}"></div>
+
+        <!-- ✅ Toast success -->
+        <div th:if="${toastSuccess}" id="toast-success"
+             class="fixed top-4 right-4 z-50 max-w-sm w-[22rem] rounded-md border border-emerald-200 bg-emerald-50 text-emerald-900 shadow">
+            <div class="px-4 py-3 flex items-start gap-3">
+                <div class="mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                         stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <div class="flex-1 text-sm" th:text="${toastSuccess}">Đã lưu đơn thành công.</div>
+                <button type="button" class="text-emerald-700/70 hover:text-emerald-900"
+                        onclick="(function(el){ if(el) el.remove(); })(document.getElementById('toast-success'))">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd"
+                              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                              clip-rule="evenodd"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
         <div class="flex justify-between items-center mb-4 px-4 py-4">
+            <!-- Flash Messages -->
+            <div th:if="${success}" id="alertSuccess" class="mb-4 bg-green-100 text-green-800 px-4 py-2 rounded">
+                <p th:text="${success}"></p>
+            </div>
 
-        <!-- Flash Messages -->
-        <div th:if="${success}" id="alertSuccess" class="mb-4 bg-green-100 text-green-800 px-4 py-2 rounded">
-            <p th:text="${success}"></p>
-        </div>
+            <div th:if="${error}" class="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">
+                <i class="ri-error-warning-line mr-1"></i> <span th:text="${error}"></span>
+            </div>
 
-        <div th:if="${error}" class="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">
-            <i class="ri-error-warning-line mr-1"></i> <span th:text="${error}"></span>
-        </div>
+            <div th:if="${warning}" id="alertWarning"
+                 class="bg-yellow-100 text-yellow-800 px-4 py-2 rounded mb-4 border-l-4 border-yellow-500 shadow">
+                <i class="ri-alert-line mr-1"></i> <span th:text="${warning}"></span>
+            </div>
 
-        <div th:if="${warning}" id="alertWarning" class="bg-yellow-100 text-yellow-800 px-4 py-2 rounded mb-4 border-l-4 border-yellow-500 shadow">
-            <i class="ri-alert-line mr-1"></i> <span th:text="${warning}"></span>
+            <div th:if="${info}" class="bg-blue-100 text-blue-800 p-3 rounded mb-3">
+                <i class="ri-information-line mr-1"></i> <span th:text="${info}"></span>
+            </div>
         </div>
-
-        <div th:if="${info}" class="bg-blue-100 text-blue-800 p-3 rounded mb-3">
-            <i class="ri-information-line mr-1"></i> <span th:text="${info}"></span>
-        </div>
-</div>
 
         <!-- Page Title + Button -->
         <div class="flex justify-between items-center mb-4 px-4 py-2">
@@ -48,6 +71,8 @@
                     <th class="px-4 py-3 font-semibold">STT</th>
                     <th class="px-4 py-3 font-semibold">Mã đơn</th>
                     <th class="px-4 py-3 font-semibold">Khách hàng</th>
+                    <!-- ✅ Thêm lại cột Số điện thoại -->
+                    <th class="px-4 py-3 font-semibold">Số điện thoại</th>
                     <th class="px-4 py-3 font-semibold">Ngày tạo</th>
                     <th class="px-4 py-3 font-semibold">Người tạo</th>
                     <th class="px-4 py-3 font-semibold">Tổng tiền</th>
@@ -60,9 +85,12 @@
                     <td class="px-4 py-2" th:text="${iStat.index + 1}"></td>
                     <td class="px-4 py-2 font-medium text-blue-600" th:text="${order.orderCode}"></td>
                     <td class="px-4 py-2" th:text="${order.customerName}"></td>
+                    <!-- ✅ Dữ liệu số điện thoại -->
+                    <td class="px-4 py-2" th:text="${order.customerPhone}"></td>
                     <td class="px-4 py-2" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
                     <td class="px-4 py-2" th:text="${order.createdBy}"></td>
-                    <td class="px-4 py-2" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+                    <td class="px-4 py-2"
+                        th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
                     <td class="px-4 py-2 w-36 text-center">
                         <span class="inline-block w-full truncate px-2 py-1 rounded text-xs font-medium"
                               th:classappend="
@@ -75,20 +103,33 @@
                     </td>
                     <td class="px-4 py-2 text-center">
                         <div class="flex justify-center items-center space-x-2">
-                            <!-- Nút "Sửa" nếu trạng thái không phải "COMPLETED" -->
-                            <a th:if="${order.status.name() != 'COMPLETED'}"
-                               th:href="@{/sale-orders/{id}/edit(id=${order.orderId})}"
+                            <!-- PENDING: Sửa + Xóa -->
+                            <a th:if="${order.status.name() == 'PENDING'}"
+                               th:href="@{/sale-orders/{id}/edit(id=${order.soId})}"
                                class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded shadow">
                                 <i class="ri-edit-line text-base"></i>
                                 Sửa
                             </a>
 
-                            <!-- Nút "Xem chi tiết" nếu trạng thái là "COMPLETED" -->
-                            <a th:if="${order.status.name() == 'COMPLETED'}"
-                               th:href="@{/sale-orders/{id}/view(id=${order.orderId})}"
-                               class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm rounded shadow">
+                            <form th:if="${order.status.name() == 'PENDING'}"
+                                  th:action="@{/sale-orders/{id}/delete(id=${order.soId})}"
+                                  method="post"
+                                  onsubmit="return confirm('Bạn có chắc muốn xóa đơn này?');"
+                                  class="inline-flex">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <button type="submit"
+                                        class="inline-flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm rounded shadow">
+                                    <i class="ri-delete-bin-line text-base"></i>
+                                    Xóa
+                                </button>
+                            </form>
+
+                            <!-- DELIVERIED / COMPLETED: Xem đơn -->
+                            <a th:if="${order.status.name() != 'PENDING'}"
+                               th:href="@{/sale-orders/{id}/view(id=${order.soId})}"
+                               class="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-500 hover:bg-slate-600 text-white text-sm rounded shadow">
                                 <i class="ri-eye-line text-base"></i>
-                                Xem chi tiết
+                                Xem đơn
                             </a>
                         </div>
                     </td>
@@ -99,22 +140,19 @@
     </main>
 </div>
 
-<!-- Footer -->
-<div th:replace="~{fragments/footer :: footer}"></div>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
 
-<!-- Auto-hide flash messages -->
+<!-- Auto-hide -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const successAlert = document.getElementById('alertSuccess');
         const warningAlert = document.getElementById('alertWarning');
-
         [successAlert, warningAlert].forEach(alert => {
-            if (alert) {
-                setTimeout(() => {
-                    alert.classList.add('hidden');
-                }, 3000);
-            }
+            if (alert) setTimeout(() => alert.classList.add('hidden'), 3000);
         });
+
+        const toast = document.getElementById('toast-success');
+        if (toast) setTimeout(() => toast.remove(), 3500);
     });
 </script>
 </body>

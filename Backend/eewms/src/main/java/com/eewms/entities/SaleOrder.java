@@ -53,16 +53,18 @@ public class SaleOrder {
 
     @Getter
     public enum SaleOrderStatus {
-        PENDING("Đang chuẩn bị"),
-        PROCESSING("Đang xử lý"),       //không dùng nữa
-        DELIVERIED("Đang giao hàng"),
-        COMPLETED("Hoàn thành");
+        // ===== Trạng thái dùng hiện tại =====
+        PENDING("Chờ lấy hàng"),
+        PARTLY_DELIVERED("Đã giao một phần"),
+        DELIVERIED("Hoàn thành"),
+        CANCELLED("Hủy"),
+
+        // ===== Giữ lại cho tương thích cũ (không dùng nữa) =====
+        PROCESSING("Đang xử lý"),     // legacy
+        COMPLETED("Hoàn thành");      // legacy
 
         private final String label;
-
-        SaleOrderStatus(String label) {
-            this.label = label;
-        }
+        SaleOrderStatus(String label) { this.label = label; }
     }
 
     // Danh sách combo

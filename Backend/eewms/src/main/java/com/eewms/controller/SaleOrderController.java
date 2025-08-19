@@ -1,31 +1,28 @@
 package com.eewms.controller;
 
 import com.eewms.constant.ItemOrigin;
-import com.eewms.dto.SaleOrderDetailDTO;
 import com.eewms.dto.SaleOrderMapper;
 import com.eewms.dto.SaleOrderRequestDTO;
 import com.eewms.dto.SaleOrderResponseDTO;
 import com.eewms.entities.SaleOrder;
-import com.eewms.entities.SaleOrderCombo;
 import com.eewms.repository.ComboRepository;
 import com.eewms.repository.SaleOrderComboRepository;
-import com.eewms.repository.purchaseRequest.PurchaseRequestRepository; // ✅ đúng package bạn đưa
-import com.eewms.services.*;
+import com.eewms.repository.purchaseRequest.PurchaseRequestRepository;
+import com.eewms.services.IComboService;
+import com.eewms.services.ICustomerService;
+import com.eewms.services.IGoodIssueService;
+import com.eewms.services.IProductServices;
+import com.eewms.services.ISaleOrderService;
 import com.eewms.utils.ComboJsonHelper;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -40,14 +37,9 @@ public class SaleOrderController {
     private final IComboService comboService;
     private final ComboJsonHelper comboJsonHelper;
 
-    // ✅ thêm repo PR để check tồn tại
     private final SaleOrderComboRepository saleOrderComboRepository;
     private final PurchaseRequestRepository prRepo;
     private final ComboRepository cbRepo;
-    private final IPayOsService payOsService;
-
-    @Value("${payos.enabled:false}")
-    private boolean payOsEnabled;
 
     // ========== LIST ==========
     @GetMapping
@@ -70,190 +62,198 @@ public class SaleOrderController {
     // ========== CREATE ==========
     @GetMapping("/create")
     public String showCreateForm(Model model) {
-        model.addAttribute("saleOrderForm", new SaleOrderRequestDTO());
+        SaleOrderRequestDTO form = SaleOrderRequestDTO.builder()
+                .soCode(saleOrderService.generateNextCode())
+                .status(SaleOrder.SaleOrderStatus.PENDING)
+                .build();
+
+        model.addAttribute("saleOrderForm", form);
         model.addAttribute("customers", customerService.findAll());
         model.addAttribute("products", productService.getAllActiveProducts());
         model.addAttribute("combos", comboService.getAllActive());
+        model.addAttribute("orderStatuses", SaleOrder.SaleOrderStatus.values());
+
         return "sale-order/sale-order-form";
     }
 
+    // API tiện ích: lấy mã tiếp theo cho UI
+    @GetMapping("/next-code")
+    @ResponseBody
+    public Map<String, String> nextCode() {
+        return Map.of("code", saleOrderService.generateNextCode());
+    }
+
+    /**
+     * Tạo đơn hàng.
+     * - Nếu action=SELL → chuyển sang trang *xem trước phiếu xuất* (chưa lưu).
+     * - Nếu action=SAVE → quay về danh sách đơn.
+     */
     @PostMapping("/create")
-    public String createOrder(@ModelAttribute("saleOrderForm") @Valid SaleOrderRequestDTO dto,
-                              BindingResult result,
+    public String createOrder(@Valid @ModelAttribute("saleOrderForm") SaleOrderRequestDTO dto,
+                              org.springframework.validation.BindingResult result,
+                              @RequestParam(name = "action", defaultValue = "SAVE") String action,
                               Model model,
                               RedirectAttributes ra) {
+
+        if (dto.getSoCode() == null || dto.getSoCode().isBlank()) {
+            dto.setSoCode(saleOrderService.generateNextCode());
+        }
+        if (dto.getStatus() == null) {
+            dto.setStatus(SaleOrder.SaleOrderStatus.PENDING);
+        }
+
         if (result.hasErrors()) {
             model.addAttribute("saleOrderForm", dto);
             model.addAttribute("customers", customerService.findAll());
             model.addAttribute("products", productService.getAllActiveProducts());
+            model.addAttribute("combos", comboService.getAllActive());
+            model.addAttribute("orderStatuses", SaleOrder.SaleOrderStatus.values());
             return "sale-order/sale-order-form";
         }
-        try {
-            String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
-            SaleOrderResponseDTO createdOrder = saleOrderService.createOrder(dto, currentUsername);
 
-            if (createdOrder.getDescription() != null
-                    && createdOrder.getDescription().toLowerCase().contains("thiếu hàng")) {
-                ra.addFlashAttribute("warning", "Đơn hàng đã tạo, tuy nhiên có sản phẩm thiếu hàng. Vui lòng nhập thêm để hoàn thành.");
-            } else {
-                ra.addFlashAttribute("success", "Tạo đơn hàng thành công. Mã đơn: " + createdOrder.getOrderCode());
+        try {
+            final String currentUsername =
+                    SecurityContextHolder.getContext().getAuthentication().getName();
+
+            // Tạo đơn
+            SaleOrderResponseDTO created = saleOrderService.createOrder(dto, currentUsername);
+
+            if ("SELL".equalsIgnoreCase(action)) {
+                Integer soId = created.getSoId(); // yêu cầu mapper map đúng soId
+                if (soId == null) {
+                    ra.addFlashAttribute("error",
+                            "Đã tạo đơn nhưng không lấy được ID đơn hàng. " +
+                                    "Vui lòng kiểm tra SaleOrderMapper.toOrderResponseDTO có map trường soId.");
+                    return "redirect:/sale-orders";
+                }
+                ra.addFlashAttribute("success", "Đã tạo đơn. Vui lòng kiểm tra và Lưu phiếu xuất.");
+                return "redirect:/good-issue/create-from-order/" + soId;
             }
+
+            ra.addFlashAttribute("success", "Tạo đơn hàng thành công. Mã: " + created.getOrderCode());
+            return "redirect:/sale-orders";
+
         } catch (Exception ex) {
-            ra.addFlashAttribute("error", "Lỗi khi tạo đơn hàng: " + ex.getMessage());
+            ra.addFlashAttribute("error",
+                    "Lỗi khi tạo đơn hàng: " + (ex.getMessage() == null ? "Xem log server" : ex.getMessage()));
+            return "redirect:/sale-orders";
         }
-        return "redirect:/sale-orders";
     }
 
-    // ========== EDIT (hợp nhất Status + Items) ==========
+    // ========== EDIT ==========
     @GetMapping("/{id}/edit")
     public String editOrder(@PathVariable Integer id, Model model, RedirectAttributes ra) {
+        // Lấy DTO nhẹ để hiển thị thông tin chung (mã, trạng thái, ...).
         SaleOrderResponseDTO dto = saleOrderService.getById(id);
         if (dto == null) {
             ra.addFlashAttribute("error", "Không tìm thấy đơn hàng.");
             return "redirect:/sale-orders";
         }
 
-        // !== PENDING → render readonly (detail-like) NGAY TRÊN ROUTE NÀY
+        // Nếu không còn trạng thái PENDING thì hiển thị trang chi tiết readonly
         if (dto.getStatus() != SaleOrder.SaleOrderStatus.PENDING) {
-            SaleOrder orderEntity = saleOrderService.getOrderEntityById(id);
-            model.addAttribute("saleOrder", orderEntity); // entity để view detail đọc soId/soCode/details
+            SaleOrder orderEntityReadonly = saleOrderService.getOrderEntityById(id);
+            model.addAttribute("saleOrder", orderEntityReadonly);
             return "sale-order/sale-order-detail";
         }
 
-        // ===== PENDING: render form edit như cũ =====
+        // Lấy entity đầy đủ để build form sửa
         SaleOrder orderEntity = saleOrderService.getOrderEntityById(id);
 
+        // 1) Làm sạch ghi chú nếu từng dính PayOS
+        String cleanedDescription = orderEntity.getDescription();
+        if (cleanedDescription != null && cleanedDescription.startsWith("[PAYOS]")) {
+            cleanedDescription = "";
+        }
+
+        // 2) Chỉ lấy các dòng manual để cho phép sửa
         var manualDetails = orderEntity.getDetails().stream()
                 .filter(d -> d.getOrigin() == ItemOrigin.MANUAL)
                 .map(SaleOrderMapper::toDetailDTO)
                 .toList();
 
+        // 3) Combo đã chọn -> gom lại theo id để JS dựng lại dòng combo
         var expandedComboIds = saleOrderService.getComboIdsExpanded(id);
         Map<Long, Integer> comboCounts = new LinkedHashMap<>();
         for (Long cid : expandedComboIds) comboCounts.merge(cid, 1, Integer::sum);
 
+        // 4) Build form bind ra view
         var form = SaleOrderRequestDTO.builder()
                 .customerId(orderEntity.getCustomer() != null ? orderEntity.getCustomer().getId() : null)
-                .description(orderEntity.getDescription())
+                .description(cleanedDescription)
                 .details(manualDetails)
                 .comboCounts(comboCounts)
                 .build();
 
-        model.addAttribute("saleOrder", dto); // DTO cho header/nút
+        // 5) Chuẩn bị mảng products “nhẹ” để Thymeleaf serialize ra JSON chắc chắn
+        var productsLite = new java.util.ArrayList<Map<String, Object>>();
+        for (var p : productService.getAllActiveProducts()) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", p.getId());
+            m.put("name", p.getName());
+            m.put("listingPrice", p.getListingPrice());
+            m.put("quantity", p.getQuantity());
+            productsLite.add(m);
+        }
+
+        // 6) Đổ dữ liệu cho view
+        model.addAttribute("saleOrder", dto);
         model.addAttribute("saleOrderForm", form);
         model.addAttribute("customers", customerService.findAll());
-        model.addAttribute("products", productService.getAllActiveProducts());
         model.addAttribute("combos", cbRepo.findAll());
         model.addAttribute("prExists", prRepo.existsBySaleOrder_SoId(id));
 
-        // (MỚI) — hiển thị QR ở màn EDIT khi đơn còn PENDING (có refresh từ PayOS nếu thiếu)
-        if (dto.getStatus() == SaleOrder.SaleOrderStatus.PENDING) {
-            // Lấy entity để đọc note & mã order PayOS
-            SaleOrder ent = saleOrderService.getOrderEntityById(id);
+        // ✅ dùng mảng “nhẹ” cho JS trang sửa
+        model.addAttribute("productsLite", productsLite);
 
-            // Lấy từ DTO trước (nếu bạn đã đổ sẵn khi tạo đơn)
-            String qr   = dto.getQrCodeUrl();
-            String link = dto.getPaymentLink();
-
-            // Nếu DTO chưa có QR/link, nhưng đã có mã PayOS → gọi PayOS để refresh
-            if (payOsEnabled && (qr == null || link == null) && ent.getPayOsOrderCode() != null) {
-                try {
-                    var pr = payOsService.getOrder(ent.getPayOsOrderCode());
-                    if (pr != null) {
-                        if (qr == null)   qr   = pr.getQrCode();
-                        if (link == null) link = pr.getPaymentLink();
-                    }
-                } catch (Exception e) {
-                    // Không chặn UI; có thể log nếu cần
-                    // log.warn("[PayOS][edit] {}", e.getMessage());
-                }
-            }
-
-            model.addAttribute("qrCodeUrl", qr);
-            model.addAttribute("paymentLink", link);
-            model.addAttribute("paymentStatus", dto.getPaymentStatus()); // hoặc ent.getPaymentStatus().name()
-            model.addAttribute("paymentNote", ent.getPaymentNote());
-        }
+        // ✅ id để form action submit chính xác
+        model.addAttribute("saleOrderId", id);
 
         return "sale-order/sale-order-edit";
     }
 
-
-    // POST: lưu lại items (manual + comboIds)
+    // ====== SAVE ITEMS (PRG, không dùng @Valid để tránh re-render form) ======
     @PostMapping("/{id}/items/edit")
     public String updateOrderItems(@PathVariable Integer id,
-                                   @ModelAttribute("saleOrderForm") @Valid SaleOrderRequestDTO form,
-                                   BindingResult br,
-                                   Model model,
+                                   @ModelAttribute("saleOrderForm") SaleOrderRequestDTO form,
                                    RedirectAttributes ra) {
-        SaleOrder orderEntity = saleOrderService.getOrderEntityById(id);
-        if (orderEntity == null) {
-            ra.addFlashAttribute("error", "Không tìm thấy đơn hàng.");
-            return "redirect:/sale-orders";
-        }
-
-        // KHÔNG cho lưu khi không còn PENDING
-        if (orderEntity.getStatus() != SaleOrder.SaleOrderStatus.PENDING) {
-            ra.addFlashAttribute("error", "Đơn đã ở trạng thái " + orderEntity.getStatus() + ", không thể chỉnh sửa.");
-            return "redirect:/sale-orders/" + id + "/edit"; // quay về route edit (render readonly)
-        }
-
-        if (br.hasErrors()) {
-            SaleOrderResponseDTO dto = saleOrderService.getById(id);
-            model.addAttribute("saleOrder", dto);
-            model.addAttribute("customers", customerService.findAll());
-            model.addAttribute("products", productService.getAllActiveProducts());
-            model.addAttribute("combos", cbRepo.findAll());
-            model.addAttribute("prExists", prRepo.existsBySaleOrder_SoId(id));
-            return "sale-order/sale-order-edit";
-        }
-
         try {
             saleOrderService.updateOrderItems(id, form);
-            ra.addFlashAttribute("success", "Cập nhật chi tiết đơn hàng thành công.");
+
+            // Lấy mã đơn để hiển thị toast
+            String code = null;
+            try { code = saleOrderService.getOrderEntityById(id).getSoCode(); } catch (Exception ignore) {}
+            if (code == null) {
+                try { code = saleOrderService.getById(id).getOrderCode(); } catch (Exception ignore) {}
+            }
+            if (code == null) code = "ORD#" + id;
+
+            // Gửi flash attribute cho trang danh sách
+            ra.addFlashAttribute("toastSuccess", "Đơn " + code + " đã được lưu thành công.");
+
+            // Quay về danh sách
+            return "redirect:/sale-orders";
+
         } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());
+            return "redirect:/sale-orders/" + id + "/edit";
         }
-        return "redirect:/sale-orders/" + id + "/edit"; // giữ một route
     }
 
 
-    // Lưu trạng thái
-//    @PostMapping("/{id}/edit")
-//    public String updateOrderStatusAction(@PathVariable Integer id,
-//                                          @RequestParam SaleOrder.SaleOrderStatus status,
-//                                          RedirectAttributes ra) {
-//        try {
-//            saleOrderService.updateOrderStatus(id, status);
-//            ra.addFlashAttribute("success", "Cập nhật đơn hàng thành công.");
-//        } catch (Exception e) {
-//            ra.addFlashAttribute("error", e.getMessage());
-//        }
-//        return "redirect:/sale-orders";
-//    }
-
-    @PostMapping("/{id}/update")
-    public String updateFinishedSaleOrder(@PathVariable Integer id, RedirectAttributes ra) {
-        try {
-            saleOrderService.updateOrderStatus(id, SaleOrder.SaleOrderStatus.COMPLETED);
-            ra.addFlashAttribute("success", "Đơn hàng đã hoàn tất.");
-        } catch (Exception e) {
-            ra.addFlashAttribute("error", e.getMessage());
-        }
-        return "redirect:/sale-orders";
-    }
-
-    // View completed
     @GetMapping("/{id}/view")
     public String viewOrderDetails(@PathVariable Integer id, Model model) {
         SaleOrder saleOrder = saleOrderService.getOrderEntityById(id);
-        if (saleOrder.getStatus() == SaleOrder.SaleOrderStatus.COMPLETED) {
+        // ✅ Cho phép xem nếu KHÔNG phải PENDING (tức DELIVERIED/COMPLETED đều được)
+        if (saleOrder.getStatus() != SaleOrder.SaleOrderStatus.PENDING) {
             model.addAttribute("saleOrder", saleOrder);
             return "sale-order/sale-order-detail";
         } else {
-            return "redirect:/sale-orders";
+            // Nếu PENDING thì điều hướng về trang sửa
+            return "redirect:/sale-orders/" + id + "/edit";
         }
     }
+
     @PostMapping("/{id}/actions/mark-unpaid")
     public String markUnpaid(@PathVariable Integer id, RedirectAttributes ra) {
         SaleOrder so = saleOrderService.getOrderEntityById(id);
@@ -272,70 +272,15 @@ public class SaleOrderController {
         return "redirect:/sale-orders/" + id + "/edit";
     }
 
-
-    @PostMapping("/{id}/actions/mark-pending")
-    public String markPending(@PathVariable Integer id, RedirectAttributes ra) {
-        SaleOrder so = saleOrderService.getOrderEntityById(id);
-        if (so == null) {
-            ra.addFlashAttribute("error", "Không tìm thấy đơn hàng.");
-            return "redirect:/sale-orders";
-        }
-
-        if (so.getPaymentStatus() == SaleOrder.PaymentStatus.PAID) {
-            ra.addFlashAttribute("warning", "Đơn đã thanh toán, không thể chuyển về chờ thanh toán.");
-            return "redirect:/sale-orders/" + id + "/edit";
-        }
-
-        if (!payOsEnabled) {
-            ra.addFlashAttribute("error", "Thanh toán PayOS đang tắt. Vui lòng bật cấu hình hoặc chọn bán công nợ.");
-            return "redirect:/sale-orders/" + id + "/edit";
-        }
-
-        // Chỉ cho NONE_PAYMENT hoặc FAILED sang PENDING để tránh vòng lặp rối
-        if (so.getPaymentStatus() != SaleOrder.PaymentStatus.NONE_PAYMENT
-                && so.getPaymentStatus() != SaleOrder.PaymentStatus.FAILED) {
-            ra.addFlashAttribute("warning", "Trạng thái hiện tại không cho phép chuyển sang chờ thanh toán.");
-            return "redirect:/sale-orders/" + id + "/edit";
-        }
-
-        saleOrderService.updatePaymentStatus(id, SaleOrder.PaymentStatus.PENDING);
-        ra.addFlashAttribute("info", "Đã chuyển sang chờ thanh toán. Vui lòng quét QR để hoàn tất.");
-        return "redirect:/sale-orders/" + id + "/edit";
-    }
-    @PostMapping("/{id}/actions/refresh-qr")
-    public String refreshQr(@PathVariable Integer id, RedirectAttributes ra) {
-        // Không cho nếu PayOS đang tắt
-        if (!payOsEnabled) {
-            ra.addFlashAttribute("error", "PayOS đang tắt. Không thể tạo lại mã QR.");
-            return "redirect:/sale-orders/" + id + "/edit";
-        }
-
-        SaleOrder so = saleOrderService.getOrderEntityById(id);
-        if (so == null) {
-            ra.addFlashAttribute("error", "Không tìm thấy đơn hàng.");
-            return "redirect:/sale-orders";
-        }
-
-        // Không cho nếu đã thanh toán
-        if (so.getPaymentStatus() == SaleOrder.PaymentStatus.PAID) {
-            ra.addFlashAttribute("warning", "Đơn đã thanh toán, không thể tạo lại QR.");
-            return "redirect:/sale-orders/" + id + "/edit";
-        }
-
-        // Khuyến nghị: chỉ cho từ UNPAID hoặc FAILED → PENDING (tạo lại QR)
-        if (so.getPaymentStatus() != SaleOrder.PaymentStatus.UNPAID
-                && so.getPaymentStatus() != SaleOrder.PaymentStatus.FAILED) {
-            ra.addFlashAttribute("warning", "Chỉ có thể tạo lại QR khi đơn đang UNPAID hoặc FAILED.");
-            return "redirect:/sale-orders/" + id + "/edit";
-        }
-
+    // ====== DELETE (chỉ cho PENDING) ======
+    @PostMapping("/{id}/delete")
+    public String deleteOrder(@PathVariable Integer id, RedirectAttributes ra) {
         try {
-            saleOrderService.regeneratePayOsOrder(id); // triển khai ở Service
-            ra.addFlashAttribute("success", "Đã tạo lại mã QR. Vui lòng quét để thanh toán.");
-        } catch (Exception e) {
-            ra.addFlashAttribute("error", "Không tạo được mã QR: " + e.getMessage());
+            saleOrderService.deleteIfPending(id);
+            ra.addFlashAttribute("toastSuccess", "Đã xoá đơn hàng #" + id + " thành công.");
+        } catch (Exception ex) {
+            ra.addFlashAttribute("error", ex.getMessage());
         }
-        return "redirect:/sale-orders/" + id + "/edit";
+        return "redirect:/sale-orders";
     }
-
 }

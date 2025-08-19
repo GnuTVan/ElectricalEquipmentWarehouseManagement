@@ -13,52 +13,111 @@
     <div th:replace="~{fragments/header :: header}"></div>
 
     <!-- Page title -->
-    <div class="mb-6">
+    <div class="mb-6 flex items-center justify-between">
       <h1 class="text-2xl font-bold text-gray-800">Tạo phiếu xuất kho từ đơn hàng</h1>
+
+      <!-- Nút In PDF chỉ hiện sau khi lưu (view thực) -->
+      <a th:if="${showPrint} == true"
+         th:href="@{/good-issue/print/{id}(id=${note.id})}"
+         class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">
+        <i class="ri-printer-line"></i> In phiếu (PDF)
+      </a>
     </div>
 
-    <!-- Form -->
-    <form th:action="@{/good-issue/create}" method="post" class="space-y-6 bg-white p-6 rounded shadow-md">
+    <!-- Form lưu phiếu xuất -->
+    <form th:action="@{/good-issue/create-from-order}" method="post"
+          class="space-y-6 bg-white p-6 rounded shadow-md">
       <input type="hidden" name="orderId" th:value="${saleOrder.soId}"/>
 
-      <div>
-        <label class="block font-medium text-gray-700">Mã đơn hàng</label>
-        <p class="text-gray-900 font-semibold" th:text="${saleOrder.soCode}">SOXXXX</p>
+      <!-- ====== Khối thông tin tổng quan ====== -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Mã đơn -->
+        <div>
+          <label class="block font-medium text-gray-700">Mã đơn hàng</label>
+          <p class="text-gray-900 font-semibold" th:text="${saleOrder.soCode}">SOXXXX</p>
+        </div>
+
+        <!-- Khách hàng -->
+        <div>
+          <label class="block font-medium text-gray-700">Khách hàng</label>
+          <p class="text-gray-900" th:text="${saleOrder.customer != null ? saleOrder.customer.fullName : '-'}">Tên khách hàng</p>
+        </div>
+
+        <!-- Người tạo (NEW) -->
+        <div>
+          <label class="block font-medium text-gray-700">Người tạo</label>
+          <p class="text-gray-900"
+             th:text="${saleOrder.createdByUser != null ? (saleOrder.createdByUser.fullName != null ? saleOrder.createdByUser.fullName : saleOrder.createdByUser.username) : '-'}">
+            Người tạo
+          </p>
+        </div>
+
+        <!-- SĐT khách hàng (NEW) -->
+        <div>
+          <label class="block font-medium text-gray-700">Số điện thoại khách hàng</label>
+          <p class="text-gray-900"
+             th:text="${(saleOrder.customer != null && saleOrder.customer.phone != null) ? saleOrder.customer.phone : '-'}">
+            0xxx...
+          </p>
+        </div>
+
+        <!-- Thời gian -->
+        <div>
+          <label class="block font-medium text-gray-700">Thời gian</label>
+          <p class="text-gray-900"
+             th:text="${#temporals.format(saleOrder.orderDate, 'dd/MM/yyyy HH:mm')}">--/--/---- --:--</p>
+        </div>
+
+        <!-- Ghi chú -->
+        <div>
+          <label class="block font-medium text-gray-700">Ghi chú</label>
+          <p class="text-gray-900" th:text="${saleOrder.description}">-</p>
+        </div>
       </div>
 
-      <div>
-        <label class="block font-medium text-gray-700">Khách hàng</label>
-        <p class="text-gray-900" th:text="${saleOrder.customer.fullName}">Tên khách hàng</p>
-      </div>
-
+      <!-- ====== Bảng sản phẩm ====== -->
       <div>
         <label class="block font-medium text-gray-700">Danh sách sản phẩm</label>
         <table class="min-w-full table-auto text-sm text-left mt-2 border rounded">
           <thead class="bg-gray-100 text-gray-700 font-semibold">
           <tr>
             <th class="px-4 py-2">Sản phẩm</th>
-            <th class="px-4 py-2">Số lượng</th>
-            <th class="px-4 py-2">Đơn giá</th>
-            <th class="px-4 py-2">Thành tiền</th>
+            <th class="px-4 py-2 text-center">Số lượng</th>
+            <th class="px-4 py-2 text-right">Đơn giá</th>
+            <th class="px-4 py-2 text-right">Thành tiền</th>
           </tr>
           </thead>
           <tbody>
           <tr th:each="item : ${saleOrder.details}" class="border-t hover:bg-gray-50">
             <td class="px-4 py-2" th:text="${item.product.name}">Tên SP</td>
-            <td class="px-4 py-2" th:text="${item.orderedQuantity}">Số lượng</td>
-            <td class="px-4 py-2" th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">Đơn giá</td>
-            <td class="px-4 py-2" th:text="${#numbers.formatDecimal(item.price * item.orderedQuantity, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">Thành tiền</td>
+            <td class="px-4 py-2 text-center" th:text="${item.orderedQuantity}">1</td>
+            <td class="px-4 py-2 text-right"
+                th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</td>
+            <td class="px-4 py-2 text-right"
+                th:text="${#numbers.formatDecimal(item.price * item.orderedQuantity, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">
+              0 VNĐ
+            </td>
           </tr>
           </tbody>
+          <tfoot>
+          <tr class="border-t">
+            <td class="px-4 py-2 font-semibold text-right" colspan="3">Tổng tiền:</td>
+            <td class="px-4 py-2 font-bold text-right"
+                th:text="${#numbers.formatDecimal(saleOrder.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</td>
+          </tr>
+          </tfoot>
         </table>
       </div>
 
+      <!-- ====== Nút hành động ====== -->
       <div class="flex justify-end space-x-3">
-        <a th:href="@{/sale-orders}" class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-100">
-          Hủy
+        <a th:href="@{/sale-orders/{id}/edit(id=${saleOrder.soId})}"
+           class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-100">
+          <i class="ri-edit-line"></i> Sửa đơn
         </a>
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-          Tạo phiếu xuất
+
+        <button type="submit" class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700">
+          Lưu phiếu xuất
         </button>
       </div>
     </form>
@@ -67,5 +126,6 @@
 
 <!-- Footer -->
 <div th:replace="~{fragments/footer :: footer}"></div>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
 </body>
 </html>

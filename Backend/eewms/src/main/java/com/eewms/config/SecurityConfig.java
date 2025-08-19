@@ -66,7 +66,7 @@ public class SecurityConfig {
                         //MANAGER + ADMIN
                         .requestMatchers("/admin/reports/issues/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/admin/reports/receipts/**").hasAnyRole("ADMIN", "MANAGER")
-
+                        .requestMatchers("/**").permitAll()
                         //STAFF
                         .requestMatchers("/debts/**").hasAnyRole("MANAGER", "STAFF") //Manager cũng được xem công nợ
                         .requestMatchers("/sale-orders/**").hasAnyRole("STAFF")

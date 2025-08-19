@@ -8,43 +8,89 @@
     <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
         <div th:replace="~{fragments/header :: header}"></div>
 
-        <div class="justify-between items-center mb-4 px-6 py-6">
-            <h1 class="text-2xl font-bold mb-4">Tạo đơn hàng bán</h1>
+        <!-- Header + nút quay lại -->
+        <div class="flex items-center justify-between mb-4 px-6 py-6">
+            <div class="flex items-center gap-3">
+                <a href="/sale-orders"
+                   class="inline-flex items-center gap-2 border border-slate-200 px-3 py-1.5 rounded-md hover:bg-slate-50 text-slate-700">
+                    <i class="ri-arrow-left-line"></i> Quay lại
+                </a>
+                <h1 class="text-2xl font-bold">Tạo đơn hàng bán</h1>
+            </div>
+        </div>
 
+        <div class="px-6">
             <form id="saleOrderForm" th:action="@{/sale-orders/create}" method="post" th:object="${saleOrderForm}">
+                <!-- CSRF -->
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                <!-- HÀNG 1: Khách hàng + Số điện thoại -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <!-- Khách hàng -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Khách hàng</label>
-                        <select th:field="*{customerId}" class="w-full border rounded px-3 py-2" required>
+                        <select id="customerSelect" th:field="*{customerId}" class="w-full border rounded px-3 py-2" required>
                             <option value="">-- Chọn khách hàng --</option>
-                            <option th:each="c : ${customers}" th:value="${c.id}" th:text="${c.fullName}"></option>
+                            <option th:each="c : ${customers}" th:value="${c.id}"
+                                    th:text="${c.fullName}"
+                                    th:attr="data-phone=${c.phone}"></option>
                         </select>
                     </div>
-
-                    <!-- Combo (multi, cho phép trùng) -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Chọn combo</label>
-                        <select id="comboSelect" name="comboIds" multiple class="w-full border rounded px-3 py-2">
-                            <option th:each="cb : ${combos}" th:value="${cb.id}"
-                                    th:text="${cb.code + ' - ' + cb.name}"></option>
-                        </select>
-                        <!-- Hidden inputs để submit comboIds có lặp -->
-                        <div id="comboHiddenContainer"></div>
-                        <!-- Summary (ẩn theo yêu cầu) -->
-                        <div id="comboSummary" class="mt-2 text-xs text-slate-700"></div>
+                        <label for="customerPhone" class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
+                        <input id="customerPhone" name="customerPhone" class="w-full border rounded px-3 py-2"
+                               list="phoneList" placeholder="Nhập số điện thoại khách hàng" autocomplete="off" required>
+                        <datalist id="phoneList">
+                            <option th:each="c : ${customers}" th:value="${c.phone}"
+                                    th:text="${c.phone + ' - ' + c.fullName}"></option>
+                        </datalist>
                     </div>
                 </div>
 
+                <!-- HÀNG 2: Mã đơn hàng (badge) + Trạng thái -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <!-- Mã đơn hàng -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mã đơn hàng</label>
+                        <input type="hidden" id="soCode" th:field="*{soCode}">
+                        <div class="flex items-center gap-2">
+                            <span id="soCodeBadge" class="badge-code">[[*{soCode}]]</span>
+                        </div>
+                    </div>
+
+                    <!-- Trạng thái: CHỈ hiển thị mặc định "Chờ lấy hàng" -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
+                        <!-- Gửi giá trị PENDING về server -->
+                        <input type="hidden" id="statusField" th:field="*{status}" value="PENDING">
+                        <div id="statusGroup" class="flex flex-wrap gap-2">
+                            <!-- Chỉ còn 1 pill hiển thị; các trạng thái khác đã bỏ -->
+                            <span class="px-4 py-2 rounded-full border border-indigo-300 text-indigo-700 bg-white">
+                                Chờ lấy hàng
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ghi chú -->
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
                     <textarea th:field="*{description}" rows="3" class="w-full border rounded px-3 py-2"></textarea>
                 </div>
 
+                <!-- Combo -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Chọn combo</label>
+                    <select id="comboSelect" name="comboIds" multiple class="w-full border rounded px-3 py-2">
+                        <option th:each="cb : ${combos}" th:value="${cb.id}"
+                                th:text="${cb.code + ' - ' + cb.name}"></option>
+                    </select>
+                    <div id="comboHiddenContainer"></div>
+                    <div id="comboSummary" class="mt-2 text-xs text-slate-700"></div>
+                </div>
+
                 <!-- Danh sách sản phẩm -->
                 <div class="mb-6">
                     <h2 class="text-lg font-semibold mb-2">Danh sách sản phẩm</h2>
-
                     <table class="min-w-full bg-white rounded shadow text-sm">
                         <thead class="bg-gray-100">
                         <tr>
@@ -56,7 +102,7 @@
                             <th class="px-3 py-2 text-center">Xoá</th>
                         </tr>
                         </thead>
-                        <tbody id="itemTableBody"><!-- combo + manual rows render tại đây --></tbody>
+                        <tbody id="itemTableBody"></tbody>
                         <tfoot>
                         <tr>
                             <td colspan="4" class="px-3 py-2 text-right font-semibold">Tổng tiền:</td>
@@ -75,11 +121,19 @@
                     </div>
                 </div>
 
-                <div class="text-right">
-                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">
+                <!-- Nút hành động -->
+                <div class="flex justify-end gap-3 mb-8">
+                    <button type="submit" id="btnSell" name="action" value="SELL"
+                            class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded">
+                        <i class="ri-truck-line mr-1"></i> Tạo phiếu xuất
+                    </button>
+
+                    <button type="submit" name="action" value="SAVE"
+                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">
                         <i class="ri-save-line mr-1"></i> Lưu đơn hàng
                     </button>
                 </div>
+
             </form>
         </div>
     </main>
@@ -87,11 +141,11 @@
 
 <div class="hidden" th:replace="~{fragments/footer :: footer}"></div>
 
-<!-- CSRF + dữ liệu sản phẩm -->
+<!-- CSRF + dữ liệu sản phẩm cho fetch (nếu dùng) -->
 <script th:inline="javascript">
     const csrfHeader = /*[[${_csrf.headerName}]]*/ 'X-CSRF-TOKEN';
-    const csrfToken = /*[[${_csrf.token}]]*/ '';
-    const products = /*[[${products}]]*/ [];
+    const csrfToken  = /*[[${_csrf.token}]]*/ '';
+    const products   = /*[[${products}]]*/ [];
 </script>
 
 <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
@@ -99,102 +153,120 @@
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
 <style>
-    /* Ẩn chip trùng (chip đại diện không có class này) */
-    .choices__list--multiple .choices__item.combo-dup {
-        display: none !important;
-    }
+    .choices__list--multiple .choices__item.combo-dup { display: none !important; }
+    #comboSummary { display: none; }
 
-    /* Ẩn summary */
-    #comboSummary {
-        display: none;
+    .badge-code{
+        display:inline-flex;align-items:center;gap:.5rem;
+        padding:.375rem .625rem;border:1px solid #cbd5e1;border-radius:.5rem;
+        background:#f8fafc;font-weight:600;color:#0f172a;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     }
+    .status-chip{
+        display:inline-flex;align-items:center;gap:.375rem;
+        padding:.375rem .75rem;border:1px solid #cbd5e1;border-radius:9999px;
+        background:#f8fafc;color:#334155;font-weight:500;cursor:pointer;user-select:none
+    }
+    .status-chip[aria-pressed="true"]{border-color:#6366f1;background:#eef2ff;color:#3730a3;box-shadow:inset 0 1px 1px rgba(99,102,241,.15)}
+    .status-chip[data-value="COMPLETED"][aria-pressed="true"]{border-color:#34d399;background:#ecfdf5;color:#065f46}
+    .status-chip[data-value="DELIVERIED"][aria-pressed="true"]{border-color:#f59e0b;background:#fffbeb;color:#92400e}
+    .status-chip[data-value="CANCELLED"][aria-pressed="true"]{border-color:#f43f5e;background:#fff1f2;color:#9f1239}
 </style>
 
 <script>
-    /* =================== Utils =================== */
-    const tableBody = document.getElementById('itemTableBody');
-    const productMap = new Map(products.map(p => [String(p.id), p]));
+    /* ===== Prefill MÃ ĐƠN khi mở trang (và gắn lên badge) ===== */
+    async function prefillSoCode(){
+        const hidden = document.getElementById('soCode');
+        const badge  = document.getElementById('soCodeBadge');
+        if(!hidden) return;
 
-    function fmt(n) {
-        return (Number(n) || 0).toLocaleString('vi-VN');
-    }
+        const setBoth = (val) => {
+            hidden.value = val;
+            if (badge && !badge.textContent.trim()) badge.textContent = val;
+        };
 
-    function esc(s) {
-        return String(s || '').replace(/[&<>"']/g, ch => ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#39;'
-        }[ch]));
-    }
+        if (hidden.value && hidden.value.trim() !== '') { setBoth(hidden.value.trim()); return; }
 
-    function debounce(fn, t = 160) {
-        let id;
-        return (...a) => {
-            clearTimeout(id);
-            id = setTimeout(() => fn(...a), t);
+        const fallback = () => {
+            const d=new Date();
+            const y=String(d.getFullYear()).slice(-2);
+            const m=String(d.getMonth()+1).padStart(2,'0');
+            const day=String(d.getDate()).padStart(2,'0');
+            const rnd=Math.floor(Math.random()*9000)+1000;
+            return `ORD${y}${m}${day}-${rnd}`;
+        };
+
+        try{
+            const res = await fetch('/sale-orders/next-code', { headers: { [csrfHeader]: csrfToken } });
+            if(!res.ok) throw new Error('bad response');
+            let text = await res.text();
+            if(text && text.trim().startsWith('{')){
+                const json = JSON.parse(text);
+                text = json.code || json.soCode || '';
+            }
+            setBoth(text && text.trim() ? text.trim() : fallback());
+        }catch(e){
+            setBoth(fallback());
         }
     }
 
-    /* =================== Tính tiền & reindex =================== */
-    function recalcRowTotal(tr) {
-        const qty = Number(tr.querySelector('.quantity')?.value || 0);
-        const price = Number(tr.querySelector('.price')?.value || 0);
-        tr.querySelector('.lineTotal').textContent = fmt(qty * price);
-    }
-
-    function recalcGrand() {
-        let total = 0;
-        tableBody.querySelectorAll('tr[data-product-id]').forEach(tr => {
-            const qty = Number(tr.querySelector('.quantity')?.value || 0);
-            const price = Number(tr.querySelector('.price')?.value || 0);
-            total += qty * price;
+    /* ===== Khách hàng: đồng bộ tên <-> số điện thoại ===== */
+    const customerSelect = document.getElementById('customerSelect');
+    const customerPhone  = document.getElementById('customerPhone');
+    const phoneToOption = (() => {
+        const map = new Map();
+        Array.from(customerSelect.options).forEach(opt => {
+            const phone = (opt.getAttribute('data-phone') || '').trim();
+            const id    = opt.value;
+            if (id && phone) map.set(phone, opt);
         });
-        document.getElementById('grandTotal').textContent = fmt(total);
+        return map;
+    })();
+    customerSelect.addEventListener('change', () => {
+        const opt = customerSelect.selectedOptions[0];
+        const phone = opt ? (opt.getAttribute('data-phone') || '') : '';
+        customerPhone.value = phone;
+    });
+    function trySelectByPhone(phone) {
+        const opt = phoneToOption.get((phone || '').trim());
+        if (opt) { customerSelect.value = opt.value; return true; }
+        return false;
     }
+    customerPhone.addEventListener('change', () => { trySelectByPhone(customerPhone.value); });
+    customerPhone.addEventListener('input',  () => {
+        if (phoneToOption.has(customerPhone.value.trim())) trySelectByPhone(customerPhone.value);
+    });
 
-    function reindexAllRows() {
-        const rows = tableBody.querySelectorAll('tr[data-product-id]');
-        rows.forEach((tr, idx) => {
-            tr.querySelectorAll('input, select').forEach(el => {
-                if (!el.name) return;
-                el.name = el.name.replace(/\[\d+]/, `[${idx}]`);
-            });
-        });
-    }
+    /* =================== Utils chung =================== */
+    const tableBody  = document.getElementById('itemTableBody');
+    const productMap = new Map(products.map(p => [String(p.id), p]));
+    function fmt(n){ return (Number(n)||0).toLocaleString('vi-VN'); }
+    function debounce(fn,t=160){ let id; return (...a)=>{ clearTimeout(id); id=setTimeout(()=>fn(...a),t);} }
+    function recalcRowTotal(tr){ const q=+tr.querySelector('.quantity')?.value||0; const p=+tr.querySelector('.price')?.value||0; tr.querySelector('.lineTotal').textContent=fmt(q*p); }
+    function recalcGrand(){ let t=0; tableBody.querySelectorAll('tr[data-product-id]').forEach(tr=>{ const q=+tr.querySelector('.quantity')?.value||0; const p=+tr.querySelector('.price')?.value||0; t+=q*p; }); document.getElementById('grandTotal').textContent=fmt(t); }
+    function reindexAllRows(){ tableBody.querySelectorAll('tr[data-product-id]').forEach((tr,i)=>{ tr.querySelectorAll('input,select').forEach(el=>{ if(el.name) el.name=el.name.replace(/\[\d+]/,`[${i}]`); }); }); }
 
     /* =================== Manual rows =================== */
-    function getUsedManualIds() {
+    function getUsedManualIds(){
         return Array.from(tableBody.querySelectorAll('tr[data-source="manual"]'))
-            .map(tr => tr.dataset.productId).filter(Boolean);
+            .map(tr=>tr.dataset.productId).filter(Boolean);
     }
-
-    function buildManualOptions(currentPid) {
-        const used = new Set(getUsedManualIds().filter(id => id !== String(currentPid)));
-        return products
-            .filter(p => !used.has(String(p.id)))
-            .map(p => `<option value="${p.id}" data-price="${p.listingPrice}" data-stock="${p.quantity}">${esc(p.name)}</option>`)
-            .join('');
+    function buildManualOptions(currentPid){
+        const used=new Set(getUsedManualIds().filter(id=>id!==String(currentPid)));
+        return products.filter(p=>!used.has(String(p.id)))
+            .map(p=>`<option value="${p.id}" data-price="${p.listingPrice}" data-stock="${p.quantity}">${p.name}</option>`).join('');
     }
-
-    function refreshAllManualSelects() {
-        tableBody.querySelectorAll('tr[data-source="manual"]').forEach(tr => {
-            const sel = tr.querySelector('.product-select');
-            if (!sel) return;
-            const cur = sel.value;
-            sel.innerHTML = buildManualOptions(cur);
-            sel.value = cur;
+    function refreshAllManualSelects(){
+        tableBody.querySelectorAll('tr[data-source="manual"]').forEach(tr=>{
+            const sel=tr.querySelector('.product-select'); if(!sel) return;
+            const cur=sel.value; sel.innerHTML=buildManualOptions(cur); sel.value=cur;
         });
     }
-
-    function createManualRow({pid, price, stock, qty}) {
-        const index = tableBody.querySelectorAll('tr[data-product-id]').length;
-        const tr = document.createElement('tr');
-        tr.dataset.productId = String(pid);
-        tr.dataset.source = 'manual';
-
-        tr.innerHTML = `
+    function createManualRow({pid,price,stock,qty}){
+        const index=tableBody.querySelectorAll('tr[data-product-id]').length;
+        const tr=document.createElement('tr');
+        tr.dataset.productId=String(pid); tr.dataset.source='manual';
+        tr.innerHTML=`
     <td class="px-3 py-2">
       <select name="details[${index}].productId" class="w-full border rounded px-2 py-1 product-select"></select>
       <input type="hidden" name="details[${index}].source" value="MANUAL">
@@ -213,338 +285,200 @@
     <td class="px-3 py-2 text-right"><span class="lineTotal">0</span></td>
     <td class="px-3 py-2 text-center">
       <button type="button" class="text-red-600 text-lg btn-remove" title="Xoá dòng"><i class="ri-close-line"></i></button>
-    </td>
-  `;
+    </td>`;
         tableBody.appendChild(tr);
-
-        const sel = tr.querySelector('.product-select');
-        sel.innerHTML = buildManualOptions(pid);
-        sel.value = String(pid);
-
-        attachManualListeners(tr);
-        recalcRowTotal(tr);
-        return tr;
+        const sel=tr.querySelector('.product-select');
+        sel.innerHTML=buildManualOptions(pid); sel.value=String(pid);
+        attachManualListeners(tr); recalcRowTotal(tr); return tr;
     }
-
-    function attachManualListeners(tr) {
-        const sel = tr.querySelector('.product-select');
-        const qtyInput = tr.querySelector('.quantity');
-        const priceInput = tr.querySelector('.price');
-
-        sel.addEventListener('change', () => {
-            const pid = sel.value;
-            tr.dataset.productId = pid;
-            const p = productMap.get(String(pid)) || {};
-            priceInput.value = Number(p.listingPrice || 0);
-            tr.querySelector('.stock-display').textContent = p.quantity ?? '-';
-            refreshAllManualSelects();
-            recalcRowTotal(tr);
-            recalcGrand();
+    function attachManualListeners(tr){
+        const sel=tr.querySelector('.product-select');
+        const qtyInput=tr.querySelector('.quantity');
+        const priceInput=tr.querySelector('.price');
+        sel.addEventListener('change',()=>{
+            const pid=sel.value; tr.dataset.productId=pid;
+            const p=productMap.get(String(pid))||{};
+            priceInput.value=Number(p.listingPrice||0);
+            tr.querySelector('.stock-display').textContent=p.quantity ?? '-';
+            refreshAllManualSelects(); recalcRowTotal(tr); recalcGrand();
         });
-        qtyInput.addEventListener('input', () => {
-            const v = Number(qtyInput.value || 0);
-            qtyInput.value = isNaN(v) || v < 1 ? 1 : v;
-            recalcRowTotal(tr);
-            recalcGrand();
+        qtyInput.addEventListener('input',()=>{
+            const v=Number(qtyInput.value||0); qtyInput.value=isNaN(v)||v<1?1:v;
+            recalcRowTotal(tr); recalcGrand();
         });
-        tr.querySelector('.btn-remove').addEventListener('click', () => {
-            tr.remove();
-            refreshAllManualSelects();
-            reindexAllRows();
-            recalcGrand();
+        tr.querySelector('.btn-remove').addEventListener('click',()=>{
+            tr.remove(); refreshAllManualSelects(); reindexAllRows(); recalcGrand();
         });
     }
-
-    document.getElementById('btnAddRow').addEventListener('click', () => {
-        const used = new Set(getUsedManualIds());
-        const candidate = products.find(p => !used.has(String(p.id))); // cho phép trùng với combo
-        const msg = document.getElementById('productLimitMsg');
-
-        if (!candidate) {
-            msg.classList.remove('hidden');
-            return;
-        }
+    document.getElementById('btnAddRow').addEventListener('click',()=>{
+        const used=new Set(getUsedManualIds());
+        const candidate=products.find(p=>!used.has(String(p.id)));
+        const msg=document.getElementById('productLimitMsg');
+        if(!candidate){ msg.classList.remove('hidden'); return; }
         msg.classList.add('hidden');
-
-        createManualRow({
-            pid: candidate.id,
-            price: candidate.listingPrice || 0,
-            stock: candidate.quantity ?? '-',
-            qty: 1
-        });
-        reindexAllRows();
-        refreshAllManualSelects();
-        recalcGrand();
+        createManualRow({ pid:candidate.id, price:candidate.listingPrice||0, stock:candidate.quantity??'-', qty:1 });
+        reindexAllRows(); refreshAllManualSelects(); recalcGrand();
     });
 
-    /* =================== Combo rows (gộp theo product) =================== */
-    function createComboRow(it, {mount = true} = {}) {
-        const pid = String(it.productId);
-        const qty = Number(it.quantity || 0);
-        const price = Number(it.price ?? (productMap.get(pid)?.listingPrice ?? 0));
-        const stock = (it.availableQuantity != null)
-            ? Number(it.availableQuantity)
-            : (productMap.get(pid)?.quantity ?? '-');
-
-        const index = tableBody.querySelectorAll('tr[data-product-id]').length;
-        const tr = document.createElement('tr');
-        tr.dataset.productId = pid;
-        tr.dataset.source = 'combo';
-        tr.dataset.key = pid; // gộp theo productId
-        tr.classList.add('bg-amber-50');
-
-        tr.innerHTML = `
+    /* =================== Combo rows =================== */
+    function createComboRow(it,{mount=true}={}){
+        const pid=String(it.productId);
+        const qty=Number(it.quantity||0);
+        const thePrice = (productMap.get(pid)?.listingPrice ?? 0);
+        const price=Number(it.price ?? thePrice);
+        const stock=(it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(pid)?.quantity ?? '-');
+        const index=tableBody.querySelectorAll('tr[data-product-id]').length;
+        const tr=document.createElement('tr');
+        tr.dataset.productId=pid; tr.dataset.source='combo'; tr.dataset.key=pid; tr.classList.add('bg-amber-50');
+        tr.innerHTML=`
 <td class="px-3 py-2">
   <div class="flex items-center gap-2">
-    <span class="inline-flex text-[11px] px-2 py-0.5 rounded-full border border-amber-400 bg-amber-100 text-amber-800">
-      Từ combo
-    </span>
+    <span class="inline-flex text-[11px] px-2 py-0.5 rounded-full border border-amber-400 bg-amber-100 text-amber-800">Từ combo</span>
     <input type="hidden" name="details[${index}].productId" value="${pid}">
     <input type="hidden" name="details[${index}].fromCombo" value="true">
     <input type="hidden" name="details[${index}].comboId" value="">
     <input type="hidden" name="details[${index}].comboName" value="">
-    <span class="font-medium">${esc(it.productName || productMap.get(pid)?.name || '(Sản phẩm)')}</span>
+    <span class="font-medium">${it.productName || (productMap.get(pid)?.name)||'(Sản phẩm)'}</span>
   </div>
 </td>
 <td class="px-3 py-2 text-center align-middle"><span class="stock-display">${stock}</span></td>
-<td class="px-3 py-2 text-center">
-  <input type="number" name="details[${index}].orderedQuantity" class="border px-2 py-1 w-full quantity" value="${qty}" min="1" readonly>
-</td>
-<td class="px-3 py-2 text-center">
-  <input type="number" name="details[${index}].price" class="border px-2 py-1 w-full price" value="${price}" readonly>
-</td>
+<td class="px-3 py-2 text-center"><input type="number" name="details[${index}].orderedQuantity" class="border px-2 py-1 w-full quantity" value="${qty}" min="1" readonly></td>
+<td class="px-3 py-2 text-center"><input type="number" name="details[${index}].price" class="border px-2 py-1 w-full price" value="${price}" readonly></td>
 <td class="px-3 py-2 text-right"><span class="lineTotal">0</span></td>
-<td class="px-3 py-2 text-center">
-  <button type="button" class="text-gray-300 cursor-not-allowed" title="Thuộc combo, không xoá được">
-    <i class="ri-lock-2-line"></i>
-  </button>
-</td>
-`;
-        recalcRowTotal(tr);
-        if (mount) tableBody.appendChild(tr);
-        return tr;
+<td class="px-3 py-2 text-center"><button type="button" class="text-gray-300 cursor-not-allowed" title="Thuộc combo, không xoá được"><i class="ri-lock-2-line"></i></button></td>`;
+        recalcRowTotal(tr); if(mount) tableBody.appendChild(tr); return tr;
     }
-
-    function patchComboRow(tr, it) {
-        const qty = Number(it.quantity || 0);
-        const price = Number(it.price ?? (productMap.get(String(it.productId))?.listingPrice ?? 0));
-        const stock = (it.availableQuantity != null)
-            ? Number(it.availableQuantity)
-            : (productMap.get(String(it.productId))?.quantity ?? '-');
-
-        tr.querySelector('.stock-display').textContent = stock;
-        tr.querySelector('.quantity').value = String(qty);
-        tr.querySelector('.price').value = String(price);
+    function patchComboRow(tr,it){
+        const qty=Number(it.quantity||0);
+        const price=Number(it.price ?? (productMap.get(String(it.productId))?.listingPrice ?? 0));
+        const stock=(it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(String(it.productId))?.quantity ?? '-');
+        tr.querySelector('.stock-display').textContent=stock;
+        tr.querySelector('.quantity').value=String(qty);
+        tr.querySelector('.price').value=String(price);
         recalcRowTotal(tr);
     }
 
     /* =================== Chip ×N & helpers =================== */
-    function getSelectedComboIdsExpanded(choicesInstance) {
-        const values = choicesInstance.getValue(true) || []; // có lặp, ví dụ ["13","13","2"]
-        return values.map(v => Number(v));
+    function getSelectedComboIdsExpanded(choicesInstance){
+        const values=choicesInstance.getValue(true)||[]; return values.map(v=>Number(v));
     }
-
-    function updateComboSummary(choicesInstance) {
-        const summaryDiv = document.getElementById('comboSummary'); // đang ẩn, nhưng cứ cập nhật
-        const allOpts = Array.from(document.querySelectorAll('#comboSelect option'));
-        const byId = new Map();
-        const values = choicesInstance.getValue(true) || [];
-        for (const v of values) {
-            const id = String(v);
-            const opt = allOpts.find(o => o.value === id);
-            const label = opt ? opt.textContent.trim() : `Combo ${id}`;
-            const cur = byId.get(id) || {count: 0, label};
-            cur.count += 1;
-            byId.set(id, cur);
+    function updateComboSummary(choicesInstance){
+        const summaryDiv=document.getElementById('comboSummary');
+        const allOpts=Array.from(document.querySelectorAll('#comboSelect option'));
+        const byId=new Map(); const values=choicesInstance.getValue(true)||[];
+        for(const v of values){
+            const id=String(v); const opt=allOpts.find(o=>o.value===id);
+            const label=opt?opt.textContent.trim():`Combo ${id}`;
+            const cur=byId.get(id)||{count:0,label}; cur.count+=1; byId.set(id,cur);
         }
-        summaryDiv.textContent = Array.from(byId.values()).map(x => `${x.label} × ${x.count}`).join(', ');
+        summaryDiv.textContent=Array.from(byId.values()).map(x=>`${x.label} × ${x.count}`).join(', ');
     }
-
-    function applyComboChipCounts(choicesInstance) {
-        const values = choicesInstance.getValue(true) || [];
-        const counts = new Map();
-        for (const v of values) counts.set(v, (counts.get(v) || 0) + 1);
-
-        const optionLabel = (id) => {
-            const opt = document.querySelector(`#comboSelect option[value="${CSS.escape(String(id))}"]`);
-            return (opt ? opt.textContent.trim() : `Combo ${id}`);
+    function applyComboChipCounts(choicesInstance){
+        const values=choicesInstance.getValue(true)||[]; const counts=new Map();
+        for(const v of values) counts.set(v,(counts.get(v)||0)+1);
+        const optionLabel=(id)=>{
+            const opt=document.querySelector(`#comboSelect option[value="${CSS.escape(String(id))}"]`);
+            return (opt?opt.textContent.trim():`Combo ${id}`);
         };
-
-        document.querySelectorAll('.choices__list--multiple .choices__item')
-            .forEach(chip => chip.classList.remove('combo-dup'));
-
-        counts.forEach((cnt, id) => {
-            const chips = Array.from(document.querySelectorAll(
-                `.choices__list--multiple .choices__item[data-value="${CSS.escape(String(id))}"]`
-            ));
-            if (chips.length === 0) return;
-
-            const base = optionLabel(id);
-            chips.forEach((chip, idx) => {
-                chip.childNodes.forEach(n => {
-                    if (n.nodeType === Node.TEXT_NODE) n.nodeValue = '';
-                });
-                const text = `${base} × ${cnt}`;   // luôn hiển thị ×cnt (kể cả ×1)
-                if (chip.firstChild) chip.firstChild.textContent = text;
-                else chip.insertAdjacentText('afterbegin', text);
-                if (idx > 0) chip.classList.add('combo-dup');
+        document.querySelectorAll('.choices__list--multiple .choices__item').forEach(chip=>chip.classList.remove('combo-dup'));
+        counts.forEach((cnt,id)=>{
+            const chips=Array.from(document.querySelectorAll(`.choices__list--multiple .choices__item[data-value="${CSS.escape(String(id))}"]`));
+            if(chips.length===0) return;
+            const base=optionLabel(id);
+            chips.forEach((chip,idx)=>{
+                chip.childNodes.forEach(n=>{ if(n.nodeType===Node.TEXT_NODE) n.nodeValue=''; });
+                const text=`${base} × ${cnt}`;
+                if(chip.firstChild) chip.firstChild.textContent=text; else chip.insertAdjacentText('afterbegin',text);
+                if(idx>0) chip.classList.add('combo-dup');
             });
         });
     }
 
-    /* =================== Rebuild (gửi mảng có lặp, không tự nhân) =================== */
-    const rebuildComboRows = debounce(async function (expandedIds) {
-        tableBody.style.visibility = 'hidden';
-        try {
-            const curRows = Array.from(tableBody.querySelectorAll('tr[data-source="combo"]'));
-            const rowByPid = new Map(curRows.map(tr => [tr.dataset.productId, tr]));
-
-            if (!expandedIds || expandedIds.length === 0) {
-                curRows.forEach(tr => tr.remove());
-                reindexAllRows();
-                recalcGrand();
-                return;
+    /* =================== Rebuild combo table =================== */
+    const rebuildComboRows = debounce(async function(expandedIds){
+        tableBody.style.visibility='hidden';
+        try{
+            const curRows=Array.from(tableBody.querySelectorAll('tr[data-source="combo"]'));
+            const rowByPid=new Map(curRows.map(tr=>[tr.dataset.productId,tr]));
+            if(!expandedIds || expandedIds.length===0){
+                curRows.forEach(tr=>tr.remove()); reindexAllRows(); recalcGrand(); return;
             }
-
-            const res = await fetch('/combos/expand', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', [csrfHeader]: csrfToken},
-                body: JSON.stringify(expandedIds) // giữ duplicates; BE đã nhân ×N & gộp theo product
+            const res=await fetch('/combos/expand',{
+                method:'POST',
+                headers:{'Content-Type':'application/json',[csrfHeader]:csrfToken},
+                body:JSON.stringify(expandedIds)
             });
-            const itemsRaw = await res.json();
-
-            // Chuẩn hoá kiểu dữ liệu để tránh nối chuỗi
-            const items = (itemsRaw || []).map(it => ({
-                productId: String(it.productId),
-                productName: it.productName || (productMap.get(String(it.productId))?.name) || '',
-                quantity: Number(it.quantity || 0),
-                price: Number(it.price ?? (productMap.get(String(it.productId))?.listingPrice ?? 0)),
-                availableQuantity: (it.availableQuantity != null)
-                    ? Number(it.availableQuantity)
-                    : (productMap.get(String(it.productId))?.quantity ?? '-')
+            const itemsRaw=await res.json();
+            const items=(itemsRaw||[]).map(it=>({
+                productId:String(it.productId),
+                productName:it.productName || (productMap.get(String(it.productId))?.name)||'',
+                quantity:Number(it.quantity||0),
+                price:Number(it.price ?? (productMap.get(String(it.productId))?.listingPrice ?? 0)),
+                availableQuantity:(it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(String(it.productId))?.quantity ?? '-')
             }));
-
-            const nextPids = new Set(items.map(it => it.productId));
-            const frag = document.createDocumentFragment();
-
-            for (const it of items) {
-                const existed = rowByPid.get(it.productId);
-                if (existed) {
-                    patchComboRow(existed, it);
-                    existed.dataset._kept = '1';
-                } else {
-                    const tr = createComboRow(it, {mount: false});
-                    frag.appendChild(tr);
-                }
+            const nextPids=new Set(items.map(it=>it.productId));
+            const frag=document.createDocumentFragment();
+            for(const it of items){
+                const existed=rowByPid.get(it.productId);
+                if(existed){ patchComboRow(existed,it); existed.dataset._kept='1'; }
+                else{ const tr=createComboRow(it,{mount:false}); frag.appendChild(tr); }
             }
-
-            // Xoá các dòng combo không còn
-            for (const tr of curRows) {
-                if (!nextPids.has(tr.dataset.productId)) tr.remove();
+            for(const tr of curRows){ if(!nextPids.has(tr.dataset.productId)) tr.remove(); }
+            if(frag.childNodes.length){
+                const firstManual=tableBody.querySelector('tr[data-source="manual"]');
+                if(firstManual) tableBody.insertBefore(frag,firstManual); else tableBody.appendChild(frag);
             }
-
-            // Chèn block mới trước manual (nếu có)
-            if (frag.childNodes.length) {
-                const firstManual = tableBody.querySelector('tr[data-source="manual"]');
-                if (firstManual) tableBody.insertBefore(frag, firstManual);
-                else tableBody.appendChild(frag);
-            }
-
-            reindexAllRows();
-            recalcGrand();
-        } catch (e) {
+            reindexAllRows(); recalcGrand();
+        }catch(e){
             console.error(e);
-            if (window.toastError) toastError('Không thể tải sản phẩm từ combo');
-        } finally {
-            requestAnimationFrame(() => {
-                tableBody.style.visibility = '';
-            });
+        }finally{
+            requestAnimationFrame(()=>{ tableBody.style.visibility=''; });
         }
-    }, 160);
+    },160);
 
     /* =================== Bootstrap =================== */
-    document.addEventListener('DOMContentLoaded', () => {
-        const choices = new Choices('#comboSelect', {
-            removeItemButton: true,
-            shouldSort: false,
-            placeholder: true,
-            placeholderValue: 'Chọn combo',
-            duplicateItemsAllowed: true // ✅ CHO PHÉP CHỌN TRÙNG
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Prefill mã đơn + badge
+        await prefillSoCode();
+
+        // Force mặc định PENDING (không có lựa chọn khác)
+        const statusField = document.getElementById('statusField');
+        statusField.value = statusField.value || 'PENDING';
+
+        // Choices (combo)
+        const choices=new Choices('#comboSelect',{
+            removeItemButton:true, shouldSort:false, placeholder:true,
+            placeholderValue:'Chọn combo', duplicateItemsAllowed:true
         });
-
-        // Element do Choices quản lý (nơi bắn addItem/removeItem/change)
-        const el = choices.passedElement.element;
-
-        // Lưu thứ tự gốc để dropdown không “nhảy”
-        const MASTER_CHOICES = Array.from(el.querySelectorAll('option')).map(o => ({
-            value: o.value, label: o.textContent.trim()
-        }));
-
-        function refreshDropdown() {
-            choices.clearChoices();
-            choices.setChoices(MASTER_CHOICES, 'value', 'label', true); // giữ nguyên thứ tự
+        const el=choices.passedElement.element;
+        const MASTER_CHOICES=Array.from(el.querySelectorAll('option')).map(o=>({value:o.value,label:o.textContent.trim()}));
+        function refreshDropdown(){ choices.clearChoices(); choices.setChoices(MASTER_CHOICES,'value','label',true); }
+        function syncChipsAndTable(){
+            applyComboChipCounts(choices); updateComboSummary(choices);
+            const expandedIds=getSelectedComboIdsExpanded(choices); rebuildComboRows(expandedIds);
         }
-
-        function syncChipsAndTable() {
-            applyComboChipCounts(choices);
-            updateComboSummary(choices); // đang ẩn nhưng cập nhật cho đồng bộ
-            const expandedIds = getSelectedComboIdsExpanded(choices); // mảng có lặp
-            rebuildComboRows(expandedIds);
-        }
-
-        // Khi add: bỏ selected của option gốc, refresh dropdown, rồi sync
-        el.addEventListener('addItem', (e) => {
-            const value = e.detail?.value;
-            if (value == null) return;
-            const opt = el.querySelector(`option[value="${CSS.escape(String(value))}"]`);
-            if (opt) opt.selected = false;
-            refreshDropdown();
-            requestAnimationFrame(syncChipsAndTable);
+        el.addEventListener('addItem',(e)=>{ const value=e.detail?.value; if(value==null) return;
+            const opt=el.querySelector(`option[value="${CSS.escape(String(value))}"]`); if(opt) opt.selected=false;
+            refreshDropdown(); requestAnimationFrame(syncChipsAndTable);
         });
-
-        // Khi remove: xoá hết chip cùng value, refresh, rồi sync
-        let suppressRemoveHandler = false;
-        el.addEventListener('removeItem', (e) => {
-            if (suppressRemoveHandler) return;
-            const value = e.detail?.value;
-            if (value == null) return;
-
-            suppressRemoveHandler = true;
-            try {
-                choices.removeActiveItemsByValue(String(value));
-            } finally {
-                suppressRemoveHandler = false;
-                refreshDropdown();
-                requestAnimationFrame(syncChipsAndTable);
-            }
+        let suppressRemoveHandler=false;
+        el.addEventListener('removeItem',(e)=>{
+            if(suppressRemoveHandler) return; const value=e.detail?.value; if(value==null) return;
+            suppressRemoveHandler=true; try{ choices.removeActiveItemsByValue(String(value)); }
+            finally{ suppressRemoveHandler=false; refreshDropdown(); requestAnimationFrame(syncChipsAndTable); }
         });
-
-        // Change (phòng hờ)
-        el.addEventListener('change', () => {
-            syncChipsAndTable();
-        });
+        el.addEventListener('change',()=>{ syncChipsAndTable(); });
 
         // Submit: build hidden comboIds (có lặp)
-        const form = document.getElementById('saleOrderForm');
-        form.addEventListener('submit', () => {
+        const form=document.getElementById('saleOrderForm');
+        form.addEventListener('submit',()=>{
             reindexAllRows();
-            const container = document.getElementById('comboHiddenContainer');
-            container.innerHTML = '';
-            const originalName = el.getAttribute('name');
-            el.removeAttribute('name'); // tránh browser chỉ gửi 1 lần
-
-            (choices.getValue(true) || []).forEach(v => {
-                const inp = document.createElement('input');
-                inp.type = 'hidden';
-                inp.name = originalName;
-                inp.value = v;
-                container.appendChild(inp);
+            const container=document.getElementById('comboHiddenContainer'); container.innerHTML='';
+            const originalName=el.getAttribute('name'); el.removeAttribute('name');
+            (choices.getValue(true)||[]).forEach(v=>{
+                const inp=document.createElement('input'); inp.type='hidden'; inp.name=originalName; inp.value=v; container.appendChild(inp);
             });
         });
-
-        // Khởi tạo lần đầu
-        applyComboChipCounts(choices);
-        updateComboSummary(choices);
     });
 </script>
 </body>

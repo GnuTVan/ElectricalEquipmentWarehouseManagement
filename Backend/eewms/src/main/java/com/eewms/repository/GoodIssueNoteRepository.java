@@ -9,9 +9,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface GoodIssueNoteRepository extends JpaRepository<GoodIssueNote, Long> {
+
+    /** Dùng để chặn tạo trùng phiếu từ cùng một đơn bán */
     boolean existsBySaleOrder_SoId(Integer soId);
 
-    // Dùng cho flow SL + topIssued: fetch details + product để tránh Lazy/N+1
+    // Các query phục vụ dashboard/thống kê (giữ nguyên nếu đang dùng)
     @Query("""
       select distinct g from GoodIssueNote g
       left join fetch g.details d
@@ -20,7 +22,6 @@ public interface GoodIssueNoteRepository extends JpaRepository<GoodIssueNote, Lo
     """)
     List<GoodIssueNote> findByIssueDateBetweenWithDetails(LocalDateTime from, LocalDateTime to);
 
-    // Dùng cho recent: fetch customer
     @Query("""
       select g from GoodIssueNote g
       left join fetch g.customer

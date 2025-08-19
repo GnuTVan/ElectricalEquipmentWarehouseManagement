@@ -9,8 +9,7 @@
         <div th:replace="~{fragments/header :: header}"></div>
 
         <div class="px-6 py-6"
-             th:with="locked=${(saleOrder.status != null and saleOrder.status.name() != 'PENDING')
-                      or (saleOrder.paymentStatus != null and saleOrder.paymentStatus.name() != 'NONE_PAYMENT')}"
+             th:with="locked=${saleOrder.status != null and saleOrder.status.name() != 'PENDING'}"
              th:classappend="${locked} ? ' locked' : ''">
 
             <div class="flex items-center justify-between mb-4">
@@ -18,117 +17,6 @@
                     Sửa đơn <span class="text-blue-700" th:text="${saleOrder.orderCode}">ORD000</span>
                 </h1>
 
-                <!-- Bước chọn phương thức thanh toán: chỉ hiển thị khi paymentStatus = NONE -->
-                <div th:if="${!locked
-    and saleOrder.paymentStatus != null
-    and saleOrder.paymentStatus.name() == 'NONE_PAYMENT'
-    and saleOrder.status != null
-    and saleOrder.status.name() == 'PENDING'
-    and !saleOrder.alreadyExported
-    and !saleOrder.hasInsufficientStock}"
-                class="flex items-center gap-3">
-
-
-                    <form th:action="@{/sale-orders/{id}/actions/mark-pending(id=${saleOrder.orderId})}" method="post">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                        <button type="submit" class="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white">
-                            Thanh toán trước
-                        </button>
-                    </form>
-
-                    <!-- Bán công nợ / Chưa thanh toán (THÊM MỚI) -->
-                    <form th:action="@{/sale-orders/{id}/actions/mark-unpaid(id=${saleOrder.orderId})}" method="post">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                        <button type="submit" class="px-4 py-2 rounded bg-amber-600 hover:bg-amber-700 text-white">
-                            Thanh toán sau (Công nợ)
-                        </button>
-                    </form>
-                </div>
-
-                <!-- B2: UNPAID → cho xuất kho ngay + Cho phép TẠO LẠI MÃ QR -->
-                <div th:if="${saleOrder.paymentStatus != null
-    and saleOrder.paymentStatus.name() == 'UNPAID'
-    and saleOrder.status != null
-    and saleOrder.status.name() == 'PENDING'
-    and !saleOrder.alreadyExported
-    and !saleOrder.hasInsufficientStock}"
-                     class="flex items-center gap-3">
-
-                    <!-- NÚT MỚI: Tạo lại mã QR -->
-                    <form th:action="@{|/sale-orders/${saleOrder.orderId}/actions/refresh-qr|}" method="post"
-                          onsubmit="return confirm('Tạo lại mã QR mới? Mã cũ sẽ không dùng nữa.');">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                        <button type="submit" class="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white">
-                            Tạo lại mã QR
-                        </button>
-                    </form>
-
-                    <a th:href="@{|/good-issue/create-from-order/${saleOrder.orderId}|}"
-                       class="px-4 py-2 rounded bg-amber-600 hover:bg-amber-700 text-white">
-                        Thanh toán sau (Công nợ)
-                    </a>
-                </div>
-
-
-                <!-- B3: PENDING (PayOS) -->
-                <div th:if="${saleOrder.paymentStatus != null
-    and saleOrder.paymentStatus.name() == 'PENDING'
-    and saleOrder.status != null
-    and saleOrder.status.name() == 'PENDING'
-    and !saleOrder.alreadyExported
-    and !saleOrder.hasInsufficientStock}"
-                     class="flex items-center gap-3">
-
-                    <!-- Hiển thị QR nếu có -->
-                    <img th:if="${qrCodeUrl != null}" th:src="${qrCodeUrl}" alt="QR PayOS"
-                         class="h-16 w-16 rounded border"/>
-
-                    <!-- Nút mở trang thanh toán: ưu tiên paymentLink, fallback paymentNote -->
-                    <a th:href="${paymentLink != null ? paymentLink : paymentNote}"
-                       target="_blank" rel="noopener"
-                       class="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white">
-                        In hóa đơn (PayOS)
-                    </a>
-
-                    <!-- Cho xuất kho chỉ khi đã PAID -->
-                    <a th:if="${saleOrder.paymentStatus.name() == 'PAID'}"
-                       th:href="@{|/good-issue/create-from-order/${saleOrder.orderId}|}"
-                       class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">
-                        Tạo phiếu xuất
-                    </a>
-                    <button th:if="${saleOrder.paymentStatus.name() != 'PAID'}"
-                            type="button" title="Chỉ xuất khi đã thanh toán"
-                            class="px-4 py-2 rounded bg-gray-300 text-gray-600 cursor-not-allowed">
-                        Tạo phiếu xuất
-                    </button>
-                </div>
-
-                <div th:if="${saleOrder.paymentStatus != null
-    and saleOrder.paymentStatus.name() == 'PAID'
-    and saleOrder.status != null
-    and saleOrder.status.name() == 'PENDING'
-    and !saleOrder.alreadyExported
-    and !saleOrder.hasInsufficientStock}"
-                     class="flex items-center gap-3">
-
-                    <!-- Hiển thị QR nếu có -->
-                    <img th:if="${qrCodeUrl != null}" th:src="${qrCodeUrl}" alt="QR PayOS"
-                         class="h-16 w-16 rounded border"/>
-
-                    <!-- Cho xuất kho chỉ khi đã PAID -->
-                    <a th:if="${saleOrder.paymentStatus.name() == 'PAID'}"
-                       th:href="@{|/good-issue/create-from-order/${saleOrder.orderId}|}"
-                       class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">
-                        Tạo phiếu xuất
-                    </a>
-                    <button th:if="${saleOrder.paymentStatus.name() != 'PAID'}"
-                            type="button" title="Chỉ xuất khi đã thanh toán"
-                            class="px-4 py-2 rounded bg-gray-300 text-gray-600 cursor-not-allowed">
-                        Tạo phiếu xuất
-                    </button>
-                </div>
-
-                <!-- Thiếu hàng: Tạo yêu cầu mua -->
                 <div th:if="${saleOrder.hasInsufficientStock and !saleOrder.alreadyExported and !prExists}">
                     <a th:href="@{'/admin/purchase-requests/create-from-sale-order/' + ${saleOrder.orderId}}"
                        class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded inline-block">
@@ -142,64 +30,13 @@
                 </div>
             </div>
 
-            <!-- === QR Thanh toán (hiện khi PENDING & có qr/link) === -->
-            <div th:if="${
-      (qrCodeUrl != null or paymentLink != null)
-      and saleOrder != null
-      and saleOrder.status != null
-      and saleOrder.status.name() == 'PENDING'
-    }"
-                 class="bg-white p-4 rounded-xl shadow mb-4">
-
-                <h3 class="text-lg font-semibold mb-3 flex items-center gap-3">
-                    <span>Thanh toán đơn [[${saleOrder.orderCode}]]</span>
-                    <span class="text-xs px-2 py-0.5 rounded-full border"
-                          th:classappend="${
-            (paymentStatus != null and paymentStatus.name() == 'UNPAID') ? 'border-amber-400 bg-amber-50 text-amber-700' :
-            ((paymentStatus != null and paymentStatus.name() == 'PAID') ? 'border-emerald-400 bg-emerald-50 text-emerald-700' :
-            'border-gray-300 bg-gray-50 text-gray-600')
-          }">
-      [[${paymentStatus}]]
-    </span>
-                </h3>
-
-                <div class="flex items-start gap-4">
-                    <!-- Ưu tiên ảnh QR từ server -->
-                    <img th:if="${qrCodeUrl}" th:src="${qrCodeUrl}" alt="QR Thanh toán"
-                         class="w-48 h-48 rounded-lg border"/>
-
-                    <!-- Nếu không có ảnh QR, sẽ render QR từ paymentLink vào khung này -->
-                    <div th:if="${qrCodeUrl == null}" id="qrcodeBox"
-                         class="w-48 h-48 rounded-lg border flex items-center justify-center">
-                        <span class="text-xs text-gray-500">Đang tạo QR...</span>
-                    </div>
-
-                    <div class="text-sm">
-                        <p th:if="${paymentNote}">
-                            <span class="font-medium">Nội dung CK:</span> [[${paymentNote}]]
-                        </p>
-
-                        <div class="mt-2 flex items-center gap-3" th:if="${paymentLink}">
-                            <a th:href="${paymentLink}" target="_blank"
-                               class="px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">Mở trang thanh
-                                toán</a>
-                            <button type="button" id="btnCopyPayLink"
-                                    class="px-3 py-2 rounded bg-gray-100 hover:bg-gray-200 border">Copy link
-                            </button>
-                        </div>
-
-                        <p class="mt-2 text-gray-500" th:if="${!paymentLink}">
-                            Không có link thanh toán.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-
+            <!-- action dùng id chắc chắn có từ model -->
             <form id="saleOrderForm"
-                  th:action="@{|/sale-orders/${saleOrder.orderId}/items/edit|}"
+                  th:action="@{/sale-orders/{id}/items/edit(id=${saleOrderId})}"
                   method="post"
                   th:object="${saleOrderForm}">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
                 <fieldset th:disabled="${locked}">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
@@ -214,14 +51,27 @@
                                    th:value="${saleOrder.status.label}" readonly>
                         </div>
 
+                        <!-- KHÁCH HÀNG + SỐ ĐIỆN THOẠI (readonly) -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Khách hàng</label>
-                            <select th:field="*{customerId}" class="w-full border rounded px-3 py-2" required
-                                    th:disabled="${locked}">
+                            <div class="flex gap-3">
+                                <select th:field="*{customerId}" class="border rounded px-3 py-2 flex-1" required disabled>
+                                    <option value="">-- Chọn khách hàng --</option>
+                                    <!-- THÊM data-phone, KHÔNG đổi gì khác -->
+                                    <option th:each="c : ${customers}"
+                                            th:value="${c.id}"
+                                            th:text="${c.fullName}"
+                                            th:attr="data-phone=${c.phone}">
+                                    </option>
+                                </select>
 
-                                <option value="">-- Chọn khách hàng --</option>
-                                <option th:each="c : ${customers}" th:value="${c.id}" th:text="${c.fullName}"></option>
-                            </select>
+                                <!-- Ô SĐT hiển thị cạnh khách hàng -->
+                                <input id="customerPhone" type="text"
+                                       class="w-56 border rounded px-3 py-2 bg-gray-100"
+                                       placeholder="Số điện thoại" readonly>
+                            </div>
+                            <!-- Hidden để đảm bảo customerId vẫn submit khi select disabled -->
+                            <input type="hidden" name="customerId" th:value="*{customerId}"/>
                         </div>
 
                         <div>
@@ -229,15 +79,12 @@
                             <div class="flex gap-2">
                                 <select id="comboAdder" class="w-full border rounded px-3 py-2" th:disabled="${locked}">
                                     <option value="">Chọn combo</option>
-                                    <option th:each="cb : ${combos}"
-                                            th:value="${cb.id}"
-                                            th:text="${cb.code + ' - ' + cb.name}">
-                                    </option>
+                                    <option th:each="cb : ${combos}" th:value="${cb.id}"
+                                            th:text="${cb.code + ' - ' + cb.name}"></option>
                                 </select>
                                 <button type="button" id="btnAddCombo"
                                         class="px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
-                                        th:if="${!locked}">Thêm
-                                </button>
+                                        th:if="${!locked}">Thêm</button>
                             </div>
                             <div id="comboChips" class="mt-2 flex flex-wrap gap-2"></div>
                             <div id="comboCountsHidden"></div>
@@ -281,13 +128,19 @@
                         </button>
                     </div>
 
-                    <div class="mt-6 flex gap-3">
-                        <a th:href="@{/sale-orders}"
-                           class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">Quay lại</a>
+                    <!-- KHỐI NÚT CỐ ĐỊNH GÓC PHẢI DƯỚI -->
+                    <div class="fixed bottom-6 right-8 z-40 flex gap-3" th:if="${!locked}">
+                        <a id="btnCreateIssue"
+                           th:href="@{'/good-issue/create-from-sale/' + ${saleOrderId}}"
+                           class="px-5 py-3 rounded bg-orange-600 hover:bg-orange-700 text-white shadow-lg focus:outline-none focus:ring-4 focus:ring-orange-300 flex items-center gap-2">
+                            <i class="ri-truck-line"></i>
+                            Tạo phiếu xuất
+                        </a>
                         <button type="submit"
-                                class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white"
-                                th:if="${!locked}">
-                            Lưu đơn
+                                class="px-5 py-3 rounded bg-green-600 hover:bg-green-700 text-white shadow-lg focus:outline-none focus:ring-4 focus:ring-green-300 flex items-center gap-2"
+                                aria-label="Lưu đơn">
+                            <i class="ri-save-3-line"></i>
+                            Lưu đơn hàng
                         </button>
                     </div>
                 </fieldset>
@@ -297,361 +150,325 @@
 </div>
 
 <div class="hidden" th:replace="~{fragments/footer :: footer}"></div>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
 
+<!-- Inject data AN TOÀN, luôn có fallback để không vỡ JS -->
 <script th:inline="javascript">
-    const csrfHeader = /*[[${_csrf.headerName}]]*/ 'X-CSRF-TOKEN';
-    const csrfToken = /*[[${_csrf.token}]]*/ '';
-    const products = /*[[${products}]]*/ [];
-    const saleForm = /*[[${saleOrderForm}]]*/ {};
-    const LOCKED = /*[[${locked}]]*/ false;
-</script>
-
-<script>
-    const tableBody = document.getElementById('itemTableBody');
-    const productMap = new Map((products || []).map(p => [String(p.id), p]));
-    const esc = s => String(s || '').replace(/[&<>"']/g, ch => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    }[ch]));
-    const fmt = n => (Number(n) || 0).toLocaleString('vi-VN');
-    let comboCounts = new Map(Object.entries(saleForm?.comboCounts || {}));
-    let comboPidSet = new Set();
-    let buildSeq = 0;
-    let aborter = null;
-
-    function recalcRowTotal(tr) {
-        const q = Number(tr.querySelector('.quantity')?.value || 0);
-        const p = Number(tr.querySelector('.price')?.value || 0);
-        tr.querySelector('.lineTotal').textContent = fmt(q * p);
-    }
-
-    function recalcGrand() {
-        let t = 0;
-        tableBody.querySelectorAll('tr[data-source]').forEach(tr => {
-            const q = Number(tr.querySelector('.quantity')?.value || 0);
-            const p = Number(tr.querySelector('.price')?.value || 0);
-            t += q * p;
-        });
-        document.getElementById('grandTotal').textContent = fmt(t);
-    }
-
-    function reindexAllRows() {
-        const rows = tableBody.querySelectorAll('tr[data-source="manual"]');
-        rows.forEach((tr, i) => {
-            tr.querySelectorAll('input,select').forEach(el => {
-                if (!el.name) return;
-                el.name = el.name.replace(/\[\d+]/, `[${i}]`);
-            });
-        });
-    }
-
-    function buildManualOptions(currentPid) {
-        const used = new Set(Array.from(tableBody.querySelectorAll('tr[data-source="manual"]')).map(tr => tr.dataset.productId).filter(Boolean));
-        used.delete(String(currentPid));
-        return (products || []).filter(p => !used.has(String(p.id))).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
-    }
-
-    function refreshAllManualSelects() {
-        tableBody.querySelectorAll('tr[data-source="manual"]').forEach(tr => {
-            const sel = tr.querySelector('.product-select');
-            if (!sel) return;
-            const cur = sel.value;
-            sel.innerHTML = buildManualOptions(cur);
-            sel.value = cur;
-        });
-    }
-
-    function createManualRow({pid, price, stock, qty}) {
-        const idx = tableBody.querySelectorAll('tr[data-source]').length;
-        const tr = document.createElement('tr');
-        tr.dataset.productId = String(pid);
-        tr.dataset.source = 'manual';
-        tr.innerHTML = `
-    <td class="px-3 py-2"><select name="details[${idx}].productId" class="w-full border rounded px-2 py-1 product-select"></select></td>
-    <td class="px-3 py-2 text-center"><span class="stock-display">${stock ?? '-'}</span></td>
-    <td class="px-3 py-2 text-center"><input type="number" name="details[${idx}].orderedQuantity" class="border px-2 py-1 w-full quantity" value="${qty}" min="1"></td>
-    <td class="px-3 py-2 text-center"><input type="number" name="details[${idx}].price" class="border px-2 py-1 w-full price" value="${price}" readonly></td>
-    <td class="px-3 py-2 text-right"><span class="lineTotal">0</span></td>
-    <td class="px-3 py-2 text-center"><button type="button" class="text-red-600 text-lg btn-remove"><i class="ri-close-line"></i></button></td>`;
-        tableBody.appendChild(tr);
-        const sel = tr.querySelector('.product-select');
-        sel.innerHTML = buildManualOptions(pid);
-        sel.value = String(pid);
-
-        if (LOCKED) {                              // <-- KHÓA NGAY Ở ĐÂY
-            sel.disabled = true;                     // khóa dropdown Sản phẩm
-            tr.querySelector('.quantity').readOnly = true; // khóa ô SL
-            const rm = tr.querySelector('.btn-remove');
-            if (rm) {
-                rm.outerHTML = '<button type="button" class="text-gray-300 cursor-not-allowed"><i class="ri-lock-2-line"></i></button>'; // khóa nút Xóa
-            }
-        }
-        sel.addEventListener('change', () => {
-            if (LOCKED) return;
-            tr.dataset.productId = sel.value;
-            const p = productMap.get(String(sel.value)) || {};
-            tr.querySelector('.stock-display').textContent = p.quantity ?? '-';
-            tr.querySelector('.price').value = Number(p.listingPrice || 0);
-            refreshAllManualSelects();
-            recalcRowTotal(tr);
-            recalcGrand();
-        });
-        tr.querySelector('.quantity').addEventListener('input', e => {
-            if (LOCKED) return;
-            const v = Number(e.target.value || 0);
-            e.target.value = isNaN(v) || v < 1 ? 1 : v;
-            recalcRowTotal(tr);
-            recalcGrand();
-        });
-        tr.querySelector('.btn-remove')?.addEventListener('click', () => {
-            tr.remove();
-            refreshAllManualSelects();
-            reindexAllRows();
-            recalcGrand();
-        });
-
-        recalcRowTotal(tr);
-        recalcGrand();
-    }
-
-    function createComboRow(it) {
-        const pid = String(it.productId);
-        const qty = Number(it.quantity || it.orderedQuantity || 0);
-        const price = Number(it.price || (productMap.get(pid)?.listingPrice || 0));
-        const stock = (it.availableQuantity != null) ? Number(it.availableQuantity) : (productMap.get(pid)?.quantity ?? '-');
-        const tr = document.createElement('tr');
-        tr.dataset.productId = pid;
-        tr.dataset.source = 'combo';
-        tr.classList.add('bg-amber-50');
-        tr.innerHTML = `
-   <td class="px-3 py-2"><span class="inline-flex text-[11px] px-2 py-0.5 rounded-full border border-amber-400 bg-amber-100 text-amber-800">Từ combo</span>
-   <span class="ml-2 font-medium">${esc(it.productName || productMap.get(pid)?.name || '(Sản phẩm)')}</span></td>
-   <td class="px-3 py-2 text-center"><span class="stock-display">${stock}</span></td>
-   <td class="px-3 py-2 text-center"><input type="number" class="border px-2 py-1 w-full quantity" value="${qty}" readonly></td>
-   <td class="px-3 py-2 text-center"><input type="number" class="border px-2 py-1 w-full price" value="${price}" readonly></td>
-   <td class="px-3 py-2 text-right"><span class="lineTotal">0</span></td>
-   <td class="px-3 py-2 text-center"><button type="button" class="text-gray-300 cursor-not-allowed"><i class="ri-lock-2-line"></i></button></td>`;
-        recalcRowTotal(tr);
-        return tr;
-    }
-
-    function patchComboRow(tr, it) {
-        const qty = Number(it.quantity || 0);
-        const price = Number(it.price ?? (productMap.get(String(it.productId))?.listingPrice || 0));
-        const stock = (it.availableQuantity != null) ? Number(it.availableQuantity) : (productMap.get(String(it.productId))?.quantity ?? '-');
-        tr.querySelector('.stock-display').textContent = stock;
-        tr.querySelector('.quantity').value = String(qty);
-        tr.querySelector('.price').value = String(price);
-        recalcRowTotal(tr);
-    }
-
-    const chips = document.getElementById('comboChips');
-
-    function renderChips() {
-        chips.innerHTML = '';
-        const entries = [...comboCounts.entries()];
-        entries.forEach(([id, n]) => {
-            const opt = document.querySelector(`#comboAdder option[value="${CSS.escape(String(id))}"]`);
-            const label = opt ? opt.textContent.trim() : `Combo ${id}`;
-            const el = document.createElement('div');
-            el.className = 'inline-flex items-center gap-2 bg-teal-700 text-white px-3 py-1 rounded-full';
-            el.innerHTML = `
-      <span>${label} × ${n}</span>
-      <button type="button" class="px-2 rounded bg-white/20 hover:bg-white/30" data-act="inc" data-id="${id}">+</button>
-      <button type="button" class="px-2 rounded bg-white/20 hover:bg-white/30" data-act="dec" data-id="${id}">−</button>
-      <button type="button" class="px-2 rounded bg-white/20 hover:bg-white/30" data-act="rm"  data-id="${id}">×</button>`;
-            chips.appendChild(el);
-        });
-    }
-
-    chips.addEventListener('click', e => {
-        const btn = e.target.closest('button');
-        if (!btn) return;
-        const id = btn.dataset.id, act = btn.dataset.act;
-        const cur = comboCounts.get(id) || 0;
-        if (act === 'inc') comboCounts.set(id, cur + 1);
-        else if (act === 'dec') {
-            if (cur > 1) comboCounts.set(id, cur - 1); else comboCounts.delete(id);
-        } else if (act === 'rm') {
-            comboCounts.delete(id);
-        }
-        renderChips();
-        rebuildFromCounts();
-    });
-
-    async function rebuildFromCounts() {
-        const expanded = [];
-        comboCounts.forEach((n, id) => {
-            for (let i = 0; i < n; i++) expanded.push(Number(id));
-        });
-        if (expanded.length === 0) {
-            if (aborter) aborter.abort();
-            tableBody.querySelectorAll('tr[data-source="combo"]').forEach(tr => tr.remove());
-            comboPidSet = new Set();
-            refreshAllManualSelects();
-            reindexAllRows();
-            recalcGrand();
-            return;
-        }
-        const my = ++buildSeq;
-        if (aborter) aborter.abort();
-        aborter = new AbortController();
-        let itemsRaw = [];
-        try {
-            const res = await fetch('/combos/expand', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', [csrfHeader]: csrfToken},
-                body: JSON.stringify(expanded),
-                signal: aborter.signal
-            });
-            if (!res.ok) throw new Error('expand failed');
-            itemsRaw = await res.json();
-        } catch (e) {
-            return;
-        }
-        if (my !== buildSeq) return;
-
-        const agg = new Map();
-        (itemsRaw || []).forEach(it => {
-            const pid = String(it.productId);
-            const cur = agg.get(pid);
-            const row = {
-                productId: pid,
-                productName: it.productName || productMap.get(pid)?.name || '',
-                quantity: Number(it.quantity || it.orderedQuantity || 0),
-                price: Number(it.price ?? (productMap.get(pid)?.listingPrice ?? 0)),
-                availableQuantity: (it.availableQuantity != null) ? Number(it.availableQuantity) : (productMap.get(pid)?.quantity ?? '-')
-            };
-            if (!cur) agg.set(pid, row); else cur.quantity += row.quantity;
-        });
-
-        comboPidSet = new Set(agg.keys());
-        const curRows = Array.from(tableBody.querySelectorAll('tr[data-source="combo"]'));
-        const byPid = new Map(curRows.map(tr => [tr.dataset.productId, tr]));
-        const nextPids = new Set(agg.keys());
-        const frag = document.createDocumentFragment();
-
-        for (const [pid, row] of agg) {
-            const ex = byPid.get(pid);
-            if (ex) patchComboRow(ex, row);
-            else frag.appendChild(createComboRow(row));
-        }
-        for (const tr of curRows) {
-            if (!nextPids.has(tr.dataset.productId)) tr.remove();
-        }
-        if (frag.childNodes.length) {
-            const firstManual = tableBody.querySelector('tr[data-source="manual"]');
-            if (firstManual) tableBody.insertBefore(frag, firstManual); else tableBody.appendChild(frag);
-        }
-        refreshAllManualSelects();
-        reindexAllRows();
-        recalcGrand();
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        (saleForm?.details || []).forEach(d => {
-            const p = productMap.get(String(d.productId)) || {};
-            createManualRow({
-                pid: d.productId,
-                price: Number(p.listingPrice || d.price || 0),
-                stock: p.quantity ?? '-',
-                qty: Number(d.orderedQuantity || 1)
-            });
-        });
-        reindexAllRows();
-        refreshAllManualSelects();
-        recalcGrand();
-
-        renderChips();
-        rebuildFromCounts();
-
-        document.getElementById('btnAddCombo')?.addEventListener('click', () => {
-            if (LOCKED) return;
-            const sel = document.getElementById('comboAdder');
-            const v = sel.value;
-            if (!v) return;
-            comboCounts.set(v, (comboCounts.get(v) || 0) + 1);
-            sel.value = '';
-            renderChips();
-            rebuildFromCounts();
-        });
-
-        document.getElementById('btnAddRow')?.addEventListener('click', () => {
-            if (LOCKED) return;
-            const used = new Set(Array.from(tableBody.querySelectorAll('tr[data-source="manual"]'))
-                .map(tr => tr.dataset.productId));
-            const cand = (products || []).find(p => !used.has(String(p.id)));
-            if (!cand) return;
-            createManualRow({
-                pid: cand.id,
-                price: cand.listingPrice || 0,
-                stock: cand.quantity ?? '-',
-                qty: 1
-            });
-            reindexAllRows();
-            refreshAllManualSelects();
-            recalcGrand();
-        });
-
-
-        document.getElementById('saleOrderForm').addEventListener('submit', (e) => {
-            if (LOCKED) {
-                e.preventDefault();
-                return;
-            }  // thêm dòng này
-            const hidden = document.getElementById('comboCountsHidden');
-            hidden.innerHTML = '';
-            comboCounts.forEach((n, id) => {
-                const inp = document.createElement('input');
-                inp.type = 'hidden';
-                inp.name = `comboCounts[${id}]`;
-                inp.value = String(n);
-                hidden.appendChild(inp);
-            });
-            tableBody.querySelectorAll('tr[data-source="combo"] [name]').forEach(el => el.remove());
-            reindexAllRows();
-        });
-    });
-</script>
-<!-- QRCode.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-<script th:inline="javascript">
-    // Nếu không có qrCodeUrl nhưng có paymentLink -> build QR ở client
     (function () {
-        const hasQrUrl = /*[[${qrCodeUrl != null}]]*/ false;
-        const payLink = /*[[${paymentLink}]]*/ null;
-        const box = document.getElementById('qrcodeBox');
-
-        if (!hasQrUrl && box && payLink) {
-            const canvas = document.createElement('canvas');
-            box.innerHTML = '';
-            box.appendChild(canvas);
-            try {
-                QRCode.toCanvas(canvas, String(payLink), {width: 192, margin: 1}, function (err) {
-                    if (err) console.error(err);
-                });
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        // Copy link
-        const copyBtn = document.getElementById('btnCopyPayLink');
-        if (copyBtn && payLink) {
-            copyBtn.addEventListener('click', async () => {
-                try {
-                    await navigator.clipboard.writeText(String(payLink));
-                    alert('Đã copy link thanh toán');
-                } catch {
-                    alert('Không copy được, vui lòng copy thủ công.');
-                }
-            });
-        }
+      window.__DATA__ = window.__DATA__ || {};
+      /*<![CDATA[*/
+      window.__DATA__.csrfHeader = /*[[${_csrf.headerName}]]*/ 'X-CSRF-TOKEN';
+      window.__DATA__.csrfToken  = /*[[${_csrf.token}]]*/ '';
+      window.__DATA__.products   = /*[[${productsLite}]]*/ [];
+      window.__DATA__.saleForm   = /*[[${saleOrderForm}]]*/ {};
+      window.__DATA__.locked     = /*[[${locked}]]*/ false;
+      /*]]>*/
     })();
 </script>
 
+<script>
+    // ====== Lấy dữ liệu đã inject, có fallback cứng ======
+    const csrfHeader = (window.__DATA__ && window.__DATA__.csrfHeader) || 'X-CSRF-TOKEN';
+    const csrfToken  = (window.__DATA__ && window.__DATA__.csrfToken)  || '';
+    const products   = Array.isArray(window.__DATA__?.products) ? window.__DATA__.products : [];
+    const saleForm   = window.__DATA__?.saleForm || {};
+    const LOCKED     = !!window.__DATA__?.locked;
+
+    // Xóa vết PayOS còn sót (phòng thủ phía client)
+    document.addEventListener('DOMContentLoaded', () => {
+      const descEl = document.querySelector('textarea[name="description"]');
+      if (descEl && /^\[PAYOS]/.test(descEl.value || '')) descEl.value = '';
+    });
+
+    // ====== JS quản lý bảng sản phẩm & combo ======
+    const tableBody  = document.getElementById('itemTableBody');
+    const productMap = new Map((products || []).map(p => [String(p.id), p]));
+    const esc = s => String(s || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const fmt = n => (Number(n) || 0).toLocaleString('vi-VN');
+    let comboCounts = new Map(Object.entries(saleForm?.comboCounts || {}));
+    let buildSeq = 0;
+    let aborter = null;
+
+    function recalcRowTotal(tr){
+      const q=Number(tr.querySelector('.quantity')?.value||0);
+      const p=Number(tr.querySelector('.price')?.value||0);
+      tr.querySelector('.lineTotal').textContent=fmt(q*p);
+    }
+    function recalcGrand(){
+      let t=0;
+      tableBody.querySelectorAll('tr[data-source]').forEach(tr=>{
+        const q=Number(tr.querySelector('.quantity')?.value||0);
+        const p=Number(tr.querySelector('.price')?.value||0);
+        t+=q*p;
+      });
+      document.getElementById('grandTotal').textContent=fmt(t);
+    }
+    function reindexAllRows(){
+      const rows=tableBody.querySelectorAll('tr[data-source="manual"]');
+      rows.forEach((tr,i)=>{
+        tr.querySelectorAll('input,select').forEach(el=>{
+          if(!el.name) return;
+          el.name=el.name.replace(/\[\d+]/,`[${i}]`);
+        });
+      });
+    }
+    function buildManualOptions(currentPid){
+      const used=new Set(Array.from(tableBody.querySelectorAll('tr[data-source="manual"]'))
+        .map(tr=>tr.dataset.productId).filter(Boolean));
+      used.delete(String(currentPid));
+      return (products||[]).filter(p=>!used.has(String(p.id)))
+        .map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+    }
+    function refreshAllManualSelects(){
+      tableBody.querySelectorAll('tr[data-source="manual"]').forEach(tr=>{
+        const sel=tr.querySelector('.product-select'); if(!sel) return;
+        const cur=sel.value; sel.innerHTML=buildManualOptions(cur); sel.value=cur;
+      });
+    }
+    function createManualRow({pid,price,stock,qty}){
+      const idx=tableBody.querySelectorAll('tr[data-source]').length;
+      const tr=document.createElement('tr');
+      tr.dataset.productId=String(pid);
+      tr.dataset.source='manual';
+      tr.innerHTML=`
+        <td class="px-3 py-2"><select name="details[${idx}].productId" class="w-full border rounded px-2 py-1 product-select"></select></td>
+        <td class="px-3 py-2 text-center"><span class="stock-display">${stock ?? '-'}</span></td>
+        <td class="px-3 py-2 text-center"><input type="number" name="details[${idx}].orderedQuantity" class="border px-2 py-1 w-full quantity" value="${qty}" min="1"></td>
+        <td class="px-3 py-2 text-center"><input type="number" name="details[${idx}].price" class="border px-2 py-1 w-full price" value="${price}" readonly></td>
+        <td class="px-3 py-2 text-right"><span class="lineTotal">0</span></td>
+        <td class="px-3 py-2 text-center"><button type="button" class="text-red-600 text-lg btn-remove"><i class="ri-close-line"></i></button></td>`;
+      tableBody.appendChild(tr);
+      const sel=tr.querySelector('.product-select');
+      sel.innerHTML=buildManualOptions(pid); sel.value=String(pid);
+
+      if(LOCKED){
+        sel.disabled=true;
+        tr.querySelector('.quantity').readOnly=true;
+        tr.querySelector('.btn-remove').outerHTML='<button type="button" class="text-gray-300 cursor-not-allowed"><i class="ri-lock-2-line"></i></button>';
+      }
+
+      sel.addEventListener('change',()=>{
+        if(LOCKED) return;
+        tr.dataset.productId=sel.value;
+        const p=productMap.get(String(sel.value))||{};
+        tr.querySelector('.stock-display').textContent=p.quantity ?? '-';
+        tr.querySelector('.price').value=Number(p.listingPrice || 0);
+        refreshAllManualSelects();
+        recalcRowTotal(tr); recalcGrand();
+      });
+      tr.querySelector('.quantity').addEventListener('input',e=>{
+        if(LOCKED) return;
+        const v=Number(e.target.value||0);
+        e.target.value=isNaN(v)||v<1?1:v;
+        recalcRowTotal(tr); recalcGrand();
+      });
+      tr.querySelector('.btn-remove')?.addEventListener('click',()=>{
+        tr.remove(); refreshAllManualSelects(); reindexAllRows(); recalcGrand();
+      });
+
+      recalcRowTotal(tr); recalcGrand();
+    }
+
+    function createComboRow(it){
+      const pid=String(it.productId);
+      const qty=Number(it.quantity||it.orderedQuantity||0);
+      const price=Number(it.price||(productMap.get(pid)?.listingPrice||0));
+      const stock=(it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(pid)?.quantity ?? '-');
+      const tr=document.createElement('tr');
+      tr.dataset.productId=pid; tr.dataset.source='combo'; tr.classList.add('bg-amber-50');
+      tr.innerHTML=`
+        <td class="px-3 py-2">
+          <span class="inline-flex text-[11px] px-2 py-0.5 rounded-full border border-amber-400 bg-amber-100 text-amber-800">Từ combo</span>
+          <span class="ml-2 font-medium">${esc(it.productName||productMap.get(pid)?.name||'(Sản phẩm)')}</span>
+        </td>
+        <td class="px-3 py-2 text-center"><span class="stock-display">${stock}</span></td>
+        <td class="px-3 py-2 text-center"><input type="number" class="border px-2 py-1 w-full quantity" value="${qty}" readonly></td>
+        <td class="px-3 py-2 text-center"><input type="number" class="border px-2 py-1 w-full price" value="${price}" readonly></td>
+        <td class="px-3 py-2 text-right"><span class="lineTotal">0</span></td>
+        <td class="px-3 py-2 text-center"><button type="button" class="text-gray-300 cursor-not-allowed"><i class="ri-lock-2-line"></i></button></td>`;
+      recalcRowTotal(tr); return tr;
+    }
+    function patchComboRow(tr,it){
+      const qty=Number(it.quantity||0);
+      const price=Number(it.price ?? (productMap.get(String(it.productId))?.listingPrice||0));
+      const stock=(it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(String(it.productId))?.quantity ?? '-');
+      tr.querySelector('.stock-display').textContent=stock;
+      tr.querySelector('.quantity').value=String(qty);
+      tr.querySelector('.price').value=String(price);
+      recalcRowTotal(tr);
+    }
+
+    const chips=document.getElementById('comboChips');
+    function renderChips(){
+      chips.innerHTML='';
+      const entries=[...comboCounts.entries()];
+      entries.forEach(([id,n])=>{
+        const opt=document.querySelector(`#comboAdder option[value="${CSS.escape(String(id))}"]`);
+        const label=opt?opt.textContent.trim():`Combo ${id}`;
+        const el=document.createElement('div');
+        el.className='inline-flex items-center gap-2 bg-teal-700 text-white px-3 py-1 rounded-full';
+        el.innerHTML=`
+          <span>${label} × ${n}</span>
+          <button type="button" class="px-2 rounded bg-white/20 hover:bg-white/30" data-act="inc" data-id="${id}">+</button>
+          <button type="button" class="px-2 rounded bg-white/20 hover:bg-white/30" data-act="dec" data-id="${id}">−</button>
+          <button type="button" class="px-2 rounded bg-white/20 hover:bg-white/30" data-act="rm"  data-id="${id}">×</button>`;
+        chips.appendChild(el);
+      });
+    }
+    chips.addEventListener('click',e=>{
+      const btn=e.target.closest('button'); if(!btn) return;
+      const id=btn.dataset.id, act=btn.dataset.act;
+      const cur=comboCounts.get(id)||0;
+      if(act==='inc') comboCounts.set(id,cur+1);
+      else if(act==='dec'){ if(cur>1) comboCounts.set(id,cur-1); else comboCounts.delete(id); }
+      else if(act==='rm'){ comboCounts.delete(id); }
+      renderChips(); rebuildFromCounts();
+    });
+
+    async function rebuildFromCounts(){
+      const expanded=[]; comboCounts.forEach((n,id)=>{ for(let i=0;i<n;i++) expanded.push(Number(id)); });
+      if(expanded.length===0){
+        if(aborter) aborter.abort();
+        tableBody.querySelectorAll('tr[data-source="combo"]').forEach(tr=>tr.remove());
+        refreshAllManualSelects(); reindexAllRows(); recalcGrand(); return;
+      }
+      const my=++buildSeq; if(aborter) aborter.abort(); aborter=new AbortController();
+      let itemsRaw=[];
+      try{
+        const res=await fetch('/combos/expand',{
+          method:'POST', headers:{'Content-Type':'application/json',[csrfHeader]:csrfToken},
+          body:JSON.stringify(expanded), signal:aborter.signal
+        });
+        if(!res.ok) throw new Error('expand failed'); itemsRaw=await res.json();
+      }catch(e){ return; }
+      if(my!==buildSeq) return;
+
+      const agg=new Map();
+      (itemsRaw||[]).forEach(it=>{
+        const pid=String(it.productId);
+        const cur=agg.get(pid);
+        const row={
+          productId:pid,
+          productName:it.productName||productMap.get(pid)?.name||'',
+          quantity:Number(it.quantity||it.orderedQuantity||0),
+          price:Number(it.price ?? (productMap.get(pid)?.listingPrice ?? 0)),
+          availableQuantity:(it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(pid)?.quantity ?? '-')
+        };
+        if(!cur) agg.set(pid,row); else cur.quantity+=row.quantity;
+      });
+
+      const curRows=Array.from(tableBody.querySelectorAll('tr[data-source="combo"]'));
+      const byPid=new Map(curRows.map(tr=>[tr.dataset.productId,tr]));
+      const nextPids=new Set(agg.keys());
+      const frag=document.createDocumentFragment();
+
+      for(const [pid,row] of agg){
+        const ex=byPid.get(pid);
+        if(ex) patchComboRow(ex,row); else frag.appendChild(createComboRow(row));
+      }
+      for(const tr of curRows){ if(!nextPids.has(tr.dataset.productId)) tr.remove(); }
+      if(frag.childNodes.length){
+        const firstManual=tableBody.querySelector('tr[data-source="manual"]');
+        if(firstManual) tableBody.insertBefore(frag,firstManual); else tableBody.appendChild(frag);
+      }
+      refreshAllManualSelects(); reindexAllRows(); recalcGrand();
+    }
+
+    document.addEventListener('DOMContentLoaded',()=>{
+      // Render các dòng MANUAL cũ
+      (saleForm?.details||[]).forEach(d=>{
+        const p=productMap.get(String(d.productId))||{};
+        createManualRow({
+          pid:d.productId,
+          price:Number(p.listingPrice||d.price||0),
+          stock:p.quantity ?? '-',
+          qty:Number(d.orderedQuantity||1)
+        });
+      });
+      reindexAllRows(); refreshAllManualSelects(); recalcGrand();
+
+      // Render combo từ comboCounts (nếu có)
+      renderChips(); rebuildFromCounts();
+
+      // Thêm combo
+      document.getElementById('btnAddCombo')?.addEventListener('click',()=>{
+        if(LOCKED) return;
+        const sel=document.getElementById('comboAdder'); const v=sel.value; if(!v) return;
+        comboCounts.set(v,(comboCounts.get(v)||0)+1); sel.value=''; renderChips(); rebuildFromCounts();
+      });
+
+      // Thêm sản phẩm thủ công
+      document.getElementById('btnAddRow')?.addEventListener('click',()=>{
+        if(LOCKED) return;
+        const used=new Set(Array.from(tableBody.querySelectorAll('tr[data-source="manual"]')).map(tr=>tr.dataset.productId));
+        const cand=(products||[]).find(p=>!used.has(String(p.id)));
+        if(!cand){ alert('Không còn sản phẩm khả dụng để thêm.'); return; }
+        createManualRow({ pid:cand.id, price:cand.listingPrice||0, stock:cand.quantity ?? '-', qty:1 });
+        reindexAllRows(); refreshAllManualSelects(); recalcGrand();
+      });
+
+      // Submit: đóng gói comboCounts vào form (khi bấm Lưu đơn)
+      document.getElementById('saleOrderForm').addEventListener('submit',()=>{
+        if(LOCKED) return;
+        const hidden=document.getElementById('comboCountsHidden'); hidden.innerHTML='';
+        comboCounts.forEach((n,id)=>{
+          const inp=document.createElement('input');
+          inp.type='hidden'; inp.name=`comboCounts[${id}]`; inp.value=String(n);
+          hidden.appendChild(inp);
+        });
+        tableBody.querySelectorAll('tr[data-source="combo"] [name]').forEach(el=>el.remove());
+        reindexAllRows();
+      });
+
+      // Bấm "Tạo phiếu xuất" -> lưu đơn trước rồi redirect
+      document.getElementById('btnCreateIssue')?.addEventListener('click', async (e) => {
+        if (LOCKED) return;
+        e.preventDefault();
+
+        const form = document.getElementById('saleOrderForm');
+        const issueUrl = e.currentTarget.getAttribute('href');
+
+        // Đóng gói comboCounts giống như khi submit form
+        const hidden=document.getElementById('comboCountsHidden'); hidden.innerHTML='';
+        comboCounts.forEach((n,id)=>{
+          const inp=document.createElement('input');
+          inp.type='hidden'; inp.name=`comboCounts[${id}]`; inp.value=String(n);
+          hidden.appendChild(inp);
+        });
+        // Không submit các input thuộc dòng combo
+        const tableBody = document.getElementById('itemTableBody');
+        tableBody.querySelectorAll('tr[data-source="combo"] [name]').forEach(el=>el.remove());
+        // Đảm bảo index inputs đúng
+        reindexAllRows();
+
+        try {
+          const fd = new FormData(form);
+          const res = await fetch(form.action, {
+            method: 'POST',
+            body: fd,
+            headers: { [csrfHeader]: csrfToken },
+            credentials: 'same-origin',
+            redirect: 'follow'
+          });
+          if (!res.ok) {
+            alert('Lưu đơn hàng thất bại, không thể tạo phiếu xuất.');
+            return;
+          }
+          window.location.href = issueUrl;
+        } catch (err) {
+          alert('Có lỗi khi lưu đơn hàng trước khi tạo phiếu xuất.');
+        }
+      });
+    });
+
+    /* ======= CHỈ THÊM 6 DÒNG NÀY: set SĐT từ option đã chọn ======= */
+    document.addEventListener('DOMContentLoaded', () => {
+      const sel = document.querySelector('select[name="customerId"]');
+      const phoneInput = document.getElementById('customerPhone');
+      if (sel && phoneInput && sel.selectedOptions.length) {
+        phoneInput.value = sel.selectedOptions[0].getAttribute('data-phone') || '';
+      }
+    });
+</script>
 </body>
 </html>

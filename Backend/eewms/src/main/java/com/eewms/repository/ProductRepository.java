@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -127,4 +128,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
       from Product p
     """)
     BigDecimal sumInventoryValue();
+    @Modifying
+    @Query("UPDATE Product p SET p.quantity = p.quantity - :qty WHERE p.id = :pid AND p.quantity >= :qty")
+    int decrementStock(@Param("pid") Integer productId, @Param("qty") int qty);
 }
