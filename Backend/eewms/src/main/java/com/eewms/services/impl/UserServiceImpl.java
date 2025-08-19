@@ -98,7 +98,6 @@
 
             String newUsername = nvlTrimToNull(dto.getUsername());
             if (newUsername != null && !newUsername.equals(user.getUsername())) {
-                newUsername = NameUtils.normalizeCode(newUsername);
                 if (userRepository.existsByUsernameAndIdNot(newUsername, user.getId())) {
                     throw new IllegalArgumentException("Tên đăng nhập đã tồn tại");
                 }

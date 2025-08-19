@@ -5,6 +5,7 @@ import com.eewms.dto.UserProfileDTO;
 import com.eewms.entities.User;
 import com.eewms.services.IUserService;
 import com.eewms.services.ImageUploadService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,8 +35,17 @@ public class AccountController {
 
     @GetMapping("/info")
     public String showProfile(Model model, @AuthenticationPrincipal UserDetails userDetails) {
-        User user = userService.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
+        // Không đăng nhập -> về trang login
+        if (userDetails == null) {
+            return "redirect:/login";
+        }
+
+        // Có thể user đã bị đổi/xoá -> fallback về login thay vì 500
+        Optional<User> opt = userService.findByUsername(userDetails.getUsername());
+        if (opt.isEmpty()) {
+            return "redirect:/login";
+        }
+        User user = opt.get();
 
         UserProfileDTO profileDTO = UserProfileDTO.builder()
                 .username(user.getUsername())
@@ -58,7 +68,8 @@ public class AccountController {
                                 RedirectAttributes redirect,
                                 @AuthenticationPrincipal UserDetails userDetails,
                                 HttpSession session,
-                                Model model) {
+                                Model model,
+                                HttpServletRequest request) {
 
         String currentUsername = userDetails.getUsername();
         userService.findByUsername(currentUsername)
@@ -95,10 +106,19 @@ public class AccountController {
                 String imageUrl = imageUploadService.uploadImage(avatarFile);
                 profileDTO.setAvatarUrl(imageUrl);
             }
+            boolean usernameChanged = profileDTO.getUsername() != null
+                    && !profileDTO.getUsername().trim().equals(currentUsername);
 
             userService.updateUserProfile(currentUsername, profileDTO);
-            session.setAttribute("avatarTimestamp", System.currentTimeMillis());
 
+            if (usernameChanged) {
+                try { request.logout(); } catch (Exception ignored) {}
+                try { session.invalidate(); } catch (IllegalStateException ignored) {}
+                redirect.addFlashAttribute("message", "Đã đổi tên đăng nhập. Vui lòng đăng nhập lại.");
+                return "redirect:/login";
+            }
+
+            session.setAttribute("avatarTimestamp", System.currentTimeMillis());
             redirect.addFlashAttribute("message", "Cập nhật hồ sơ thành công.");
             return "redirect:/account/info";
 
@@ -120,7 +140,8 @@ public class AccountController {
                                                BindingResult result,
                                                @RequestParam(value = "avatarFile", required = false) MultipartFile avatarFile,
                                                @AuthenticationPrincipal UserDetails userDetails,
-                                               HttpSession session) {
+                                               HttpSession session,
+                                               HttpServletRequest request) {
 
         String currentUsername = userDetails.getUsername();
         User current = userService.findByUsername(currentUsername)
@@ -160,15 +181,28 @@ public class AccountController {
                 profileDTO.setAvatarUrl(newAvatar);
             }
 
+            boolean usernameChanged = profileDTO.getUsername() != null
+                    && !profileDTO.getUsername().trim().equals(currentUsername);
+
             userService.updateUserProfile(currentUsername, profileDTO);
             if (newAvatar != null) {
                 session.setAttribute("avatarTimestamp", System.currentTimeMillis());
             }
 
+            if (usernameChanged) {
+                try { request.logout(); } catch (Exception ignored) {}
+                try { session.invalidate(); } catch (IllegalStateException ignored) {}
+                return ResponseEntity.ok(Map.of(
+                        "ok", true,
+                        "requireLogin", true,
+                        "message", "Đã đổi tên đăng nhập. Vui lòng đăng nhập lại."
+                ));
+            }
             User refreshed = userService.findByUsername(currentUsername).orElse(current);
 
             return ResponseEntity.ok(Map.of(
                     "ok", true,
+                    "requireLogin", false,
                     "message", "Cập nhật hồ sơ thành công.",
                     "profile", Map.of(
                             "username", refreshed.getUsername(),
