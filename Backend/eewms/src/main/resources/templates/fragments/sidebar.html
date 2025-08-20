@@ -108,7 +108,7 @@
                 </div>
             </li>
             <!-- Mua hàng -->
-            <li sec:authorize="hasRole('MANAGER')">
+            <li sec:authorize="hasAnyRole('MANAGER','STAFF')">
                 <a th:href="@{/admin/purchase-orders}"
                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-shopping-basket-line w-6 text-lg"></i>
