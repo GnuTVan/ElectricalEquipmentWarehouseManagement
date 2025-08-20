@@ -3,7 +3,6 @@
       xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/common-head :: commonHead('Đơn hàng bán')}"></head>
 
-
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
     <!-- Sidebar -->
@@ -68,34 +67,42 @@
 
         <!-- Sale Order Table -->
         <div class="px-6 py-6">
-        <div class="overflow-x-auto bg-white rounded-lg shadow">
-            <table id="Table" class="min-w-full table-auto text-sm">
-                <thead class="bg-gray-100 text-left">
-                <tr>
-                    <th class="px-4 py-3 font-semibold">STT</th>
-                    <th class="px-4 py-3 font-semibold">Mã đơn</th>
-                    <th class="px-4 py-3 font-semibold">Khách hàng</th>
-                    <!-- ✅ Thêm lại cột Số điện thoại -->
-                    <th class="px-4 py-3 font-semibold">Số điện thoại</th>
-                    <th class="px-4 py-3 font-semibold">Ngày tạo</th>
-                    <th class="px-4 py-3 font-semibold">Người tạo</th>
-                    <th class="px-4 py-3 font-semibold">Tổng tiền</th>
-                    <th class="px-4 py-3 font-semibold">Trạng thái</th>
-                    <th class="px-4 py-3 font-semibold text-center">Hành động</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="order, iStat : ${sale_orders}" class="border-t">
-                    <td class="px-4 py-2" th:text="${iStat.index + 1}"></td>
-                    <td class="px-4 py-2 font-medium text-blue-600" th:text="${order.orderCode}"></td>
-                    <td class="px-4 py-2" th:text="${order.customerName}"></td>
-                    <!-- ✅ Dữ liệu số điện thoại -->
-                    <td class="px-4 py-2" th:text="${order.customerPhone}"></td>
-                    <td class="px-4 py-2" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
-                    <td class="px-4 py-2" th:text="${order.createdBy}"></td>
-                    <td class="px-4 py-2"
-                        th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
-                    <td class="px-4 py-2 w-36 text-center">
+            <div class="overflow-x-auto bg-white rounded-lg shadow">
+                <table id="Table" class="min-w-full table-auto text-sm">
+                    <thead class="bg-gray-100 text-left">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold">STT</th>
+                        <th class="px-4 py-3 font-semibold">Mã đơn</th>
+                        <th class="px-4 py-3 font-semibold">Khách hàng</th>
+                        <!-- ✅ Cột Số điện thoại -->
+                        <th class="px-4 py-3 font-semibold">Số điện thoại</th>
+                        <th class="px-4 py-3 font-semibold">Ngày tạo</th>
+                        <th class="px-4 py-3 font-semibold">Người tạo</th>
+                        <th class="px-4 py-3 font-semibold">Tổng tiền</th>
+                        <th class="px-4 py-3 font-semibold">Trạng thái</th>
+                        <th class="px-4 py-3 font-semibold text-center">Hành động</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="order, iStat : ${sale_orders}" class="border-t">
+                        <td class="px-4 py-2" th:text="${iStat.index + 1}"></td>
+                        <td class="px-4 py-2 font-medium text-blue-600" th:text="${order.orderCode}"></td>
+                        <td class="px-4 py-2" th:text="${order.customerName}"></td>
+
+                        <!-- ✅ Dữ liệu số điện thoại (fallback & link gọi) -->
+                        <td class="px-4 py-2">
+                            <a th:if="${order.customerPhone}"
+                               th:href="${'tel:' + order.customerPhone}"
+                               class="text-gray-700 hover:underline"
+                               th:text="${order.customerPhone}">0123456789</a>
+                            <span th:if="${order.customerPhone == null}" class="text-gray-400">-</span>
+                        </td>
+
+                        <td class="px-4 py-2" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
+                        <td class="px-4 py-2" th:text="${order.createdBy}"></td>
+                        <td class="px-4 py-2"
+                            th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+                        <td class="px-4 py-2 w-36 text-center">
                         <span class="inline-block w-full truncate px-2 py-1 rounded text-xs font-medium"
                               th:classappend="
                                     ${order.status.name() == 'CANCELLED'} ? 'bg-red-100 text-red-700' :
@@ -104,46 +111,46 @@
                                  'bg-gray-100 text-gray-700'))"
                               th:text="${order.status.label}">
                         </span>
-                    </td>
-                    <td class="px-4 py-2 text-center">
-                        <div class="flex justify-center items-center space-x-2">
-                            <!-- PENDING: Sửa + Xóa -->
-                            <a sec:authorize="hasRole('STAFF')"
-                               th:if="${order.status.name() == 'PENDING'}"
-                               th:href="@{/sale-orders/{id}/edit(id=${order.orderId})}"
-                               class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded shadow">
-                                <i class="ri-edit-line text-base"></i>
-                                Sửa
-                            </a>
+                        </td>
+                        <td class="px-4 py-2 text-center">
+                            <div class="flex justify-center items-center space-x-2">
+                                <!-- PENDING: Sửa + Xóa -->
+                                <a sec:authorize="hasRole('STAFF')"
+                                   th:if="${order.status.name() == 'PENDING'}"
+                                   th:href="@{/sale-orders/{id}/edit(id=${order.orderId})}"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded shadow">
+                                    <i class="ri-edit-line text-base"></i>
+                                    Sửa
+                                </a>
 
-                            <form sec:authorize="hasRole('STAFF')"
-                                  th:if="${order.status.name() == 'PENDING'}"
-                                  th:action="@{/sale-orders/{id}/delete(id=${order.orderId})}"
-                                  method="post"
-                                  onsubmit="return confirm('Bạn có chắc muốn xóa đơn này?');"
-                                  class="inline-flex">
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                                <button type="submit"
-                                        class="inline-flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm rounded shadow">
-                                    <i class="ri-delete-bin-line text-base"></i>
-                                    Xóa
-                                </button>
-                            </form>
+                                <form sec:authorize="hasRole('STAFF')"
+                                      th:if="${order.status.name() == 'PENDING'}"
+                                      th:action="@{/sale-orders/{id}/delete(id=${order.orderId})}"
+                                      method="post"
+                                      onsubmit="return confirm('Bạn có chắc muốn xóa đơn này?');"
+                                      class="inline-flex">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                    <button type="submit"
+                                            class="inline-flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm rounded shadow">
+                                        <i class="ri-delete-bin-line text-base"></i>
+                                        Xóa
+                                    </button>
+                                </form>
 
-                            <!-- DELIVERIED / COMPLETED: Xem đơn -->
-                            <a th:if="${order.status.name() != 'PENDING'}"
-                               th:href="@{/sale-orders/{id}/view(id=${order.orderId})}"
-                               class="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-500 hover:bg-slate-600 text-white text-sm rounded shadow">
-                                <i class="ri-eye-line text-base"></i>
-                                Xem đơn
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-        <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
+                                <!-- DELIVERIED / COMPLETED: Xem đơn -->
+                                <a th:if="${order.status.name() != 'PENDING'}"
+                                   th:href="@{/sale-orders/{id}/view(id=${order.orderId})}"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-500 hover:bg-slate-600 text-white text-sm rounded shadow">
+                                    <i class="ri-eye-line text-base"></i>
+                                    Xem đơn
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
         </div>
     </main>
 </div>

@@ -11,7 +11,6 @@ import org.hibernate.Hibernate;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class SaleOrderMapper {
@@ -26,7 +25,6 @@ public class SaleOrderMapper {
         return detail;
     }
 
-    // Tạo DTO sản phẩm từ chi tiết đơn hàng
     // ===== Detail item mapping (dùng ở TRANG CHI TIẾT) =====
     public static SaleOrderDetailDTO toDetailDTO(SaleOrderDetail d) {
         if (d == null) return null;
@@ -48,33 +46,31 @@ public class SaleOrderMapper {
     }
 
     // ======= LITE cho TRANG DANH SÁCH: KHÔNG đụng vào details =======
-    // Tránh truy cập collection LAZY và các quan hệ LAZY khác.
     public static SaleOrderResponseDTO toOrderListDTO(SaleOrder order) {
         if (order == null) return null;
 
+        Customer c = order.getCustomer();
+        User u = order.getCreatedByUser();
+
         SaleOrderResponseDTO dto = SaleOrderResponseDTO.builder()
+                .soId(order.getSoId())
                 .orderId(order.getSoId())
                 .orderCode(order.getSoCode())
-                .customerId(order.getCustomer() != null ? order.getCustomer().getId() : null)
+                .customerId(c != null ? c.getId() : null)
+                .customerName(c != null ? c.getFullName() : null)
+                .customerPhone(c != null ? c.getPhone() : null) // <<< map số điện thoại KH
                 .description(order.getDescription())
                 .status(order.getStatus())
                 .orderDate(order.getOrderDate())
-                // Ưu tiên đọc total đã lưu ở cột (không cần chạm details)
                 .totalAmount(order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO)
                 .paymentStatus(order.getPaymentStatus())
                 .paymentNote(order.getPaymentNote())
-                // KHÔNG map details ở list
-                .details(Collections.emptyList())
+                .createdBy(u != null
+                        ? (u.getFullName() != null ? u.getFullName() : u.getUsername())
+                        : null)
+                .details(Collections.emptyList()) // list page không load details
                 .build();
 
-    /** Map SaleOrder → SaleOrderResponseDTO */
-        // Tránh kích hoạt LAZY: chỉ đọc nếu đã initialized
-        if (order.getCustomer() != null && Hibernate.isInitialized(order.getCustomer())) {
-            dto.setCustomerName(order.getCustomer().getFullName());
-        }
-        if (order.getCreatedByUser() != null && Hibernate.isInitialized(order.getCreatedByUser())) {
-            dto.setCreatedBy(order.getCreatedByUser().getFullName());
-        }
         return dto;
     }
 
@@ -82,7 +78,6 @@ public class SaleOrderMapper {
     public static SaleOrderResponseDTO toOrderResponseDTO(SaleOrder order) {
         if (order == null) return null;
 
-        // An toàn với LAZY: chỉ truy cập details nếu đã được initialize
         List<SaleOrderDetail> details =
                 (order.getDetails() != null && Hibernate.isInitialized(order.getDetails()))
                         ? order.getDetails()
@@ -104,27 +99,21 @@ public class SaleOrderMapper {
 
         return SaleOrderResponseDTO.builder()
                 .soId(order.getSoId())
-                .orderId(order.getSoId()) // <-- đảm bảo không null ở nơi còn dùng orderId
+                .orderId(order.getSoId())
                 .orderCode(order.getSoCode())
-                .customerId(order.getCustomer() != null ? order.getCustomer().getId() : null)
-                .customerName(order.getCustomer() != null ? order.getCustomer().getFullName() : null)
+                .customerId(c != null ? c.getId() : null)
                 .customerName(c != null ? c.getFullName() : null)
-                .customerPhone(c != null ? c.getPhone() : null) // đã thêm cột Phone trước đó
+                .customerPhone(c != null ? c.getPhone() : null) // map phone cho trang chi tiết
                 .description(order.getDescription())
                 .status(order.getStatus())
                 .orderDate(order.getOrderDate())
                 .totalAmount(total)
-                .createdBy(order.getCreatedByUser() != null ? order.getCreatedByUser().getFullName() : null)
-                .details(detailsDTOs)
-                .totalAmount(order.getTotalAmount())
                 .createdBy(u != null
                         ? (u.getFullName() != null ? u.getFullName() : u.getUsername())
                         : null)
+                .details(detailsDTOs)
                 .paymentStatus(order.getPaymentStatus())
                 .paymentNote(order.getPaymentNote())
-                .details(detailsDTOs)
                 .build();
     }
 }
-
-

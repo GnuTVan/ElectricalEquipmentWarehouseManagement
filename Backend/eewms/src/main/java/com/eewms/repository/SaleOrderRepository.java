@@ -14,11 +14,14 @@ import java.util.List;
 import java.util.Optional;
 
 public interface SaleOrderRepository extends JpaRepository<SaleOrder, Integer> {
+
     boolean existsBySoCode(String soCode);
 
     @Query("SELECT so FROM SaleOrder so WHERE so.status = :status")
     List<SaleOrder> findByStatus(@Param("status") SaleOrder.SaleOrderStatus status);
 
+    // Trang LIST khi có từ khoá -> cần fetch customer/createdByUser để mapper đọc phone & creator
+    @EntityGraph(attributePaths = {"customer", "createdByUser"})
     @Query("SELECT o FROM SaleOrder o WHERE LOWER(o.soCode) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     List<SaleOrder> searchByKeyword(@Param("keyword") String keyword);
 
@@ -61,9 +64,11 @@ public interface SaleOrderRepository extends JpaRepository<SaleOrder, Integer> {
 
     Optional<SaleOrder> findByPayOsOrderCode(String payOsOrderCode);
 
+    // Trang LIST mặc định (không có keyword)
     @EntityGraph(attributePaths = {"customer", "createdByUser"})
     Page<SaleOrder> findAllByOrderBySoIdDesc(Pageable pageable);
 
+    // Trang CHI TIẾT: fetch-join toàn bộ cần thiết
     @Query("""
         select distinct so
         from SaleOrder so
@@ -75,17 +80,17 @@ public interface SaleOrderRepository extends JpaRepository<SaleOrder, Integer> {
         where so.soId = :id
     """)
     Optional<SaleOrder> findByIdWithDetails(@Param("id") Integer id);
+
     List<SaleOrder> findByStatusIn(Collection<SaleOrder.SaleOrderStatus> statuses);
 
     @Query("""
-  select distinct so from SaleOrder so
-  left join fetch so.details d
-  where so.status in (com.eewms.entities.SaleOrder.SaleOrderStatus.PENDING,
-                      com.eewms.entities.SaleOrder.SaleOrderStatus.PARTLY_DELIVERED)
-    and (:start is null or so.orderDate >= :start)
-    and (:end   is null or so.orderDate <= :end)
-""")
+      select distinct so from SaleOrder so
+      left join fetch so.details d
+      where so.status in (com.eewms.entities.SaleOrder.SaleOrderStatus.PENDING,
+                          com.eewms.entities.SaleOrder.SaleOrderStatus.PARTLY_DELIVERED)
+        and (:start is null or so.orderDate >= :start)
+        and (:end   is null or so.orderDate <= :end)
+    """)
     List<SaleOrder> findOpenOrdersInRange(@Param("start") LocalDateTime start,
                                           @Param("end") LocalDateTime end);
-
 }
