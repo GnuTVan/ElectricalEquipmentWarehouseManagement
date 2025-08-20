@@ -31,7 +31,7 @@
         <!-- Bảng dữ liệu -->
         <div class="px-6 py-6">
             <div class="bg-white rounded-lg shadow">
-                <table class="min-w-full table-auto text-sm border border-gray-200">
+                <table id="Table" class="min-w-full table-auto text-sm border border-gray-200">
                     <thead class="bg-gray-100 text-left">
                     <tr>
                         <th class="px-4 py-3 whitespace-nowrap border border-gray-200">Mã SP</th>
@@ -129,6 +129,7 @@
                     </tbody>
                 </table>
             </div>
+            <div th:replace="~{fragments/pagination :: clientPager('Table', 5)}"></div>
         </div>
         <!-- Modal Chi tiết sản phẩm -->
         <div id="detailProductModal" class="fixed inset-0 z-50 hidden">

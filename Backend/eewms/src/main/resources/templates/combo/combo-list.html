@@ -24,7 +24,7 @@
         </div>
         <div class="px-6 pb-6">
             <div class="overflow-x-auto bg-white rounded-lg shadow">
-                <table class="min-w-full text-sm text-left border border-gray-200">
+                <table id="Table" class="min-w-full text-sm text-left border border-gray-200">
                     <thead class="bg-gray-100 text-xs uppercase font-semibold">
                     <tr>
                         <th class="px-4 py-3 border border-gray-200">Code</th>
@@ -76,6 +76,7 @@
                     </tbody>
                 </table>
             </div>
+            <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
         </div>
         <div class="hidden" th:insert="~{fragments/footer :: footer}"></div>
     </main>

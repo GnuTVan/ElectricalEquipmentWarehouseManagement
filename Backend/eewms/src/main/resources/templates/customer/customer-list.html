@@ -25,7 +25,7 @@
         </div>
         <div class="px-6 pb-6">
             <div class="bg-white rounded-lg shadow overflow-auto">
-                <table class="min-w-full text-sm border border-200">
+                <table id="Table" class="min-w-full text-sm border border-200">
                     <thead class="bg-gray-100 border border-200">
                     <tr>
                         <th class="px-4 py-3 border border-200">Họ tên</th>
@@ -79,6 +79,7 @@
                     </tbody>
                 </table>
             </div>
+            <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
         </div>
         <!-- Modal Thêm/Sửa khách hàng -->
         <div id="customerModal"

@@ -48,7 +48,7 @@
                         </button>
                     </div>
                     <div class="bg-white shadow-md rounded-lg mx-6 mb-8">
-                        <table class="min-w-full table-auto text-sm text-left border border-gray-200">
+                        <table id="Table" class="min-w-full table-auto text-sm text-left border border-gray-200">
                             <thead class="bg-gray-100 text-gray-700 font-semibold">
                             <tr>
                                 <th class="px-4 py-2 border border-200 whitespace-nowrap">STT</th>
@@ -92,6 +92,8 @@
                         </table>
 
                     </div>
+                    <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
+
                     <div id="settingModal" class="fixed inset-0 bg-black bg-opacity-50 hidden">
                         <div class="bg-white p-6 rounded-lg mx-auto my-20 w-96 relative">
                             <div class="flex justify-between items-center mb-4">

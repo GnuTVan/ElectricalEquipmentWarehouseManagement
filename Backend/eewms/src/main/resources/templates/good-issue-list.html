@@ -30,7 +30,7 @@
                 </form>
             </div>
             <div class="overflow-x-auto bg-white rounded-lg shadow">
-                <table class="min-w-full table-auto text-sm border border-gray-200">
+                <table id="Table" class="min-w-full table-auto text-sm border border-gray-200">
                     <thead class="bg-gray-100 text-left">
                     <tr>
                         <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Mã phiếu</th>
@@ -113,6 +113,7 @@
                     </tbody>
                 </table>
             </div>
+            <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
         </div>
     </main>
 </div>

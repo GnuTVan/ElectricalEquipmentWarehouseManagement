@@ -31,7 +31,7 @@
         <!-- Supplier Table -->
         <div class="px-6 py-6">
             <div class="bg-white rounded-lg shadow">
-                <table class="min-w-full table-auto text-sm border border-gray-200">
+                <table id="Table" class="min-w-full table-auto text-sm border border-gray-200">
                     <thead class="bg-gray-100 text-left">
                     <tr>
                         <th class="px-4 py-3 font-semibold border border-gray-200">STT</th>
@@ -101,44 +101,43 @@
                 </table>
 
                 <!-- Pagination -->
-                <div class="flex justify-center mt-6">
-                    <ul class="inline-flex space-x-1">
-                        <!-- Nút về đầu -->
-                        <li th:if="${supplierPage.totalPages > 1}">
-                            <a th:href="@{/admin/suppliers(page=0, keyword=${keyword})}"
-                               class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">«</a>
-                        </li>
+<!--                <div class="flex justify-center mt-6">-->
+<!--                    <ul class="inline-flex space-x-1">-->
+<!--                        &lt;!&ndash; Nút về đầu &ndash;&gt;-->
+<!--                        <li th:if="${supplierPage.totalPages > 1}">-->
+<!--                            <a th:href="@{/admin/suppliers(page=0, keyword=${keyword})}"-->
+<!--                               class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">«</a>-->
+<!--                        </li>-->
 
-                        <!-- Nút về trước -->
-                        <li th:if="${supplierPage.hasPrevious()}">
-                            <a th:href="@{/admin/suppliers(page=${supplierPage.number - 1}, keyword=${keyword})}"
-                               class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">‹</a>
-                        </li>
+<!--                        &lt;!&ndash; Nút về trước &ndash;&gt;-->
+<!--                        <li th:if="${supplierPage.hasPrevious()}">-->
+<!--                            <a th:href="@{/admin/suppliers(page=${supplierPage.number - 1}, keyword=${keyword})}"-->
+<!--                               class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">‹</a>-->
+<!--                        </li>-->
 
-                        <!-- Các số trang -->
-                        <li th:each="i : ${#numbers.sequence(0, supplierPage.totalPages - 1)}">
-                            <a th:href="@{/admin/suppliers(page=${i}, keyword=${keyword})}"
-                               th:text="${i + 1}"
-                               th:classappend="${supplierPage.number == i} ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'"
-                               class="px-3 py-1 rounded text-sm font-medium"></a>
-                        </li>
+<!--                        &lt;!&ndash; Các số trang &ndash;&gt;-->
+<!--                        <li th:each="i : ${#numbers.sequence(0, supplierPage.totalPages - 1)}">-->
+<!--                            <a th:href="@{/admin/suppliers(page=${i}, keyword=${keyword})}"-->
+<!--                               th:text="${i + 1}"-->
+<!--                               th:classappend="${supplierPage.number == i} ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'"-->
+<!--                               class="px-3 py-1 rounded text-sm font-medium"></a>-->
+<!--                        </li>-->
 
-                        <!-- Nút tiếp theo -->
-                        <li th:if="${supplierPage.hasNext()}">
-                            <a th:href="@{/admin/suppliers(page=${supplierPage.number + 1}, keyword=${keyword})}"
-                               class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">›</a>
-                        </li>
+<!--                        &lt;!&ndash; Nút tiếp theo &ndash;&gt;-->
+<!--                        <li th:if="${supplierPage.hasNext()}">-->
+<!--                            <a th:href="@{/admin/suppliers(page=${supplierPage.number + 1}, keyword=${keyword})}"-->
+<!--                               class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">›</a>-->
+<!--                        </li>-->
 
-                        <!-- Nút đến cuối -->
-                        <li>
-                            <a th:href="@{/admin/suppliers(page=${supplierPage.totalPages - 1}, keyword=${keyword})}"
-                               class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">»</a>
-                        </li>
-                    </ul>
-                </div>
-
-
+<!--                        &lt;!&ndash; Nút đến cuối &ndash;&gt;-->
+<!--                        <li>-->
+<!--                            <a th:href="@{/admin/suppliers(page=${supplierPage.totalPages - 1}, keyword=${keyword})}"-->
+<!--                               class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">»</a>-->
+<!--                        </li>-->
+<!--                    </ul>-->
+<!--                </div>-->
             </div>
+            <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
         </div>
         <!-- ✅ Modal Thêm nhà cung cấp -->
         <div id="addSupplierModal"

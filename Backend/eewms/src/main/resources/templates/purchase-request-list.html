@@ -51,7 +51,7 @@
 
             <div th:if="${requestPage.totalElements > 0}">
                 <div class="overflow-x-auto bg-white rounded-lg shadow">
-                    <table class="min-w-full table-auto text-sm border border-gray-200">
+                    <table id="Table" class="min-w-full table-auto text-sm border border-gray-200">
                         <thead class="bg-gray-100 text-left">
                         <tr>
                             <th class="px-4 py-3 border border-gray-200 font-semibold">Mã yêu cầu</th>
@@ -113,14 +113,15 @@
                     </table>
 
                     <!-- Phân trang -->
-                    <div class="mt-4 flex justify-center space-x-2">
-                        <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
-                           th:href="@{'/admin/purchase-requests'(page=${i}, creator=${creator}, startDate=${startDate}, endDate=${endDate}, keyword=${keyword})}"
-                           th:text="${i + 1}"
-                           th:class="'px-3 py-1 border rounded ' + (${i} == ${currentPage} ? 'bg-blue-600 text-white' : 'bg-white text-blue-600')">
-                        </a>
-                    </div>
+<!--                    <div class="mt-4 flex justify-center space-x-2">-->
+<!--                        <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"-->
+<!--                           th:href="@{'/admin/purchase-requests'(page=${i}, creator=${creator}, startDate=${startDate}, endDate=${endDate}, keyword=${keyword})}"-->
+<!--                           th:text="${i + 1}"-->
+<!--                           th:class="'px-3 py-1 border rounded ' + (${i} == ${currentPage} ? 'bg-blue-600 text-white' : 'bg-white text-blue-600')">-->
+<!--                        </a>-->
+<!--                    </div>-->
                 </div>
+                <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
             </div>
         </section>
     </main>

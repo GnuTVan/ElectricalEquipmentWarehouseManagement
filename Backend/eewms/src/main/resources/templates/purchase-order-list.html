@@ -39,7 +39,7 @@
             </form>
 
             <div class="overflow-x-auto bg-white rounded-lg shadow">
-                <table class="min-w-full table-auto text-sm border border-gray-200">
+                <table id="Table" class="min-w-full table-auto text-sm border border-gray-200">
                     <thead class="bg-gray-100 text-left">
                     <tr>
                         <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">STT</th>
@@ -123,15 +123,16 @@
                     </tbody>
                 </table>
 
-                <!-- Phân trang -->
-                <div class="mt-4 flex justify-center space-x-2">
-                    <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
-                       th:href="@{'/admin/purchase-orders'(page=${i}, keyword=${keyword}, status=${status}, from=${from}, to=${to})}"
-                       th:text="${i + 1}"
-                       th:class="'px-3 py-1 border rounded ' + (${i} == ${currentPage} ? 'bg-blue-600 text-white' : 'bg-white text-blue-600')">
-                    </a>
-                </div>
+<!--                &lt;!&ndash; Phân trang &ndash;&gt;-->
+<!--                <div class="mt-4 flex justify-center space-x-2">-->
+<!--                    <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"-->
+<!--                       th:href="@{'/admin/purchase-orders'(page=${i}, keyword=${keyword}, status=${status}, from=${from}, to=${to})}"-->
+<!--                       th:text="${i + 1}"-->
+<!--                       th:class="'px-3 py-1 border rounded ' + (${i} == ${currentPage} ? 'bg-blue-600 text-white' : 'bg-white text-blue-600')">-->
+<!--                    </a>-->
+<!--                </div>-->
             </div>
+            <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
         </div>
     </main>
 </div>

@@ -1,0 +1,30 @@
+<div th:fragment="clientPager(targetId, pageSize)"
+     class="client-pager mt-4 select-none"
+     th:attr="data-target=${targetId}, data-pagesize=${pageSize}">
+    <!-- Card trắng riêng cho phân trang -->
+    <div class="bg-white rounded-lg shadow border">
+        <div class="px-4 py-3 flex items-center justify-between">
+            <!-- Trái: Per page + Info -->
+            <div class="flex items-center gap-3 text-sm text-gray-600">
+                <div class="flex items-center gap-2">
+                    <label class="hidden md:block">Bản ghi mỗi trang</label>
+                    <select class="page-size border rounded px-2 py-1">
+                        <option>5</option>
+                        <option selected>10</option>
+                        <option>20</option>
+                        <option>50</option>
+                    </select>
+                </div>
+                <span class="info">Trang 1/1 • 0 bản ghi</span>
+            </div>
+
+            <!-- Giữa: cụm nút trang (luôn ở chính giữa) -->
+            <div class="flex-1 flex justify-center">
+                <ul class="pages inline-flex items-center gap-1"></ul>
+            </div>
+
+            <!-- Phải: khoảng trống để cân đối với khối bên trái -->
+            <div class="w-[120px]"></div>
+        </div>
+    </div>
+</div>
