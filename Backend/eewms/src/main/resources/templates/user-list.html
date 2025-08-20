@@ -34,19 +34,19 @@
         </div>
 
         <!-- Table -->
-        <div class="bg-white rounded shadow overflow-x-auto">
-            <table class="min-w-full table-auto text-sm">
-                <thead class="bg-gray-200 text-gray-700">
+        <div class="bg-white shadow-md rounded-lg mx-6 mb-8">
+            <table class="min-w-full table-auto text-sm text-left border border-gray-200">
+                <thead class="bg-gray-100 text-gray-700 font-semibold">
                 <tr>
-                    <th class="px-4 py-3 text-left">ID</th>
-                    <th class="px-4 py-3 text-left">Họ và tên</th>
-                    <th class="px-4 py-3 text-left">Tên tài khoản</th>
-                    <th class="px-4 py-3 text-left">Email</th>
-                    <th class="px-4 py-3 text-left">SĐT</th>
-                    <th class="px-4 py-3 text-left">Địa chỉ</th>
-                    <th class="px-4 py-3 text-left">Chức vụ</th>
-                    <th class="px-4 py-3 text-left">Trạng thái</th>
-                    <th class="px-4 py-3 text-center">Hành động</th>
+                    <th class="px-4 py-3 border border-gray-200 whitespace-nowrap text-left">ID</th>
+                    <th class="px-4 py-3 border border-gray-200 whitespace-nowrap text-left">Họ và tên</th>
+                    <th class="px-4 py-3 border border-gray-200 whitespace-nowrap text-left">Tên tài khoản</th>
+                    <th class="px-4 py-3 border border-gray-200 whitespace-nowrap text-left">Email</th>
+                    <th class="px-4 py-3 border border-gray-200 whitespace-nowrap text-left">SĐT</th>
+                    <th class="px-4 py-3 border border-gray-200 whitespace-nowrap text-left">Địa chỉ</th>
+                    <th class="px-4 py-3 border border-gray-200 whitespace-nowrap text-left">Chức vụ</th>
+                    <th class="px-4 py-3 border border-gray-200 whitespace-nowrap text-left">Trạng thái</th>
+                    <th class="px-4 py-3 border border-gray-200 whitespace-nowrap text-center">Hành động</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -58,13 +58,13 @@
                     th:data-address="${user.address}"
                     th:data-phone="${user.phone}"
                     th:data-role="${user.roleIds[0]}">
-                    <td class="px-4 py-3" th:text="${user.id}"></td>
-                    <td class="px-4 py-3" th:text="${user.fullName}"></td>
-                    <td class="px-4 py-3" th:text="${user.username}"></td>
-                    <td class="px-4 py-3" th:text="${user.email}"></td>
-                    <td class="px-4 py-3" th:text="${user.phone}"></td>
-                    <td class="px-4 py-3" th:text="${user.address}"></td>
-                    <td class="px-4 py-3">
+                    <td class="px-4 py-3 border border-gray-200" th:text="${user.id}"></td>
+                    <td class="px-4 py-3 border border-gray-200" th:text="${user.fullName}"></td>
+                    <td class="px-4 py-3 border border-gray-200" th:text="${user.username}"></td>
+                    <td class="px-4 py-3 border border-gray-200" th:text="${user.email}"></td>
+                    <td class="px-4 py-3 border border-gray-200" th:text="${user.phone}"></td>
+                    <td class="px-4 py-3 border border-gray-200" th:text="${user.address}"></td>
+                    <td class="px-4 py-3 border border-gray-200">
                         <span th:each="role : ${user.roleNames}"
                               th:text="${role}"
                               class="inline-block mr-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs uppercase font-medium"></span>
@@ -82,7 +82,7 @@
                                   th:text="${user.enabled ? 'Đang hoạt động' : 'Ngưng hoạt động'}"></span>
                         </div>
                     </td>
-                    <td class="px-4 py-3 text-center">
+                    <td class="px-4 py-3 border border-gray-200 text-center">
                         <form th:action="@{/admin/users/reset-password/{id}(id=${user.id})}" method="post">
                             <button type="submit"
                                     onclick="return confirm('Bạn có chắc muốn reset mật khẩu người dùng này không?')"

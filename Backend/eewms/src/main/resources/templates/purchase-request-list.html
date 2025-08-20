@@ -46,55 +46,76 @@
             </div>
 
             <!-- Danh sách -->
-            <div th:if="${requestPage.totalElements == 0}" class="text-gray-500 italic">
-                Không có yêu cầu nào.
-            </div>
+            <!-- Danh sách -->
+            <div th:if="${requestPage.totalElements == 0}" class="text-gray-500 italic">Không có yêu cầu nào.</div>
 
             <div th:if="${requestPage.totalElements > 0}">
-                <div class="overflow-auto">
-                    <table class="w-full table-auto border border-gray-300">
-                        <thead class="bg-gray-100">
+                <div class="overflow-x-auto bg-white rounded-lg shadow">
+                    <table class="min-w-full table-auto text-sm border border-gray-200">
+                        <thead class="bg-gray-100 text-left">
                         <tr>
-                            <th class="border p-2 text-left">Mã yêu cầu</th>
-                            <th class="border p-2 text-left">Người tạo</th>
-                            <th class="border p-2 text-left">Ngày tạo</th>
-                            <th class="border p-2 text-left">Trạng thái</th>
-                            <th class="border p-2 text-left">Thao tác</th>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold">Mã yêu cầu</th>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold">Người tạo</th>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold">Ngày tạo</th>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold">Trạng thái</th>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold text-center">Thao tác</th>
                         </tr>
                         </thead>
                         <tbody>
-                        <tr th:each="request : ${requestPage.content}" class="hover:bg-gray-50">
-                            <td class="border p-2" th:text="${request.code}">PR00001</td>
-                            <td class="border p-2" th:text="${request.createdByName}">Nguyễn Văn A</td>
-                            <td class="border p-2">
-                                <span th:if="${request.createdAt != null}"
-                                      th:text="${#temporals.format(request.createdAt, 'dd/MM/yyyy HH:mm')}">01/08/2025</span>
+                        <tr th:each="request : ${requestPage.content}" class="border-t hover:bg-gray-50">
+                            <td class="px-4 py-2 border border-gray-200" th:text="${request.code}">PR00001</td>
+                            <td class="px-4 py-2 border border-gray-200" th:text="${request.createdByName}">Nguyễn Văn A</td>
+                            <td class="px-4 py-2 border border-gray-200">
+          <span th:if="${request.createdAt != null}"
+                th:text="${#temporals.format(request.createdAt, 'dd/MM/yyyy HH:mm')}">01/08/2025</span>
                                 <span th:if="${request.createdAt == null}">---</span>
                             </td>
-                            <td class="border p-2" th:switch="${request.status}">
-                                <span th:case="'MOI_TAO'">Mới tạo</span>
-                                <span th:case="'DA_DUYET'">Đã duyệt</span>
-                                <span th:case="'DA_TAO_PO'">Đã tạo PO</span>
-                                <span th:case="*">---</span>
-                            </td>
-                            <td class="border p-2 space-x-2">
-                                <a class="text-blue-600 hover:underline"
-                                   th:href="@{'/admin/purchase-requests/' + ${request.id}}">Xem</a>
 
-                                <form th:if="${request.status != null and request.status.name() == 'MOI_TAO'}"
-                                      th:action="@{'/admin/purchase-requests/' + ${request.id} + '/status'}"
-                                      method="post" style="display:inline">
-                                    <input type="hidden" name="status" value="DA_DUYET"/>
-                                    <button class="text-green-600 hover:underline" type="submit">Duyệt</button>
-                                </form>
+                            <!-- Badge trạng thái -->
+                            <td class="px-4 py-2 border border-gray-200 w-32">
+          <span class="inline-flex items-center justify-center px-2 py-1 rounded text-md font-semibold whitespace-nowrap w-32"
+                th:classappend="
+                  ${request.status?.name() == 'MOI_TAO'}  ? 'bg-gray-100  text-gray-700'  :
+                  (${request.status?.name() == 'DA_DUYET'} ? 'bg-emerald-100 text-emerald-700' :
+                  (${request.status?.name() == 'DA_TAO_PO'} ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'))"
+                th:text="${request.status == null ? '---' :
+                         (request.status.name() == 'MOI_TAO' ? 'Mới tạo' :
+                         (request.status.name() == 'DA_DUYET' ? 'Đã duyệt' :
+                         (request.status.name() == 'DA_TAO_PO' ? 'Đã tạo PO' : '---')))}">
+          </span>
+                            </td>
+
+                            <!-- Thao tác: 2 nút -->
+                            <td class="px-4 py-2 border border-gray-200 text-center w-1">
+                                <div class="inline-flex items-center gap-2">
+                                    <!-- Nút Xem -->
+                                    <a th:href="@{'/admin/purchase-requests/' + ${request.id}}"
+                                       class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200">
+                                        <i class="ri-eye-line text-sm"></i> Xem
+                                    </a>
+
+                                    <!-- Nút Duyệt (chỉ khi Mới tạo) -->
+                                    <form th:if="${request.status != null and request.status.name() == 'MOI_TAO'}"
+                                          th:action="@{'/admin/purchase-requests/' + ${request.id} + '/status'}"
+                                          method="post" class="inline-flex">
+                                        <input type="hidden" name="status" value="DA_DUYET"/>
+                                        <input type="hidden" th:name="${_csrf.parameterName}"
+                                               th:value="${_csrf.token}"/>
+                                        <button type="submit"
+                                                class="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded">
+                                            <i class="ri-check-line text-sm"></i> Duyệt
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         </tbody>
                     </table>
 
+                    <!-- Phân trang -->
                     <div class="mt-4 flex justify-center space-x-2">
                         <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
-                           th:href="@{'/admin/purchase-requests'(page=${i}, creator=${creator}, startDate=${startDate}, endDate=${endDate})}"
+                           th:href="@{'/admin/purchase-requests'(page=${i}, creator=${creator}, startDate=${startDate}, endDate=${endDate}, keyword=${keyword})}"
                            th:text="${i + 1}"
                            th:class="'px-3 py-1 border rounded ' + (${i} == ${currentPage} ? 'bg-blue-600 text-white' : 'bg-white text-blue-600')">
                         </a>
@@ -107,7 +128,9 @@
 <script>
     const btn = document.getElementById("userMenuBtn");
     const dropdown = document.getElementById("userMenuDropdown");
-    btn?.addEventListener("click", () => { dropdown?.classList.toggle("hidden"); });
+    btn?.addEventListener("click", () => {
+        dropdown?.classList.toggle("hidden");
+    });
     document.addEventListener("click", (event) => {
         if (!event.target.closest("#userMenuWrapper")) dropdown?.classList.add("hidden");
     });

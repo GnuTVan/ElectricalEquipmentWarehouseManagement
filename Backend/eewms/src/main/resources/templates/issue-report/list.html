@@ -107,34 +107,34 @@
 
       <!-- Table -->
       <div class="bg-white rounded-lg shadow overflow-auto">
-        <table class="min-w-full text-sm">
-          <thead class="bg-gray-50">
+        <table class="min-w-full text-sm border border-200">
+          <thead class="bg-gray-100 border border-200">
           <tr>
-            <th class="text-left p-3">Mã PXK</th>
-            <th class="text-left p-3">Ngày xuất</th>
-            <th class="text-left p-3">Khách hàng</th>
-            <th class="text-left p-3">Người lập</th>
-            <th class="text-left p-3">Mã ĐH</th>
-            <th class="text-right p-3">Số lượng đã bán</th>
-            <th class="text-right p-3">Tổng tiền</th>
-            <th class="text-right p-3">Số combo đã bán</th>
+            <th class="text-left p-3 border border-200">Mã PXK</th>
+            <th class="text-left p-3 border border-200">Ngày xuất</th>
+            <th class="text-left p-3 border border-200">Khách hàng</th>
+            <th class="text-left p-3 border border-200">Người lập</th>
+            <th class="text-left p-3 border border-200">Mã ĐH</th>
+            <th class="text-right p-3 border border-200">Số lượng đã bán</th>
+            <th class="text-right p-3 border border-200">Tổng tiền</th>
+            <th class="text-right p-3 border border-200">Số combo đã bán</th>
           </tr>
           </thead>
           <tbody>
-          <tr th:each="r : ${data.content}">
-            <td class="p-3" th:text="${r.issueCode}">PXK0001</td>
-            <td class="p-3" th:text="${r.issueDate}">2025-08-01</td>
-            <td class="p-3" th:text="${r.customerName}">KH A</td>
-            <td class="p-3" th:text="${r.createdByName}">user</td>
-            <td class="p-3" th:text="${r.saleOrderCode}">SO0001</td>
-            <td class="p-3 text-right num-plain" th:attr="data-value=${r.totalQuantity}" th:text="${r.totalQuantity}">0</td>
-            <td class="p-3 text-right money" th:attr="data-value=${r.totalAmount}" th:text="${r.totalAmount}">0</td>
-            <td class="p-3 text-right num-plain"
+          <tr th:each="r : ${data.content}" class="border-t hover:bg-gray-50">
+            <td class="p-3 border border-200" th:text="${r.issueCode}">PXK0001</td>
+            <td class="p-3 border border-200" th:text="${r.issueDate}">2025-08-01</td>
+            <td class="p-3 border border-200" th:text="${r.customerName}">KH A</td>
+            <td class="p-3 border border-200" th:text="${r.createdByName}">user</td>
+            <td class="p-3 border border-200" th:text="${r.saleOrderCode}">SO0001</td>
+            <td class="p-3 border border-200 text-right num-plain" th:attr="data-value=${r.totalQuantity}" th:text="${r.totalQuantity}">0</td>
+            <td class="p-3 border border-200 text-right money" th:attr="data-value=${r.totalAmount}" th:text="${r.totalAmount}">0</td>
+            <td class="p-3 border border-200 text-right num-plain"
                 th:attr="data-value=${r.totalCombos}"
                 th:text="${r.totalCombos}">0</td>
           </tr>
           <tr th:if="${#lists.isEmpty(data.content)}">
-            <td class="p-3 text-center text-gray-500" colspan="7">Không có dữ liệu</td>
+            <td class="p-3 border border-200 text-center text-gray-500" colspan="7">Không có dữ liệu</td>
           </tr>
           </tbody>
         </table>

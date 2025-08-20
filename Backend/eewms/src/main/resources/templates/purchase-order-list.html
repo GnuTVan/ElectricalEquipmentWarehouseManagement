@@ -1,136 +1,159 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<html xmlns:th="http://www.thymeleaf.org" lang="vi"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/common-head :: commonHead('Mua hàng')}"></head>
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
-  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-  <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
-    <div th:replace="~{fragments/header :: header}"></div>
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <div th:replace="~{fragments/header :: header}"></div>
 
-    <div class="px-6 py-6">
-      <div class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-bold text-gray-800">Danh sách đơn mua với nhà cung cấp</h1>
-        <a href="/admin/purchase-orders/create"
-           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center">
-          <i class="ri-add-line mr-1"></i> Thêm đơn hàng
-        </a>
-      </div>
+        <div class="px-6 py-6">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-2xl font-bold text-gray-800">Danh sách đơn mua với nhà cung cấp</h1>
+                <a href="/admin/purchase-orders/create"
+                   class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center">
+                    <i class="ri-add-line mr-1"></i> Thêm đơn hàng
+                </a>
+            </div>
 
-      <div th:if="${message}" id="alertSuccess" class="mb-4 bg-green-100 text-green-800 px-4 py-2 rounded" th:text="${message}"></div>
-      <div th:if="${error}" id="alertError" class="mb-4 bg-red-100 text-red-800 px-4 py-2 rounded" th:text="${error}"></div>
+            <div th:if="${message}" id="alertSuccess" class="mb-4 bg-green-100 text-green-800 px-4 py-2 rounded"
+                 th:text="${message}"></div>
+            <div th:if="${error}" id="alertError" class="mb-4 bg-red-100 text-red-800 px-4 py-2 rounded"
+                 th:text="${error}"></div>
 
-      <!-- Bộ lọc -->
-      <form method="get" class="mb-4 flex items-center gap-2">
-        <input type="text" name="keyword" th:value="${keyword}" placeholder="Mã, Người tạo)" class="border p-2 rounded w-60"/>
-        <select name="status" class="border p-2 rounded">
-          <option value="">-- Trạng thái --</option>
-          <option th:each="st : ${T(com.eewms.constant.PurchaseOrderStatus).values()}" th:value="${st}" th:text="${st}" th:selected="${status == st}"></option>
-        </select>
-        <input type="datetime-local" name="from" th:value="${from}" class="border p-2 rounded"/>
-        <input type="datetime-local" name="to" th:value="${to}" class="border p-2 rounded"/>
-        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Lọc</button>
-      </form>
+            <!-- Bộ lọc -->
+            <form method="get" class="mb-4 flex items-center gap-2">
+                <input type="text" name="keyword" th:value="${keyword}" placeholder="Mã, Người tạo)"
+                       class="border p-2 rounded w-60"/>
+                <select name="status" class="border p-2 rounded">
+                    <option value=""> Trạng thái</option>
+                    <option th:each="st : ${T(com.eewms.constant.PurchaseOrderStatus).values()}" th:value="${st}"
+                            th:text="${st.label}" th:selected="${status == st}"
+                            class="whitespace-nowrap"></option>
+                </select>
+                <input type="datetime-local" name="from" th:value="${from}" class="border p-2 rounded"/>
+                <input type="datetime-local" name="to" th:value="${to}" class="border p-2 rounded"/>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Lọc</button>
+            </form>
 
-      <div class="overflow-x-auto bg-white rounded-lg shadow">
-        <table class="min-w-full table-auto text-sm">
-          <thead class="bg-gray-100 text-left">
-          <tr>
-            <th class="px-4 py-3 font-semibold">STT</th>
-            <th class="px-4 py-3 font-semibold">Mã đơn</th>
-            <th class="px-4 py-3 font-semibold">Nhà cung cấp</th>
-            <th class="px-4 py-3 font-semibold">Ngày tạo</th>
-            <th class="px-4 py-3 font-semibold">Người tạo</th>
-            <th class="px-4 py-3 font-semibold">Thành tiền</th>
-            <th class="px-4 py-3 font-semibold">Trạng thái</th>
-            <th class="px-4 py-3 font-semibold text-center">Hành động</th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr th:each="order, iStat : ${orders}" class="border-t">
-            <td class="px-4 py-2" th:text="${iStat.index + 1}"></td>
-            <td class="px-4 py-2 font-medium text-blue-600" th:text="${order.code}"></td>
-            <td class="px-4 py-2" th:text="${order.supplierName}"></td>
-            <td class="px-4 py-2" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
-            <td class="px-4 py-2" th:text="${order.createdByName}"></td>
-            <td class="px-4 py-2" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
-            <td class="px-4 py-2">
-              <span class="px-2 py-1 rounded text-xs font-medium"
-                    th:classappend="${order.status.name()=='HUY'} ? 'bg-red-100 text-red-700' :
+            <div class="overflow-x-auto bg-white rounded-lg shadow">
+                <table class="min-w-full table-auto text-sm border border-gray-200">
+                    <thead class="bg-gray-100 text-left">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">STT</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Mã đơn</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Nhà cung cấp</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Ngày tạo</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Người tạo</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Thành tiền</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Trạng thái</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200 text-center">Hành động</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="order, iStat : ${orders}" class="border-t hover:bg-gray-100">
+                        <td class="px-4 py-2 border border-gray-200" th:text="${iStat.index + 1}"></td>
+                        <td class="px-4 py-2 border border-gray-200 font-medium text-blue-600" th:text="${order.code}"></td>
+                        <td class="px-4 py-2 border border-gray-200" th:text="${order.supplierName}"></td>
+                        <td class="px-4 py-2 border border-gray-200 whitespace-nowrap" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                        <td class="px-4 py-2 border border-gray-200" th:text="${order.createdByName}"></td>
+                        <td class="px-4 py-2 border border-gray-200"
+                            th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+                        <td class="px-4 py-2 border border-gray-200 text-center">
+                            <span class="inline-flex justify-center items-center w-32 px-2 py-1 rounded text-s font-semibold whitespace-nowrap"
+                                th:classappend="${order.status.name()=='HUY'} ? 'bg-red-100 text-red-700' :
                                     (${order.status.name()=='DA_GIAO_MOT_PHAN'} ? 'bg-yellow-100 text-yellow-700' :
                                     (${order.status.name()=='HOAN_THANH'} ? 'bg-green-100 text-green-700' :
                                     (${order.status.name()=='CHO_DUYET'} ? 'bg-purple-100 text-purple-700' :
                                     'bg-gray-100 text-gray-700')))"
-                    th:text="${order.status}">
-              </span>
-            </td>
+                                th:text="${order.status.label}">
+                            </span>
+                        </td>
 
-            <!-- ★ Hành động -->
-            <td class="px-4 py-2 text-center">
-              <div class="flex flex-wrap justify-center items-center gap-2">
+                        <!-- ★ Hành động -->
+                        <td class="px-4 py-2 border border-gray-200 text-center">
+                            <div class="flex justify-center items-center gap-2">
 
-                <!-- ★ Nếu HOÀN_THÀNH hoặc HỦY → chỉ cho XEM -->
-                <a th:if="${order.status.name()=='HOAN_THANH' or order.status.name()=='HUY'}"
-                   th:href="@{/admin/purchase-orders/{id}(id=${order.id})}"
-                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200">
-                  <i class="ri-eye-line"></i> Xem
-                </a>
+                                <!-- Xem -->
+                                <a th:if="${order.status.name()=='HOAN_THANH' or order.status.name()=='HUY'}"
+                                   th:href="@{/admin/purchase-orders/{id}(id=${order.id})}"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200">
+                                    <i class="ri-eye-line"></i> Xem
+                                </a>
 
-                <!-- ★ Ngược lại → Sửa/Nhận đợt -->
-                <a th:if="${order.status.name()!='HOAN_THANH' and order.status.name()!='HUY'}"
-                   th:href="@{/admin/purchase-orders/edit/{id}(id=${order.id})}"
-                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded">
-                  <i class="ri-edit-line text-base"></i> Sửa
-                </a>
+                                <!-- Sửa -->
+                                <a th:if="${order.status.name()!='HOAN_THANH' and order.status.name()!='HUY'}"
+                                   th:href="@{/admin/purchase-orders/edit/{id}(id=${order.id})}"
+                                   class="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded">
+                                    <i class="ri-edit-line text-sm"></i> Sửa
+                                </a>
 
-                <!-- Duyệt: chỉ hiện khi CHO_DUYỆT -->
-                <form th:if="${order.status.name()=='CHO_DUYET'}"
-                      th:action="@{'/admin/purchase-orders/' + ${order.id} + '/approve'}" method="post">
-                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                  <button type="submit" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded">Duyệt</button>
-                </form>
+                                <!-- Duyệt -->
+                                <form sec:authorize="hasRole('MANAGER')"
+                                      th:if="${order.status.name()=='CHO_DUYET'}"
+                                      th:action="@{'/admin/purchase-orders/' + ${order.id} + '/approve'}"
+                                      method="post"
+                                      class="inline-flex">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                    <button type="submit"
+                                            class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded">
+                                        Duyệt
+                                    </button>
+                                </form>
 
-                <!-- Hủy: ẩn khi HOÀN_THÀNH/HỦY -->
-                <form th:if="${order.status.name()!='HOAN_THANH' and order.status.name()!='HUY'}"
-                      th:action="@{'/admin/purchase-orders/' + ${order.id} + '/cancel'}" method="post"
-                      onsubmit="return askReason(this);">
-                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                  <input type="hidden" name="reason"/>
-                  <button type="submit" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded">Hủy</button>
-                </form>
-              </div>
-            </td>
-          </tr>
-          </tbody>
-        </table>
+                                <!-- Hủy -->
+                                <form sec:authorize="hasRole('MANAGER')"
+                                      th:if="${order.status.name()!='HOAN_THANH' and order.status.name()!='HUY'}"
+                                      th:action="@{'/admin/purchase-orders/' + ${order.id} + '/cancel'}"
+                                      method="post"
+                                      onsubmit="return askReason(this);"
+                                      class="inline-flex">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                    <input type="hidden" name="reason"/>
+                                    <button type="submit"
+                                            class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded">
+                                        Hủy
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
 
-        <!-- Phân trang -->
-        <div class="mt-4 flex justify-center space-x-2">
-          <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
-             th:href="@{'/admin/purchase-orders'(page=${i}, keyword=${keyword}, status=${status}, from=${from}, to=${to})}"
-             th:text="${i + 1}"
-             th:class="'px-3 py-1 border rounded ' + (${i} == ${currentPage} ? 'bg-blue-600 text-white' : 'bg-white text-blue-600')">
-          </a>
+                <!-- Phân trang -->
+                <div class="mt-4 flex justify-center space-x-2">
+                    <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                       th:href="@{'/admin/purchase-orders'(page=${i}, keyword=${keyword}, status=${status}, from=${from}, to=${to})}"
+                       th:text="${i + 1}"
+                       th:class="'px-3 py-1 border rounded ' + (${i} == ${currentPage} ? 'bg-blue-600 text-white' : 'bg-white text-blue-600')">
+                    </a>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </main>
+    </main>
 </div>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
 
 <script>
-  function askReason(form){
-    const reason = prompt("Nhập lý do hủy:");
-    if (reason === null) return false;
-    if (!reason.trim()){ alert("Vui lòng nhập lý do."); return false; }
-    form.querySelector('input[name=reason]').value = reason.trim();
-    return true;
-  }
-  document.addEventListener("DOMContentLoaded", () => {
-    setTimeout(()=>document.getElementById('alertSuccess')?.classList.add('hidden'),3000);
-    setTimeout(()=>document.getElementById('alertError')?.classList.add('hidden'),3000);
-  });
+    function askReason(form) {
+        const reason = prompt("Nhập lý do hủy:");
+        if (reason === null) return false;
+        if (!reason.trim()) {
+            alert("Vui lòng nhập lý do.");
+            return false;
+        }
+        form.querySelector('input[name=reason]').value = reason.trim();
+        return true;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        setTimeout(() => document.getElementById('alertSuccess')?.classList.add('hidden'), 3000);
+        setTimeout(() => document.getElementById('alertError')?.classList.add('hidden'), 3000);
+    });
 </script>
 </body>
 </html>

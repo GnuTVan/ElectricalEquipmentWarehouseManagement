@@ -29,117 +29,117 @@
 
 
         <!-- Supplier Table -->
-        <div class="overflow-x-auto bg-white rounded-lg shadow px-4 py-6 space-y-6">
-            <table class="min-w-full table-auto overflow-y-hidden text-sm">
-                <thead class="bg-gray-100 text-left">
-                <tr>
-                    <th class="px-4 py-3 font-semibold">ID</th>
-                    <th class="px-4 py-3 font-semibold w-64">Tên NCC</th>
-                    <th class="px-4 py-3 font-semibold">Mã số thuế</th>
-                    <th class="px-4 py-3 font-semibold">Ngân hàng</th>
-                    <th class="px-4 py-3 font-semibold">Số tài khoản</th>
-                    <th class="px-4 py-3 font-semibold">Người liên hệ</th>
-                    <th class="px-4 py-3 font-semibold">SĐT</th>
-                    <th class="px-4 py-3 font-semibold">Trạng thái</th>
-                    <!--                    <th class="px-4 py-3 font-semibold">Ghi Chú</th>-->
-                    <th class="px-4 py-3 font-semibold text-center">Hành động</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="supplier, iterStat : ${suppliers}" class="border-t">
-                    <td class="px-4 py-2" th:text="${supplier.id}"></td>
-                    <td class="px-4 py-2 w-64" th:text="${supplier.name}"></td>
-                    <td class="px-4 py-2" th:text="${supplier.taxCode}"></td>
-                    <td class="px-4 py-2" th:text="${supplier.bankName}"></td>
-                    <td class="px-4 py-2" th:text="${supplier.bankAccount}"></td>
-                    <td class="px-4 py-2" th:text="${supplier.contactName}"></td>
-                    <td class="px-4 py-2" th:text="${supplier.contactMobile}"></td>
-                    <td class="px-4 py-2 h-full">
-                        <div class="flex justify-center items-center space-x-2">
-                            <span class="px-2 py-1 rounded text-xs font-medium whitespace-nowrap"
-                                  th:classappend="${supplier.status == true} ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
-                                  th:text="${supplier.status == true} ? 'Đang hoạt động' : 'Ngưng hoạt động'">
-                        </span>
-                            <form th:action="@{'/admin/suppliers/toggle/' + ${supplier.id}}" method="post"
-                                  class="status-toggle-form" th:data-id="${supplier.id}">
-                                <label class="inline-flex items-center cursor-pointer relative">
-                                    <input type="checkbox" name="status"
-                                           th:checked="${supplier.status}"
-                                           onchange="this.form.submit()" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors duration-300"></div>
-                                    <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 peer-checked:translate-x-5"></div>
-                                </label>
-                            </form>
-                        </div>
-                    </td>
-                    <!--                    <td class="px-4 py-2" th:text="${supplier.description}"></td>-->
-                    <td class="px-4 py-2 text-center">
-                        <div class="flex justify-center items-center space-x-2">
-                            <button type="button"
-                                    class="w-9 h-9 flex items-center justify-center text-blue-600 hover:text-blue-800 text-xl"
-                                    onclick="showEditModal(this)"
-                                    th:data-id="${supplier.id}"
-                                    th:data-name="${supplier.name}"
-                                    th:data-taxcode="${supplier.taxCode}"
-                                    th:data-bankname="${supplier.bankName}"
-                                    th:data-bankaccount="${supplier.bankAccount}"
-                                    th:data-contactname="${supplier.contactName}"
-                                    th:data-contactmobile="${supplier.contactMobile}"
-                                    th:data-address="${supplier.address}"
-                                    th:data-status="${supplier.status} == true ? 'true' : 'false'"
+        <div class="px-6 py-6">
+            <div class="bg-white rounded-lg shadow">
+                <table class="min-w-full table-auto text-sm border border-gray-200">
+                    <thead class="bg-gray-100 text-left">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold border border-gray-200">STT</th>
+                        <th class="px-4 py-3 font-semibold border border-gray-200 w-64">Tên NCC</th>
+                        <th class="px-4 py-3 font-semibold border border-gray-200 whitespace-nowrap">Mã số thuế</th>
+                        <th class="px-4 py-3 font-semibold border border-gray-200 whitespace-nowrap">Ngân hàng</th>
+                        <th class="px-4 py-3 font-semibold border border-gray-200 whitespace-nowrap">Số tài khoản</th>
+                        <th class="px-4 py-3 font-semibold border border-gray-200 whitespace-nowrap">Người liên hệ</th>
+                        <th class="px-4 py-3 font-semibold border border-gray-200 whitespace-nowrap">SĐT</th>
+                        <th class="px-4 py-3 font-semibold border border-gray-200 whitespace-nowrap">Trạng thái</th>
+                        <!--                    <th class="px-4 py-3 font-semibold">Ghi Chú</th>-->
+                        <th class="px-4 py-3 font-semibold border border-gray-200 text-center whitespace-nowrap">Hành động</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="supplier, iterStat : ${suppliers}"
+                        class="border-t hover:bg-gray-50">
+                        <td class="px-4 py-2 border border-gray-200" th:text="${supplier.id}"></td>
+                        <td class="px-4 py-2 border border-gray-200 w-64" th:text="${supplier.name}"></td>
+                        <td class="px-4 py-2 border border-gray-200" th:text="${supplier.taxCode}"></td>
+                        <td class="px-4 py-2 border border-gray-200" th:text="${supplier.bankName}"></td>
+                        <td class="px-4 py-2 border border-gray-200" th:text="${supplier.bankAccount}"></td>
+                        <td class="px-4 py-2 border border-gray-200" th:text="${supplier.contactName}"></td>
+                        <td class="px-4 py-2 border border-gray-200" th:text="${supplier.contactMobile}"></td>
+                        <td class="px-4 py-2 border border-gray-200">
+                            <div class="flex items-center justify-center gap-3">
+                            <span class="inline-flex items-center justify-center w-32 px-2 py-1 rounded text-xs font-medium whitespace-nowrap"
+                                  th:classappend="${supplier.status} ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+                                  th:text="${supplier.status} ? 'Đang hoạt động' : 'Ngưng hoạt động'">
+                            </span>
+                                <form th:action="@{'/admin/suppliers/toggle/' + ${supplier.id}}" method="post"
+                                      class="status-toggle-form" th:data-id="${supplier.id}">
+                                    <label class="inline-flex items-center cursor-pointer relative">
+                                        <input type="checkbox" name="status"
+                                               th:checked="${supplier.status}"
+                                               onchange="this.form.submit()" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors duration-300"></div>
+                                        <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 peer-checked:translate-x-5"></div>
+                                    </label>
+                                </form>
+                            </div>
+                        </td>
+                        <!--                    <td class="px-4 py-2" th:text="${supplier.description}"></td>-->
+                        <td class="px-4 py-2 text-center">
+                            <div class="inline-flex items-center gap-2">
+                                <button type="button"
+                                        class="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded whitespace-nowrap"
+                                        onclick="showEditModal(this)"
+                                        th:data-id="${supplier.id}"
+                                        th:data-name="${supplier.name}"
+                                        th:data-taxcode="${supplier.taxCode}"
+                                        th:data-bankname="${supplier.bankName}"
+                                        th:data-bankaccount="${supplier.bankAccount}"
+                                        th:data-contactname="${supplier.contactName}"
+                                        th:data-contactmobile="${supplier.contactMobile}"
+                                        th:data-address="${supplier.address}"
+                                        th:data-status="${supplier.status} == true ? 'true' : 'false'"
 
 
-                                    th:data-description="${supplier.description}">
-                                <i class="ri-pencil-line"></i>
-                            </button>
-                        </div>
-                    </td>
+                                        th:data-description="${supplier.description}">
+                                    <i class="ri-pencil-line"> Sửa</i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <div class="flex justify-center mt-6">
+                    <ul class="inline-flex space-x-1">
+                        <!-- Nút về đầu -->
+                        <li th:if="${supplierPage.totalPages > 1}">
+                            <a th:href="@{/admin/suppliers(page=0, keyword=${keyword})}"
+                               class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">«</a>
+                        </li>
+
+                        <!-- Nút về trước -->
+                        <li th:if="${supplierPage.hasPrevious()}">
+                            <a th:href="@{/admin/suppliers(page=${supplierPage.number - 1}, keyword=${keyword})}"
+                               class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">‹</a>
+                        </li>
+
+                        <!-- Các số trang -->
+                        <li th:each="i : ${#numbers.sequence(0, supplierPage.totalPages - 1)}">
+                            <a th:href="@{/admin/suppliers(page=${i}, keyword=${keyword})}"
+                               th:text="${i + 1}"
+                               th:classappend="${supplierPage.number == i} ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'"
+                               class="px-3 py-1 rounded text-sm font-medium"></a>
+                        </li>
+
+                        <!-- Nút tiếp theo -->
+                        <li th:if="${supplierPage.hasNext()}">
+                            <a th:href="@{/admin/suppliers(page=${supplierPage.number + 1}, keyword=${keyword})}"
+                               class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">›</a>
+                        </li>
+
+                        <!-- Nút đến cuối -->
+                        <li>
+                            <a th:href="@{/admin/suppliers(page=${supplierPage.totalPages - 1}, keyword=${keyword})}"
+                               class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">»</a>
+                        </li>
+                    </ul>
+                </div>
 
 
-                </tr>
-                </tbody>
-            </table>
-
-            <!-- Pagination -->
-            <div class="flex justify-center mt-6">
-                <ul class="inline-flex space-x-1">
-                    <!-- Nút về đầu -->
-                    <li th:if="${supplierPage.totalPages > 1}">
-                        <a th:href="@{/admin/suppliers(page=0, keyword=${keyword})}"
-                           class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">«</a>
-                    </li>
-
-                    <!-- Nút về trước -->
-                    <li th:if="${supplierPage.hasPrevious()}">
-                        <a th:href="@{/admin/suppliers(page=${supplierPage.number - 1}, keyword=${keyword})}"
-                           class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">‹</a>
-                    </li>
-
-                    <!-- Các số trang -->
-                    <li th:each="i : ${#numbers.sequence(0, supplierPage.totalPages - 1)}">
-                        <a th:href="@{/admin/suppliers(page=${i}, keyword=${keyword})}"
-                           th:text="${i + 1}"
-                           th:classappend="${supplierPage.number == i} ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'"
-                           class="px-3 py-1 rounded text-sm font-medium"></a>
-                    </li>
-
-                    <!-- Nút tiếp theo -->
-                    <li th:if="${supplierPage.hasNext()}">
-                        <a th:href="@{/admin/suppliers(page=${supplierPage.number + 1}, keyword=${keyword})}"
-                           class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">›</a>
-                    </li>
-
-                    <!-- Nút đến cuối -->
-                    <li>
-                        <a th:href="@{/admin/suppliers(page=${supplierPage.totalPages - 1}, keyword=${keyword})}"
-                           class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">»</a>
-                    </li>
-                </ul>
             </div>
-
-
         </div>
-
         <!-- ✅ Modal Thêm nhà cung cấp -->
         <div id="addSupplierModal"
              class="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center"

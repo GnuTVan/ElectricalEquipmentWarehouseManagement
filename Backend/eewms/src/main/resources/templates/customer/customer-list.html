@@ -23,62 +23,63 @@
                 </form>
             </div>
         </div>
+        <div class="px-6 pb-6">
+            <div class="bg-white rounded-lg shadow overflow-auto">
+                <table class="min-w-full text-sm border border-200">
+                    <thead class="bg-gray-100 border border-200">
+                    <tr>
+                        <th class="px-4 py-3 border border-200">Họ tên</th>
+                        <th class="px-4 py-3 border border-200">Email</th>
+                        <th class="px-4 py-3 border border-200">SĐT</th>
+                        <th class="px-4 py-3 border border-200">Địa chỉ</th>
+                        <th class="px-4 py-3 border border-200">Mã số thuế</th>
+                        <th class="px-4 py-3 border border-200">Ngân hàng</th>
+                        <th class="px-4 py-3 border border-200">Trạng thái</th>
+                        <th class="px-4 py-3 border border-200 text-center">Hành động</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="c : ${customers}"
+                        class="border-t hover:bg-gray-50"
+                        th:data-id="${c.id}"
+                        th:data-fullname="${c.fullName}"
+                        th:data-email="${c.email}"
+                        th:data-phone="${c.phone}"
+                        th:data-address="${c.address}"
+                        th:data-taxcode="${c.taxCode}"
+                        th:data-bankname="${c.bankName}"
+                        th:data-status="${c.status}">
 
-        <div class="overflow-x-auto bg-white rounded-lg shadow px-4">
-            <table class="min-w-full text-sm text-left">
-                <thead class="bg-gray-200 text-xs uppercase font-semibold">
-                <tr>
-                    <th class="px-4 py-3">Họ tên</th>
-                    <th class="px-4 py-3">Email</th>
-                    <th class="px-4 py-3">SĐT</th>
-                    <th class="px-4 py-3">Địa chỉ</th>
-                    <th class="px-4 py-3">Mã số thuế</th>
-                    <th class="px-4 py-3">Ngân hàng</th>
-                    <th class="px-4 py-3">Trạng thái</th>
-                    <th class="px-4 py-3 text-center">Hành động</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="c : ${customers}"
-                    class="border-b hover:bg-gray-50"
-                    th:data-id="${c.id}"
-                    th:data-fullname="${c.fullName}"
-                    th:data-email="${c.email}"
-                    th:data-phone="${c.phone}"
-                    th:data-address="${c.address}"
-                    th:data-taxcode="${c.taxCode}"
-                    th:data-bankname="${c.bankName}"
-                    th:data-status="${c.status}">
-
-                    <td class="px-4 py-3" th:text="${c.fullName}"></td>
-                    <td class="px-4 py-3" th:text="${c.email}"></td>
-                    <td class="px-4 py-3" th:text="${c.phone}"></td>
-                    <td class="px-4 py-3" th:text="${c.address}"></td>
-                    <td class="px-4 py-3" th:text="${c.taxCode}"></td>
-                    <td class="px-4 py-3" th:text="${c.bankName}"></td>
-                    <td class="px-4 py-3">
-                        <div class="flex items-center gap-2">
-                            <label class="inline-flex relative items-center cursor-pointer">
-                                <input type="checkbox" th:checked="${c.status.name() == 'ACTIVE'}"
-                                       th:data-id="${c.id}" class="sr-only peer" onchange="toggleStatus(this)">
-                                <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition duration-300"></div>
-                                <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition duration-200 transform peer-checked:translate-x-5"></div>
-                            </label>
-                            <span class="text-sm font-medium text-gray-700"
-                                  th:text="${c.status.name() == 'ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động'}">
+                        <td class="px-4 py-3 border border-200" th:text="${c.fullName}"></td>
+                        <td class="px-4 py-3 border border-200" th:text="${c.email}"></td>
+                        <td class="px-4 py-3 border border-200" th:text="${c.phone}"></td>
+                        <td class="px-4 py-3 border border-200" th:text="${c.address}"></td>
+                        <td class="px-4 py-3 border border-200" th:text="${c.taxCode}"></td>
+                        <td class="px-4 py-3 border border-200" th:text="${c.bankName}"></td>
+                        <td class="px-4 py-3 border border-200">
+                            <div class="flex items-center gap-2">
+                                <label class="inline-flex relative items-center cursor-pointer">
+                                    <input type="checkbox" th:checked="${c.status.name() == 'ACTIVE'}"
+                                           th:data-id="${c.id}" class="sr-only peer" onchange="toggleStatus(this)">
+                                    <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition duration-300"></div>
+                                    <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition duration-200 transform peer-checked:translate-x-5"></div>
+                                </label>
+                                <span class="text-sm font-medium text-gray-700"
+                                      th:text="${c.status.name() == 'ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động'}">
               </span>
-                        </div>
-                    </td>
-                    <td class="px-4 py-3 text-center space-x-1">
-                        <a href="#" onclick="openEditModal(this)" class="text-blue-600 hover:text-blue-800">
-                            <i class="ri-pencil-line text-lg"></i>
-                        </a>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 border border-200 text-center space-x-1">
+                            <a href="#" onclick="openEditModal(this)"
+                               class="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded whitespace-nowrap">
+                                <i class="ri-pencil-line">Sửa</i>
+                            </a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-
         <!-- Modal Thêm/Sửa khách hàng -->
         <div id="customerModal"
              class="fixed inset-0 z-50 hidden"
