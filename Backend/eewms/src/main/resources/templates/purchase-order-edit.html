@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<html xmlns:th="http://www.thymeleaf.org" lang="vi"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/common-head :: commonHead('Sửa đơn hàng nhập')}"></head>
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
@@ -161,6 +162,7 @@
                  FORM 3: NHẬP NHANH (tạo 1 phiếu cho phần còn lại) – luôn tách form
                  ========================================================== -->
             <form class="mt-3"
+                  th:if="${orderDTO.status?.name() != 'CHO_DUYET' and orderDTO.status?.name() != 'HUY'}"
                   th:action="@{'/admin/purchase-orders/' + ${orderDTO.id} + '/fast-complete'}"
                   method="post"
                   onsubmit="return confirm('Bạn có chắc chắn là đã nhận đủ hàng theo hợp đồng?');">
