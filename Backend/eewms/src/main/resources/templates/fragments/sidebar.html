@@ -82,7 +82,7 @@
             </li>
 
             <!-- Đối tác (dropdown) -->
-            <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
+            <li sec:authorize="hasAnyRole('MANAGER','STAFF')">
                 <div class="flex flex-col">
                     <button type="button"
                             data-submenu-id="partner-submenu"
@@ -159,7 +159,7 @@
                 </a>
             </li>
             <!-- Phiếu xuất nhập kho (dropdown) -->
-            <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
+            <li sec:authorize="hasAnyRole('MANAGER','STAFF')">
                 <div class="flex flex-col">
                     <button type="button"
                             data-submenu-id="inventory-submenu"
