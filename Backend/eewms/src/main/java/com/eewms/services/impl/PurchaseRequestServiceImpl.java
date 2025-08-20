@@ -1,8 +1,6 @@
 package com.eewms.services.impl;
-import com.eewms.entities.SaleOrder;
-import com.eewms.services.ISaleOrderService;
+
 import com.eewms.constant.PRStatus;
-import com.eewms.constant.PurchaseOrderStatus;
 import com.eewms.dto.purchase.PurchaseOrderDTO;
 import com.eewms.dto.purchase.PurchaseOrderItemDTO;
 import com.eewms.dto.purchaseRequest.PurchaseRequestDTO;
@@ -12,17 +10,22 @@ import com.eewms.entities.*;
 import com.eewms.exception.InventoryException;
 import com.eewms.repository.ProductRepository;
 import com.eewms.repository.PurchaseOrderRepository;
+import com.eewms.repository.SaleOrderRepository;
 import com.eewms.repository.SupplierRepository;
 import com.eewms.repository.purchaseRequest.PurchaseRequestRepository;
 import com.eewms.services.IPurchaseOrderService;
 import com.eewms.services.IPurchaseRequestService;
+import com.eewms.services.ISaleOrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.eewms.repository.GoodIssueNoteRepository;
+import com.eewms.repository.CustomerRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -39,11 +42,14 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final IPurchaseOrderService purchaseOrderService;
     private final ISaleOrderService saleOrderService;
+    private final GoodIssueNoteRepository goodIssueNoteRepository;
+    private final SaleOrderRepository saleOrderRepository;
+    private final CustomerRepository customerRepository;
+
 
     @Override
     @Transactional
     public PurchaseRequest create(PurchaseRequestDTO dto) {
-        // ✅ Chặn tạo PR trùng cho cùng SaleOrder
         if (dto.getSaleOrderId() != null) {
             prRepo.findBySaleOrder_SoId(dto.getSaleOrderId())
                     .ifPresent(pr -> { throw new InventoryException("Đơn bán đã có yêu cầu mua hàng."); });
@@ -56,28 +62,22 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
 
         PurchaseRequest request = PurchaseRequestMapper.toEntity(dto, products, suppliers);
 
-        // ✅ Gắn SaleOrder vào PR (khắc phục lỗi không map)
         if (dto.getSaleOrderId() != null) {
             SaleOrder so = saleOrderService.getOrderEntityById(dto.getSaleOrderId());
             if (so == null) throw new InventoryException("Không tìm thấy SaleOrder: " + dto.getSaleOrderId());
             request.setSaleOrder(so);
+            request.setCustomer(so.getCustomer());
         }
 
         request.setCode(generateCode());
-        PurchaseRequest saved = prRepo.save(request);
-
-        // (tuỳ) Cập nhật trạng thái SO nếu bạn muốn
-        // if (dto.getSaleOrderId() != null) {
-        //     saleOrderService.updateOrderStatus(dto.getSaleOrderId(), SaleOrder.SaleOrderStatus.PROCESSING);
-        // }
-        return saved;
+        // Trạng thái mặc định đã set trong @PrePersist: MOI_TAO (chờ duyệt)
+        return prRepo.save(request);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<PurchaseRequestDTO> findAll(Pageable pageable) {
-        return prRepo.findAll(pageable)
-                .map(PurchaseRequestMapper::toDTO);
+        return prRepo.findAll(pageable).map(PurchaseRequestMapper::toDTO);
     }
 
     @Override
@@ -88,25 +88,21 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
     @Override
     @Transactional(readOnly = true)
     public Optional<PurchaseRequestDTO> findDtoById(Long id) {
-        return prRepo.findWithItemsById(id)
-                .map(PurchaseRequestMapper::toDTO);
+        return prRepo.findWithItemsById(id).map(PurchaseRequestMapper::toDTO);
     }
 
     @Override
     @Transactional
     public void updateStatus(Long id, PRStatus status) {
-        // Nếu set sang ĐÃ DUYỆT → chạy luồng duyệt với validate NCC
-        if (status == PRStatus.DA_DUYET) {
-            approve(id);
-            return;
-        }
+        if (status == PRStatus.DA_DUYET) { approve(id); return; }
         PurchaseRequest request = prRepo.findById(id)
                 .orElseThrow(() -> new InventoryException("Không tìm thấy yêu cầu mua hàng"));
         request.setStatus(status);
         prRepo.save(request);
     }
 
-    // ✅ Duyệt: chỉ cho khi mọi item có NCC thuộc danh sách NCC của Product
+    @Override
+    @Transactional
     public void approve(Long id) {
         PurchaseRequest pr = prRepo.findById(id)
                 .orElseThrow(() -> new InventoryException("Không tìm thấy yêu cầu mua hàng"));
@@ -158,7 +154,7 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
                 supplier = suppliers.stream()
                         .filter(s -> Long.valueOf(s.getId()).equals(i.getSuggestedSupplierId()))
                         .findFirst()
-                        .orElse(null); // cho phép null nếu chưa chọn
+                        .orElse(null);
             }
 
             return PurchaseRequestItem.builder()
@@ -183,7 +179,6 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
                 .map(code -> Long.parseLong(code.replace("PR", "")))
                 .max(Comparator.naturalOrder())
                 .orElse(0L) + 1;
-
         return String.format("PR%05d", next);
     }
 
@@ -197,7 +192,6 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
             throw new InventoryException("Chỉ tạo PO từ yêu cầu đã duyệt");
         }
 
-        // ensure mọi item đều có NCC
         for (PurchaseRequestItem it : pr.getItems()) {
             if (it.getSuggestedSupplier() == null) {
                 throw new InventoryException("Thiếu nhà cung cấp gợi ý cho sản phẩm: " +
@@ -219,8 +213,8 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
                 PurchaseOrderItemDTO dto = new PurchaseOrderItemDTO();
                 dto.setProductId(i.getProduct().getId());
                 dto.setContractQuantity(i.getQuantityNeeded());
-                dto.setPrice(i.getProduct().getOriginPrice()); // bạn có thể thay bằng chính sách giá khác
-                dto.setActualQuantity(null); // ban đầu chưa giao
+                dto.setPrice(i.getProduct().getOriginPrice());
+                dto.setActualQuantity(null);
                 return dto;
             }).toList();
 
@@ -239,8 +233,200 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<PurchaseRequestDTO> filter(String creator, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
-        return prRepo.filter(creator, startDate, endDate, pageable)
-                .map(PurchaseRequestMapper::toDTO);
+    public Page<PurchaseRequestDTO> filter(String creator, java.time.LocalDateTime startDate, java.time.LocalDateTime endDate, Pageable pageable) {
+        return prRepo.filter(creator, startDate, endDate, pageable).map(PurchaseRequestMapper::toDTO);
+    }
+
+    // ==== B5: tự động gom thiếu của TẤT CẢ đơn PENDING/PARTLY_DELIVERED của 1 khách ====
+    @Override
+    @Transactional
+    public PurchaseRequest generateForCustomer(Long customerId, String createdByName) {
+        var customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new InventoryException("Không tìm thấy khách hàng"));
+
+        List<SaleOrder> orders = saleOrderRepository.findByCustomerIdAndStatusIn(
+                customerId, List.of(SaleOrder.SaleOrderStatus.PENDING, SaleOrder.SaleOrderStatus.PARTLY_DELIVERED)
+        );
+
+        Map<Integer, Integer> shortageByProduct = new LinkedHashMap<>();
+        for (SaleOrder so : orders) {
+            for (var d : so.getDetails()) {
+                Integer issued = goodIssueNoteRepository
+                        .sumIssuedQtyBySaleOrderAndProduct(so.getSoId(), d.getProduct().getId());
+                int shortage = d.getOrderedQuantity() - (issued == null ? 0 : issued);
+                if (shortage > 0) {
+                    shortageByProduct.merge(d.getProduct().getId(), shortage, Integer::sum);
+                }
+            }
+        }
+        if (shortageByProduct.isEmpty()) {
+            throw new InventoryException("Không có sản phẩm thiếu để tạo yêu cầu mua.");
+        }
+
+        PurchaseRequest pr = prRepo.findFirstByCustomer_IdAndStatusInOrderByIdDesc(
+                customerId, List.of(PRStatus.MOI_TAO)).orElse(null);
+
+        if (pr == null) {
+            pr = PurchaseRequest.builder()
+                    .code(generateCode())
+                    .createdByName(createdByName)
+                    .status(PRStatus.MOI_TAO) // chờ duyệt
+                    .customer(customer)
+                    .build();
+            pr.setItems(new ArrayList<>());
+        } else {
+            pr.getItems().clear();
+        }
+
+        List<Product> products = productRepo.findAllById(shortageByProduct.keySet());
+        Map<Integer, Product> byId = products.stream().collect(Collectors.toMap(Product::getId, p -> p));
+
+        for (var e : shortageByProduct.entrySet()) {
+            Product p = byId.get(e.getKey());
+            pr.getItems().add(PurchaseRequestItem.builder()
+                    .purchaseRequest(pr)
+                    .product(p)
+                    .quantityNeeded(e.getValue())
+                    .build());
+        }
+
+        return prRepo.save(pr);
+    }
+
+    @Override
+    @Transactional
+    public void cancel(Long id, String reason) {
+        PurchaseRequest pr = prRepo.findById(id)
+                .orElseThrow(() -> new InventoryException("Không tìm thấy yêu cầu mua hàng"));
+        if (pr.getStatus() != PRStatus.MOI_TAO) {
+            throw new InventoryException("Chỉ được hủy khi PR đang ở trạng thái MỚI TẠO");
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new InventoryException("Vui lòng nhập lý do hủy");
+        }
+        pr.setStatus(PRStatus.HUY);
+        pr.setCancelReason(reason);
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        pr.setCanceledByName(auth != null ? auth.getName() : "system");
+        pr.setCanceledAt(LocalDateTime.now());
+        prRepo.save(pr);
+    }
+    @Override
+    @Transactional
+    public PurchaseRequest generateForAllOpen(String createdByName) {
+
+        // Lấy tất cả SO đang mở
+        List<SaleOrder> orders = saleOrderRepository.findByStatusIn(
+                List.of(SaleOrder.SaleOrderStatus.PENDING, SaleOrder.SaleOrderStatus.PARTLY_DELIVERED)
+        );
+
+        // Gom thiếu theo product trên toàn hệ thống
+        Map<Integer, Integer> shortageByProduct = new LinkedHashMap<>();
+        for (SaleOrder so : orders) {
+            for (SaleOrderDetail d : so.getDetails()) {
+                Integer issued = goodIssueNoteRepository
+                        .sumIssuedQtyBySaleOrderAndProduct(so.getSoId(), d.getProduct().getId());
+                int remaining = d.getOrderedQuantity() - (issued == null ? 0 : issued);
+                if (remaining > 0) {
+                    shortageByProduct.merge(d.getProduct().getId(), remaining, Integer::sum);
+                }
+            }
+        }
+
+        if (shortageByProduct.isEmpty()) {
+            throw new InventoryException("Không có sản phẩm thiếu để tạo yêu cầu mua tổng hợp.");
+        }
+
+        // Tạo PR mới (GLOBAL): không gán customer/saleOrder
+        PurchaseRequest pr = PurchaseRequest.builder()
+                .code(generateCode())
+                .createdByName(createdByName)
+                .status(PRStatus.MOI_TAO)
+                .build();
+        pr.setItems(new ArrayList<>());
+
+        List<Product> products = productRepo.findAllById(shortageByProduct.keySet());
+        Map<Integer, Product> byId = products.stream()
+                .collect(java.util.stream.Collectors.toMap(Product::getId, p -> p));
+
+        for (var e : shortageByProduct.entrySet()) {
+            Product p = byId.get(e.getKey());
+            if (p == null) continue;
+            pr.getItems().add(PurchaseRequestItem.builder()
+                    .purchaseRequest(pr)
+                    .product(p)
+                    .quantityNeeded(e.getValue())
+                    .build());
+        }
+
+        return prRepo.save(pr);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PurchaseRequestItemDTO> collectShortagesForAllOpen(LocalDateTime start, LocalDateTime end) {
+        // Lấy tất cả SO đang mở theo khoảng ngày
+        List<SaleOrder> orders = saleOrderRepository.findOpenOrdersInRange(start, end);
+
+        Map<Integer, Integer> shortageByProduct = new LinkedHashMap<>();
+
+        for (SaleOrder so : orders) {
+            for (SaleOrderDetail d : so.getDetails()) {
+                int pid = d.getProduct().getId();
+                int ordered = d.getOrderedQuantity();
+
+                Integer issued = goodIssueNoteRepository
+                        .sumIssuedQtyBySaleOrderAndProduct(so.getSoId(), pid);
+                int issuedQty = (issued == null ? 0 : issued);
+
+                // NEW: nếu user KHÔNG chọn start/end => KHÔNG trừ PR mở
+                int requestedQty = 0;
+                if (start != null || end != null) {
+                    Integer requestedOpen = prRepo
+                            .sumRequestedQtyOpenPRByProductInRange(pid, start, end);
+                    requestedQty = (requestedOpen == null ? 0 : requestedOpen);
+                }
+
+                int remaining = ordered - issuedQty - requestedQty;
+                if (remaining > 0) {
+                    shortageByProduct.merge(pid, remaining, Integer::sum);
+                }
+            }
+        }
+
+        if (shortageByProduct.isEmpty()) return List.of();
+
+        List<Product> products = productRepo.findAllById(shortageByProduct.keySet());
+        Map<Integer, Product> pmap = products.stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
+        return shortageByProduct.entrySet().stream()
+                .map(e -> {
+                    Product p = pmap.get(e.getKey());
+                    return PurchaseRequestItemDTO.builder()
+                            .productId(Long.valueOf(e.getKey()))
+                            .productName(p != null ? p.getName() : ("SP#" + e.getKey()))
+                            .quantityNeeded(e.getValue())
+                            .build();
+                })
+                .toList();
+    }
+
+
+    @Override
+    @Transactional
+    public PurchaseRequestDTO createFromCollected(List<PurchaseRequestItemDTO> items, String createdBy) {
+        if (items == null || items.isEmpty()) {
+            throw new IllegalStateException("Không có sản phẩm thiếu để tạo yêu cầu.");
+        }
+
+        // Dựng DTO rồi dùng lại create(dto) để save entity + items
+        PurchaseRequestDTO dto = PurchaseRequestDTO.builder()
+                .createdByName(createdBy)
+                .items(items)
+                .build();
+
+        PurchaseRequest saved = this.create(dto); // dùng service hiện có
+        return PurchaseRequestMapper.toDTO(saved); // mapper static của bạn
     }
 }

@@ -15,6 +15,7 @@ public class GoodIssueMapper {
         BigDecimal total = price.multiply(BigDecimal.valueOf(qty));
 
         return GoodIssueDetailDTO.builder()
+                .productId(detail.getProduct() != null ? detail.getProduct().getId() : null) // NEW
                 .productName(detail.getProduct() != null ? detail.getProduct().getName() : null)
                 .quantity(detail.getQuantity())
                 .price(price)
@@ -33,7 +34,6 @@ public class GoodIssueMapper {
         String customerName = (gin.getCustomer() != null) ? gin.getCustomer().getFullName() : null;
         String createdBy = (gin.getCreatedBy() != null) ? gin.getCreatedBy().getUsername() : null;
 
-        // ================== Lấy thông tin đơn bán ==================
         String soCode = (gin.getSaleOrder() != null) ? gin.getSaleOrder().getSoCode() : null;
         Long soId = (gin.getSaleOrder() != null) ? gin.getSaleOrder().getId() : null;
 
@@ -47,8 +47,7 @@ public class GoodIssueMapper {
                 .details(detailDTOs)
                 .totalAmount(gin.getTotalAmount())
                 .saleOrderCode(soCode)
-                .saleOrderId(soId)   // NEW: đã map vào DTO
-                // Các trường status / debtId / remainingAmount / hasDebt sẽ set ở Service
+                .saleOrderId(soId)
                 .build();
     }
 }

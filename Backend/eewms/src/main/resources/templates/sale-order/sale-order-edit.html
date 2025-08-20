@@ -17,13 +17,6 @@
                     Sửa đơn <span class="text-blue-700" th:text="${saleOrder.orderCode}">ORD000</span>
                 </h1>
 
-                <div th:if="${saleOrder.hasInsufficientStock and !saleOrder.alreadyExported and !prExists}">
-                    <a th:href="@{'/admin/purchase-requests/create-from-sale-order/' + ${saleOrder.orderId}}"
-                       class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded inline-block">
-                        Tạo yêu cầu mua
-                    </a>
-                </div>
-
                 <div th:if="${prExists}"
                      class="inline-flex items-center px-3 py-2 rounded bg-gray-100 text-gray-700 border">
                     Đã tạo yêu cầu mua

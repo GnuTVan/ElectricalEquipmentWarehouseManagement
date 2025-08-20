@@ -15,7 +15,25 @@ public interface GoodIssueNoteRepository extends JpaRepository<GoodIssueNote, Lo
     /** Dùng để chặn tạo trùng phiếu từ cùng một đơn bán */
     boolean existsBySaleOrder_SoId(Integer soId);
 
-    // Các query phục vụ dashboard/thống kê (giữ nguyên nếu đang dùng)
+    // ==== NEW: phục vụ tính 'đã xuất' theo SO / SO+Product ====
+    @Query("""
+           select coalesce(sum(d.quantity), 0)
+           from GoodIssueDetail d
+           join d.goodIssueNote g
+           where g.saleOrder.soId = :soId and d.product.id = :productId
+           """)
+    Integer sumIssuedQtyBySaleOrderAndProduct(@Param("soId") Integer soId,
+                                              @Param("productId") Integer productId);
+
+    @Query("""
+           select coalesce(sum(d.quantity), 0)
+           from GoodIssueDetail d
+           join d.goodIssueNote g
+           where g.saleOrder.soId = :soId
+           """)
+    Integer sumIssuedQtyBySaleOrder(@Param("soId") Integer soId);
+
+    // ==== Các query cũ giữ nguyên ====
     @Query("""
               select distinct g from GoodIssueNote g
               left join fetch g.details d
@@ -31,27 +49,23 @@ public interface GoodIssueNoteRepository extends JpaRepository<GoodIssueNote, Lo
             """)
     List<GoodIssueNote> findRecentWithCustomer(Pageable pageable);
 
-    // Dùng cho trang danh sách: fetch details + product để tránh Lazy/N+1
     @Query("""
               select distinct g from GoodIssueNote g
               left join fetch g.saleOrder so
-              left join fetch g.customer c          
+              left join fetch g.customer c
               left join fetch g.details d
               left join fetch d.product
               order by g.issueDate desc
             """)
     List<GoodIssueNote> findAllWithDetails();
 
-    // Nếu cần phân trang thực sự, KHÔNG dùng fetch collection + Pageable trực tiếp.
-// Làm 2 bước: lấy page id trước, rồi fetch theo ids.
     @Query("select g.id from GoodIssueNote g order by g.issueDate desc")
     List<Long> findIdsOrderByIssueDateDesc(Pageable pageable);
 
-    // Lấy 1 GIN kèm details (+ product) để dùng cho getById
     @Query("""
               select distinct g from GoodIssueNote g
               left join fetch g.saleOrder so
-              left join fetch g.customer c  
+              left join fetch g.customer c
               left join fetch g.details d
               left join fetch d.product
               where g.id = :id
@@ -66,4 +80,14 @@ public interface GoodIssueNoteRepository extends JpaRepository<GoodIssueNote, Lo
               order by g.issueDate desc
             """)
     List<GoodIssueNote> findByIdInWithDetails(List<Long> ids);
+
+    //new
+    @Query("""
+   select d.product.id, coalesce(sum(d.quantity), 0)
+   from GoodIssueDetail d
+   join d.goodIssueNote g
+   where g.saleOrder.soId = :soId
+   group by d.product.id
+""")
+    List<Object[]> sumIssuedBySaleOrderGroupByProduct(@Param("soId") Integer soId);
 }

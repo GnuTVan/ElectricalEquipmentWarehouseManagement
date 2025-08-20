@@ -6,6 +6,7 @@ import com.eewms.dto.SaleOrderMapper;
 import com.eewms.dto.SaleOrderRequestDTO;
 import com.eewms.dto.SaleOrderResponseDTO;
 import com.eewms.entities.*;
+import com.eewms.exception.InventoryException;
 import com.eewms.repository.*;
 import com.eewms.services.IPayOsService;
 import com.eewms.services.ISaleOrderService;
@@ -14,14 +15,11 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.eewms.exception.InventoryException;
-import org.springframework.beans.factory.annotation.Value;
-
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -78,8 +76,6 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
 
         List<SaleOrderDetail> detailList = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
-        StringBuilder warningNote = new StringBuilder();
-        boolean hasInsufficientStock = false;
 
         // ===== 1) Manual details (nếu có)
         if (dto.getDetails() != null) {
@@ -90,12 +86,7 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
                 Product product = productRepo.findById(item.getProductId())
                         .orElseThrow(() -> new RuntimeException("Product not found"));
 
-                if (product.getQuantity() < item.getOrderedQuantity()) {
-                    hasInsufficientStock = true;
-                    warningNote.append(String.format("- Sản phẩm %s thiếu hàng (YC: %d / Tồn: %d)\n",
-                            product.getName(), item.getOrderedQuantity(), product.getQuantity()));
-                }
-
+                // Cho phép đặt > tồn kho ở bước lưu đơn (logic thiếu hàng xử lý lúc xuất kho)
                 SaleOrderDetail detail = SaleOrderMapper.toOrderDetail(item, product);
                 detail.setSale_order(saleOrder);
                 detail.setOrigin(ItemOrigin.MANUAL);
@@ -125,12 +116,7 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
                 throw new IllegalStateException("Combo expand trả về dòng có số lượng không hợp lệ.");
             }
 
-            if (managed.getQuantity() != null && managed.getQuantity() < line.getOrderedQuantity()) {
-                hasInsufficientStock = true;
-                warningNote.append(String.format("- Sản phẩm %s thiếu hàng (YC: %d / Tồn: %d)\n",
-                        managed.getName(), line.getOrderedQuantity(), managed.getQuantity()));
-            }
-
+            // Cho phép > tồn kho khi lưu đơn
             line.setSale_order(saleOrder);
             line.setOrigin(ItemOrigin.COMBO);
             detailList.add(line);
@@ -141,13 +127,9 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
             throw new RuntimeException("Chi tiết đơn hàng trống");
         }
 
-        // ===== 3) Description + nhãn combo
-        String baseDesc;
-        if (hasInsufficientStock) {
-            baseDesc = "Đơn hàng thiếu hàng, cần nhập thêm để hoàn thành:\n" + warningNote.toString().trim();
-        } else {
-            baseDesc = Optional.ofNullable(dto.getDescription()).orElse("").trim();
-        }
+        // ===== 3) Description + nhãn combo (KHÔNG tự chèn cảnh báo thiếu hàng) =====
+        // >>> SỬA: chỉ lấy mô tả từ form và nối nhãn combo (nếu có), không chèn “thiếu hàng”
+        String baseDesc = Optional.ofNullable(dto.getDescription()).orElse("").trim();
 
         if (dto.getComboIds() != null && !dto.getComboIds().isEmpty()) {
             List<Combo> combos = comboRepository.findAllById(dto.getComboIds());
@@ -166,10 +148,9 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         saleOrder.setTotalAmount(totalAmount);
 
         // ===== 4) PayOS (giữ nguyên)
-        String paymentNote = String.format("Thanh toan don %s",
-                orderCode);
+        String paymentNote = String.format("Thanh toan don %s", orderCode);
         saleOrder.setPaymentNote(paymentNote);
-        saleOrder.setPaymentStatus(SaleOrder.PaymentStatus.NONE_PAYMENT); // luôn khởi tạo PENDING
+        saleOrder.setPaymentStatus(SaleOrder.PaymentStatus.NONE_PAYMENT); // luôn khởi tạo NONE_PAYMENT
         log.info("[PayOS][switch] enabled={}", payOsEnabled);
         String warnPay = null;
         String qr = null, link = null;
@@ -298,7 +279,9 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
 
         saleOrderDetailRepository.deleteByOrderSoId(orderId);
 
-        Map<Integer, SaleOrderDetail> comboAgg = expandCombosFromCounts(form.getComboCounts());
+        Map<Long, Integer> counts = Optional.ofNullable(form.getComboCounts())
+                .orElseGet(LinkedHashMap::new);
+        Map<Integer, SaleOrderDetail> comboAgg = expandCombosFromCounts(counts);
 
         List<SaleOrderDetail> lines = new ArrayList<>();
         BigDecimal sum = BigDecimal.ZERO;
@@ -346,8 +329,7 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         saleOrderDetailRepository.saveAll(lines);
 
         saleOrderComboRepository.deleteBySaleOrder(order);
-        if (form.getComboCounts() != null && !form.getComboCounts().isEmpty()) {
-            Map<Long, Integer> counts = new LinkedHashMap<>(form.getComboCounts());
+        if (!counts.isEmpty()) {
             List<Combo> base = comboRepository.findAllById(counts.keySet());
             Map<Long, Combo> byId = base.stream().collect(Collectors.toMap(Combo::getId, c -> c));
             for (Map.Entry<Long, Integer> e : counts.entrySet()) {
@@ -362,17 +344,8 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         }
 
         order.setTotalAmount(sum);
+        // >>> SỬA: Chỉ set mô tả theo form, KHÔNG auto-append “Thiếu hàng: …”
         order.setDescription(Optional.ofNullable(form.getDescription()).orElse(""));
-        StringBuilder warn = new StringBuilder();
-        for (SaleOrderDetail l : lines) {
-            int stock = Optional.ofNullable(l.getProduct().getQuantity()).orElse(0);
-            if (l.getOrderedQuantity() > stock) {
-                warn.append("\nThiếu hàng: ").append(l.getProduct().getName())
-                        .append(" cần ").append(l.getOrderedQuantity())
-                        .append(" tồn ").append(stock);
-            }
-        }
-        if (warn.length() > 0) order.setDescription((order.getDescription() + "\n" + warn).trim());
         orderRepo.save(order);
     }
 
@@ -437,10 +410,8 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         }
 
         if (currentStatus == SaleOrder.SaleOrderStatus.PENDING && newStatus == SaleOrder.SaleOrderStatus.DELIVERIED) {
-            // Trạng thái hợp lệ
             saleOrder.setStatus(SaleOrder.SaleOrderStatus.DELIVERIED);
         } else if (currentStatus == SaleOrder.SaleOrderStatus.DELIVERIED && newStatus == SaleOrder.SaleOrderStatus.COMPLETED) {
-            // Trạng thái hợp lệ
             saleOrder.setStatus(SaleOrder.SaleOrderStatus.COMPLETED);
         } else {
             throw new RuntimeException("Không thể cập nhật từ " + currentStatus + " sang " + newStatus);
@@ -479,6 +450,7 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
             orderRepo.save(so);
         }
     }
+
     @Override
     public void regeneratePayOsOrder(Integer saleOrderId) {
         SaleOrder so = orderRepo.findById(saleOrderId)
@@ -504,7 +476,6 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         // Cập nhật đơn: gắn mã PayOS mới, set PENDING, lưu link/QR
         so.setPayOsOrderCode(String.valueOf(newOrderCode));
         so.setPaymentStatus(SaleOrder.PaymentStatus.PENDING);
-        // nếu bạn có field riêng paymentLink/qrCode thì set; nếu chưa, tạm dùng paymentNote
         String link = resp.getCheckoutUrl() != null ? resp.getCheckoutUrl() : resp.getPaymentLink();
         if (link != null) {
             so.setPaymentNote(link);

@@ -34,7 +34,7 @@ public class SaleOrder {
     private LocalDateTime orderDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Column(name = "status", nullable = false, length = 32)
     private SaleOrderStatus status = SaleOrderStatus.PENDING;
 
     @Column(columnDefinition = "TEXT")

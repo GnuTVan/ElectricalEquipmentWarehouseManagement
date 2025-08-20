@@ -3,35 +3,37 @@ package com.eewms.controller;
 import com.eewms.constant.PRStatus;
 import com.eewms.dto.purchaseRequest.PurchaseRequestDTO;
 import com.eewms.dto.purchaseRequest.PurchaseRequestItemDTO;
-import com.eewms.entities.SaleOrder;
 import com.eewms.entities.Product;
+import com.eewms.entities.SaleOrder;
 import com.eewms.entities.Supplier;
+import com.eewms.repository.GoodIssueNoteRepository;
 import com.eewms.repository.ProductRepository;
 import com.eewms.repository.purchaseRequest.PurchaseRequestRepository;
 import com.eewms.services.IProductServices;
 import com.eewms.services.IPurchaseRequestService;
 import com.eewms.services.ISaleOrderService;
 import com.eewms.services.ISupplierService;
+// >>> NEW: nạp danh sách khách cho form "Tạo yêu cầu cho khách"
+import com.eewms.services.ICustomerService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 @Controller
 @RequestMapping("/admin/purchase-requests")
@@ -42,11 +44,13 @@ public class PurchaseRequestController {
     private final ISaleOrderService saleOrderService;
     private final IProductServices productService;
     private final ISupplierService supplierService;
-    private final IPurchaseRequestService purchaseRequestService;
-    private final ProductRepository productRepository; //  thêm
+    private final ProductRepository productRepository;
     private final PurchaseRequestRepository prRepo;
+    private final GoodIssueNoteRepository goodIssueNoteRepository;
 
-    // helper: map productId -> allowed suppliers
+    // >>> NEW
+    private final ICustomerService customerService;
+
     private Map<Long, List<Supplier>> buildAllowedSuppliersMap(List<PurchaseRequestItemDTO> items) {
         Map<Long, List<Supplier>> map = new HashMap<>();
         for (PurchaseRequestItemDTO it : items) {
@@ -59,6 +63,7 @@ public class PurchaseRequestController {
         return map;
     }
 
+    // ==================== LIST ====================
     @GetMapping
     public String listRequests(Model model,
                                @RequestParam(defaultValue = "0") int page,
@@ -84,9 +89,9 @@ public class PurchaseRequestController {
         return "purchase-request-list";
     }
 
+    // === Tạo PR từ một SO (giữ để dùng khi cần) – tính thiếu theo "đã xuất", không dựa tồn ===
     @GetMapping("/create-from-sale-order/{saleOrderId}")
     public String createFromSaleOrder(@PathVariable Integer saleOrderId, Model model, RedirectAttributes redirect) {
-
         if (prRepo.existsBySaleOrder_SoId(saleOrderId)) {
             redirect.addFlashAttribute("error", "Đơn bán đã có yêu cầu mua.");
             return "redirect:/sale-orders/" + saleOrderId + "/edit";
@@ -94,12 +99,18 @@ public class PurchaseRequestController {
         SaleOrder order = saleOrderService.getOrderEntityById(saleOrderId);
 
         List<PurchaseRequestItemDTO> items = order.getDetails().stream()
-                .filter(d -> d.getProduct().getQuantity() < d.getOrderedQuantity())
-                .map(d -> PurchaseRequestItemDTO.builder()
-                        .productId(Long.valueOf(d.getProduct().getId()))
-                        .productName(d.getProduct().getName())
-                        .quantityNeeded(d.getOrderedQuantity() - d.getProduct().getQuantity())
-                        .build())
+                .map(d -> {
+                    Integer issued = goodIssueNoteRepository
+                            .sumIssuedQtyBySaleOrderAndProduct(order.getSoId(), d.getProduct().getId());
+                    int shortage = d.getOrderedQuantity() - (issued == null ? 0 : issued);
+                    if (shortage <= 0) return null;
+                    return PurchaseRequestItemDTO.builder()
+                            .productId(Long.valueOf(d.getProduct().getId()))
+                            .productName(d.getProduct().getName())
+                            .quantityNeeded(shortage)
+                            .build();
+                })
+                .filter(Objects::nonNull)
                 .toList();
 
         if (items.isEmpty()) {
@@ -114,9 +125,6 @@ public class PurchaseRequestController {
                 .build();
 
         model.addAttribute("requestDTO", dto);
-        // bỏ suppliers toàn hệ thống
-        // model.addAttribute("suppliers", supplierService.findAll());
-        //  chỉ NCC thuộc từng sản phẩm
         model.addAttribute("allowedSuppliers", buildAllowedSuppliersMap(items));
         return "purchase-request-form";
     }
@@ -137,24 +145,13 @@ public class PurchaseRequestController {
         }
 
         var saved = prService.create(dto);
-        // Staff không có quyền xem PR -> quay về SO detail
         if (!hasAnyRole("ADMIN", "MANAGER")) {
             redirect.addFlashAttribute("message", "Đã gửi yêu cầu mua. Vui lòng chờ phê duyệt.");
             return "redirect:/sale-orders/" + dto.getSaleOrderId() + "/edit";
         }
-        // Manager/Admin -> vào chi tiết PR
         return "redirect:/admin/purchase-requests/" + saved.getId();
     }
 
-    private boolean hasAnyRole(String... roles) {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null) return false;
-        var authorities = auth.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
-        for (String r : roles) {
-            if (authorities.contains("ROLE_" + r)) return true;
-        }
-        return false;
-    }
 
     @GetMapping("/{id}")
     public String viewDetail(@PathVariable Long id, Model model, RedirectAttributes redirect) {
@@ -165,7 +162,6 @@ public class PurchaseRequestController {
         }
         PurchaseRequestDTO pr = opt.get();
         model.addAttribute("request", pr);
-        // model.addAttribute("suppliers", supplierService.findAll());
         model.addAttribute("allowedSuppliers", buildAllowedSuppliersMap(pr.getItems()));
         return "purchase-request-detail";
     }
@@ -196,14 +192,74 @@ public class PurchaseRequestController {
         return "redirect:/admin/purchase-requests/" + id;
     }
 
-    @PostMapping("/{id}/generate-po")
-    public String generatePOFromPR(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    // ==== Hủy PR kèm lý do ====
+    @PostMapping("/{id}/cancel")
+    public String cancel(@PathVariable Long id,
+                         @RequestParam String reason,
+                         RedirectAttributes redirect) {
         try {
-            purchaseRequestService.generatePurchaseOrdersFromRequest(id);
-            redirectAttributes.addFlashAttribute("message", "Đã tạo phiếu mua hàng từ yêu cầu thành công.");
+            prService.cancel(id, reason);
+            redirect.addFlashAttribute("message", "Đã hủy yêu cầu mua.");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Lỗi khi tạo phiếu mua hàng: " + e.getMessage());
+            redirect.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/admin/purchase-requests/" + id;
     }
+
+    // ==== B8: Tạo PO theo nhà cung cấp đã chọn ====
+    @PostMapping("/{id}/generate-po") // >>> NEW
+    public String generatePO(@PathVariable Long id, RedirectAttributes redirect) {
+        try {
+            prService.generatePurchaseOrdersFromRequest(id);
+            redirect.addFlashAttribute("message", "Đã tạo các đơn mua hàng theo nhà cung cấp.");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/purchase-requests/" + id;
+    }
+
+    // ========= helpers =========
+    private boolean hasAnyRole(String... roles) {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return false;
+        var authorities = auth.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
+        for (String r : roles) if (authorities.contains("ROLE_" + r)) return true;
+        return false;
+    }
+
+    @GetMapping("/collect")
+    public String collectAllOpen(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
+            Model model,
+            RedirectAttributes ra) {
+
+        var items = prService.collectShortagesForAllOpen(start, end);
+        if (items.isEmpty()) {
+            ra.addFlashAttribute("message", "Không có sản phẩm thiếu ở các đơn đang mở.");
+            return "redirect:/admin/purchase-requests";
+        }
+        model.addAttribute("collectedItems", items);
+        model.addAttribute("allowedSuppliers", buildAllowedSuppliersMap(items));
+        model.addAttribute("start", start);
+        model.addAttribute("end", end);
+        return "purchase-request-collect"; // NEW view
+    }
+
+    // Xác nhận tạo PR từ danh sách đã thu thập trên preview
+    @PostMapping("/create-from-collected")
+    public String createFromCollected(@ModelAttribute("items") PurchaseRequestDTO wrapper,
+                                      RedirectAttributes redirect,
+                                      java.security.Principal principal) {
+        try {
+            String createdBy = principal != null ? principal.getName() : "system";
+            var pr = prService.createFromCollected(wrapper.getItems(), createdBy);
+            redirect.addFlashAttribute("message", "Đã tạo yêu cầu mua tổng hợp.");
+            return "redirect:/admin/purchase-requests/" + pr.getId();
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+            return "redirect:/admin/purchase-requests";
+        }
+    }
+
 }

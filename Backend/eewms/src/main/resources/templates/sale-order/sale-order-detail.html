@@ -18,6 +18,12 @@
                     <i class="ri-arrow-left-line"></i> Quay lại
                 </a>
                 <h1 class="text-2xl font-bold">Chi tiết đơn hàng bán</h1>
+
+                <a th:if="${saleOrder.status != null and saleOrder.status.name() == 'PARTLY_DELIVERED'}"
+                   th:href="@{'/good-issue/create-from-sale/' + ${saleOrder.soId}}"
+                   class="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded bg-orange-600 hover:bg-orange-700 text-white">
+                    <i class="ri-truck-line"></i> Tạo phiếu xuất tiếp
+                </a>
             </div>
 
             <!-- Khối thông tin chung -->
@@ -80,6 +86,8 @@
                     <tr class="bg-gray-50 text-left">
                         <th class="px-3 py-2">Sản phẩm</th>
                         <th class="px-3 py-2 text-center">Số lượng bán ra</th>
+                        <th class="px-3 py-2 text-center">Đã giao</th>
+                        <th class="px-3 py-2 text-center">Còn lại</th>
                         <th class="px-3 py-2 text-center">Đơn giá</th>
                         <th class="px-3 py-2 text-right">Thành tiền</th>
                     </tr>
@@ -98,6 +106,14 @@
                             </div>
                         </td>
                         <td class="px-3 py-2 text-center" th:text="${d.orderedQuantity}">1</td>
+                        <!-- NEW: Đã giao = issuedByPid[productId] -->
+                        <td class="px-3 py-2 text-center"
+                            th:text="${issuedByPid[d.product.id] != null ? issuedByPid[d.product.id] : 0}">0</td>
+
+                        <!-- NEW: Còn lại = ordered - issued -->
+                        <td class="px-3 py-2 text-center"
+                            th:text="${(d.orderedQuantity != null ? d.orderedQuantity : 0) -
+                    (issuedByPid[d.product.id] != null ? issuedByPid[d.product.id] : 0)}">0</td>
                         <td class="px-3 py-2 text-center"
                             th:text="${#numbers.formatDecimal(d.price, 0, 'COMMA', 0, 'POINT')}">0</td>
                         <td class="px-3 py-2 text-right"

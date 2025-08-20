@@ -6,6 +6,7 @@ import com.eewms.dto.SaleOrderRequestDTO;
 import com.eewms.dto.SaleOrderResponseDTO;
 import com.eewms.entities.SaleOrder;
 import com.eewms.repository.ComboRepository;
+import com.eewms.repository.GoodIssueNoteRepository;
 import com.eewms.repository.SaleOrderComboRepository;
 import com.eewms.repository.purchaseRequest.PurchaseRequestRepository;
 import com.eewms.services.IComboService;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -36,7 +38,7 @@ public class SaleOrderController {
     private final IGoodIssueService goodIssueService;
     private final IComboService comboService;
     private final ComboJsonHelper comboJsonHelper;
-
+    private final GoodIssueNoteRepository goodIssueRepository;
     private final SaleOrderComboRepository saleOrderComboRepository;
     private final PurchaseRequestRepository prRepo;
     private final ComboRepository cbRepo;
@@ -244,14 +246,42 @@ public class SaleOrderController {
     @GetMapping("/{id}/view")
     public String viewOrderDetails(@PathVariable Integer id, Model model) {
         SaleOrder saleOrder = saleOrderService.getOrderEntityById(id);
-        // ✅ Cho phép xem nếu KHÔNG phải PENDING (tức DELIVERIED/COMPLETED đều được)
-        if (saleOrder.getStatus() != SaleOrder.SaleOrderStatus.PENDING) {
-            model.addAttribute("saleOrder", saleOrder);
-            return "sale-order/sale-order-detail";
-        } else {
-            // Nếu PENDING thì điều hướng về trang sửa
+
+        // ✅ Cho phép xem nếu KHÔNG phải PENDING
+        if (saleOrder.getStatus() == SaleOrder.SaleOrderStatus.PENDING) {
             return "redirect:/sale-orders/" + id + "/edit";
         }
+
+        model.addAttribute("saleOrder", saleOrder);
+
+        // === NEW: tính ĐÃ GIAO / CÒN LẠI cho từng product ===
+        // 1 query group-by để lấy tổng đã xuất theo product
+        List<Object[]> rows = goodIssueRepository
+                .sumIssuedBySaleOrderGroupByProduct(saleOrder.getSoId());
+
+        // Map<productId, issuedQty>
+        java.util.Map<Integer, Integer> issuedByPid = new java.util.HashMap<>();
+        for (Object[] r : rows) {
+            Integer pid = (Integer) r[0];
+            Number sum = (Number) r[1];
+            issuedByPid.put(pid, sum == null ? 0 : sum.intValue());
+        }
+
+        // Map<productId, remainingQty> = ordered - issued (>=0)
+        java.util.Map<Integer, Integer> remainingByPid = new java.util.HashMap<>();
+        for (var d : saleOrder.getDetails()) {
+            Integer pid = d.getProduct() != null ? d.getProduct().getId() : null;
+            if (pid == null) continue;
+            int ordered = d.getOrderedQuantity() != null ? d.getOrderedQuantity() : 0;
+            int issued  = issuedByPid.getOrDefault(pid, 0);
+            int remain  = Math.max(0, ordered - issued);
+            remainingByPid.put(pid, remain);
+        }
+
+        model.addAttribute("issuedByPid", issuedByPid);
+        model.addAttribute("remainingByPid", remainingByPid);
+
+        return "sale-order/sale-order-detail";
     }
 
     @PostMapping("/{id}/actions/mark-unpaid")

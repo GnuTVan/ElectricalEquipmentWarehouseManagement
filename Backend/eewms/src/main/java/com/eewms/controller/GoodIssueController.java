@@ -1,8 +1,11 @@
 package com.eewms.controller;
 
+import com.eewms.dto.GoodIssueDetailDTO; // [CHANGED] cần DTO để build form partial
 import com.eewms.dto.GoodIssueNoteDTO;
 import com.eewms.entities.GoodIssueNote;
 import com.eewms.entities.SaleOrder;
+import com.eewms.entities.SaleOrderDetail;
+import com.eewms.repository.GoodIssueNoteRepository;
 import com.eewms.services.IGoodIssueService;
 import com.eewms.services.ISaleOrderService;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +15,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Controller
 @RequestMapping("/good-issue")
@@ -21,13 +26,13 @@ public class GoodIssueController {
 
     private final IGoodIssueService goodIssueService;
     private final ISaleOrderService saleOrderService;
+    private final GoodIssueNoteRepository goodIssueRepository;
 
     /** Danh sách phiếu xuất */
     @GetMapping
     public String listGoodIssues(Model model) {
         List<GoodIssueNoteDTO> list = goodIssueService.getAllNotes();
         model.addAttribute("good_issues", list);
-        // view nằm trực tiếp dưới templates/
         return "good-issue-list";
     }
 
@@ -41,12 +46,11 @@ public class GoodIssueController {
         }
         model.addAttribute("note", dto);
         model.addAttribute("items", dto.getDetails());
-        model.addAttribute("showPrint", true); // chỉ hiện nút In PDF khi đã lưu
-        // view nằm trực tiếp dưới templates/
+        model.addAttribute("showPrint", true);
         return "good-issue-detail";
     }
 
-    /** Trang xem trước phiếu xuất (chưa lưu) khi bấm Tạo phiếu xuất từ đơn - bản cũ theo 'order' */
+    /** Trang xem trước phiếu xuất (chưa lưu) */
     @GetMapping("/create-from-order/{orderId}")
     public String previewFromOrder(@PathVariable Integer orderId,
                                    Model model,
@@ -57,12 +61,11 @@ public class GoodIssueController {
             return "redirect:/sale-orders";
         }
         model.addAttribute("saleOrder", order);
-        model.addAttribute("showPrint", false); // ẩn nút In PDF ở màn xem trước
-        // view nằm trực tiếp dưới templates/
+        model.addAttribute("showPrint", false);
         return "good-issue-form";
     }
 
-    /** Lưu phiếu xuất thật sự từ đơn hàng (từ màn xem trước) - bản cũ theo 'order' */
+    /** Lưu phiếu xuất (cho phép xuất thiếu) – dùng cho nút “Lưu phiếu xuất” ở màn preview */
     @PostMapping("/create-from-order")
     public String createGoodIssue(@RequestParam("orderId") Integer orderId,
                                   RedirectAttributes ra) {
@@ -72,20 +75,41 @@ public class GoodIssueController {
             return "redirect:/sale-orders";
         }
 
-        String currentUsername =
-                SecurityContextHolder.getContext().getAuthentication().getName();
-        GoodIssueNote gin = goodIssueService.createFromOrder(order, currentUsername);
+        // [CHANGED] Dùng luồng partial thay vì createFromOrder(..) cũ
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        GoodIssueNoteDTO form = buildPartialFormFromOrder(order); // yêu cầu SL = phần còn thiếu
+        try {
+            GoodIssueNote note = goodIssueService.saveFromSaleOrderWithPartial(form, username);
 
-        ra.addFlashAttribute("success", "Đã lưu phiếu xuất: " + gin.getGinCode());
-        // LƯU Ý: dùng đúng getter id của entity
-        return "redirect:/good-issue/view/" + gin.getGinId();
+            // Tính tổng đã xuất / tổng đặt sau khi lưu
+            int totalOrdered = order.getDetails().stream().mapToInt(SaleOrderDetail::getOrderedQuantity).sum();
+            Integer issuedAll = goodIssueRepository.sumIssuedQtyBySaleOrder(order.getSoId());
+            int issued = issuedAll == null ? 0 : issuedAll;
+
+            if (issued < totalOrdered) {
+                // [CHANGED] Thiếu → báo và điều hướng sang danh sách PR (b4)
+                ra.addFlashAttribute("message",
+                        "Đã tạo phiếu xuất " + note.getGinCode() + " (" + issued + "/" + totalOrdered +
+                                "). Phần còn lại thiếu hàng. Bấm 'Tạo yêu cầu mua'");
+                return "redirect:/admin/purchase-requests";
+            } else {
+                // Đủ → xem phiếu xuất như bình thường
+                ra.addFlashAttribute("success", "Đã lưu phiếu xuất: " + note.getGinCode());
+                return "redirect:/good-issue/view/" + note.getGinId();
+            }
+        }catch (com.eewms.exception.NoIssueableStockException ex) {
+            // ✅ NEW: hết sạch hàng → không tạo phiếu, đẩy đi tạo PR
+            ra.addFlashAttribute("warning",
+                    "Kho hiện tại hết sạch cho tất cả mặt hàng trong đơn. Vui lòng tạo yêu cầu mua.");
+            // giữ nguyên trạng thái đơn (thường là PENDING)
+            return "redirect:/admin/purchase-requests?customerId=" + order.getCustomer().getId();
+        }
+
     }
 
-    // ===========================
-    //  BỔ SUNG ENDPOINT THEO YÊU CẦU
-    // ===========================
+    // =========================== BẢN DẪN TỪ /create-from-sale ===========================
 
-    /** Trang xem trước phiếu xuất khi bấm Tạo phiếu xuất từ đơn bán hàng (đường dẫn 'create-from-sale') */
+    /** Trang xem trước khi bấm Tạo phiếu xuất từ trang đơn bán */
     @GetMapping("/create-from-sale/{orderId}")
     public String previewFromSale(@PathVariable("orderId") Integer orderId,
                                   Model model,
@@ -100,7 +124,7 @@ public class GoodIssueController {
         return "good-issue-form";
     }
 
-    /** Lưu phiếu xuất tạo từ đơn bán hàng (đường dẫn 'create-from-sale') */
+    /** Lưu phiếu xuất từ trang đơn bán – cũng xuất thiếu nếu cần */
     @PostMapping("/create-from-sale")
     public String saveFromSale(@RequestParam("orderId") Integer orderId,
                                RedirectAttributes ra) {
@@ -110,11 +134,54 @@ public class GoodIssueController {
             return "redirect:/sale-orders";
         }
 
-        String currentUsername =
-                SecurityContextHolder.getContext().getAuthentication().getName();
-        GoodIssueNote gin = goodIssueService.createFromOrder(order, currentUsername);
+        // [CHANGED] Dùng partial
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        GoodIssueNoteDTO form = buildPartialFormFromOrder(order);
+        try {
+            GoodIssueNote note = goodIssueService.saveFromSaleOrderWithPartial(form, username);
 
-        ra.addFlashAttribute("success", "Đã lưu phiếu xuất: " + gin.getGinCode());
-        return "redirect:/good-issue/view/" + gin.getGinId();
+            int totalOrdered = order.getDetails().stream().mapToInt(SaleOrderDetail::getOrderedQuantity).sum();
+            Integer issuedAll = goodIssueRepository.sumIssuedQtyBySaleOrder(order.getSoId());
+            int issued = issuedAll == null ? 0 : issuedAll;
+
+            if (issued < totalOrdered) {
+                ra.addFlashAttribute("message",
+                        "Đã tạo phiếu xuất " + note.getGinCode() + " (" + issued + "/" + totalOrdered + "). " +
+                                "Phần còn lại chưa đủ hàng, vui lòng tạo yêu cầu mua.");
+                return "redirect:/admin/purchase-requests?customerId=" + order.getCustomer().getId();
+            } else {
+                ra.addFlashAttribute("success", "Đã lưu phiếu xuất: " + note.getGinCode());
+                return "redirect:/good-issue/view/" + note.getGinId();
+            }
+        }catch (com.eewms.exception.NoIssueableStockException ex) {
+            ra.addFlashAttribute("warning",
+                    "Kho hiện tại hết sạch cho tất cả mặt hàng trong đơn. Vui lòng tạo yêu cầu mua.");
+            return "redirect:/admin/purchase-requests?customerId=" + order.getCustomer().getId();
+        }
+
+    }
+
+    // =========================== Helper ===========================
+    /** Build DTO để service partial tính: req = phần còn thiếu cho từng sản phẩm */
+    private GoodIssueNoteDTO buildPartialFormFromOrder(SaleOrder order) {
+        List<GoodIssueDetailDTO> lines = new ArrayList<>();
+        order.getDetails().forEach(d -> {
+            int ordered = d.getOrderedQuantity();
+            Integer issuedBefore = goodIssueRepository.sumIssuedQtyBySaleOrderAndProduct(order.getSoId(), d.getProduct().getId());
+            int remaining = ordered - (issuedBefore == null ? 0 : issuedBefore);
+            if (remaining > 0) {
+                lines.add(GoodIssueDetailDTO.builder()
+                        .productId(d.getProduct().getId())
+                        .price(d.getPrice())
+                        .quantity(remaining) // service vẫn min(req, remaining, onHand)
+                        .build());
+            }
+        });
+
+        return GoodIssueNoteDTO.builder()
+                .saleOrderId(order.getId())
+                .description("Phiếu xuất từ đơn #" + order.getSoCode())
+                .details(lines)
+                .build();
     }
 }
