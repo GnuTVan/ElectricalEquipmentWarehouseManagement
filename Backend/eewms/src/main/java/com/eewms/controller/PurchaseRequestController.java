@@ -67,7 +67,7 @@ public class PurchaseRequestController {
     @GetMapping
     public String listRequests(Model model,
                                @RequestParam(defaultValue = "0") int page,
-                               @RequestParam(defaultValue = "8") int size,
+                               @RequestParam(defaultValue = "1000") int size,
                                @RequestParam(required = false) String creator,
                                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
                                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {

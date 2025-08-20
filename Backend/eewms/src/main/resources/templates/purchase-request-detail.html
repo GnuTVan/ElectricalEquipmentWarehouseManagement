@@ -85,7 +85,8 @@
                         </button>
 
                         <!-- Duyệt: override action qua formaction và gửi param status -->
-                        <button type="submit"
+                        <button sec:authorize="hasAnyRole('MANAGER')"
+                                type="submit"
                                 th:formaction="@{'/admin/purchase-requests/' + ${request.id} + '/status'}"
                                 name="status" value="DA_DUYET"
                                 class="bg-green-600 text-white px-4 py-2 rounded">
@@ -93,12 +94,15 @@
                         </button>
 
                         <!-- Hủy: override action qua formaction -->
-                        <input type="text" name="reason" placeholder="Lý do hủy" class="border rounded px-2 py-1"/>
-                        <button type="submit"
-                                th:formaction="@{'/admin/purchase-requests/' + ${request.id} + '/cancel'}"
-                                class="bg-red-600 text-white px-4 py-2 rounded">
-                            Hủy yêu cầu
-                        </button>
+                        <div sec:authorize="hasAnyRole('MANAGER')">
+                            <input type="text" name="reason" placeholder="Lý do hủy" class="border rounded px-2 py-1"/>
+                            <button type="submit"
+                                    th:formaction="@{'/admin/purchase-requests/' + ${request.id} + '/cancel'}"
+                                    class="bg-red-600 text-white px-4 py-2 rounded">
+                                Hủy yêu cầu
+                            </button>
+                        </div>
+
                     </form>
 
                 </form>
