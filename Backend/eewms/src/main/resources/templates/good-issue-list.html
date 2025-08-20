@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<html xmlns:th="http://www.thymeleaf.org" lang="vi"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/common-head :: commonHead('Danh sách phiếu xuất kho')}"></head>
 
 <body class="bg-gray-100 font-sans">
@@ -39,7 +40,9 @@
                         <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Ngày xuất</th>
                         <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Tổng tiền</th>
                         <!-- NEW: Cột Công nợ -->
-                        <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Công nợ</th>
+                        <th sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                            class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Công nợ
+                        </th>
                         <!-- Cột Trạng thái -->
                         <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Trạng thái</th>
                         <th class="px-4 py-2 font-semibold whitespace-nowrap border border-gray-200 text-center">Hành
@@ -59,7 +62,8 @@
                             th:text="${#numbers.formatDecimal(gin.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
 
                         <!-- ===== Cột Công nợ ===== -->
-                        <td class="px-6 py-3 border border-gray-200">
+                        <td sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                            class="px-6 py-3 border border-gray-200">
                             <!-- ĐÃ CÓ Debt & CÒN NỢ -> Nút Thanh toán -->
                             <div th:if="${gin.debtId != null and gin.remainingAmount != null and gin.remainingAmount > 0}">
                                 <button type="button"

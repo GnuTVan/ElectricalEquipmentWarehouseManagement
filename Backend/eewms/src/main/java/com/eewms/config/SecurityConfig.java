@@ -32,60 +32,114 @@ public class SecurityConfig {
                         .ignoringRequestMatchers("/api/webhooks/payos")
                 )
                 .authorizeHttpRequests(auth -> auth
+                        // ====== Webhook & Public ======
                         .requestMatchers(HttpMethod.POST, "/api/webhooks/payos").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/payos/return", "/payos/return/",
                                 "/payos/cancel", "/payos/cancel/").permitAll()
                         // Public/static
-                        .requestMatchers("/", "/landing/**",
+                        .requestMatchers("/",
+                                "/landing/**",
                                 "/css/**", "/js/**", "/images/**", "/assets/**",
                                 "/login",
                                 "/activate", "/activate/**",
-                                "forgot-password",
-                                "reset-password", "/reset-password/**"
+                                "/forgot-password",
+                                "/reset-password", "/reset-password/**"
                         ).permitAll()
-                        // Common authenticated
-                        .requestMatchers("/account/info", "/account/update-profile", "/api/tax-lookup/**", "/admin/notifications/**").authenticated()
-                        //Purchase Requests: STAFF được 2 GET cụ thể (đặt TRƯỚC rule rộng cho Manager)
-                        .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/create-from-sale-order/**")
-                        .hasAnyRole("ADMIN", "MANAGER", "STAFF")
-                        .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/*") // ví dụ /admin/purchase-requests/{id}
-                        .hasAnyRole("ADMIN", "MANAGER", "STAFF")
 
-                        //ADMIN
-                        .requestMatchers("/admin/users/**").hasRole("ADMIN")
-                        .requestMatchers("/settings/**").hasRole("ADMIN")
-                        .requestMatchers("/admin/warehouses/**").hasRole("ADMIN")
+                        // ====== Common authenticated ======
+                        .requestMatchers(
+                                "/account/info",
+                                "/account/update-profile",
+                                "/api/tax-lookup/**",
+                                "/admin/notifications/**").authenticated()
 
-                        //MANAGER
-                        .requestMatchers("/admin/suppliers/**").hasAnyRole("MANAGER")
-                        .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/**").hasAnyRole("MANAGER","STAFF") // sau 2 rule Staff ở trên
-                        .requestMatchers("/admin/warehouse-receipts/**").hasAnyRole("MANAGER")
+                        // ---------------------------------------------------------
+                        // 2) STAFF-only WRITE
+                        //    — Không mở rộng cho ADMIN/MANAGER ở phần ghi
+                        // ---------------------------------------------------------
+                        // (GET ADMIN)
+                        .requestMatchers(HttpMethod.GET, "/sale-orders/**").hasAnyRole("ADMIN","STAFF")
+                        .requestMatchers("/sale-orders/**").hasRole("STAFF")
+                        .requestMatchers(HttpMethod.GET, "/good-issue/**").hasAnyRole("ADMIN","STAFF")
+                        .requestMatchers("/good-issue/**").hasRole("STAFF")
 
-                        //MANAGER + STAFF
+                        .requestMatchers(HttpMethod.GET, "/customers/**").hasAnyRole("ADMIN","STAFF")
+                        .requestMatchers(HttpMethod.GET, "/customer-list/**").hasAnyRole("ADMIN","STAFF")
+                        .requestMatchers("/customers/**").hasRole("STAFF")
+                        .requestMatchers("/customer-list/**").hasRole("STAFF")
+
+                        // ---------------------------------------------------------
+                        // 3) MANAGER-only
+                        // ---------------------------------------------------------
+                        // (GET ADMIN)
+                        .requestMatchers(HttpMethod.GET, "/admin/warehouse-receipts/**")
+                        .hasAnyRole("ADMIN","MANAGER")
+                        .requestMatchers("/admin/warehouse-receipts/**").hasRole("MANAGER")
+
+                        // ---------------------------------------------------------
+                        // 4) MANAGER + STAFF
+                        // ---------------------------------------------------------
+                        // Suppliers (GET ADMIN)
+                        .requestMatchers(HttpMethod.GET, "/admin/suppliers/**")
+                        .hasAnyRole("ADMIN","MANAGER","STAFF")
+                        .requestMatchers("/admin/suppliers/**").hasAnyRole("MANAGER", "STAFF")
+                        // Purchase Orders (GET ADMIN)
+                        .requestMatchers(HttpMethod.GET, "/admin/purchase-orders/**")
+                        .hasAnyRole("ADMIN","MANAGER","STAFF")
                         .requestMatchers("/admin/purchase-orders/**").hasAnyRole("MANAGER", "STAFF")
 
-                        //MANAGER + ADMIN
-                        .requestMatchers("/admin/reports/issues/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers("/admin/reports/receipts/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers("/products/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers("/product-list/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers("/combos/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers("/combo-list/**").hasAnyRole("ADMIN", "MANAGER")
-                        //STAFF
-                        .requestMatchers("/debts/**").hasAnyRole("MANAGER", "STAFF") //Manager cũng được xem công nợ
-                        .requestMatchers("/sale-orders/**").hasAnyRole("STAFF")
-                        .requestMatchers("/good-issue/**").hasAnyRole("STAFF")
-                        .requestMatchers("/customers/**").hasAnyRole("STAFF")
-                        .requestMatchers("/customer-list/**").hasAnyRole("STAFF")
+                        // ---------------------------------------------------------
+                        // 5) ADMIN-only
+                        // ---------------------------------------------------------
+                        .requestMatchers("/admin/users/**").hasRole("ADMIN")
+                        .requestMatchers("/settings/**").hasRole("ADMIN")
+
+                        // ---------------------------------------------------------
+                        // 6) READ-ONLY ADMIN
+                        // ---------------------------------------------------------
+
+                        // 6.1 Purchase Requests (GET)
+                        .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/create-from-sale-order/**")
+                        .hasAnyRole("ADMIN", "MANAGER", "STAFF")
+                        .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/*")
+                        .hasAnyRole("ADMIN", "MANAGER", "STAFF")
+                        .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/**")
+                        .hasAnyRole("ADMIN", "MANAGER", "STAFF") // phủ toàn bộ GET
 
 
-                        //Purchase Requests (Y/C Mua) (POST): Staff chỉ được POST create; các POST khác chỉ Manager/Admin
-                        .requestMatchers(HttpMethod.POST, "/admin/purchase-requests").hasAnyRole("MANAGER", "STAFF") // create PostMapping không path
-                        .requestMatchers(HttpMethod.POST, "/admin/purchase-requests/**").hasAnyRole("MANAGER")      // /{id}/status, /{id}/update, /{id}/generate-po
+                        // 6.5 Reports
+                        .requestMatchers("/admin/reports/issues/**").hasAnyRole("ADMIN","MANAGER")
+                        .requestMatchers("/admin/reports/receipts/**").hasAnyRole("ADMIN","MANAGER")
+
+                        // 6.6 Products/Combos (GET mở cho cả 3; ghi vẫn Admin+Manager)
+                        .requestMatchers(HttpMethod.GET, "/products/**")
+                        .hasAnyRole("ADMIN","MANAGER","STAFF")
+                        .requestMatchers(HttpMethod.GET, "/products-list/**")
+                        .hasAnyRole("ADMIN","MANAGER","STAFF")
+                        .requestMatchers("/products/**").hasAnyRole("ADMIN","MANAGER")
+                        .requestMatchers("/product-list/**").hasAnyRole("ADMIN","MANAGER")
+                        .requestMatchers("/combos/**").hasAnyRole("ADMIN","MANAGER")
+                        .requestMatchers("/combo-list/**").hasAnyRole("ADMIN","MANAGER")
+
+                        // 6.7 Debts (GET mở cho cả 3)
+                        .requestMatchers(HttpMethod.GET, "/debts/**")
+                        .hasAnyRole("ADMIN","MANAGER","STAFF")
+                        .requestMatchers("/debts/**").hasAnyRole("MANAGER","STAFF")
 
 
-                        // Fallback
+
+
+
+                        // ---------------------------------------------------------
+                        // 7) Purchase Requests — POST
+                        // ---------------------------------------------------------
+                        .requestMatchers(HttpMethod.POST, "/admin/purchase-requests")
+                        .hasAnyRole("MANAGER", "STAFF")
+                        .requestMatchers(HttpMethod.POST, "/admin/purchase-requests/**")
+                        .hasAnyRole("MANAGER", "STAFF")
+
+                        // ====== 8) Fallback ======
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e.accessDeniedPage("/error/403"))

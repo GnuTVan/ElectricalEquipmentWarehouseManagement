@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<html xmlns:th="http://www.thymeleaf.org" lang="vi"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/common-head :: commonHead('Chi tiết phiếu nhập kho')}"></head>
 
 <body class="bg-gray-100 font-sans">
@@ -178,7 +179,8 @@
                         <input name="note" class="border rounded px-3 py-2 w-full" placeholder="Ghi chú (tuỳ chọn)"
                                th:disabled="${remain.compareTo(T(java.math.BigDecimal).ZERO) <= 0}"/>
                     </div>
-                    <button id="payBtn" type="submit"
+                    <button sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                            id="payBtn" type="submit"
                             class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded disabled:opacity-50"
                             th:disabled="${remain.compareTo(T(java.math.BigDecimal).ZERO) <= 0}">
                         Thanh toán

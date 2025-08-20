@@ -8,7 +8,6 @@
             <img th:src="@{/images/logo.png}" alt="Logo"
                  class="w-20 h-20 object-cover rounded hover:opacity-80 transition"/>
         </a>
-=
         <p class="mt-2 text-l text-gray-200 font-bold">
             Vai trò:
             <span th:switch="${#authentication.authorities[0].authority}">
@@ -24,6 +23,7 @@
     <!-- Navigation Links -->
     <nav class="flex-1 overflow-y-auto sidebar-nav px-4 py-4">
         <ul class="space-y-2">
+            <!-- Trang chủ -->
             <li>
                 <a th:href="@{/dashboard}"
                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
@@ -31,6 +31,7 @@
                     <span>Trang chủ</span>
                 </a>
             </li>
+            <!-- Quản lý người dùng -->
             <li sec:authorize="hasRole('ADMIN')">
                 <a th:href="@{/admin/users}"
                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
@@ -38,13 +39,15 @@
                     <span>Tài khoản</span>
                 </a>
             </li>
-            <li sec:authorize="hasAnyRole('ADMIN','MANAGER')">
+            <!-- Sản phẩm-->
+            <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
                 <a th:href="@{/products}"
                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-archive-line w-6 text-lg"></i>
                     <span>Sản phẩm</span>
                 </a>
             </li>
+            <!-- Quản lý chung (dropdown) -->
             <li sec:authorize="hasAnyRole('ADMIN','MANAGER')">
                 <div class="flex flex-col">
                     <button type="button"
@@ -72,7 +75,7 @@
                             <a th:href="@{/settings/CATEGORY}"
                                class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Danh mục</a>
                         </li>
-                        <li>
+                        <li class="hidden">
                             <a th:href="@{/admin/warehouses}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">
                                 Kho
                             </a>
@@ -80,9 +83,8 @@
                     </ul>
                 </div>
             </li>
-
             <!-- Đối tác (dropdown) -->
-            <li sec:authorize="hasAnyRole('MANAGER','STAFF')">
+            <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
                 <div class="flex flex-col">
                     <button type="button"
                             data-submenu-id="partner-submenu"
@@ -108,7 +110,7 @@
                 </div>
             </li>
             <!-- Mua hàng -->
-            <li sec:authorize="hasAnyRole('MANAGER','STAFF')">
+            <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
                 <a th:href="@{/admin/purchase-orders}"
                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-shopping-basket-line w-6 text-lg"></i>
@@ -116,7 +118,7 @@
                 </a>
             </li>
             <!-- Bán hàng-->
-            <li sec:authorize="hasRole('STAFF')">
+            <li sec:authorize="hasAnyRole('ADMIN','STAFF')">
                 <a th:href="@{/sale-orders}"
                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-shopping-cart-2-line w-6 text-lg"></i>
@@ -124,7 +126,7 @@
                 </a>
             </li>
             <!-- Công nợ -->
-            <li sec:authorize="hasAnyRole('MANAGER','STAFF')">
+            <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
                 <a th:href="@{/debts}"
                    class="menu-link flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-file-text-line w-6 text-lg"></i>
@@ -132,7 +134,7 @@
                 </a>
             </li>
             <!-- Yêu cầu mua hàng -->
-            <li sec:authorize="hasAnyRole('MANAGER','STAFF')">
+            <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
                 <a th:href="@{/admin/purchase-requests}"
                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
                     <i class="ri-shopping-basket-line w-6 text-lg"></i>
@@ -159,7 +161,7 @@
                 </a>
             </li>
             <!-- Phiếu xuất nhập kho (dropdown) -->
-            <li sec:authorize="hasAnyRole('MANAGER','STAFF')">
+            <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
                 <div class="flex flex-col">
                     <button type="button"
                             data-submenu-id="inventory-submenu"

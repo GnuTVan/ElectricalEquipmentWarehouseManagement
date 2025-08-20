@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<html xmlns:th="http://www.thymeleaf.org" lang="vi"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/common-head :: commonHead('Chi tiết yêu cầu mua hàng')}"></head>
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
@@ -73,7 +74,8 @@
                         </tbody>
                     </table>
 
-                    <form id="prForm" th:action="@{'/admin/purchase-requests/' + ${request.id} + '/update'}" method="post" class="mb-4">
+                    <form sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                          id="prForm" th:action="@{'/admin/purchase-requests/' + ${request.id} + '/update'}" method="post" class="mb-4">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                         <!-- bảng items ... -->
 

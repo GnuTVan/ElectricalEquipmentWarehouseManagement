@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
+
 
 <head th:replace="~{fragments/common-head :: commonHead('Danh sách sản phẩm')}"></head>
 
@@ -15,7 +17,8 @@
         <!-- Tiêu đề + Nút Thêm -->
         <div class="flex justify-between items-center mb-4 px-6 py-6">
             <h1 class="text-2xl font-bold">Danh sách sản phẩm</h1>
-            <div class="flex gap-2">
+            <div sec:authorize="hasAnyRole('MANAGER', 'ADMIN')"
+                 class="flex gap-2">
                 <a onclick="openAddModal()"
                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer">+ Thêm</a>
                 <!-- Thanh tìm kiếm -->
@@ -98,7 +101,8 @@
                             </span>
 
                                 <!-- Toggle giữ hành vi cũ -->
-                                <label class="inline-flex relative items-center cursor-pointer">
+                                <label sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                                       class="inline-flex relative items-center cursor-pointer">
                                     <input type="checkbox"
                                            th:checked="${product.status.name() == 'ACTIVE'}"
                                            th:data-id="${product.id}"
@@ -118,7 +122,8 @@
                                 </a>
 
                                 <!-- Nút Sửa -->
-                                <a href="#" onclick="openEditModal(this)"
+                                <a sec:authorize="hasAnyRole('MANAGER', 'STAFF')"
+                                   href="#" onclick="openEditModal(this)"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded">
                                     <i class="ri-pencil-line text-sm"></i> Sửa
                                 </a>
@@ -196,7 +201,8 @@
                     <div class="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-end gap-2">
                         <button onclick="closeDetailModal()" class="px-4 py-2 rounded border hover:bg-gray-50">Đóng
                         </button>
-                        <button onclick="openEditFromDetail()"
+                        <button sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                                onclick="openEditFromDetail()"
                                 class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Chỉnh sửa
                         </button>
                     </div>

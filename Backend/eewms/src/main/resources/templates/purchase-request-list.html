@@ -14,7 +14,8 @@
             <div class="mb-6 flex items-center justify-between">
                 <h1 class="text-2xl font-bold">Danh sách yêu cầu mua hàng</h1>
 
-                <form th:action="@{/admin/purchase-requests/generate-all}" method="post" class="inline">
+                <form sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                      th:action="@{/admin/purchase-requests/generate-all}" method="post" class="inline">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                     <a class="bg-blue-600 text-white px-4 py-2 rounded"
                        th:href="@{/admin/purchase-requests/collect}">
@@ -79,14 +80,11 @@
                             <td class="px-4 py-2 border border-gray-200 w-32">
           <span class="inline-flex items-center justify-center px-2 py-1 rounded text-md font-semibold whitespace-nowrap w-32"
                 th:classappend="
-                  ${request.status?.name() == 'MOI_TAO'}  ? 'bg-gray-100  text-gray-700'  :
-                  (${request.status?.name() == 'DA_DUYET'} ? 'bg-emerald-100 text-emerald-700' :
-                  (${request.status?.name() == 'DA_TAO_PO'} ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'))"
-                th:text="${request.status == null ? '---' :
-                         (request.status.name() == 'MOI_TAO' ? 'Mới tạo' :
-                         (request.status.name() == 'DA_DUYET' ? 'Đã duyệt' :
-                         (request.status.name() == 'DA_TAO_PO' ? 'Đã tạo PO' : '---')))}">
-          </span>
+            ${request.status?.name() == 'MOI_TAO'}  ? 'bg-gray-100  text-gray-700'  :
+            (${request.status?.name() == 'DA_DUYET'} ? 'bg-emerald-100 text-emerald-700' :
+            (${request.status?.name() == 'DA_TAO_PO'} ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'))"
+                th:text="${request.status != null ? request.status.label : '---'}">
+    </span>
                             </td>
 
                             <!-- Thao tác: 2 nút -->
@@ -104,13 +102,13 @@
                                           'MOI_TAO'}"
                                           th:action="@{'/admin/purchase-requests/' + ${request.id} + '/status'}"
                                           method="post" class="inline-flex">
-                                    <input type="hidden" name="status" value="DA_DUYET"/>
-                                    <input type="hidden" th:name="${_csrf.parameterName}"
-                                           th:value="${_csrf.token}"/>
-                                    <button type="submit"
-                                            class="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded">
-                                        <i class="ri-check-line text-sm"></i> Duyệt
-                                    </button>
+                                        <input type="hidden" name="status" value="DA_DUYET"/>
+                                        <input type="hidden" th:name="${_csrf.parameterName}"
+                                               th:value="${_csrf.token}"/>
+                                        <button type="submit"
+                                                class="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded">
+                                            <i class="ri-check-line text-sm"></i> Duyệt
+                                        </button>
                                     </form>
                                 </div>
                             </td>

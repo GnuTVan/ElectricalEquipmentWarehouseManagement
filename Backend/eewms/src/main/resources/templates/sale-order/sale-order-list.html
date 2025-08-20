@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<html xmlns:th="http://www.thymeleaf.org" lang="vi"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/common-head :: commonHead('Đơn hàng bán')}"></head>
+
 
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
@@ -57,7 +59,8 @@
         <!-- Page Title + Button -->
         <div class="flex justify-between items-center mb-4 px-4 py-2">
             <h1 class="text-2xl font-bold text-gray-800">Danh sách đơn hàng bán</h1>
-            <a href="/sale-orders/create"
+            <a sec:authorize="hasRole('STAFF')"
+               href="/sale-orders/create"
                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center">
                 <i class="ri-add-line mr-1"></i> Thêm đơn hàng
             </a>
@@ -105,14 +108,16 @@
                     <td class="px-4 py-2 text-center">
                         <div class="flex justify-center items-center space-x-2">
                             <!-- PENDING: Sửa + Xóa -->
-                            <a th:if="${order.status.name() == 'PENDING'}"
+                            <a sec:authorize="hasRole('STAFF')"
+                               th:if="${order.status.name() == 'PENDING'}"
                                th:href="@{/sale-orders/{id}/edit(id=${order.orderId})}"
                                class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded shadow">
                                 <i class="ri-edit-line text-base"></i>
                                 Sửa
                             </a>
 
-                            <form th:if="${order.status.name() == 'PENDING'}"
+                            <form sec:authorize="hasRole('STAFF')"
+                                  th:if="${order.status.name() == 'PENDING'}"
                                   th:action="@{/sale-orders/{id}/delete(id=${order.orderId})}"
                                   method="post"
                                   onsubmit="return confirm('Bạn có chắc muốn xóa đơn này?');"

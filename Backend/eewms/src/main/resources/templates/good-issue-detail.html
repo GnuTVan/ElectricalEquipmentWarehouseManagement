@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<html xmlns:th="http://www.thymeleaf.org" lang="vi"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/common-head :: commonHead('Chi tiết phiếu xuất kho')}"></head>
 
 <body class="bg-gray-100 font-sans">
@@ -90,21 +91,25 @@
                     <td th:text="${iStat.index + 1}" class="px-4 py-2 border-b"></td>
                     <td th:text="${detail.productName}" class="px-4 py-2 border-b"></td>
                     <td th:text="${detail.quantity}" class="px-4 py-2 border-b"></td>
-                    <td th:text="${#numbers.formatDecimal(detail.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'" class="px-4 py-2 border-b"></td>
-                    <td th:text="${#numbers.formatDecimal(detail.total, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'" class="px-4 py-2 border-b"></td>
+                    <td th:text="${#numbers.formatDecimal(detail.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"
+                        class="px-4 py-2 border-b"></td>
+                    <td th:text="${#numbers.formatDecimal(detail.total, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"
+                        class="px-4 py-2 border-b"></td>
                 </tr>
                 </tbody>
             </table>
             <tfoot>
             <tr class="bg-gray-50 font-semibold">
                 <td colspan="4" class="px-4 py-2 text-right">Tổng cộng:</td>
-                <td class="px-4 py-2" th:text="${#numbers.formatDecimal(note.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+                <td class="px-4 py-2"
+                    th:text="${#numbers.formatDecimal(note.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
             </tr>
             </tfoot>
         </div>
 
         <!-- ==================== CÔNG NỢ KHÁCH HÀNG (thêm mới) ==================== -->
-        <section class="mt-6 bg-white rounded shadow p-6">
+        <section sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                 class="mt-6 bg-white rounded shadow p-6">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-lg font-semibold">Công nợ khách hàng</h2>
                 <span th:if="${debt != null}" class="text-sm">

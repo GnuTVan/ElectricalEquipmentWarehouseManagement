@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
+
 <head th:replace="~{fragments/common-head :: commonHead('Danh sách nhà cung cấp')}"></head>
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
@@ -21,7 +23,8 @@
                     <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tìm
                     </button>
                 </form>
-                <button id="openAddModal" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm">
+                <button sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                        id="openAddModal" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm">
                     <i class="ri-add-line mr-1"></i> Thêm mới
                 </button>
             </div>
@@ -36,9 +39,9 @@
                     <tr>
                         <th class="px-4 py-3 font-semibold border border-gray-200">STT</th>
                         <th class="px-4 py-3 font-semibold border border-gray-200 w-64">Tên NCC</th>
-                        <th class="px-4 py-3 font-semibold border border-gray-200 whitespace-nowrap">Mã số thuế</th>
-                        <th class="px-4 py-3 font-semibold border border-gray-200 whitespace-nowrap">Ngân hàng</th>
-                        <th class="px-4 py-3 font-semibold border border-gray-200 whitespace-nowrap">Số tài khoản</th>
+                        <th class="hidden px-4 py-3 font-semibold border border-gray-200 whitespace-nowrap">Mã số thuế</th>
+                        <th class="hidden px-4 py-3 font-semibold border border-gray-200 whitespace-nowrap">Ngân hàng</th>
+                        <th class="hidden px-4 py-3 font-semibold border border-gray-200 whitespace-nowrap">Số tài khoản</th>
                         <th class="px-4 py-3 font-semibold border border-gray-200 whitespace-nowrap">Người liên hệ</th>
                         <th class="px-4 py-3 font-semibold border border-gray-200 whitespace-nowrap">SĐT</th>
                         <th class="px-4 py-3 font-semibold border border-gray-200 whitespace-nowrap">Trạng thái</th>
@@ -49,20 +52,21 @@
                     <tbody>
                     <tr th:each="supplier, iterStat : ${suppliers}"
                         class="border-t hover:bg-gray-50">
-                        <td class="px-4 py-2 border border-gray-200" th:text="${supplier.id}"></td>
-                        <td class="px-4 py-2 border border-gray-200 w-64" th:text="${supplier.name}"></td>
-                        <td class="px-4 py-2 border border-gray-200" th:text="${supplier.taxCode}"></td>
-                        <td class="px-4 py-2 border border-gray-200" th:text="${supplier.bankName}"></td>
-                        <td class="px-4 py-2 border border-gray-200" th:text="${supplier.bankAccount}"></td>
-                        <td class="px-4 py-2 border border-gray-200" th:text="${supplier.contactName}"></td>
-                        <td class="px-4 py-2 border border-gray-200" th:text="${supplier.contactMobile}"></td>
-                        <td class="px-4 py-2 border border-gray-200">
+                        <td class="px-4 py-2 border border-gray-200 w-1" th:text="${supplier.id}"></td>
+                        <td class="px-4 py-2 border border-gray-200" th:text="${supplier.name}"></td>
+                        <td class="hidden px-4 py-2 border border-gray-200" th:text="${supplier.taxCode}"></td>
+                        <td class="hidden px-4 py-2 border border-gray-200" th:text="${supplier.bankName}"></td>
+                        <td class="hidden px-4 py-2 border border-gray-200" th:text="${supplier.bankAccount}"></td>
+                        <td class="px-4 py-2 border border-gray-200 w-1" th:text="${supplier.contactName}"></td>
+                        <td class="px-4 py-2 border border-gray-200 w-1" th:text="${supplier.contactMobile}"></td>
+                        <td class="px-4 py-2 border border-gray-200 w-1">
                             <div class="flex items-center justify-center gap-3">
                             <span class="inline-flex items-center justify-center w-32 px-2 py-1 rounded text-xs font-medium whitespace-nowrap"
                                   th:classappend="${supplier.status} ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
                                   th:text="${supplier.status} ? 'Đang hoạt động' : 'Ngưng hoạt động'">
                             </span>
-                                <form th:action="@{'/admin/suppliers/toggle/' + ${supplier.id}}" method="post"
+                                <form sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                                      th:action="@{'/admin/suppliers/toggle/' + ${supplier.id}}" method="post"
                                       class="status-toggle-form" th:data-id="${supplier.id}">
                                     <label class="inline-flex items-center cursor-pointer relative">
                                         <input type="checkbox" name="status"
@@ -75,9 +79,26 @@
                             </div>
                         </td>
                         <!--                    <td class="px-4 py-2" th:text="${supplier.description}"></td>-->
-                        <td class="px-4 py-2 text-center">
+                        <td class="px-4 py-2 text-center w-1">
                             <div class="inline-flex items-center gap-2">
-                                <button type="button"
+                                <a href="#"
+                                   sec:authorize="hasRole('ADMIN')"
+                                   class="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 text-sm whitespace-nowrap"
+                                   onclick="openDetailModal(this)"
+                                   th:data-id="${supplier.id}"
+                                   th:data-name="${supplier.name}"
+                                   th:data-taxcode="${supplier.taxCode}"
+                                   th:data-bankname="${supplier.bankName}"
+                                   th:data-bankaccount="${supplier.bankAccount}"
+                                   th:data-contactname="${supplier.contactName}"
+                                   th:data-contactmobile="${supplier.contactMobile}"
+                                   th:data-address="${supplier.address}"
+                                   th:data-description="${supplier.description}">
+                                    <i class="ri-eye-line"></i><span>Xem</span>
+                                </a>
+
+                                <button sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                                        type="button"
                                         class="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded whitespace-nowrap"
                                         onclick="showEditModal(this)"
                                         th:data-id="${supplier.id}"
@@ -263,7 +284,7 @@
                     </button>
                 </div>
                 <form th:action="@{/admin/suppliers/update}" method="post" th:object="${editSupplier}"
-                      class="p-6 space-y-4">
+                      id="editSupplierForm" class="p-6 space-y-4" data-mode="edit">
                     <input type="hidden" th:field="*{id}" id="editId"/>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
@@ -273,13 +294,6 @@
                             <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('name')}"
                                th:errors="*{name}"></p>
                         </div>
-                        <!--                        <div>-->
-                        <!--                            <label class="block text-sm font-medium text-gray-700">Mã số thuế</label>-->
-                        <!--                            <input type="text" th:field="*{taxCode}" id="editTaxCode"-->
-                        <!--                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">-->
-                        <!--                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('taxCode')}"-->
-                        <!--                               th:errors="*{taxCode}"></p>-->
-                        <!--                        </div>-->
                         <div>
                             <label class="block text-sm font-medium text-gray-700">
                                 Mã số thuế
@@ -295,13 +309,6 @@
                             <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('taxCode')}"
                                th:errors="*{taxCode}"></p>
                         </div>
-                        <!--                        <div>-->
-                        <!--                            <label class="block text-sm font-medium text-gray-700">Ngân hàng</label>-->
-                        <!--                            <input type="text" th:field="*{bankName}" id="editBankName"-->
-                        <!--                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">-->
-                        <!--                            <p class="text-red-500 text-xs italic mt-1" th:if="${#fields.hasErrors('bankName')}"-->
-                        <!--                               th:errors="*{bankName}"></p>-->
-                        <!--                        </div>-->
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Ngân hàng</label>
                             <div class="mt-1 relative">
@@ -343,10 +350,11 @@
                                th:if="${#fields.hasErrors('address')}"
                                th:errors="*{address}"></p>
                         </div>
-                        <div>
+                        <div class="col-span-2">
                             <label class="block text-sm font-medium text-gray-700">Ghi chú</label>
-                            <input type="text" th:field="*{description}" id="editDescription"
-                                   class="mt-1 w-full border rounded px-3 py-2 text-sm">
+                            <textarea th:field="*{description}" id="editDescription"
+                                      class="mt-1 w-full border rounded px-3 py-2 text-sm"
+                                      rows="3"></textarea>
                             <p class="text-red-500 text-xs italic mt-1"
                                th:if="${#fields.hasErrors('description')}"
                                th:errors="*{description}"></p>
@@ -354,10 +362,13 @@
                     </div>
                     <div class="flex justify-end mt-4 space-x-2">
                         <button type="button" onclick="closeEditModal()"
+                                id="btnEditClose"
                                 class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded text-sm">
                             Hủy
                         </button>
-                        <button type="submit"
+                        <button sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                                type="submit"
+                                id="btnEditSave"
                                 class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
                             Lưu thay đổi
                         </button>
@@ -383,12 +394,32 @@
         if (!modal) return;
         const form = modal.querySelector('form');
         if (form) {
-            form.reset();            // đủ để reset value/checked/selected
-            clearFieldErrors(form);  // xóa message lỗi hiển thị
+            form.reset();
+            clearFieldErrors(form);
         }
         modal.classList.add('hidden');
-        // xóa các flag lỗi trong model bằng reload sạch
         window.location.href = redirectPath;
+    }
+
+    // ================= Readonly helper (NEW) =================
+    function setFormReadonly(isReadonly) {
+        const form = document.getElementById('editSupplierForm');
+        if (!form) return;
+
+        const btnSave = document.getElementById('btnEditSave');
+        const btnClose = document.getElementById('btnEditClose');
+
+        form.querySelectorAll('input, select, textarea').forEach(el => {
+            if (el.type === 'hidden') return;
+            el.disabled = isReadonly;
+            el.classList.toggle('bg-gray-100', isReadonly);
+            el.classList.toggle('cursor-not-allowed', isReadonly);
+        });
+
+        if (btnSave) btnSave.classList.toggle('hidden', isReadonly);
+        if (btnClose) btnClose.textContent = isReadonly ? 'Đóng' : 'Thoát';
+
+        form.dataset.mode = isReadonly ? 'detail' : 'edit';
     }
 
     // ================= ADD modal =================
@@ -408,8 +439,6 @@
     function showEditModal(button) {
         const editModal = document.getElementById('editSupplierModal');
 
-        // Nếu trang đang ở trạng thái hasEditError (đang hiển thị lỗi server),
-        // KHÔNG fill lại để tránh ghi đè dữ liệu và message do server trả về.
         const hasEditError = /*[[${hasEditError}]]*/ false;
         if (!hasEditError) {
             document.getElementById('editId').value = button.dataset.id || '';
@@ -423,6 +452,13 @@
             document.getElementById('editDescription').value = button.dataset.description || '';
         }
 
+        // luôn về EDIT khi mở sửa
+        setFormReadonly(false);
+
+        // Đổi tiêu đề về sửa
+        const title = editModal.querySelector('h2');
+        if (title) title.textContent = 'Chỉnh sửa nhà cung cấp';
+
         editModal.classList.remove('hidden');
     }
 
@@ -430,17 +466,39 @@
         resetFormAndHide('editSupplierModal', '/admin/suppliers');
     }
 
-    // ================= Auto-open khi submit lỗi =================
-    // Thêm: đã dùng th:classappend với hasFormError nên modal tự mở khi server validate lỗi
-    const hasFormError = /*[[${hasFormError}]]*/ false;
-    if (hasFormError) {
-        // Nếu cần init plugin (bank autosuggest, v.v.) khi modal đang mở sẵn, init ở đây.
+    // ================= Xem chi tiết (readonly) (NEW) =================
+    function openDetailModal(button) {
+        // tái sử dụng luồng fill như sửa
+        showEditModal(button);
+
+        // bật readonly + đổi tiêu đề
+        setFormReadonly(true);
+        const title = document.querySelector('#editSupplierModal h2');
+        if (title) title.textContent = 'Xem nhà cung cấp';
     }
 
-    // Sửa: dùng hasEditError để tự mở lại modal và GIỮ nguyên dữ liệu + lỗi do server bind
+    // ================= Chặn submit khi chế độ detail (NEW) =================
+    (function () {
+        const form = document.getElementById('editSupplierForm');
+        if (!form) return;
+        if (!form.dataset.mode) form.dataset.mode = 'edit';
+        form.addEventListener('submit', function (e) {
+            if (form.dataset.mode === 'detail') e.preventDefault();
+        });
+    })();
+
+    // ================= Auto-open khi submit lỗi =================
+    const hasFormError = /*[[${hasFormError}]]*/ false;
+    if (hasFormError) {
+        // nếu cần init autosuggest khi modal thêm đang mở, init ở đây
+    }
+
     const hasEditError = /*[[${hasEditError}]]*/ false;
     if (hasEditError) {
+        // khi có lỗi server bind, modal sửa sẽ mở lại và giữ dữ liệu
         document.getElementById('editSupplierModal').classList.remove('hidden');
+        // đảm bảo ở chế độ EDIT để user sửa lỗi
+        setFormReadonly(false);
     }
 
     // ================= User menu + alert như cũ =================

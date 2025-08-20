@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
+
 
 <!--Common Head-->
 <head th:replace="~{fragments/common-head :: commonHead('Danh sách khách hàng')}"></head>
@@ -13,7 +15,8 @@
         <div class="flex justify-between items-center mb-4 px-6 py-6">
             <h1 class="text-2xl font-bold">Danh sách khách hàng</h1>
             <div class="flex gap-2">
-                <a onclick="openAddModal()"
+                <a sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                   onclick="openAddModal()"
                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer">+ Thêm</a>
                 <form th:action="@{/customers}" method="get" class="flex gap-2">
                     <input type="text" name="keyword" th:value="${keyword}" placeholder="Tìm theo tên, email..."
@@ -28,14 +31,14 @@
                 <table id="Table" class="min-w-full text-sm border border-200">
                     <thead class="bg-gray-100 border border-200">
                     <tr>
-                        <th class="px-4 py-3 border border-200">Họ tên</th>
-                        <th class="px-4 py-3 border border-200">Email</th>
-                        <th class="px-4 py-3 border border-200">SĐT</th>
-                        <th class="px-4 py-3 border border-200">Địa chỉ</th>
-                        <th class="px-4 py-3 border border-200">Mã số thuế</th>
-                        <th class="px-4 py-3 border border-200">Ngân hàng</th>
-                        <th class="px-4 py-3 border border-200">Trạng thái</th>
-                        <th class="px-4 py-3 border border-200 text-center">Hành động</th>
+                        <th class="px-4 py-3 border border-200 whitespace-nowrap text-left">Họ tên</th>
+                        <th class="hidden px-4 py-3 border border-200 whitespace-nowrap">Email</th>
+                        <th class="px-4 py-3 border border-200 whitespace-nowrap text-left">SĐT</th>
+                        <th class="px-4 py-3 border border-200 whitespace-nowrap text-left">Địa chỉ</th>
+                        <th class="hidden px-4 py-3 border border-200 whitespace-nowrap">Mã số thuế</th>
+                        <th class="hidden px-4 py-3 border border-200 whitespace-nowrap">Ngân hàng</th>
+                        <th class="px-4 py-3 border border-200 whitespace-nowrap">Trạng thái</th>
+                        <th class="px-4 py-3 border border-200 whitespace-nowrap text-center">Hành động</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -51,14 +54,15 @@
                         th:data-status="${c.status}">
 
                         <td class="px-4 py-3 border border-200" th:text="${c.fullName}"></td>
-                        <td class="px-4 py-3 border border-200" th:text="${c.email}"></td>
+                        <td class="hidden px-4 py-3 border border-200" th:text="${c.email}"></td>
                         <td class="px-4 py-3 border border-200" th:text="${c.phone}"></td>
                         <td class="px-4 py-3 border border-200" th:text="${c.address}"></td>
-                        <td class="px-4 py-3 border border-200" th:text="${c.taxCode}"></td>
-                        <td class="px-4 py-3 border border-200" th:text="${c.bankName}"></td>
-                        <td class="px-4 py-3 border border-200">
+                        <td class="hidden px-4 py-3 border border-200" th:text="${c.taxCode}"></td>
+                        <td class="hidden px-4 py-3 border border-200" th:text="${c.bankName}"></td>
+                        <td class="px-4 py-3 border border-200 whitespace-nowrap w-1">
                             <div class="flex items-center gap-2">
-                                <label class="inline-flex relative items-center cursor-pointer">
+                                <label sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                                       class="inline-flex relative items-center cursor-pointer">
                                     <input type="checkbox" th:checked="${c.status.name() == 'ACTIVE'}"
                                            th:data-id="${c.id}" class="sr-only peer" onchange="toggleStatus(this)">
                                     <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition duration-300"></div>
@@ -69,8 +73,16 @@
               </span>
                             </div>
                         </td>
-                        <td class="px-4 py-3 border border-200 text-center space-x-1">
-                            <a href="#" onclick="openEditModal(this)"
+                        <td class="px-4 py-3 border border-200 text-center space-x-1 w-1">
+                            <a href="#" onclick="openDetailModal(this)"
+                               class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200"
+                               sec:authorize="hasRole('ADMIN')">
+                                <i class="ri-eye-line text-sm"></i>
+                                <span>Xem</span>
+                            </a>
+
+                            <a sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                               href="#" onclick="openEditModal(this)"
                                class="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded whitespace-nowrap">
                                 <i class="ri-pencil-line">Sửa</i>
                             </a>
@@ -103,7 +115,7 @@
                     <!-- Body -->
                     <div class="max-h-[70vh] overflow-y-auto px-6 py-5">
                         <form id="addCustomerForm" th:action="@{/customers/save}" th:object="${customer}" method="post"
-                              novalidate>
+                              novalidate data-mode="edit">
                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             <input type="hidden" th:field="*{id}" id="customerId"/>
                             <input type="hidden" name="status" value="ACTIVE" id="status"/>
@@ -183,9 +195,11 @@
                     <!-- Footer sticky -->
                     <div class="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-end gap-2">
                         <button type="button" onclick="closeAddModal()"
+                                id="btnClose"
                                 class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy
                         </button>
                         <button type="submit" form="addCustomerForm"
+                                id="btnSave"
                                 class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Lưu
                         </button>
                     </div>
@@ -215,6 +229,30 @@
         window.location.href = redirectPath;
     }
 
+    // ===== Readonly helper (NEW) =====
+    function setFormReadonly(isReadonly) {
+        const form = document.getElementById('addCustomerForm');
+        if (!form) return;
+
+        const btnSave = document.getElementById('btnSave');   // có thể chưa tồn tại
+        const btnClose = document.getElementById('btnClose'); // có thể chưa tồn tại
+
+        // Disable tất cả input/select/textarea (trừ hidden)
+        form.querySelectorAll('input, select, textarea').forEach(el => {
+            if (el.type === 'hidden') return;
+            el.disabled = isReadonly;
+            el.classList.toggle('bg-gray-100', isReadonly);
+            el.classList.toggle('cursor-not-allowed', isReadonly);
+        });
+
+        // Ẩn/hiện nút Lưu, đổi nhãn nút Thoát -> Đóng khi readonly
+        if (btnSave) btnSave.classList.toggle('hidden', isReadonly);
+        if (btnClose) btnClose.textContent = isReadonly ? 'Đóng' : 'Thoát';
+
+        // Ghi trạng thái để chặn submit
+        form.dataset.mode = isReadonly ? 'detail' : 'edit';
+    }
+
     // ===== Modal control =====
     function openAddModal() {
         const modal = document.getElementById('customerModal');
@@ -222,6 +260,10 @@
         document.getElementById('modalTitle').innerText = 'Thêm khách hàng';
         const form = document.getElementById('addCustomerForm');
         form.action = '/customers/save';
+
+        // luôn về chế độ EDIT khi thêm (NEW)
+        setFormReadonly(false);
+
         // dọn dữ liệu FE-only (không ảnh hưởng server-bind)
         clearForm();
     }
@@ -241,7 +283,21 @@
         document.getElementById('status').value = row.dataset.status || '';
 
         form.action = '/customers/update/' + row.dataset.id;
+
+        // luôn về chế độ EDIT khi sửa (NEW)
+        setFormReadonly(false);
+
         document.getElementById('customerModal').classList.remove('hidden');
+    }
+
+    // ===== Xem chi tiết (readonly) (NEW) =====
+    function openDetailModal(element) {
+        // Tái sử dụng luồng fill dữ liệu từ openEditModal
+        openEditModal(element);
+
+        // Bật readonly, đổi tiêu đề
+        setFormReadonly(true);
+        document.getElementById('modalTitle').innerText = 'Xem khách hàng';
     }
 
     function clearForm() {
@@ -285,6 +341,19 @@
             });
     }
 
+    // ===== Chặn submit nếu đang ở chế độ detail (NEW) =====
+    (function () {
+        const form = document.getElementById('addCustomerForm');
+        if (!form) return;
+        // default nếu chưa set trong HTML
+        if (!form.dataset.mode) form.dataset.mode = 'edit';
+        form.addEventListener('submit', function (e) {
+            if (form.dataset.mode === 'detail') {
+                e.preventDefault();
+            }
+        });
+    })();
+
     // ===== Auto-open khi submit lỗi từ server =====
     // Controller cần set 2 biến model: hasFormError / hasEditError (boolean)
     const hasFormError = /*[[${hasFormError}]]*/ false;
@@ -298,12 +367,14 @@
             // Nếu là lỗi Sửa: KHÔNG fill lại từ data-* để giữ nguyên dữ liệu & lỗi do server bind
             if (hasEditError) {
                 document.getElementById('modalTitle').innerText = 'Cập nhật khách hàng';
-                // form.action giữ nguyên do server set (nếu cần)
+                // về chế độ EDIT để sửa tiếp
+                setFormReadonly(false);
             } else {
                 // lỗi Thêm
                 document.getElementById('modalTitle').innerText = 'Thêm khách hàng';
                 const form = document.getElementById('addCustomerForm');
                 form.action = '/customers/save';
+                setFormReadonly(false);
             }
         }
     });

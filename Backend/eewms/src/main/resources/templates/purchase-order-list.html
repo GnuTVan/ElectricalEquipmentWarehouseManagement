@@ -12,7 +12,8 @@
         <div class="px-6 py-6">
             <div class="flex justify-between items-center mb-4">
                 <h1 class="text-2xl font-bold text-gray-800">Danh sách đơn mua với nhà cung cấp</h1>
-                <a href="/admin/purchase-orders/create"
+                <a sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                   href="/admin/purchase-orders/create"
                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center">
                     <i class="ri-add-line mr-1"></i> Thêm đơn hàng
                 </a>
@@ -84,7 +85,8 @@
                                 </a>
 
                                 <!-- Sửa -->
-                                <a th:if="${order.status.name()!='HOAN_THANH' and order.status.name()!='HUY'}"
+                                <a sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                                   th:if="${order.status.name()!='HOAN_THANH' and order.status.name()!='HUY'}"
                                    th:href="@{/admin/purchase-orders/edit/{id}(id=${order.id})}"
                                    class="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded">
                                     <i class="ri-edit-line text-sm"></i> Sửa
