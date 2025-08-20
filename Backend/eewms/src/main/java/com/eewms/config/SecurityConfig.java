@@ -82,8 +82,9 @@ public class SecurityConfig {
 
                         //Purchase Requests (Y/C Mua) (POST): Staff chỉ được POST create; các POST khác chỉ Manager/Admin
                         .requestMatchers(HttpMethod.POST, "/admin/purchase-requests").hasAnyRole("MANAGER", "STAFF") // create PostMapping không path
-                        .requestMatchers(HttpMethod.POST, "/admin/purchase-requests/**").hasAnyRole("MANAGER")      // /{id}/status, /{id}/update, /{id}/generate-po
-
+                        .requestMatchers(HttpMethod.POST, "/admin/purchase-requests/**").hasAnyRole("MANAGER","STAFF")      // /{id}/status, /{id}/update, /{id}/generate-po
+                        .requestMatchers(HttpMethod.POST, "/admin/purchase-requests/create-from-collected")
+                        .hasAnyRole("MANAGER","STAFF")
 
                         // Fallback
                         .anyRequest().authenticated()
