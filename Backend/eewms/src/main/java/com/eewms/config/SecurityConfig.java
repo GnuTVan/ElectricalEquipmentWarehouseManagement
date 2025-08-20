@@ -59,7 +59,7 @@ public class SecurityConfig {
 
                         //MANAGER
                         .requestMatchers("/admin/suppliers/**").hasAnyRole("MANAGER")
-                        .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/**").hasAnyRole("MANAGER") // sau 2 rule Staff ở trên
+                        .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/**").hasAnyRole("MANAGER","STAFF") // sau 2 rule Staff ở trên
                         .requestMatchers("/admin/warehouse-receipts/**").hasAnyRole("MANAGER")
 
                         //MANAGER + STAFF
