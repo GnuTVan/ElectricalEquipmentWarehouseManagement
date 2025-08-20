@@ -4,6 +4,7 @@ import com.eewms.services.impl.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -13,11 +14,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.http.HttpMethod;
 
 @Configuration
-@EnableWebSecurity // Vẫn cần cho bảo mật web/URL
-@EnableMethodSecurity // Bật bảo mật phương thức
+@EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -26,72 +26,87 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // ✅ Bật lại CSRF và dùng Cookie để cấp token ngay cả khi chưa login
+                // ✅ Bật CSRF với Cookie; bỏ qua webhook PayOS
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .ignoringRequestMatchers("/api/webhooks/payos")
                 )
                 .authorizeHttpRequests(auth -> auth
+                        // ====== Webhook & PayOS return/cancel (public) ======
                         .requestMatchers(HttpMethod.POST, "/api/webhooks/payos").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/payos/return", "/payos/return/",
                                 "/payos/cancel", "/payos/cancel/").permitAll()
-                        // Public/static
-                        .requestMatchers("/", "/landing/**",
+
+                        // ====== Static & Public pages ======
+                        .requestMatchers("/",
+                                "/landing/**",
                                 "/css/**", "/js/**", "/images/**", "/assets/**",
                                 "/login",
                                 "/activate", "/activate/**",
-                                "forgot-password",
-                                "reset-password", "/reset-password/**"
+                                "/forgot-password",                 // <-- thêm dấu '/'
+                                "/reset-password", "/reset-password/**" // <-- thêm dấu '/'
                         ).permitAll()
-                        // Common authenticated
-                        .requestMatchers("/account/info", "/account/update-profile", "/api/tax-lookup/**", "/admin/notifications/**").authenticated()
-                        //Purchase Requests: STAFF được 2 GET cụ thể (đặt TRƯỚC rule rộng cho Manager)
+
+                        // ====== Common authenticated ======
+                        .requestMatchers("/account/info",
+                                "/account/update-profile",
+                                "/api/tax-lookup/**",
+                                "/admin/notifications/**").authenticated()
+
+                        // ====== Purchase Requests: STAFF được 2 GET cụ thể ======
                         .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/create-from-sale-order/**")
                         .hasAnyRole("ADMIN", "MANAGER", "STAFF")
-                        .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/*") // ví dụ /admin/purchase-requests/{id}
+                        .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/*")
                         .hasAnyRole("ADMIN", "MANAGER", "STAFF")
 
-                        //ADMIN
+                        // ====== ADMIN ======
                         .requestMatchers("/admin/users/**").hasRole("ADMIN")
                         .requestMatchers("/settings/**").hasRole("ADMIN")
                         .requestMatchers("/admin/warehouses/**").hasRole("ADMIN")
 
-                        //MANAGER
+                        // ====== MANAGER ======
                         .requestMatchers("/admin/suppliers/**").hasAnyRole("MANAGER")
-                        .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/**").hasAnyRole("MANAGER","STAFF") // sau 2 rule Staff ở trên
+                        .requestMatchers(HttpMethod.GET, "/admin/purchase-requests/**")
+                        .hasAnyRole("MANAGER","STAFF") // sau 2 rule Staff ở trên
                         .requestMatchers("/admin/warehouse-receipts/**").hasAnyRole("MANAGER")
 
-                        //MANAGER + STAFF
+                        // ====== MANAGER + STAFF ======
                         .requestMatchers("/admin/purchase-orders/**").hasAnyRole("MANAGER", "STAFF")
 
-                        //MANAGER + ADMIN
+                        // ====== MANAGER + ADMIN ======
                         .requestMatchers("/admin/reports/issues/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/admin/reports/receipts/**").hasAnyRole("ADMIN", "MANAGER")
+
+                        // ⚠️ Quan trọng: mở quyền riêng cho STAFF gọi expand combo (đặt TRƯỚC rule /combos/**)
+                        .requestMatchers(HttpMethod.POST, "/combos/expand")
+                        .hasAnyRole("ADMIN", "MANAGER", "STAFF")
+
+                        // Các trang quản lý combo (giữ như cũ cho ADMIN/MANAGER)
                         .requestMatchers("/products/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/product-list/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/combos/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/combo-list/**").hasAnyRole("ADMIN", "MANAGER")
-                        //STAFF
-                        .requestMatchers("/debts/**").hasAnyRole("MANAGER", "STAFF") //Manager cũng được xem công nợ
+
+                        // ====== STAFF ======
+                        .requestMatchers("/debts/**").hasAnyRole("MANAGER", "STAFF")
                         .requestMatchers("/sale-orders/**").hasAnyRole("STAFF")
                         .requestMatchers("/good-issue/**").hasAnyRole("STAFF")
                         .requestMatchers("/customers/**").hasAnyRole("STAFF")
                         .requestMatchers("/customer-list/**").hasAnyRole("STAFF")
 
+                        // ====== Purchase Requests (POST) ======
+                        .requestMatchers(HttpMethod.POST, "/admin/purchase-requests")
+                        .hasAnyRole("MANAGER", "STAFF") // create
+                        .requestMatchers(HttpMethod.POST, "/admin/purchase-requests/**")
+                        .hasAnyRole("MANAGER")          // /{id}/status, /{id}/update, /{id}/generate-po
 
-                        //Purchase Requests (Y/C Mua) (POST): Staff chỉ được POST create; các POST khác chỉ Manager/Admin
-                        .requestMatchers(HttpMethod.POST, "/admin/purchase-requests").hasAnyRole("MANAGER", "STAFF") // create PostMapping không path
-                        .requestMatchers(HttpMethod.POST, "/admin/purchase-requests/**").hasAnyRole("MANAGER")      // /{id}/status, /{id}/update, /{id}/generate-po
-
-
-                        // Fallback
+                        // ====== Fallback ======
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e.accessDeniedPage("/error/403"))
 
-
-                // ✅ Cấu hình login form
+                // ✅ Login form
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/do-login")
