@@ -24,16 +24,16 @@
                     </p>
                 </div>
                 <div class="flex gap-2">
-                    <!-- Back button theo nguồn công nợ -->
                     <a th:if="${debt.warehouseReceipt != null}"
                        th:href="@{'/admin/warehouse-receipts/view/' + ${debt.warehouseReceipt.id}}"
                        class="px-3 py-2 rounded border bg-white hover:bg-gray-50">← Quay lại phiếu nhập</a>
 
-                    <a th:if="${debt.documentType?.name() == 'SALES_INVOICE'}"
+                    <!-- NOTE: bổ sung GOOD_ISSUE nếu cần điều hướng -->
+                    <a th:if="${debt.documentType?.name() == 'SALES_INVOICE' || debt.documentType?.name() == 'GOOD_ISSUE'}"
                        th:href="@{'/good-issue'}"
                        class="px-3 py-2 rounded border bg-white hover:bg-gray-50">← Quay lại phiếu xuất</a>
 
-                    <a th:if="${debt.warehouseReceipt == null and debt.documentType?.name() != 'SALES_INVOICE'}"
+                    <a th:if="${debt.warehouseReceipt == null and (debt.documentType?.name() != 'SALES_INVOICE' and debt.documentType?.name() != 'GOOD_ISSUE')}"
                        th:href="@{'/admin/debts'}"
                        class="px-3 py-2 rounded border bg-white hover:bg-gray-50">← Danh sách công nợ</a>
                 </div>
@@ -142,9 +142,10 @@
 
                         <div>
                             <label class="block text-sm text-gray-600 mb-1">Phương thức</label>
+                            <!-- NOTE: sửa BANK -> BANK_TRANSFER -->
                             <select name="method" class="w-full border rounded px-3 py-2">
                                 <option value="CASH">Tiền mặt</option>
-                                <option value="BANK">Chuyển khoản</option>
+                                <option value="BANK_TRANSFER">Chuyển khoản</option>
                             </select>
                         </div>
 
@@ -194,8 +195,9 @@
                 </aside>
             </div>
 
-            <!-- Lịch sử thanh toán (nếu có quan hệ payments) -->
-            <section class="mt-6 bg-white rounded-xl shadow p-6" th:if="${debt.payments != null}">
+            <!-- Lịch sử thanh toán -->
+            <!-- NOTE: Controller đã nạp 'payments' (không cần @OneToMany trong entity) -->
+            <section class="mt-6 bg-white rounded-xl shadow p-6">
                 <h2 class="text-lg font-semibold mb-4">Lịch sử thanh toán</h2>
                 <div class="overflow-x-auto">
                     <table class="min-w-full table-auto text-sm">
@@ -209,14 +211,14 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr th:each="p : ${debt.payments}" class="border-t">
+                        <tr th:each="p : ${payments}" class="border-t">
                             <td class="px-4 py-2" th:text="${#temporals.format(p.paymentDate, 'dd/MM/yyyy')}"></td>
                             <td class="px-4 py-2" th:text="${p.method}"></td>
                             <td class="px-4 py-2" th:text="${#numbers.formatDecimal(p.amount,0,'COMMA',0,'POINT')} + ' VNĐ'"></td>
                             <td class="px-4 py-2" th:text="${p.referenceNo} ?: '-'"></td>
                             <td class="px-4 py-2" th:text="${p.note} ?: '-'"></td>
                         </tr>
-                        <tr th:if="${#lists.isEmpty(debt.payments)}">
+                        <tr th:if="${#lists.isEmpty(payments)}">
                             <td class="px-4 py-4 text-gray-500" colspan="5">Chưa có khoản thanh toán nào.</td>
                         </tr>
                         </tbody>

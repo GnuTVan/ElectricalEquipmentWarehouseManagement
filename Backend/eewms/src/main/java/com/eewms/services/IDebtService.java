@@ -21,5 +21,7 @@ public interface IDebtService {
     /** Đồng bộ lại trạng thái từ paidAmount/dueDate */
     Debt recomputeStatus(Long debtId);
     Debt createDebtForSaleOrder(Long saleOrderId, int termDays);
+    Debt createDebtForGoodIssue(Long ginId, int termDays);
+
 
 }

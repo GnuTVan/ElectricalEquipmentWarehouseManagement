@@ -115,9 +115,14 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
     }
 
     private String resolvePaymentStatus(GoodIssueNote gin) {
-        Long docId = (gin.getSaleOrder() != null) ? gin.getSaleOrder().getId() : null;
-        if (docId == null) return "Chưa thanh toán";
-        return getPaymentStatusForDocument(Debt.DocumentType.SALES_INVOICE, docId);
+        // Ưu tiên công nợ theo GIN
+        var st = getPaymentStatusForDocument(Debt.DocumentType.GOOD_ISSUE, gin.getGinId());
+        if (!"Chưa thanh toán".equals(st)) return st;
+
+        // Fallback: theo đơn bán (nếu còn dùng)
+        Long soId = (gin.getSaleOrder()!=null)? gin.getSaleOrder().getId() : null;
+        return (soId != null) ? getPaymentStatusForDocument(Debt.DocumentType.SALES_INVOICE, soId)
+                : "Chưa thanh toán";
     }
 
     private String getPaymentStatusForDocument(Debt.DocumentType type, Long documentId) {
@@ -128,26 +133,35 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
     }
 
     private void fillDebtInfo(GoodIssueNoteDTO dto, GoodIssueNote gin) {
-        Long saleOrderId = (gin.getSaleOrder() != null) ? gin.getSaleOrder().getId() : null;
-        if (saleOrderId == null) {
-            dto.setDebtId(null);
-            dto.setRemainingAmount(BigDecimal.ZERO);
-            dto.setHasDebt(false);
-            return;
-        }
-
-        debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.SALES_INVOICE, saleOrderId)
+        // Ưu tiên tìm debt theo GIN
+        debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.GOOD_ISSUE, gin.getGinId())
                 .ifPresentOrElse(debt -> {
-                    BigDecimal remaining = debt.getTotalAmount().subtract(debt.getPaidAmount());
-                    if (remaining.compareTo(BigDecimal.ZERO) < 0) remaining = BigDecimal.ZERO;
-
+                    BigDecimal remain = debt.getTotalAmount().subtract(debt.getPaidAmount());
+                    if (remain.signum() < 0) remain = BigDecimal.ZERO;
                     dto.setDebtId(debt.getId());
-                    dto.setRemainingAmount(remaining);
-                    dto.setHasDebt(remaining.compareTo(BigDecimal.ZERO) > 0);
+                    dto.setRemainingAmount(remain);
+                    dto.setHasDebt(remain.signum() > 0);
                 }, () -> {
-                    dto.setDebtId(null);
-                    dto.setRemainingAmount(gin.getTotalAmount() != null ? gin.getTotalAmount() : BigDecimal.ZERO);
-                    dto.setHasDebt(false);
+                    // Fallback: theo SO (nếu vẫn muốn hỗ trợ)
+                    Long soId = (gin.getSaleOrder()!=null) ? gin.getSaleOrder().getId() : null;
+                    if (soId != null) {
+                        debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.SALES_INVOICE, soId)
+                                .ifPresentOrElse(debt -> {
+                                    BigDecimal remain = debt.getTotalAmount().subtract(debt.getPaidAmount());
+                                    if (remain.signum() < 0) remain = BigDecimal.ZERO;
+                                    dto.setDebtId(debt.getId());
+                                    dto.setRemainingAmount(remain);
+                                    dto.setHasDebt(remain.signum() > 0);
+                                }, () -> {
+                                    dto.setDebtId(null);
+                                    dto.setRemainingAmount(gin.getTotalAmount()!=null? gin.getTotalAmount(): BigDecimal.ZERO);
+                                    dto.setHasDebt(false);
+                                });
+                    } else {
+                        dto.setDebtId(null);
+                        dto.setRemainingAmount(gin.getTotalAmount()!=null? gin.getTotalAmount(): BigDecimal.ZERO);
+                        dto.setHasDebt(false);
+                    }
                 });
     }
 

@@ -35,10 +35,10 @@
 
         <!-- Thông báo flash -->
         <div th:if="${message}"
-             th:classappend="${messageType == 'success'} ? 'bg-green-50 border-green-200 text-green-800' :
-                             ${messageType == 'warning'} ? 'bg-amber-50 border-amber-200 text-amber-800' :
-                             ${messageType == 'danger'} ? 'bg-red-50 border-red-200 text-red-800' :
-                                                          'bg-gray-50 border-gray-200 text-gray-700'"
+             th:classappend="${messageType == 'success' ? 'bg-green-50 border-green-200 text-green-800' :
+                     (messageType == 'warning' ? 'bg-amber-50 border-amber-200 text-amber-800' :
+                     (messageType == 'danger'  ? 'bg-red-50 border-red-200 text-red-800' :
+                                                 'bg-gray-50 border-gray-200 text-gray-700'))}"
              class="border rounded px-4 py-3 mb-5">
             <span th:text="${message}"></span>
         </div>
@@ -107,7 +107,7 @@
             </tfoot>
         </div>
 
-        <!-- ==================== CÔNG NỢ KHÁCH HÀNG (thêm mới) ==================== -->
+        <!-- ==================== CÔNG NỢ KHÁCH HÀNG ==================== -->
         <section sec:authorize="hasAnyRole('MANAGER','STAFF')"
                  class="mt-6 bg-white rounded shadow p-6">
             <div class="flex items-center justify-between mb-4">
@@ -119,14 +119,13 @@
 
             <!-- CHƯA có công nợ: hiện nút Tạo công nợ -->
             <div th:if="${debt == null}">
-                <p class="text-gray-600 mb-3">Đơn hàng này chưa tạo công nợ.</p>
-                <form th:if="${note.saleOrderId != null}"
-                      th:action="@{/admin/debts/create-from-sale-order/{soId}(soId=${note.saleOrderId})}"
+                <p class="text-gray-600 mb-3">Phiếu xuất này chưa tạo công nợ.</p>
+
+                <!-- NOTE: đổi sang tạo từ GIN -->
+                <form th:action="@{/admin/debts/create-from-good-issue/{ginId}(ginId=${note.id})}"
                       method="post"
                       class="flex items-center gap-3">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                    <!-- Để tạo xong quay lại trang này -->
-                    <input type="hidden" name="ginId" th:value="${note.id}"/>
 
                     <label class="text-sm text-gray-600">Kỳ hạn (ngày):</label>
                     <input type="number" name="termDays" value="30" min="0"
@@ -137,9 +136,21 @@
                         Tạo công nợ
                     </button>
                 </form>
-                <p th:if="${note.saleOrderId == null}" class="text-xs text-gray-400 mt-2">
-                    (Thiếu saleOrderId — cần map vào DTO/Mapper)
-                </p>
+
+                <!-- NOTE: nếu bạn giữ quy trình tạo từ SO: dùng form cũ và đảm bảo saleOrderId luôn có -->
+                <!--
+                <form th:if="${note.saleOrderId != null}"
+                      th:action="@{/admin/debts/create-from-sale-order/{soId}(soId=${note.saleOrderId})}"
+                      method="post" class="flex items-center gap-3">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <input type="hidden" name="ginId" th:value="${note.id}"/>
+                    <label class="text-sm text-gray-600">Kỳ hạn (ngày):</label>
+                    <input type="number" name="termDays" value="30" min="0" class="border rounded px-3 py-2 w-28"/>
+                    <button type="submit" class="px-3 py-2 rounded bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100">
+                        Tạo công nợ
+                    </button>
+                </form>
+                -->
             </div>
 
             <!-- ĐÃ có công nợ: hiển thị số liệu + form thanh toán -->
@@ -157,6 +168,7 @@
                     </div>
                     <div>
                         <div class="text-gray-500">Còn lại</div>
+                        <!-- NOTE: cần controller set model attribute 'remaining' -->
                         <div class="font-semibold"
                              th:text="${#numbers.formatDecimal(remaining,0,'COMMA',0,'POINT')} + ' VNĐ'"></div>
                     </div>
@@ -180,9 +192,10 @@
 
                     <div>
                         <label class="block text-sm text-gray-600 mb-1">Phương thức</label>
+                        <!-- NOTE: sửa BANK -> BANK_TRANSFER -->
                         <select name="method" class="w-full border rounded px-3 py-2">
                             <option value="CASH">Tiền mặt</option>
-                            <option value="BANK">Chuyển khoản</option>
+                            <option value="BANK_TRANSFER">Chuyển khoản</option>
                         </select>
                     </div>
 

@@ -2,9 +2,11 @@ package com.eewms.controller;
 
 import com.eewms.dto.GoodIssueDetailDTO; // [CHANGED] cần DTO để build form partial
 import com.eewms.dto.GoodIssueNoteDTO;
+import com.eewms.entities.Debt;
 import com.eewms.entities.GoodIssueNote;
 import com.eewms.entities.SaleOrder;
 import com.eewms.entities.SaleOrderDetail;
+import com.eewms.repository.DebtRepository;
 import com.eewms.repository.GoodIssueNoteRepository;
 import com.eewms.services.IGoodIssueService;
 import com.eewms.services.ISaleOrderService;
@@ -15,6 +17,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -27,6 +30,7 @@ public class GoodIssueController {
     private final IGoodIssueService goodIssueService;
     private final ISaleOrderService saleOrderService;
     private final GoodIssueNoteRepository goodIssueRepository;
+    private final DebtRepository debtRepository;
 
     /** Danh sách phiếu xuất */
     @GetMapping
@@ -47,6 +51,15 @@ public class GoodIssueController {
         model.addAttribute("note", dto);
         model.addAttribute("items", dto.getDetails());
         model.addAttribute("showPrint", true);
+
+        debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.GOOD_ISSUE, id)
+                .ifPresent(debt -> {
+                    model.addAttribute("debt", debt);
+                    var total = debt.getTotalAmount()==null? BigDecimal.ZERO: debt.getTotalAmount();
+                    var paid  = debt.getPaidAmount()==null? BigDecimal.ZERO: debt.getPaidAmount();
+                    model.addAttribute("remaining", total.subtract(paid));
+                });
+
         return "good-issue-detail";
     }
 

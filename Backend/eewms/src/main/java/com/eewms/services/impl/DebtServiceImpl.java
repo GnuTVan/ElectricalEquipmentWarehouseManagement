@@ -4,10 +4,7 @@ import com.eewms.entities.Debt;
 import com.eewms.entities.DebtPayment;
 import com.eewms.entities.SaleOrder;
 import com.eewms.entities.WarehouseReceipt;
-import com.eewms.repository.DebtPaymentRepository;
-import com.eewms.repository.DebtRepository;
-import com.eewms.repository.PurchaseOrderItemRepository;
-import com.eewms.repository.SaleOrderRepository;
+import com.eewms.repository.*;
 import com.eewms.repository.warehouseReceipt.WarehouseReceiptItemRepository;
 import com.eewms.repository.warehouseReceipt.WarehouseReceiptRepository;
 import com.eewms.services.IDebtService;
@@ -17,6 +14,8 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+
+import static java.math.BigDecimal.ZERO;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +27,7 @@ public class DebtServiceImpl implements IDebtService {
     private final WarehouseReceiptItemRepository warehouseReceiptItemRepository;
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
     private final SaleOrderRepository saleOrderRepository;
+    private final GoodIssueNoteRepository goodIssueNoteRepository;
 
     @Override
     @Transactional
@@ -62,7 +62,7 @@ public class DebtServiceImpl implements IDebtService {
                 .warehouseReceipt(wr)
                 .purchaseOrder(po)
                 .totalAmount(total)
-                .paidAmount(BigDecimal.ZERO)
+                .paidAmount(ZERO)
                 .status(Debt.Status.UNPAID)
                 .invoiceDate(invoiceDate)
                 .dueDate(dueDate)
@@ -87,7 +87,7 @@ public class DebtServiceImpl implements IDebtService {
                 .orElseThrow(() -> new IllegalArgumentException("SaleOrder not found: " + saleOrderId));
 
         // Tổng tiền từ đơn bán
-        BigDecimal total = (order.getTotalAmount() != null) ? order.getTotalAmount() : BigDecimal.ZERO;
+        BigDecimal total = (order.getTotalAmount() != null) ? order.getTotalAmount() : ZERO;
 
         // Check duplicate
         var existed = debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.SALES_INVOICE, order.getId());
@@ -102,7 +102,7 @@ public class DebtServiceImpl implements IDebtService {
                 .documentId(order.getId())
                 .customerId(order.getCustomer() != null ? order.getCustomer().getId() : null)
                 .totalAmount(total)
-                .paidAmount(BigDecimal.ZERO)
+                .paidAmount(ZERO)
                 .status(Debt.Status.UNPAID)
                 .invoiceDate(invoiceDate)
                 .dueDate(dueDate)
@@ -132,8 +132,8 @@ public class DebtServiceImpl implements IDebtService {
         var debt = debtRepository.findById(debtId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy công nợ: " + debtId));
 
-        BigDecimal total = debt.getTotalAmount() == null ? BigDecimal.ZERO : debt.getTotalAmount();
-        BigDecimal paid  = debt.getPaidAmount()  == null ? BigDecimal.ZERO : debt.getPaidAmount();
+        BigDecimal total = debt.getTotalAmount() == null ? ZERO : debt.getTotalAmount();
+        BigDecimal paid  = debt.getPaidAmount()  == null ? ZERO : debt.getPaidAmount();
         BigDecimal remaining = total.subtract(paid);
 
         if (remaining.signum() <= 0) {
@@ -179,8 +179,8 @@ public class DebtServiceImpl implements IDebtService {
     /* ===== Helpers ===== */
 
     private Debt recomputeAndSave(Debt debt) {
-        BigDecimal total = (debt.getTotalAmount() == null) ? BigDecimal.ZERO : debt.getTotalAmount();
-        BigDecimal paid  = (debt.getPaidAmount() == null) ? BigDecimal.ZERO : debt.getPaidAmount();
+        BigDecimal total = (debt.getTotalAmount() == null) ? ZERO : debt.getTotalAmount();
+        BigDecimal paid  = (debt.getPaidAmount() == null) ? ZERO : debt.getPaidAmount();
 
         Debt.Status s;
         int cmp = paid.compareTo(total);
@@ -201,13 +201,13 @@ public class DebtServiceImpl implements IDebtService {
         if (wrItems != null && !wrItems.isEmpty()) {
             return wrItems.stream()
                     .map(i -> {
-                        BigDecimal price = (i.getPrice() != null) ? i.getPrice() : BigDecimal.ZERO;
+                        BigDecimal price = (i.getPrice() != null) ? i.getPrice() : ZERO;
                         long qty = (i.getActualQuantity() != null) ? i.getActualQuantity().longValue()
                                 : (i.getQuantity() != null) ? i.getQuantity().longValue()
                                 : 0L;
                         return price.multiply(BigDecimal.valueOf(qty));
                     })
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    .reduce(ZERO, BigDecimal::add);
         }
 
         var po = wr.getPurchaseOrder();
@@ -216,16 +216,64 @@ public class DebtServiceImpl implements IDebtService {
             if (poItems != null && !poItems.isEmpty()) {
                 return poItems.stream()
                         .map(i -> {
-                            BigDecimal price = (i.getPrice() != null) ? i.getPrice() : BigDecimal.ZERO;
+                            BigDecimal price = (i.getPrice() != null) ? i.getPrice() : ZERO;
                             long qty = (i.getActualQuantity() != null) ? i.getActualQuantity().longValue()
                                     : (i.getContractQuantity() != null) ? i.getContractQuantity().longValue()
                                     : 0L;
                             return price.multiply(BigDecimal.valueOf(qty));
                         })
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        .reduce(ZERO, BigDecimal::add);
             }
             if (po.getTotalAmount() != null) return po.getTotalAmount();
         }
-        return BigDecimal.ZERO;
+        return ZERO;
     }
+
+    @Override
+    @Transactional
+    public Debt createDebtForGoodIssue(Long ginId, int termDays) {
+        var gin = goodIssueNoteRepository.findById(ginId)
+                .orElseThrow(() -> new IllegalArgumentException("GoodIssueNote not found: " + ginId));
+
+        // Tổng tiền ưu tiên từ GIN
+        BigDecimal total = (gin.getTotalAmount() != null) ? gin.getTotalAmount() : ZERO;
+
+        // Dedupe theo (GOOD_ISSUE, ginId)
+        var existed = debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.GOOD_ISSUE, ginId);
+        if (existed.isPresent()) return existed.get();
+
+        // Ngày chứng từ & hạn
+        LocalDate invoiceDate = (gin.getIssueDate() != null) ? gin.getIssueDate().toLocalDate() : LocalDate.now();
+        LocalDate dueDate = invoiceDate.plusDays(Math.max(0, termDays));
+
+        // Thông tin KH
+        Long customerId = (gin.getCustomer() != null) ? gin.getCustomer().getId() : null;
+        if (customerId == null) {
+            throw new IllegalStateException("Phiếu xuất chưa gắn khách hàng, không thể tạo công nợ.");
+        }
+
+        Debt debt = Debt.builder()
+                .partyType(Debt.PartyType.CUSTOMER)
+                .documentType(Debt.DocumentType.GOOD_ISSUE)
+                .documentId(ginId)
+                .customerId(customerId)
+                .totalAmount(total)
+                .paidAmount(ZERO)
+                .status(Debt.Status.UNPAID)
+                .invoiceDate(invoiceDate)
+                .dueDate(dueDate)
+                .note("Công nợ từ phiếu xuất " + gin.getGinCode())
+                .build();
+
+        debt = debtRepository.save(debt);
+
+        if (termDays == 0) {
+            pay(debt.getId(), total, DebtPayment.Method.CASH, invoiceDate,
+                    "AUTO-IMMEDIATE", "Auto pay on GIN confirm");
+        } else {
+            recomputeAndSave(debt);
+        }
+        return debt;
+    }
+
 }

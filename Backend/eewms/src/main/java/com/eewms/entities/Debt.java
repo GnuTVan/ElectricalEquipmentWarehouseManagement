@@ -70,7 +70,7 @@ public class Debt {
 
     // === Các field cũ vẫn giữ nguyên ===
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "supplier_id", nullable = false)
+    @JoinColumn(name = "supplier_id", nullable = true)   // NOTE: đổi nullable = true
     private Supplier supplier;
 
     @ManyToOne(fetch = FetchType.LAZY)

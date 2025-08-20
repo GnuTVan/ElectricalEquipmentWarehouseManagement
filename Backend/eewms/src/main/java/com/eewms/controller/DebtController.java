@@ -43,7 +43,6 @@ public class DebtController {
             Debt debt = debtService.createDebtForSaleOrder(soId, termDays);
             ra.addFlashAttribute("message", "Đã tạo công nợ cho đơn bán (ID=" + soId + ").");
             ra.addFlashAttribute("messageType", "success");
-            // Nếu có ginId thì quay lại trang chi tiết GIN, ngược lại mở trang công nợ
             return (ginId != null) ? ("redirect:/good-issue/view/" + ginId)
                     : ("redirect:/admin/debts/view/" + debt.getId());
         } catch (Exception ex) {
@@ -164,4 +163,20 @@ public class DebtController {
         return "redirect:/admin/debts";
     }
     /** ========================================================== */
+
+    @PostMapping("/create-from-good-issue/{ginId}")
+    public String createFromGoodIssue(@PathVariable("ginId") Long ginId,
+                                      @RequestParam(value = "termDays", required = false, defaultValue = "30") int termDays,
+                                      RedirectAttributes ra) {
+        try {
+            debtService.createDebtForGoodIssue(ginId, termDays);
+            ra.addFlashAttribute("message", "Đã tạo công nợ khách hàng từ phiếu xuất #" + ginId);
+            ra.addFlashAttribute("messageType", "success");
+        } catch (Exception ex) {
+            ra.addFlashAttribute("message", "Không thể tạo công nợ: " + ex.getMessage());
+            ra.addFlashAttribute("messageType", "danger");
+        }
+        return "redirect:/good-issue/view/" + ginId;
+    }
+
 }
