@@ -18,85 +18,101 @@
         </div>
 
         <!-- Table -->
-        <div class="overflow-x-auto bg-white rounded-lg shadow">
-            <table class="min-w-full table-auto text-sm border border-gray-200">
-                <thead class="bg-gray-100 text-left">
-                <tr>
-                    <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Mã phiếu</th>
-                    <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Khách hàng</th>
-                    <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Người tạo</th>
-                    <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Ngày xuất</th>
-                    <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Tổng tiền</th>
-                    <!-- NEW: Cột Công nợ -->
-                    <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Công nợ</th>
-                    <!-- Cột Trạng thái -->
-                    <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Trạng thái</th>
-                    <th class="px-4 py-2 font-semibold whitespace-nowrap border border-gray-200 text-center">Hành động</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="gin : ${good_issues}" class="border-t hover:bg-gray-50 transition">
-                    <td class="px-6 py-3 border border-gray-200 font-medium text-blue-700" th:text="${gin.code}"></td>
-                    <td class="px-6 py-3 border border-gray-200" th:text="${gin.customerName}"></td>
-                    <td class="px-6 py-3 border border-gray-200" th:text="${gin.createdBy}"></td>
-                    <td class="px-6 py-3 border border-gray-200" th:text="${#temporals.format(gin.issueDate, 'dd/MM/yyyy HH:mm')}"></td>
-                    <td class="px-6 py-3 border border-gray-200"
-                        th:text="${#numbers.formatDecimal(gin.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+        <div class="px-6 pb-6">
+            <div class="mb-4 flex items-center justify-between">
+                <form th:action="@{/good-issue}" method="get" class="flex gap-2">
+                    <input type="text" name="keyword" th:value="${keyword}"
+                           placeholder="Tìm theo mã, khách hàng, người tạo..."
+                           class="border px-3 py-2 rounded w-64"/>
+                    <button type="submit"
+                            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Tìm kiếm
+                    </button>
+                </form>
+            </div>
+            <div class="overflow-x-auto bg-white rounded-lg shadow">
+                <table class="min-w-full table-auto text-sm border border-gray-200">
+                    <thead class="bg-gray-100 text-left">
+                    <tr>
+                        <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Mã phiếu</th>
+                        <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Khách hàng</th>
+                        <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Người tạo</th>
+                        <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Ngày xuất</th>
+                        <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Tổng tiền</th>
+                        <!-- NEW: Cột Công nợ -->
+                        <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Công nợ</th>
+                        <!-- Cột Trạng thái -->
+                        <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Trạng thái</th>
+                        <th class="px-4 py-2 font-semibold whitespace-nowrap border border-gray-200 text-center">Hành
+                            động
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="gin : ${good_issues}" class="border-t hover:bg-gray-50 transition">
+                        <td class="px-6 py-3 border border-gray-200 font-medium text-blue-700"
+                            th:text="${gin.code}"></td>
+                        <td class="px-6 py-3 border border-gray-200" th:text="${gin.customerName}"></td>
+                        <td class="px-6 py-3 border border-gray-200" th:text="${gin.createdBy}"></td>
+                        <td class="px-6 py-3 border border-gray-200"
+                            th:text="${#temporals.format(gin.issueDate, 'dd/MM/yyyy HH:mm')}"></td>
+                        <td class="px-6 py-3 border border-gray-200"
+                            th:text="${#numbers.formatDecimal(gin.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
 
-                    <!-- ===== Cột Công nợ ===== -->
-                    <td class="px-6 py-3 border border-gray-200">
-                        <!-- ĐÃ CÓ Debt & CÒN NỢ -> Nút Thanh toán -->
-                        <div th:if="${gin.debtId != null and gin.remainingAmount != null and gin.remainingAmount > 0}">
-                            <button type="button"
-                                    class="px-3 py-1 rounded bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
-                                    th:attr="data-debt-id=${gin.debtId},data-remaining=${gin.remainingAmount}"
-                                    onclick="openPayModal(this)">
-                                Thanh toán (còn
-                                <span th:text="${#numbers.formatDecimal(gin.remainingAmount,0,'COMMA',0,'POINT')}"></span>
-                                VNĐ)
-                            </button>
-                        </div>
-
-                        <!-- CHƯA CÓ Debt & ĐƠN CHƯA thanh toán -> Nút Tạo công nợ -->
-                        <div th:if="${gin.debtId == null and gin.status != 'Đã thanh toán'}">
-                            <form th:if="${gin.saleOrderId != null}"
-                                  th:action="@{/admin/debts/create-from-sale-order/{soId}(soId=${gin.saleOrderId})}"
-                                  method="post">
-                                <!-- CSRF (nếu bật) -->
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                                <button type="submit"
-                                        class="px-3 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100">
-                                    Tạo công nợ
+                        <!-- ===== Cột Công nợ ===== -->
+                        <td class="px-6 py-3 border border-gray-200">
+                            <!-- ĐÃ CÓ Debt & CÒN NỢ -> Nút Thanh toán -->
+                            <div th:if="${gin.debtId != null and gin.remainingAmount != null and gin.remainingAmount > 0}">
+                                <button type="button"
+                                        class="px-3 py-1 rounded bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                                        th:attr="data-debt-id=${gin.debtId},data-remaining=${gin.remainingAmount}"
+                                        onclick="openPayModal(this)">
+                                    Thanh toán (còn
+                                    <span th:text="${#numbers.formatDecimal(gin.remainingAmount,0,'COMMA',0,'POINT')}"></span>
+                                    VNĐ)
                                 </button>
-                            </form>
+                            </div>
 
-                            <!-- Fallback khi thiếu saleOrderId -->
-                            <span th:if="${gin.saleOrderId == null}" class="text-xs text-gray-400">
+                            <!-- CHƯA CÓ Debt & ĐƠN CHƯA thanh toán -> Nút Tạo công nợ -->
+                            <div th:if="${gin.debtId == null and gin.status != 'Đã thanh toán'}">
+                                <form th:if="${gin.saleOrderId != null}"
+                                      th:action="@{/admin/debts/create-from-sale-order/{soId}(soId=${gin.saleOrderId})}"
+                                      method="post">
+                                    <!-- CSRF (nếu bật) -->
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                    <button type="submit"
+                                            class="px-3 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100">
+                                        Tạo công nợ
+                                    </button>
+                                </form>
+
+                                <!-- Fallback khi thiếu saleOrderId -->
+                                <span th:if="${gin.saleOrderId == null}" class="text-xs text-gray-400">
                 (thiếu saleOrderId — cần map trong DTO/Mapper)
               </span>
-                        </div>
+                            </div>
 
-                        <!-- ĐÃ TẤT TOÁN -->
-                        <div th:if="${gin.debtId != null and (gin.remainingAmount == null or gin.remainingAmount <= 0)}">
-                            <span class="text-green-600 font-semibold">Đã tất toán</span>
-                        </div>
-                    </td>
+                            <!-- ĐÃ TẤT TOÁN -->
+                            <div th:if="${gin.debtId != null and (gin.remainingAmount == null or gin.remainingAmount <= 0)}">
+                                <span class="text-green-600 font-semibold">Đã tất toán</span>
+                            </div>
+                        </td>
 
-                    <!-- Cột Trạng thái -->
-                    <td class="px-6 py-3 border border-gray-200">
+                        <!-- Cột Trạng thái -->
+                        <td class="px-6 py-3 border border-gray-200">
             <span th:text="${gin.status}"
                   th:classappend="${gin.status == 'Đã thanh toán'} ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'">
             </span>
-                    </td>
+                        </td>
 
-                    <td class="px-4 py-2 border border-gray-200 text-center">
-                        <a th:href="@{'/good-issue/view/' + ${gin.id}}"
-                           class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 text-sm border rounded hover:bg-gray-200">
-                            <i class="ri-eye-line">Xem</i></a>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+                        <td class="px-4 py-2 border border-gray-200 text-center">
+                            <a th:href="@{'/good-issue/view/' + ${gin.id}}"
+                               class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 text-sm border rounded hover:bg-gray-200">
+                                <i class="ri-eye-line">Xem</i></a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </main>
 </div>
