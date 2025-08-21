@@ -249,7 +249,11 @@
                                 <td colspan="5" class="px-4 py-3 text-center text-gray-500">Chưa có thanh toán</td>
                             </tr>
                             <tr th:each="p : ${payments}" class="border-t">
-                                <td class="px-4 py-2" th:text="${p.paymentDate}"></td>
+                                <!-- ✅ HIỂN THỊ NGÀY + GIỜ: ưu tiên createdAt; fallback paymentDate -->
+                                <td class="px-4 py-2"
+                                    th:text="${p.createdAt != null ? #temporals.format(p.createdAt, 'dd/MM/yyyy HH:mm') : #temporals.format(p.paymentDate, 'dd/MM/yyyy')}">
+                                </td>
+
                                 <td class="px-4 py-2 text-right"
                                     th:text="${#numbers.formatDecimal(p.amount,0,'COMMA',0,'POINT')}"></td>
                                 <td class="px-4 py-2" th:text="${p.method}"></td>
@@ -266,7 +270,6 @@
     </main>
 </div>
 
-<div th:replace="~{fragments/footer :: footer}"></div>
 
 <script>
     // Toggle user menu
