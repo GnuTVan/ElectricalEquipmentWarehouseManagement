@@ -39,15 +39,11 @@
                         <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Người tạo</th>
                         <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Ngày xuất</th>
                         <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Tổng tiền</th>
-                        <!-- NEW: Cột Công nợ -->
                         <th sec:authorize="hasAnyRole('MANAGER','STAFF')"
                             class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Công nợ
                         </th>
-                        <!-- Cột Trạng thái -->
                         <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Trạng thái</th>
-                        <th class="px-4 py-2 font-semibold whitespace-nowrap border border-gray-200 text-center">Hành
-                            động
-                        </th>
+                        <th class="px-4 py-2 font-semibold whitespace-nowrap border border-gray-200 text-center">Hành động</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -61,10 +57,9 @@
                         <td class="px-6 py-3 border border-gray-200"
                             th:text="${#numbers.formatDecimal(gin.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
 
-                        <!-- ===== Cột Công nợ ===== -->
-                        <td sec:authorize="hasAnyRole('MANAGER','STAFF')"
-                            class="px-6 py-3 border border-gray-200">
-                            <!-- ĐÃ CÓ Debt & CÒN NỢ -> Nút Thanh toán -->
+                        <!-- Cột Công nợ -->
+                        <td sec:authorize="hasAnyRole('MANAGER','STAFF')" class="px-6 py-3 border border-gray-200">
+                            <!-- Có debt & còn nợ -->
                             <div th:if="${gin.debtId != null and gin.remainingAmount != null and gin.remainingAmount > 0}">
                                 <button type="button"
                                         class="px-3 py-1 rounded bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
@@ -76,7 +71,7 @@
                                 </button>
                             </div>
 
-                            <!-- CHƯA CÓ Debt & ĐƠN CHƯA thanh toán -> Nút Tạo công nợ -->
+                            <!-- Chưa có debt -->
                             <div th:if="${gin.debtId == null and gin.status != 'Đã thanh toán'}">
                                 <form th:action="@{/admin/debts/create-from-good-issue/{ginId}(ginId=${gin.id})}" method="post">
                                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
@@ -85,24 +80,22 @@
                                         Tạo công nợ
                                     </button>
                                 </form>
-
-                                <!-- Fallback khi thiếu saleOrderId -->
                                 <span th:if="${gin.saleOrderId == null}" class="text-xs text-gray-400">
-                (thiếu saleOrderId — cần map trong DTO/Mapper)
-              </span>
+                                  (thiếu saleOrderId — cần map trong DTO/Mapper)
+                                </span>
                             </div>
 
-                            <!-- ĐÃ TẤT TOÁN -->
+                            <!-- Đã tất toán -->
                             <div th:if="${gin.debtId != null and (gin.remainingAmount == null or gin.remainingAmount <= 0)}">
                                 <span class="text-green-600 font-semibold">Đã tất toán</span>
                             </div>
                         </td>
 
-                        <!-- Cột Trạng thái -->
+                        <!-- Trạng thái -->
                         <td class="px-6 py-3 border border-gray-200">
-            <span th:text="${gin.status}"
-                  th:classappend="${gin.status == 'Đã thanh toán'} ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'">
-            </span>
+                          <span th:text="${gin.status}"
+                                th:classappend="${gin.status == 'Đã thanh toán'} ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'">
+                          </span>
                         </td>
 
                         <td class="px-4 py-2 border border-gray-200 text-center">
@@ -153,43 +146,33 @@
     // Dropdown user menu toggle
     const btn = document.getElementById("userMenuBtn");
     const dropdown = document.getElementById("userMenuDropdown");
-    btn?.addEventListener("click", () => {
-        dropdown?.classList.toggle("hidden");
-    });
+    btn?.addEventListener("click", () => dropdown?.classList.toggle("hidden"));
     document.addEventListener("click", (event) => {
-        if (!event.target.closest("#userMenuWrapper")) {
-            dropdown?.classList.add("hidden");
-        }
+      if (!event.target.closest("#userMenuWrapper")) dropdown?.classList.add("hidden");
     });
 
     // ===== Thanh toán công nợ (modal) =====
     function openPayModal(btn) {
-        const id = btn.getAttribute('data-debt-id');
-        const remain = btn.getAttribute('data-remaining');
-        document.getElementById('debtIdInput').value = id;
-        document.getElementById('remainLabel').innerText = Number(remain).toLocaleString('vi-VN');
-        const amt = document.getElementById('amountInput');
-        amt.value = '';
-        amt.max = remain;
-        document.getElementById('payModal').classList.remove('hidden');
-        document.getElementById('payModal').classList.add('flex');
+      const id = btn.getAttribute('data-debt-id');
+      const remain = btn.getAttribute('data-remaining');
+      document.getElementById('debtIdInput').value = id;
+      document.getElementById('remainLabel').innerText = Number(remain).toLocaleString('vi-VN');
+      const amt = document.getElementById('amountInput');
+      amt.value = '';
+      amt.max = remain;
+      const modal = document.getElementById('payModal');
+      modal.classList.remove('hidden'); modal.classList.add('flex');
     }
-
     function closePayModal() {
-        document.getElementById('payModal').classList.add('hidden');
-        document.getElementById('payModal').classList.remove('flex');
+      const modal = document.getElementById('payModal');
+      modal.classList.add('hidden'); modal.classList.remove('flex');
     }
-
     document.getElementById('payForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const debtId = document.getElementById('debtIdInput').value;
-        const form = new FormData(e.target);
-        const res = await fetch(/admin/debts/${debtId}/pay, {method: 'POST', body: form});
-        if (res.ok) {
-            location.reload();
-        } else {
-            alert('Thanh toán thất bại');
-        }
+      e.preventDefault();
+      const debtId = document.getElementById('debtIdInput').value;
+      const form = new FormData(e.target);
+      const res = await fetch(`/admin/debts/${debtId}/pay`, { method: 'POST', body: form }); // <-- backtick OK
+      if (res.ok) location.reload(); else alert('Thanh toán thất bại');
     });
 </script>
 </body>

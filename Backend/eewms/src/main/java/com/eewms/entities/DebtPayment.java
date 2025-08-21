@@ -8,11 +8,18 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-@Table(name = "debt_payments",
+@Table(
+        name = "debt_payments",
         indexes = {
                 @Index(name = "idx_debt_payment_debt", columnList = "debt_id"),
-                @Index(name = "idx_debt_payment_date", columnList = "paymentDate")
-        })
+                @Index(name = "idx_debt_payment_date", columnList = "paymentDate"),
+                @Index(name = "idx_debt_payment_reference_no", columnList = "reference_no")
+        },
+        uniqueConstraints = {
+                // NEW: không cho trùng reference_no trong cùng 1 debt
+                @UniqueConstraint(name = "uk_debt_ref", columnNames = {"debt_id", "reference_no"})
+        }
+)
 public class DebtPayment {
 
     public enum Method { CASH, BANK_TRANSFER }
@@ -34,7 +41,8 @@ public class DebtPayment {
     @Column(length = 32)
     private Method method;
 
-    @Column(length = 100)
+    // Đổi tên cột để khớp unique constraint trên DB
+    @Column(name = "reference_no", length = 100)
     private String referenceNo; // số UNC/chứng từ
 
     @Column(length = 500)

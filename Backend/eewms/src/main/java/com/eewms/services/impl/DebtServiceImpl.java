@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 import static java.math.BigDecimal.ZERO;
 
@@ -143,12 +144,37 @@ public class DebtServiceImpl implements IDebtService {
             throw new IllegalArgumentException("Số tiền vượt quá số còn lại (" + remaining + ").");
         }
 
+        // ===== NEW: chuẩn hoá & validate mã tham chiếu =====
+        DebtPayment.Method m = (method == null ? DebtPayment.Method.CASH : method);
+        String ref = (referenceNo == null) ? null : referenceNo.trim();
+
+        // Chuyển khoản: bắt buộc có mã tham chiếu
+        if (m == DebtPayment.Method.BANK_TRANSFER) {
+            if (ref == null || ref.isBlank()) {
+                throw new IllegalArgumentException("Vui lòng nhập mã tham chiếu (số UNC/mã giao dịch) cho thanh toán chuyển khoản.");
+            }
+        }
+
+        // Tiền mặt: nếu chưa nhập, tự sinh số phiếu thu (RCPT-yyyymmdd-001…)
+        if (m == DebtPayment.Method.CASH && (ref == null || ref.isBlank())) {
+            ref = generateReceiptNo(debtId);
+        }
+
+        // Nếu có ref thì chống trùng trong cùng 1 debt (ignore case)
+        if (ref != null && !ref.isBlank()) {
+            boolean duplicated = debtPaymentRepository.existsByDebtIdAndReferenceNoIgnoreCase(debtId, ref);
+            if (duplicated) {
+                throw new IllegalArgumentException("Mã tham chiếu đã tồn tại cho công nợ này.");
+            }
+        }
+        // ===================================================
+
         DebtPayment p = DebtPayment.builder()
                 .debt(debt)
                 .amount(amount)
-                .method(method == null ? DebtPayment.Method.CASH : method)
+                .method(m)
                 .paymentDate(paymentDate == null ? LocalDate.now() : paymentDate)
-                .referenceNo(referenceNo)
+                .referenceNo(ref)
                 .note(note)
                 .build();
 
@@ -276,4 +302,15 @@ public class DebtServiceImpl implements IDebtService {
         return debt;
     }
 
+    // ===== NEW: Sinh số phiếu thu tự động cho CASH, đảm bảo không trùng trong cùng debt =====
+    private String generateReceiptNo(Long debtId) {
+        String date = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE); // yyyymmdd
+        String base = "RCPT-" + date + "-";
+        int seq = 1;
+        String candidate;
+        do {
+            candidate = base + String.format("%03d", seq++);
+        } while (debtPaymentRepository.existsByDebtIdAndReferenceNoIgnoreCase(debtId, candidate));
+        return candidate;
+    }
 }
