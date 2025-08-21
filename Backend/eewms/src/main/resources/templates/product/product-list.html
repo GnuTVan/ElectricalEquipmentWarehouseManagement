@@ -40,7 +40,7 @@
                         <th class="px-4 py-3 whitespace-nowrap border border-gray-200">Tên</th>
                         <th class="px-4 py-3 whitespace-nowrap border border-gray-200">Ảnh</th>
                         <th class="px-4 py-3 whitespace-nowrap border border-gray-200">Giá niêm yết</th>
-                        <th class="px-4 py-3 whitespace-nowrap hidden">Số lượng</th>
+                        <th class="px-4 py-3 whitespace-nowrap">Số lượng</th>
                         <th class="px-4 py-3 whitespace-nowrap border border-gray-200">Thương hiệu</th>
                         <th class="px-4 py-3 whitespace-nowrap border border-gray-200">Danh mục</th>
                         <th class="px-4 py-3 text-center whitespace-nowrap border border-gray-200">Nhà cung cấp</th>
@@ -84,7 +84,7 @@
                             </div>
                         </td>
                         <td class="px-4 py-3 border border-gray-200" th:text="${product.listingPrice}"></td>
-                        <td class="px-4 py-3 hidden" th:text="${product.quantity}"></td>
+                        <td class="px-4 py-3 border border-gray-200" th:text="${product.quantity}"></td>
                         <td class="px-4 py-3 border border-gray-200" th:text="${product.brand.name}"></td>
                         <td class="px-4 py-3 border border-gray-200" th:text="${product.category.name}"></td>
                         <td class="px-4 py-3 border border-gray-200"
