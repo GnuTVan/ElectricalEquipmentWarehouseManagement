@@ -4,68 +4,192 @@
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
     <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
         <div th:replace="~{fragments/header :: header}"></div>
 
-        <section class="p-6 max-w-5xl">
-            <h1 class="text-2xl font-bold mb-4">Sản phẩm thiếu (đơn đang mở)</h1>
+        <section class="p-6 max-w-5xl mx-auto">
+            <!-- Header + Filter -->
+            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h1 class="text-2xl font-bold">Sản phẩm thiếu (đơn đang mở)</h1>
 
-            <form th:action="@{/admin/purchase-requests/create-from-collected}" method="post"
-                  th:object="${requestDTO}">
-                <!-- gói items vào DTO để submit -->
+                <div class="flex items-center gap-2">
+                    <div class="relative">
+                        <input id="filterInput" type="text" placeholder="Tìm theo tên sản phẩm..."
+                               class="peer w-72 max-w-full rounded-lg border border-gray-300 px-3 py-2 pr-9 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="ri-search-line absolute right-2 top-2.5 text-gray-400 peer-focus:text-blue-500"></i>
+                    </div>
+                    <button type="button" id="clearFilter"
+                            class="hidden sm:inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-sm">
+                        <i class="ri-close-line"></i> Xoá lọc
+                    </button>
+                </div>
+            </div>
+
+            <form th:action="@{/admin/purchase-requests/create-from-collected}" method="post" th:object="${requestDTO}"
+                  id="missingForm">
+                <!-- Dummy để Spring bind DTO -->
                 <input type="hidden" name="_dummy"/>
 
-                <table class="w-full table-auto border border-gray-300 mb-4">
-                    <thead class="bg-gray-100">
-                    <tr>
-                        <th class="border p-2">Sản phẩm</th>
-                        <th class="border p-2 w-40">Số lượng cần mua</th>
-                        <th class="border p-2 w-72">Nhà cung cấp gợi ý</th>
-                        <th class="border p-2">Ghi chú</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="it, iStat : ${collectedItems}">
-                        <td class="border p-2">
-                            <span th:text="${it.productName}">SP</span>
-                            <input type="hidden" th:name="'items[' + ${iStat.index} + '].productId'"
-                                   th:value="${it.productId}"/>
-                            <input type="hidden" th:name="'items[' + ${iStat.index} + '].productName'"
-                                   th:value="${it.productName}"/>
-                        </td>
-                        <td class="border p-2">
-                            <input type="number" min="1" class="w-full border rounded px-2 py-1"
-                                   th:name="'items[' + ${iStat.index} + '].quantityNeeded'"
-                                   th:value="${it.quantityNeeded}"/>
-                        </td>
-                        <td class="border p-2">
-                            <select class="w-full border rounded px-2 py-1"
-                                    th:name="'items[' + ${iStat.index} + '].suggestedSupplierId'">
-                                <option value="">-- Không chọn --</option>
-                                <option th:each="s : ${allowedSuppliers[ it.productId ]}"
-                                        th:value="${s.id}" th:text="${s.name}"></option>
-                            </select>
-                        </td>
-                        <td class="border p-2">
-                            <input type="text" class="w-full border rounded px-2 py-1"
-                                   th:name="'items[' + ${iStat.index} + '].note'"/>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+                <!-- Card + Scrollable table -->
+                <div class="rounded-xl bg-white shadow border border-gray-200">
+                    <!-- Table container với sticky header -->
+                    <div class="max-h-[60vh] overflow-auto rounded-t-xl">
+                        <table class="w-full table-auto">
+                            <thead class="bg-gray-50 sticky top-0 z-10">
+                            <tr class="text-left text-sm text-gray-600">
+                                <th class="px-3 py-2 font-medium">Sản phẩm</th>
+                                <th class="px-3 py-2 font-medium w-44">Số lượng cần mua</th>
+                                <th class="px-3 py-2 font-medium w-[22rem]">Nhà cung cấp gợi ý</th>
+                                <th class="px-3 py-2 font-medium">Ghi chú</th>
+                            </tr>
+                            </thead>
+                            <tbody id="itemsTbody" class="[&>tr:nth-child(odd)]:bg-gray-50 text-sm">
+                            <tr th:each="it, iStat : ${collectedItems}"
+                                th:attr="data-product=${it.productName}">
+                                <!-- Tên SP -->
+                                <td class="px-3 py-2 align-top">
+                                    <div class="font-medium text-gray-900" th:text="${it.productName}">SP</div>
+                                    <input type="hidden" th:name="'items[' + ${iStat.index} + '].productId'"
+                                           th:value="${it.productId}"/>
+                                    <input type="hidden" th:name="'items[' + ${iStat.index} + '].productName'"
+                                           th:value="${it.productName}"/>
+                                </td>
 
-                <div class="flex justify-end gap-3">
-                    <a th:href="@{/admin/purchase-requests}"
-                       class="px-4 py-2 border rounded text-gray-700">Huỷ</a>
-                    <button type="submit"
-                            class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">
-                        Xác nhận tạo yêu cầu
-                    </button>
+                                <!-- Số lượng -->
+                                <td class="px-3 py-2">
+                                    <div class="flex flex-col gap-1">
+                                        <input type="number" min="1"
+                                               class="qty-input w-full rounded-lg border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                               th:name="'items[' + ${iStat.index} + '].quantityNeeded'"
+                                               th:value="${it.quantityNeeded}"/>
+                                        <small class="qty-error hidden text-red-600">Số lượng phải ≥ 1</small>
+                                    </div>
+                                </td>
+
+                                <!-- NCC gợi ý -->
+                                <td class="px-3 py-2">
+                                    <select class="w-full rounded-lg border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            th:name="'items[' + ${iStat.index} + '].suggestedSupplierId'">
+                                        <option value="">-- Không chọn --</option>
+                                        <option th:each="s : ${allowedSuppliers[ it.productId ]}"
+                                                th:value="${s.id}" th:text="${s.name}"></option>
+                                    </select>
+                                </td>
+
+                                <!-- Ghi chú -->
+                                <td class="px-3 py-2">
+                                    <input type="text"
+                                           class="w-full rounded-lg border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                           th:name="'items[' + ${iStat.index} + '].note'"/>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Sticky footer action bar -->
+                    <div class="sticky bottom-0 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-gray-200 bg-white px-4 py-3 rounded-b-xl">
+                        <div class="text-sm text-gray-700">
+                            <span id="rowCount">0</span> dòng hiển thị · Tổng SL: <span id="qtyTotal">0</span>
+                        </div>
+                        <div class="flex justify-end gap-3">
+                            <a th:href="@{/admin/purchase-requests}"
+                               class="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white">
+                                Huỷ
+                            </a>
+                            <button id="submitBtn" type="submit"
+                                    class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:cursor-not-allowed">
+                                Xác nhận tạo yêu cầu
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </form>
         </section>
     </main>
 </div>
+
 <div th:replace="~{fragments/footer :: footer}"></div>
+
+<!-- Inline JS: filter + totals + validate -->
+<script>
+    (function () {
+        const filterInput = document.getElementById('filterInput');
+        const clearBtn = document.getElementById('clearFilter');
+        const tbody = document.getElementById('itemsTbody');
+        const rowCountEl = document.getElementById('rowCount');
+        const qtyTotalEl = document.getElementById('qtyTotal');
+        const submitBtn = document.getElementById('submitBtn');
+
+        function normalize(str) {
+            return (str || '').toString().toLowerCase().trim();
+        }
+
+        function applyFilter() {
+            const q = normalize(filterInput.value);
+            let visible = 0;
+            [...tbody.rows].forEach(tr => {
+                const name = normalize(tr.getAttribute('data-product'));
+                const show = !q || name.includes(q);
+                tr.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+            rowCountEl.textContent = visible;
+            clearBtn.classList.toggle('hidden', !q);
+            calcTotal();
+        }
+
+        function validateRow(tr) {
+            const input = tr.querySelector('.qty-input');
+            const err = tr.querySelector('.qty-error');
+            let val = parseInt(input.value, 10);
+            const invalid = isNaN(val) || val < 1;
+            if (invalid) {
+                input.classList.add('border-red-500', 'focus:ring-red-500');
+                err.classList.remove('hidden');
+            } else {
+                input.classList.remove('border-red-500', 'focus:ring-red-500');
+                err.classList.add('hidden');
+            }
+            return !invalid && tr.style.display !== 'none';
+        }
+
+        function calcTotal() {
+            let total = 0;
+            let allValid = true;
+            [...tbody.rows].forEach(tr => {
+                if (tr.style.display === 'none') return;
+                const input = tr.querySelector('.qty-input');
+                const ok = validateRow(tr);
+                if (!ok) allValid = false;
+                const val = parseInt(input.value, 10);
+                if (!isNaN(val) && val >= 1) total += val;
+            });
+            qtyTotalEl.textContent = total;
+            submitBtn.disabled = !allValid;
+        }
+
+        // Events
+        filterInput.addEventListener('input', applyFilter);
+        clearBtn.addEventListener('click', () => {
+            filterInput.value = '';
+            applyFilter();
+        });
+
+        tbody.addEventListener('input', (e) => {
+            if (e.target && e.target.classList.contains('qty-input')) {
+                calcTotal();
+            }
+        });
+
+        // Initial
+        window.addEventListener('load', () => {
+            // set initial counts
+            rowCountEl.textContent = [...tbody.rows].filter(tr => tr.style.display !== 'none').length;
+            calcTotal();
+        });
+    })();
+</script>
 </body>
 </html>

@@ -17,74 +17,81 @@
                 </a>
             </div>
 
-            <form th:action="@{/admin/purchase-orders}" method="post" enctype="multipart/form-data" th:object="${orderDTO}">
+            <form th:action="@{/admin/purchase-orders}" method="post" enctype="multipart/form-data"
+                  th:object="${orderDTO}">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                 <!-- ★ FIX: Giữ createdByName để không choke validate -->
                 <input type="hidden" th:field="*{createdByName}"/>
 
-                <div th:if="${#fields.hasErrors('*')}" class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                <div th:if="${#fields.hasErrors('*')}"
+                     class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
                     <ul class="list-disc ml-5 text-sm">
                         <li th:each="err : ${#fields.errors('*')}" th:text="${err}"></li>
                     </ul>
                 </div>
+                <div class="bg-white shadow rounded-lg p-6 space-y-4 mb-2">
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nhà cung cấp</label>
-                        <select th:field="*{supplierId}" class="w-full border rounded px-3 py-2" required>
-                            <option value="">-- Chọn nhà cung cấp --</option>
-                            <option th:each="s : ${suppliers}" th:value="${s.id}" th:text="${s.name}"></option>
-                        </select>
-                        <p class="text-red-600 text-sm mt-1" th:if="${#fields.hasErrors('supplierId')}" th:errors="*{supplierId}"></p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nhà cung cấp</label>
+                            <select th:field="*{supplierId}" class="w-full border rounded px-3 py-2" required>
+                                <option value="">-- Chọn nhà cung cấp --</option>
+                                <option th:each="s : ${suppliers}" th:value="${s.id}" th:text="${s.name}"></option>
+                            </select>
+                            <p class="text-red-600 text-sm mt-1" th:if="${#fields.hasErrors('supplierId')}"
+                               th:errors="*{supplierId}"></p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Chứng từ</label>
+                            <input type="file" th:field="*{attachmentFile}" class="w-full border rounded px-3 py-2">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
+                            <textarea th:field="*{note}" rows="3" class="w-full border rounded px-3 py-2"></textarea>
+                        </div>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Chứng từ</label>
-                        <input type="file" th:field="*{attachmentFile}" class="w-full border rounded px-3 py-2">
-                    </div>
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <h2 class="text-lg font-semibold text-gray-800">Danh sách sản phẩm</h2>
+                            <button type="button" id="btnAddItem" onclick="addItemRow()"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">
+                                <i class="ri-add-line mr-1"></i> Thêm sản phẩm
+                            </button>
+                        </div>
 
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
-                        <textarea th:field="*{note}" rows="3" class="w-full border rounded px-3 py-2"></textarea>
+                        <div class="bg-white rounded shadow">
+                            <table class="min-w-full table-auto text-sm">
+                                <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-3 py-2 text-left">Sản phẩm</th>
+                                    <th class="px-3 py-2 text-right">Số lượng</th>
+                                    <th class="px-3 py-2 text-right">Đơn giá</th>
+                                    <th class="px-3 py-2 text-right">Thành tiền</th>
+                                    <th class="px-3 py-2 text-center">Xóa</th>
+                                </tr>
+                                </thead>
+                                <tbody id="itemTableBody"></tbody>
+                                <tfoot>
+                                <tr class="border-t">
+                                    <td colspan="3" class="px-3 py-2 text-right font-bold">Tổng tiền:</td>
+                                    <td class="px-3 py-2 text-right font-bold" id="grandTotal">0</td>
+                                    <td></td>
+                                </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <p class="text-red-600 text-sm mt-1" th:if="${#fields.hasErrors('items')}"
+                           th:errors="*{items}"></p>
                     </div>
                 </div>
-
-                <div class="mb-6">
-                    <div class="flex items-center justify-between mb-2">
-                        <h2 class="text-lg font-semibold text-gray-800">Danh sách sản phẩm</h2>
-                        <button type="button" id="btnAddItem" onclick="addItemRow()"
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">
-                            <i class="ri-add-line mr-1"></i> Thêm sản phẩm
-                        </button>
-                    </div>
-
-                    <div class="bg-white rounded shadow">
-                        <table class="min-w-full table-auto text-sm">
-                            <thead class="bg-gray-100">
-                            <tr>
-                                <th class="px-3 py-2 text-left">Sản phẩm</th>
-                                <th class="px-3 py-2 text-right">Số lượng</th>
-                                <th class="px-3 py-2 text-right">Đơn giá</th>
-                                <th class="px-3 py-2 text-right">Thành tiền</th>
-                                <th class="px-3 py-2 text-center">Xóa</th>
-                            </tr>
-                            </thead>
-                            <tbody id="itemTableBody"></tbody>
-                            <tfoot>
-                            <tr class="border-t">
-                                <td colspan="3" class="px-3 py-2 text-right font-bold">Tổng tiền:</td>
-                                <td class="px-3 py-2 text-right font-bold" id="grandTotal">0</td>
-                                <td></td>
-                            </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-
-                    <p class="text-red-600 text-sm mt-1" th:if="${#fields.hasErrors('items')}" th:errors="*{items}"></p>
-                </div>
-
                 <div class="text-right">
-                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">Lưu đơn hàng</button>
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">Lưu đơn
+                        hàng
+                    </button>
                 </div>
             </form>
         </div>
@@ -99,43 +106,57 @@
     const grandTotalEl = document.getElementById('grandTotal');
     let rows = [];
 
-    function fmt(n){ return (Number(n)||0).toLocaleString('vi-VN'); }
+    function fmt(n) {
+        return (Number(n) || 0).toLocaleString('vi-VN');
+    }
+
     function filteredProducts() {
-      const sId = Number(supplierSelect?.value || 0);
-      if (!sId) return [];
-      return (ALL_PRODUCTS || []).filter(p => Array.isArray(p.supplierIds) && p.supplierIds.includes(sId));
+        const sId = Number(supplierSelect?.value || 0);
+        if (!sId) return [];
+        return (ALL_PRODUCTS || []).filter(p => Array.isArray(p.supplierIds) && p.supplierIds.includes(sId));
     }
 
     function addItemRow() {
-      const prods = filteredProducts();
-      if (prods.length === 0) { alert('Nhà cung cấp này chưa có sản phẩm liên kết!'); return; }
-      rows.push({ productId: prods[0].id, qty: 1, price: prods[0].originPrice ?? 0 });
-      render();
+        const prods = filteredProducts();
+        if (prods.length === 0) {
+            alert('Nhà cung cấp này chưa có sản phẩm liên kết!');
+            return;
+        }
+        rows.push({productId: prods[0].id, qty: 1, price: prods[0].originPrice ?? 0});
+        render();
     }
-    function removeRow(i){ rows.splice(i,1); render(); }
 
-    function onChangeProduct(i, val){
-      const prods = filteredProducts();
-      const p = prods.find(x => x.id === Number(val));
-      rows[i].productId = Number(val);
-      rows[i].price = p ? (p.originPrice ?? 0) : 0;     // ★ FIX: Ép giá = originPrice
-      render();                                          // ★ FIX: rerender để cập nhật hidden + tổng
+    function removeRow(i) {
+        rows.splice(i, 1);
+        render();
     }
-    function onChangeQty(i, val){ rows[i].qty = Math.max(1, Number(val)||0); renderTotals(); }
 
-    function render(){
-      const prods = filteredProducts();
-      rows = rows.filter(r => prods.some(p => p.id === r.productId));
-      if (rows.length === 0 && prods.length > 0) {
-        rows.push({ productId: prods[0].id, qty: 1, price: prods[0].originPrice ?? 0 });
-      }
-      tbody.innerHTML = '';
-      rows.forEach((r,i) => {
-        const options = prods.map(p => `<option value="${p.id}" ${p.id===r.productId?'selected':''}>${p.name}</option>`).join('');
-        const amount = (Number(r.qty)||0) * (Number(r.price)||0);
-        const tr = document.createElement('tr');
-        tr.className = "border-t";
-        tr.innerHTML = `
+    function onChangeProduct(i, val) {
+        const prods = filteredProducts();
+        const p = prods.find(x => x.id === Number(val));
+        rows[i].productId = Number(val);
+        rows[i].price = p ? (p.originPrice ?? 0) : 0;     // ★ FIX: Ép giá = originPrice
+        render();                                          // ★ FIX: rerender để cập nhật hidden + tổng
+    }
+
+    function onChangeQty(i, val) {
+        rows[i].qty = Math.max(1, Number(val) || 0);
+        renderTotals();
+    }
+
+    function render() {
+        const prods = filteredProducts();
+        rows = rows.filter(r => prods.some(p => p.id === r.productId));
+        if (rows.length === 0 && prods.length > 0) {
+            rows.push({productId: prods[0].id, qty: 1, price: prods[0].originPrice ?? 0});
+        }
+        tbody.innerHTML = '';
+        rows.forEach((r, i) => {
+            const options = prods.map(p => `<option value="${p.id}" ${p.id === r.productId ? 'selected' : ''}>${p.name}</option>`).join('');
+            const amount = (Number(r.qty) || 0) * (Number(r.price) || 0);
+            const tr = document.createElement('tr');
+            tr.className = "border-t";
+            tr.innerHTML = `
           <td class="px-3 py-2">
             <select class="border rounded px-2 py-1 w-64" name="items[${i}].productId"
                     onchange="onChangeProduct(${i}, this.value)">${options}</select>
@@ -148,29 +169,40 @@
           <td class="px-3 py-2 text-right">
             <!-- ★ FIX: KHÓA GIÁ 100%: chỉ hiển thị + gửi hidden -->
             <span class="inline-block w-32 text-right">${fmt(r.price)}</span>
-            <input type="hidden" name="items[${i}].price" value="${Number(r.price)||0}"/>
+            <input type="hidden" name="items[${i}].price" value="${Number(r.price) || 0}"/>
           </td>
           <td class="px-3 py-2 text-right"><span>${fmt(amount)}</span></td>
           <td class="px-3 py-2 text-center">
             <button type="button" class="px-2 py-1 bg-red-600 text-white rounded" onclick="removeRow(${i})">X</button>
           </td>`;
-        tbody.appendChild(tr);
-      });
-      renderTotals();
+            tbody.appendChild(tr);
+        });
+        renderTotals();
     }
 
-    function renderTotals(){
-      const total = rows.reduce((s,r)=> s + (Number(r.qty)||0)*(Number(r.price)||0), 0);
-      grandTotalEl.textContent = fmt(total);
+    function renderTotals() {
+        const total = rows.reduce((s, r) => s + (Number(r.qty) || 0) * (Number(r.price) || 0), 0);
+        grandTotalEl.textContent = fmt(total);
     }
 
-    supplierSelect?.addEventListener('change', () => { rows = []; render(); });
+    supplierSelect?.addEventListener('change', () => {
+        rows = [];
+        render();
+    });
 
     document.querySelector('form')?.addEventListener('submit', (e) => {
-      if (rows.length === 0) { e.preventDefault(); alert('Vui lòng thêm ít nhất 1 sản phẩm.'); return; }
-      for (const r of rows) {
-        if (!r.productId || (Number(r.qty)||0) < 1) { e.preventDefault(); alert('Dữ liệu dòng chưa hợp lệ.'); return; }
-      }
+        if (rows.length === 0) {
+            e.preventDefault();
+            alert('Vui lòng thêm ít nhất 1 sản phẩm.');
+            return;
+        }
+        for (const r of rows) {
+            if (!r.productId || (Number(r.qty) || 0) < 1) {
+                e.preventDefault();
+                alert('Dữ liệu dòng chưa hợp lệ.');
+                return;
+            }
+        }
     });
 
     render();

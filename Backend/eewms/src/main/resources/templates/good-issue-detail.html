@@ -9,107 +9,116 @@
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
     <!-- Main content -->
-    <main class="flex-1 ml-64 p-6">
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
         <!-- Header -->
         <div th:replace="~{fragments/header :: header}"></div>
 
-        <!-- Title -->
-        <div class="mb-6">
-            <h1 class="text-2xl font-bold text-gray-800">Chi tiết phiếu xuất kho</h1>
-        </div>
+        <div class="px-6 py-6">
+            <!-- Title -->
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">Chi tiết phiếu xuất kho</h1>
+            </div>
 
-        <div class="flex justify-between items-center mb-6">
-            <a href="/good-issue"
-               class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded inline-flex items-center">
-                <i class="ri-arrow-left-line mr-2"></i> Quay lại
-            </a>
+            <div class="flex justify-between items-center mb-6">
+                <a href="/good-issue"
+                   class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded inline-flex items-center">
+                    <i class="ri-arrow-left-line mr-2"></i> Quay lại
+                </a>
 
-            <a th:href="@{'/admin/good-issues/export/' + ${note.id}}"
-               class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded inline-flex items-center"
-               target="_blank">
-                <i class="ri-printer-line mr-2"></i> In phiếu (PDF)
-            </a>
-        </div>
+                <a th:href="@{'/admin/good-issues/export/' + ${note.id}}"
+                   class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded inline-flex items-center"
+                   target="_blank">
+                    <i class="ri-printer-line mr-2"></i> In phiếu (PDF)
+                </a>
+            </div>
 
-        <!-- Thông báo flash -->
-        <div th:if="${message}"
-             th:classappend="${messageType == 'success' ? 'bg-green-50 border-green-200 text-green-800' :
+            <!-- Thông báo flash -->
+            <div th:if="${message}"
+                 th:classappend="${messageType == 'success' ? 'bg-green-50 border-green-200 text-green-800' :
                  (messageType == 'warning' ? 'bg-amber-50 border-amber-200 text-amber-800' :
                  (messageType == 'danger'  ? 'bg-red-50 border-red-200 text-red-800' :
                                              'bg-gray-50 border-gray-200 text-gray-700'))}"
-             class="border rounded px-4 py-3 mb-5">
-            <span th:text="${message}"></span>
-        </div>
+                 class="border rounded px-4 py-3 mb-5">
+                <span th:text="${message}"></span>
+            </div>
 
-        <!-- Thông tin chung -->
-        <div class="bg-white p-6 rounded shadow mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                    <p class="text-gray-600 font-semibold">Mã phiếu:</p>
-                    <p th:text="${note.code}" class="text-gray-800"></p>
-                </div>
-                <div>
-                    <p class="text-gray-600 font-semibold">Đơn hàng:</p>
-                    <p th:text="${note.saleOrderCode}" class="text-gray-800"></p>
-                </div>
-                <div>
-                    <p class="text-gray-600 font-semibold">Khách hàng:</p>
-                    <p th:text="${note.customerName}" class="text-gray-800"></p>
-                </div>
-                <div>
-                    <p class="text-gray-600 font-semibold">Người tạo:</p>
-                    <p th:text="${note.createdBy}" class="text-gray-800"></p>
-                </div>
-                <div>
-                    <p class="text-gray-600 font-semibold">Thời gian:</p>
-                    <p th:text="${#temporals.format(note.issueDate, 'dd/MM/yyyy HH:mm')}" class="text-gray-800"></p>
-                </div>
-                <div>
-                    <p class="text-gray-600 font-semibold">Ghi chú:</p>
-                    <p th:text="${note.description}" class="text-gray-800 whitespace-pre-line"></p>
+            <!-- Thông tin chung -->
+            <div class="bg-white p-6 rounded shadow mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <p class="text-gray-600 font-semibold">Mã phiếu:</p>
+                        <p th:text="${note.code}" class="text-gray-800"></p>
+                    </div>
+                    <div>
+                        <p class="text-gray-600 font-semibold">Đơn hàng:</p>
+                        <p th:text="${note.saleOrderCode}" class="text-gray-800"></p>
+                    </div>
+                    <div>
+                        <p class="text-gray-600 font-semibold">Khách hàng:</p>
+                        <p th:text="${note.customerName}" class="text-gray-800"></p>
+                    </div>
+                    <div>
+                        <p class="text-gray-600 font-semibold">Người tạo:</p>
+                        <p th:text="${note.createdBy}" class="text-gray-800"></p>
+                    </div>
+                    <div>
+                        <p class="text-gray-600 font-semibold">Thời gian:</p>
+                        <p th:text="${#temporals.format(note.issueDate, 'dd/MM/yyyy HH:mm')}" class="text-gray-800"></p>
+                    </div>
+                    <div>
+                        <p class="text-gray-600 font-semibold">Ghi chú:</p>
+                        <p th:text="${note.description}" class="text-gray-800 whitespace-pre-line"></p>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Danh sách sản phẩm xuất -->
-        <div class="bg-white p-6 rounded shadow">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">Sản phẩm đã xuất</h2>
-            <table class="min-w-full table-auto text-sm border">
-                <thead class="bg-gray-100 text-left">
-                <tr>
-                    <th class="px-4 py-2 border-b">STT</th>
-                    <th class="px-4 py-2 border-b">Tên sản phẩm</th>
-                    <th class="px-4 py-2 border-b">Số lượng</th>
-                    <th class="px-4 py-2 border-b">Đơn giá</th>
-                    <th class="px-4 py-2 border-b">Thành tiền</th>
+            <!-- Danh sách sản phẩm xuất -->
+            <div class="bg-white p-6 rounded shadow">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Sản phẩm đã xuất</h2>
+                <table class="min-w-full table-auto text-sm border">
+                    <thead class="bg-gray-100 text-left">
+                    <tr>
+                        <th class="px-4 py-2 border-b">STT</th>
+                        <th class="px-4 py-2 border-b">Tên sản phẩm</th>
+                        <th class="px-4 py-2 border-b">Số lượng</th>
+                        <th class="px-4 py-2 border-b">Đơn giá</th>
+                        <th class="px-4 py-2 border-b">Thành tiền</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="detail, iStat : ${items}" class="border-t hover:bg-gray-50">
+                        <td th:text="${iStat.index + 1}" class="px-4 py-2 border-b"></td>
+                        <td th:text="${detail.productName}" class="px-4 py-2 border-b"></td>
+                        <td th:text="${detail.quantity}" class="px-4 py-2 border-b"></td>
+                        <td th:text="${#numbers.formatDecimal(detail.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"
+                            class="px-4 py-2 border-b"></td>
+                        <td th:text="${#numbers.formatDecimal(detail.total, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"
+                            class="px-4 py-2 border-b"></td>
+                    </tr>
+                    </tbody>
+                </table>
+                <tfoot>
+                <tr class="bg-gray-50 font-semibold">
+                    <td colspan="4" class="px-4 py-2 text-right">Tổng cộng:</td>
+                    <td class="px-4 py-2"
+                        th:text="${#numbers.formatDecimal(note.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
                 </tr>
-                </thead>
-                <tbody>
-                <tr th:each="detail, iStat : ${items}" class="border-t hover:bg-gray-50">
-                    <td th:text="${iStat.index + 1}" class="px-4 py-2 border-b"></td>
-                    <td th:text="${detail.productName}" class="px-4 py-2 border-b"></td>
-                    <td th:text="${detail.quantity}" class="px-4 py-2 border-b"></td>
-                    <td th:text="${#numbers.formatDecimal(detail.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"
-                        class="px-4 py-2 border-b"></td>
-                    <td th:text="${#numbers.formatDecimal(detail.total, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"
-                        class="px-4 py-2 border-b"></td>
-                </tr>
-                </tbody>
-            </table>
-            <tfoot>
-            <tr class="bg-gray-50 font-semibold">
-                <td colspan="4" class="px-4 py-2 text-right">Tổng cộng:</td>
-                <td class="px-4 py-2"
-                    th:text="${#numbers.formatDecimal(note.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
-            </tr>
-            </tfoot>
-        </div>
+                </tfoot>
+            </div>
 
-        <!-- ==================== CÔNG NỢ KHÁCH HÀNG (UI mới) ==================== -->
-        <section sec:authorize="hasAnyRole('MANAGER','STAFF')" class="mt-6 bg-white rounded-xl shadow p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-semibold">Công nợ khách hàng</h2>
-                <div th:if="${debt != null}">
+            <!-- ==================== CÔNG NỢ KHÁCH HÀNG ==================== -->
+            <section sec:authorize="hasAnyRole('MANAGER','STAFF')" class="mt-6 bg-white rounded-xl shadow p-6">
+                <!-- Data cho JS -->
+                <div th:if="${debt != null}"
+                     id="debtMeta"
+                     th:attr="data-create-url=@{'/admin/debts/' + ${debt.id} + '/payos/create'},
+              data-remaining=${remaining},
+              data-csrf-name=${_csrf.parameterName},
+              data-csrf-value=${_csrf.token}">
+                </div>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold">Công nợ khách hàng</h2>
+                    <div th:if="${debt != null}">
           <span class="px-2 py-1 rounded text-xs font-medium"
                 th:text="${debt.status}"
                 th:classappend="${debt.status.name() == 'PAID' ?
@@ -120,182 +129,347 @@
                     ' bg-rose-50 text-rose-700 border border-rose-200' :
                     ' bg-gray-50 text-gray-700 border border-gray-200'))}">
           </span>
-                </div>
-            </div>
-
-            <!-- Chưa có công nợ -->
-            <div th:if="${debt == null}">
-                <p class="text-gray-600 mb-3">Phiếu xuất này chưa tạo công nợ.</p>
-                <form th:action="@{/admin/debts/create-from-good-issue/{ginId}(ginId=${note.id})}" method="post"
-                      class="flex items-center gap-3">
-                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                    <label class="text-sm text-gray-600">Kỳ hạn:</label>
-                    <select name="termDays" class="border rounded px-3 py-2">
-                        <option value="0">Thanh toán ngay</option>
-                        <option value="10">10 ngày</option>
-                        <option value="20">20 ngày</option>
-                        <option value="30" selected>30 ngày</option>
-                    </select>
-                    <button type="submit"
-                            class="px-4 py-2 rounded bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100">
-                        Tạo công nợ
-                    </button>
-                </form>
-            </div>
-
-            <!-- Đã có công nợ -->
-            <div th:if="${debt != null}">
-                <!-- 3 ô chỉ số -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                        <div class="text-gray-500 text-sm">Tổng phải trả</div>
-                        <div class="text-2xl font-semibold"
-                             th:text="${#numbers.formatDecimal(total,0,'COMMA',0,'POINT')}"></div>
-                    </div>
-                    <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                        <div class="text-gray-500 text-sm">Đã thanh toán</div>
-                        <div class="text-2xl font-semibold"
-                             th:text="${#numbers.formatDecimal(paid,0,'COMMA',0,'POINT')}"></div>
-                    </div>
-                    <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                        <div class="text-gray-500 text-sm">Còn lại</div>
-                        <div class="text-2xl font-semibold"
-                             th:text="${#numbers.formatDecimal(remaining,0,'COMMA',0,'POINT')}"></div>
                     </div>
                 </div>
 
-                <!-- Hạn & đổi kỳ hạn -->
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="flex items-center gap-3">
-                        <div class="text-gray-600 font-medium">Hạn thanh toán:</div>
-                        <div class="text-gray-900" th:text="${debt.dueDate}"></div>
-                    </div>
-                    <form th:action="@{'/admin/debts/' + ${debt.id} + '/update-terms'}" method="post"
-                          class="flex items-center gap-2 justify-start md:justify-end">
+                <!-- Chưa có công nợ -->
+                <div th:if="${debt == null}">
+                    <p class="text-gray-600 mb-3">Phiếu xuất này chưa tạo công nợ.</p>
+                    <form th:action="@{/admin/debts/create-from-good-issue/{ginId}(ginId=${note.id})}" method="post"
+                          class="flex items-center gap-3">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                        <input type="hidden" name="redirectGinId" th:value="${note.id}"/>
-                        <label class="text-sm text-gray-600">Đổi kỳ hạn:</label>
+                        <label class="text-sm text-gray-600">Kỳ hạn:</label>
                         <select name="termDays" class="border rounded px-3 py-2">
-                            <option th:each="d : ${termsOptions}" th:value="${d}"
-                                    th:text="${d == 0 ? 'Thanh toán ngay' : d + ' ngày'}"></option>
+                            <option value="0">Thanh toán ngay</option>
+                            <option value="10">10 ngày</option>
+                            <option value="20">20 ngày</option>
+                            <option value="30" selected>30 ngày</option>
                         </select>
-                        <button class="px-3 py-2 rounded bg-gray-100 hover:bg-gray-200 border">Cập nhật</button>
+                        <button type="submit"
+                                class="px-4 py-2 rounded bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100">
+                            Tạo công nợ
+                        </button>
                     </form>
                 </div>
 
-                <hr class="my-5"/>
-
-                <!-- Form thanh toán -->
-                <form th:action="@{'/admin/debts/' + ${debt.id} + '/pay'}" method="post"
-                      class="grid grid-cols-1 md:grid-cols-3 gap-4" id="payForm">
-                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                    <input type="hidden" name="ginId" th:value="${note.id}"/>
-
-                    <div>
-                        <label class="block text-sm text-gray-600 mb-1">Số tiền</label>
-                        <input type="number" name="amount" min="1" step="1" required
-                               class="w-full border rounded px-3 py-2" th:attr="max=${remaining}"/>
+                <!-- Đã có công nợ -->
+                <div th:if="${debt != null}">
+                    <!-- 3 ô chỉ số -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                            <div class="text-gray-500 text-sm">Tổng phải trả</div>
+                            <div class="text-2xl font-semibold"
+                                 th:text="${#numbers.formatDecimal(total,0,'COMMA',0,'POINT')}"></div>
+                        </div>
+                        <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                            <div class="text-gray-500 text-sm">Đã thanh toán</div>
+                            <div class="text-2xl font-semibold"
+                                 th:text="${#numbers.formatDecimal(paid,0,'COMMA',0,'POINT')}"></div>
+                        </div>
+                        <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                            <div class="text-gray-500 text-sm">Còn lại</div>
+                            <div class="text-2xl font-semibold"
+                                 th:text="${#numbers.formatDecimal(remaining,0,'COMMA',0,'POINT')}"></div>
+                        </div>
                     </div>
 
-                    <div>
-                        <label class="block text-sm text-gray-600 mb-1">Phương thức</label>
-                        <select name="method" class="w-full border rounded px-3 py-2" id="methodSelect">
-                            <option value="CASH">Tiền mặt</option>
-                            <option value="BANK_TRANSFER">Chuyển khoản</option>
-                        </select>
+                    <!-- Hạn & đổi kỳ hạn -->
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="text-gray-600 font-medium">Hạn thanh toán:</div>
+                            <div class="text-gray-900" th:text="${debt.dueDate}"></div>
+                        </div>
+                        <form th:action="@{'/admin/debts/' + ${debt.id} + '/update-terms'}" method="post"
+                              class="flex items-center gap-2 justify-start md:justify-end">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <input type="hidden" name="redirectGinId" th:value="${note.id}"/>
+                            <label class="text-sm text-gray-600">Đổi kỳ hạn:</label>
+                            <select name="termDays" class="border rounded px-3 py-2">
+                                <option th:each="d : ${termsOptions}" th:value="${d}"
+                                        th:text="${d == 0 ? 'Thanh toán ngay' : d + ' ngày'}"></option>
+                            </select>
+                            <button class="px-3 py-2 rounded bg-gray-100 hover:bg-gray-200 border">Cập nhật</button>
+                        </form>
                     </div>
 
-                    <div>
-                        <label class="block text-sm text-gray-600 mb-1">Ngày thanh toán</label>
-                        <input type="date" name="paymentDate" class="w-full border rounded px-3 py-2"
-                               th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"/>
-                    </div>
+                    <hr class="my-5"/>
 
-                    <div class="md:col-span-2">
-                        <label class="block text-sm text-gray-600 mb-1">Ghi chú</label>
-                        <input type="text" name="note" class="w-full border rounded px-3 py-2"
-                               placeholder="Ghi chú (tùy chọn)"/>
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-600 mb-1">Mã tham chiếu</label>
-                        <input type="text" name="referenceNo" id="referenceInput"
-                               class="w-full border rounded px-3 py-2"
-                               placeholder="Số UNC / mã giao dịch (bắt buộc khi chuyển khoản)"/>
-                    </div>
+                    <!-- Form thanh toán -->
+                    <form th:action="@{'/admin/debts/' + ${debt.id} + '/pay'}" method="post"
+                          class="grid grid-cols-1 md:grid-cols-3 gap-4" id="payForm">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <input type="hidden" name="ginId" th:value="${note.id}"/>
 
-                    <div class="md:col-span-3 flex justify-end">
-                        <button type="submit" class="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700">
-                            Thanh toán
-                        </button>
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Số tiền</label>
+                            <input type="number" name="amount" min="1" step="1" required
+                                   class="w-full border rounded px-3 py-2" th:attr="max=${remaining}"/>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Phương thức</label>
+                            <select name="method" class="w-full border rounded px-3 py-2" id="methodSelect">
+                                <option value="CASH">Tiền mặt</option>
+                                <option value="BANK_TRANSFER">Chuyển khoản (QR)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Ngày thanh toán</label>
+                            <input type="date" name="paymentDate" class="w-full border rounded px-3 py-2"
+                                   th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"/>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-sm text-gray-600 mb-1">Ghi chú</label>
+                            <input type="text" name="note" class="w-full border rounded px-3 py-2"
+                                   placeholder="Ghi chú (tùy chọn)"/>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Mã tham chiếu</label>
+                            <input type="text" name="referenceNo" id="referenceInput"
+                                   class="w-full border rounded px-3 py-2"
+                                   placeholder="Số UNC / mã giao dịch (bắt buộc khi chuyển khoản)"/>
+                        </div>
+
+                        <div class="md:col-span-3 flex gap-3 justify-end">
+                            <!-- Nút thanh toán thường (CASH hoặc chuyển khoản thủ công) -->
+                            <button id="paySubmitBtn" type="submit"
+                                    class="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700">
+                                Thanh toán
+                            </button>
+
+                            <!-- Nút thanh toán QR PayOS (ẩn mặc định, chỉ hiện khi chọn Chuyển khoản) -->
+                            <button id="payQrBtn" type="button"
+                                    class="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700 hidden">
+                                <i class="ri-qr-code-line mr-1"></i> Thanh toán QR
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Lịch sử thanh toán -->
+                    <div class="mt-6">
+                        <h3 class="font-semibold mb-3">Lịch sử thanh toán</h3>
+                        <div class="overflow-x-auto border rounded">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-100 text-gray-700">
+                                <tr>
+                                    <th class="px-4 py-2 text-left">Ngày</th>
+                                    <th class="px-4 py-2 text-right">Số tiền</th>
+                                    <th class="px-4 py-2 text-left">Phương thức</th>
+                                    <th class="px-4 py-2 text-left">Mã tham chiếu</th>
+                                    <th class="px-4 py-2 text-left">Ghi chú</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:if="${payments == null or #lists.isEmpty(payments)}">
+                                    <td colspan="5" class="px-4 py-3 text-center text-gray-500">Chưa có thanh toán</td>
+                                </tr>
+                                <tr th:each="p : ${payments}"
+                                    th:if="${(p.method == null || p.method.name() != 'PAYOS_QR')
+                                        or (p.status != null and p.status.name() == 'PAID')}"
+                                    class="border-t">
+                                    <!-- ✅ HIỂN THỊ NGÀY + GIỜ: ưu tiên createdAt; fallback paymentDate -->
+                                    <td class="px-4 py-2"
+                                        th:text="${p.createdAt != null ? #temporals.format(p.createdAt, 'dd/MM/yyyy HH:mm') : #temporals.format(p.paymentDate, 'dd/MM/yyyy')}">
+                                    </td>
+
+                                    <td class="px-4 py-2 text-right"
+                                        th:text="${#numbers.formatDecimal(p.amount,0,'COMMA',0,'POINT')}"></td>
+                                    <td class="px-4 py-2"
+                                        th:text="${p.method != null ? p.method.label : 'Không xác định'}"></td>
+                                    <td class="px-4 py-2" th:text="${p.referenceNo}"></td>
+                                    <td class="px-4 py-2" th:text="${p.note}"></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </form>
+                    <!-- Thanh toán QR (PayOS) -->
+                    <div class="mt-6"
+                         th:if="${payments != null and !payments.?[method?.name() == 'PAYOS_QR' and status?.name() == 'PENDING'].isEmpty()}">
+                        <h3 class="font-semibold mb-3">Thanh toán QR (PayOS)</h3>
 
-                <!-- Lịch sử thanh toán -->
-                <div class="mt-6">
-                    <h3 class="font-semibold mb-3">Lịch sử thanh toán</h3>
-                    <div class="overflow-x-auto border rounded">
-                        <table class="min-w-full text-sm">
-                            <thead class="bg-gray-100 text-gray-700">
-                            <tr>
-                                <th class="px-4 py-2 text-left">Ngày</th>
-                                <th class="px-4 py-2 text-right">Số tiền</th>
-                                <th class="px-4 py-2 text-left">Phương thức</th>
-                                <th class="px-4 py-2 text-left">Mã tham chiếu</th>
-                                <th class="px-4 py-2 text-left">Ghi chú</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr th:if="${payments == null or #lists.isEmpty(payments)}">
-                                <td colspan="5" class="px-4 py-3 text-center text-gray-500">Chưa có thanh toán</td>
-                            </tr>
-                            <tr th:each="p : ${payments}" class="border-t">
-                                <!-- ✅ HIỂN THỊ NGÀY + GIỜ: ưu tiên createdAt; fallback paymentDate -->
-                                <td class="px-4 py-2"
-                                    th:text="${p.createdAt != null ? #temporals.format(p.createdAt, 'dd/MM/yyyy HH:mm') : #temporals.format(p.paymentDate, 'dd/MM/yyyy')}">
-                                </td>
+                        <div class="overflow-x-auto border rounded">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-100 text-gray-700">
+                                <tr>
+                                    <th class="px-4 py-2 text-left">Ngày</th>
+                                    <th class="px-4 py-2 text-right">Số tiền</th>
+                                    <th class="px-4 py-2 text-left">Trạng thái</th>
+                                    <th class="px-4 py-2 text-left">Mã lệnh</th>
+                                    <th class="px-4 py-2 text-left">Thao tác</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <!-- Chỉ hiện các bản ghi PAYOS_QR và KHÔNG phải CANCELED -->
+                                <tr th:each="p : ${payments}"
+                                    th:if="${p.method != null and p.method.name() == 'PAYOS_QR' and p.status != null and p.status.name() == 'PENDING'}"
+                                    class="border-t align-top">
+                                    <!-- Ngày/giờ -->
+                                    <td class="px-4 py-2"
+                                        th:text="${p.createdAt != null ? #temporals.format(p.createdAt, 'dd/MM/yyyy HH:mm') : #temporals.format(p.paymentDate, 'dd/MM/yyyy')}">
+                                    </td>
 
-                                <td class="px-4 py-2 text-right"
-                                    th:text="${#numbers.formatDecimal(p.amount,0,'COMMA',0,'POINT')}"></td>
-                                <td class="px-4 py-2" th:text="${p.method}"></td>
-                                <td class="px-4 py-2" th:text="${p.referenceNo}"></td>
-                                <td class="px-4 py-2" th:text="${p.note}"></td>
-                            </tr>
-                            </tbody>
-                        </table>
+                                    <!-- Số tiền -->
+                                    <td class="px-4 py-2 text-right"
+                                        th:text="${#numbers.formatDecimal(p.amount,0,'COMMA',0,'POINT')}"></td>
+
+                                    <!-- Trạng thái -->
+                                    <td class="px-4 py-2">
+          <span class="px-2 py-1 rounded text-xs font-medium"
+                th:text="${p.status != null ? p.status.label : 'Chờ thanh toán'}"
+                th:classappend="${
+                   (p.status != null and p.status.name() == 'PAID')     ? ' bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                   (p.status != null and p.status.name() == 'FAILED')   ? ' bg-rose-50 text-rose-700 border border-rose-200' :
+                   (p.status != null and p.status.name() == 'EXPIRED')  ? ' bg-gray-100 text-gray-600 border border-gray-200' :
+                                                                            ' bg-amber-50 text-amber-700 border border-amber-200'
+                }">
+          </span>
+                                    </td>
+
+                                    <!-- Mã lệnh -->
+                                    <td class="px-4 py-2 font-mono" th:text="${p.payosOrderCode}"></td>
+
+                                    <!-- Thao tác -->
+                                    <td class="px-4 py-2 whitespace-nowrap w-1">
+                                        <div class="flex flex-row gap-2">
+                                            <a th:if="${p.payosCheckoutUrl != null}"
+                                               th:href="${p.payosCheckoutUrl}" target="_blank"
+                                               class="inline-flex items-center justify-center px-4 py-2 min-w-[120px] rounded bg-emerald-600 text-white hover:bg-emerald-700 text-center">
+                                                <i class="ri-external-link-line mr-1"></i> Thanh toán
+                                            </a>
+
+                                            <!-- Hủy chỉ khi đang PENDING -->
+                                            <form th:if="${p.status == null or p.status.name() == 'PENDING'}"
+                                                  th:action="@{'/admin/debts/' + ${debt.id} + '/payos/cancel'}"
+                                                  method="post"
+                                                  onsubmit="return confirm('Huỷ lệnh thanh toán QR này?');">
+                                                <input type="hidden" th:name="${_csrf.parameterName}"
+                                                       th:value="${_csrf.token}"/>
+                                                <input type="hidden" name="orderCode" th:value="${p.payosOrderCode}"/>
+                                                <button type="submit"
+                                                        class="inline-flex items-center justify-center px-4 py-2 min-w-[120px] rounded bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 text-center">
+                                                    <i class="ri-close-circle-line mr-1"></i> Huỷ
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </section>
-        <!-- ================== /CÔNG NỢ KHÁCH HÀNG ================== -->
+            </section>
+            <!-- ================== /CÔNG NỢ KHÁCH HÀNG ================== -->
+        </div>
     </main>
 </div>
 
 
 <script>
-    // Toggle user menu
-    const btn = document.getElementById("userMenuBtn");
-    const dropdown = document.getElementById("userMenuDropdown");
-    btn?.addEventListener("click", () => dropdown?.classList.toggle("hidden"));
-    document.addEventListener("click", (event) => {
-      if (!event.target.closest("#userMenuWrapper")) dropdown?.classList.add("hidden");
-    });
 
     // NEW: Toggle "required" cho mã tham chiếu theo phương thức
     const methodSelect = document.getElementById('methodSelect');
     const refInput = document.getElementById('referenceInput');
 
+    // === NEW: Các phần tử phục vụ chuyển khoản QR ===
+    const payForm = document.getElementById('payForm');
+    const amountInput = payForm?.querySelector('input[name="amount"]');
+    const paySubmitBtn = document.getElementById('paySubmitBtn'); // nút submit thường
+    const payQrBtn = document.getElementById('payQrBtn');         // nút Thanh toán QR
+    const meta = document.getElementById('debtMeta');             // thẻ data-create-url / csrf / remaining
+
     function applyRefRequirement() {
-        const val = methodSelect?.value || 'CASH';
-        if (val === 'BANK_TRANSFER') {
-            refInput?.setAttribute('required', 'required');
-            refInput?.setAttribute('placeholder', 'Số UNC / mã giao dịch (bắt buộc)');
+        const val = (methodSelect?.value || 'CASH').toString().trim().toUpperCase();
+        if (val !== 'CASH') {
+            // Với luồng QR: KHÔNG bắt buộc mã tham chiếu trước khi thanh toán
+            refInput?.removeAttribute('required');
+            refInput?.setAttribute('placeholder', 'Số UNC / mã giao dịch (tùy chọn)');
         } else {
             refInput?.removeAttribute('required');
             refInput?.setAttribute('placeholder', 'Số CT/UNC (tùy chọn)');
         }
     }
-    methodSelect?.addEventListener('change', applyRefRequirement);
-    applyRefRequirement(); // init
+
+    // === NEW: Ẩn/hiện nút theo phương thức & số tiền ===
+    function toggleButtons() {
+        const method = (methodSelect?.value || 'CASH').toString().trim().toUpperCase();
+        const amount = Number((amountInput?.value || '0').toString().trim());
+        console.debug('[pay-ui] method=', method, 'amount=', amount);
+
+        if (method !== 'CASH') {
+            // Ẩn nút thanh toán thường, luôn hiện QR khi chọn "Chuyển khoản" (dù value có là BANK_TRANSFER/TRANSFER/…)
+            paySubmitBtn?.classList.add('hidden');
+            payQrBtn?.classList.remove('hidden');
+
+            // Khoá nút QR khi chưa nhập amount > 0
+            if (amount > 0) {
+                payQrBtn?.removeAttribute('disabled');
+                payQrBtn?.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                payQrBtn?.setAttribute('disabled', 'disabled');
+                payQrBtn?.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        } else {
+            // Tiền mặt: chỉ hiện nút thanh toán thường
+            paySubmitBtn?.classList.remove('hidden');
+            payQrBtn?.classList.add('hidden');
+            payQrBtn?.removeAttribute('disabled');
+            payQrBtn?.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+    // Gắn listeners sau khi DOM sẵn sàng để tránh null
+    document.addEventListener('DOMContentLoaded', () => {
+        methodSelect?.addEventListener('change', () => {
+            applyRefRequirement();
+            toggleButtons();
+        });
+        amountInput?.addEventListener('input', toggleButtons);
+        applyRefRequirement();
+        toggleButtons(); // init chắc chắn
+    });
+
+    // === NEW: Xử lý click "Thanh toán QR" -> POST amount + CSRF tới /admin/debts/{id}/payos/create
+    payQrBtn?.addEventListener('click', () => {
+        const createUrl = meta?.dataset.createUrl;
+        const remaining = Number(meta?.dataset.remaining || 0);
+        const csrfName = meta?.dataset.csrfName;
+        const csrfValue = meta?.dataset.csrfValue;
+        const amount = Number(amountInput?.value || 0);
+
+        if (!createUrl) return;
+        if (!amount || amount <= 0) {
+            alert('Vui lòng nhập số tiền hợp lệ.');
+            return;
+        }
+        if (remaining > 0 && amount > remaining) {
+            const goOn = confirm('Số tiền vượt quá phần còn lại. Tiếp tục? Hệ thống sẽ tự giới hạn.');
+            if (!goOn) return;
+        }
+
+        // Tạo form POST tạm để submit
+        const f = document.createElement('form');
+        f.method = 'POST';
+        f.action = createUrl;
+
+        const inputAmount = document.createElement('input');
+        inputAmount.type = 'hidden';
+        inputAmount.name = 'amount';
+        inputAmount.value = String(Math.floor(amount));
+        f.appendChild(inputAmount);
+
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = csrfName;
+        csrf.value = csrfValue;
+        f.appendChild(csrf);
+
+        document.body.appendChild(f);
+        f.submit();
+    });
 </script>
 </body>
 </html>

@@ -9,7 +9,7 @@
     <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
         <div th:replace="~{fragments/header :: header}"></div>
 
-        <div class="max-w-4xl mx-auto px-6 py-6 bg-white rounded shadow">
+        <div class="max-w-4xl mx-auto mt-6 px-6 py-6 bg-white rounded shadow">
 
             <form th:action="@{|/combos/${comboId}/edit|}" th:object="${comboForm}" method="post">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
@@ -45,7 +45,7 @@
                         <input id="addInputQty" type="number" min="1" max="999" value="1" inputmode="numeric"
                                class="border rounded px-3 py-2 w-28"/>
                         <button type="button" onclick="addSelectedProduct()"
-                                class="bg-gray-700 text-white px-3 py-2 rounded">Thêm
+                                class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded">Thêm
                         </button>
                     </div>
 
@@ -79,8 +79,8 @@
                 </div>
 
                 <div class="flex justify-end gap-2 mt-6">
-                    <a th:href="@{/combos}" class="bg-gray-500 text-white px-4 py-2 rounded">Hủy</a>
-                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Lưu</button>
+                    <a th:href="@{/combos}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">Hủy</a>
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Lưu</button>
                 </div>
             </form>
         </div>

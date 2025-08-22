@@ -4,51 +4,55 @@
 <head th:replace="~{fragments/common-head :: commonHead('Chi tiết combo')}"></head>
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
-  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
     <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
-    <div th:replace="~{fragments/header :: header}"></div>
+        <div th:replace="~{fragments/header :: header}"></div>
 
-    <div class="max-w-4xl mx-auto px-6 py-6 bg-white rounded shadow">
-      <div class="flex justify-between items-center mb-4">
-        <h1 class="text-xl font-semibold">Chi tiết combo</h1>
-        <div class="flex items-center gap-3">
-          <a th:href="@{/combos}" class="text-sm text-blue-600 hover:underline">← Quay lại danh sách</a>
+        <div class="max-w-4xl mx-auto px-6 py-6 bg-white rounded shadow mt-6">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-xl font-semibold">Chi tiết combo</h1>
+                <div class="flex items-center gap-3">
+                    <a th:href="@{/combos}" class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 bg-gray-100 hover:bg-gray-200">
+                        <i class="ri-arrow-left-line text-base"></i>
+                        <span>Quay lại danh sách</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div><strong>Code:</strong> <span th:text="${combo.code}"></span></div>
+                <div><strong>Tên:</strong> <span th:text="${combo.name}"></span></div>
+                <div>
+                    <strong>Trạng thái:</strong>
+                    <span th:text="${combo.status.name()=='ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động'}"></span>
+                </div>
+                <div class="col-span-2"><strong>Mô tả:</strong> <span th:text="${combo.description} ?: '—'"></span></div>
+            </div>
+
+            <div class="mt-6">
+                <h3 class="font-semibold mb-2">Sản phẩm trong combo</h3>
+                <div class="overflow-x-auto border rounded">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-3 py-2 text-left">Sản phẩm</th>
+                            <th class="px-3 py-2 w-24 text-center">Số lượng</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="d : ${combo.details}">
+                            <td class="px-3 py-2 text-left" th:text="${d.productName}"></td>
+                            <td class="px-3 py-2 text-center" th:text="${d.quantity}"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-      </div>
 
-      <div class="grid grid-cols-2 gap-4 text-sm">
-        <div><strong>Code:</strong> <span th:text="${combo.code}"></span></div>
-        <div><strong>Tên:</strong> <span th:text="${combo.name}"></span></div>
-        <div><strong>Trạng thái:</strong>
-          <span th:text="${combo.status.name()=='ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động'}"></span>
-        </div>
-        <div class="col-span-2"><strong>Mô tả:</strong> <span th:text="${combo.description} ?: '—'"></span></div>
-      </div>
-
-      <div class="mt-6">
-        <h3 class="font-semibold mb-2">Sản phẩm trong combo</h3>
-        <div class="overflow-x-auto border rounded">
-          <table class="min-w-full text-sm">
-            <thead class="bg-gray-100">
-            <tr>
-              <th class="px-3 py-2 text-left">Sản phẩm</th>
-              <th class="px-3 py-2 w-24 text-center">Số lượng</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="d : ${combo.details}">
-              <td class="px-3 py-2 text-left" th:text="${d.productName}"></td>
-              <td class="px-3 py-2 text-center" th:text="${d.quantity}"></td>
-            </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="hidden" th:insert="~{fragments/footer :: footer}"></div>
-  </main>
+        <div class="hidden" th:insert="~{fragments/footer :: footer}"></div>
+    </main>
 </div>
 </body>
 </html>

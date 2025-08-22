@@ -13,7 +13,7 @@
 
         <section class="p-6 space-y-4">
             <div class="flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-gray-800">Chi tiết đơn mua hàng</h1>
+                <h1 class="text-2xl font-bold text-gray-800">Chi tiết đơn mua hàng <span th:text="${order.code}"></span></h1>
                 <a th:href="@{/admin/purchase-orders}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
                     Quay lại
                 </a>
@@ -30,7 +30,7 @@
                             <span th:text="${order.supplier != null ? order.supplier.name : ''}">NCC</span>
                         </p>
                         <p><span class="font-semibold">Trạng thái:</span>
-                            <span th:text="${order.status}">TRANG_THAI</span>
+                            <span th:text="${order.status?.label}">TRANG_THAI</span>
                         </p>
                     </div>
                     <div>
