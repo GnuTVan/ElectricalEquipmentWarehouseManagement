@@ -54,7 +54,7 @@ public class PurchaseOrderController {
             @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
             @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "1000") int size,
+            @RequestParam(value = "size", defaultValue = "100") int size,
             Model model) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("code").ascending());

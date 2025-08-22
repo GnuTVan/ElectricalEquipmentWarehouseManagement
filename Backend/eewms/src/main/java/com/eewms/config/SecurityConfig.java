@@ -29,11 +29,11 @@ public class SecurityConfig {
                 // ✅ Bật lại CSRF và dùng Cookie để cấp token ngay cả khi chưa login
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .ignoringRequestMatchers("/api/webhooks/payos")
+                        .ignoringRequestMatchers("/api/webhooks/payos", "/api/webhooks/payos/**")
                 )
                 .authorizeHttpRequests(auth -> auth
                         // ====== Webhook & Public ======
-                        .requestMatchers(HttpMethod.POST, "/api/webhooks/payos").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/webhooks/payos", "/api/webhooks/payos/**").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/payos/return", "/payos/return/",
                                 "/payos/cancel", "/payos/cancel/").permitAll()
@@ -53,6 +53,10 @@ public class SecurityConfig {
                                 "/account/update-profile",
                                 "/api/tax-lookup/**",
                                 "/admin/notifications/**").authenticated()
+
+                        .requestMatchers(HttpMethod.POST, "/admin/debts/*/payos/create")
+                        .hasAnyRole("STAFF","MANAGER","ADMIN")
+
 
                         // ---------------------------------------------------------
                         // 2) STAFF-only WRITE

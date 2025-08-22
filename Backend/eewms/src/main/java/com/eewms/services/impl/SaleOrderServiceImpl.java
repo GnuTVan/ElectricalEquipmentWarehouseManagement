@@ -8,7 +8,6 @@ import com.eewms.dto.SaleOrderResponseDTO;
 import com.eewms.entities.*;
 import com.eewms.exception.InventoryException;
 import com.eewms.repository.*;
-import com.eewms.services.IPayOsService;
 import com.eewms.services.ISaleOrderService;
 import com.eewms.utils.ComboUtils;
 import jakarta.persistence.EntityNotFoundException;
@@ -39,12 +38,6 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
     private final GoodIssueNoteRepository goodIssueRepository;
     private final ComboRepository comboRepository;
     private final SaleOrderComboRepository saleOrderComboRepository;
-
-    // nạp dịch vụ PayOS
-    private final IPayOsService payOsService;
-
-    @Value("${payos.enabled:true}")
-    private boolean payOsEnabled;
 
     @Override
     public String generateNextCode() {
@@ -147,62 +140,15 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         saleOrder.setDetails(detailList);
         saleOrder.setTotalAmount(totalAmount);
 
-        // ===== 4) PayOS (giữ nguyên)
+        // ===== 4) Payment init (KHÔNG dùng PayOS cho SaleOrder) =====
         String paymentNote = String.format("Thanh toan don %s", orderCode);
         saleOrder.setPaymentNote(paymentNote);
-        saleOrder.setPaymentStatus(SaleOrder.PaymentStatus.NONE_PAYMENT); // luôn khởi tạo NONE_PAYMENT
-        log.info("[PayOS][switch] enabled={}", payOsEnabled);
-        String warnPay = null;
-        String qr = null, link = null;
-
-        if (payOsEnabled) {
-            try {
-                // Ép kiểu amount an toàn, phát hiện sai sớm nếu có phần lẻ
-                long amountVnd = totalAmount.longValueExact();
-
-                // Tạo orderCode dạng SỐ dành riêng cho PayOS (6–9 chữ số, hạn chế trùng)
-                long payOrderCode = (System.currentTimeMillis() / 100) % 1_000_000_000L;
-
-                // Log đủ ngữ cảnh trước khi gọi PayOS (ghi số)
-                log.info("[PayOS][pre-call] orderCode={} amount={} desc={}", payOrderCode, amountVnd, paymentNote);
-
-                // Gọi PayOS với mã SỐ
-                var payRes = payOsService.createOrder(String.valueOf(payOrderCode), amountVnd, paymentNote);
-
-                if (payRes != null && payRes.isSuccess()) {
-                    // 1) Mã đơn PayOS
-                    if (payRes.getOrderCode() != null) {
-                        saleOrder.setPayOsOrderCode(String.valueOf(payRes.getOrderCode()));
-                    }
-                    link = (payRes.getCheckoutUrl() != null ? payRes.getCheckoutUrl() : payRes.getPaymentLink());
-                    qr = link;
-                    if (link != null && !link.isBlank()) saleOrder.setPaymentNote(link);
-                    log.info("[PayOS][serviceimpl] success=true orderCode={} link={}", payRes.getOrderCode(), link);
-                } else {
-                    warnPay = (payRes == null)
-                            ? "Không nhận được phản hồi từ PayOS (payRes=null)."
-                            : ("PayOS trả lỗi: code=" + payRes.getCode() + " desc=" + payRes.getDesc());
-                    log.warn("[PayOS][serviceimpl] {}", warnPay);
-                }
-            } catch (ArithmeticException ex) {
-                // Trường hợp totalAmount có phần lẻ/ngoài biên long
-                warnPay = "Số tiền không phù hợp định dạng số nguyên (VND).";
-                log.warn("[PayOS][serviceimpl][amount] {} totalAmount={}", warnPay, totalAmount, ex);
-            } catch (InventoryException ex) {
-                warnPay = ex.getMessage();
-                log.warn("[PayOS][serviceimpl][InventoryException] {}", warnPay);
-            } catch (RuntimeException ex) {
-                warnPay = "Lỗi kết nối PayOS: " + ex.getMessage();
-                log.warn("[PayOS][serviceimpl][RuntimeException] {}", warnPay, ex);
-            }
-        } else {
-            warnPay = "PayOS đang tắt ở môi trường hiện tại.";
-            log.warn("[PayOS][serviceimpl] {}", warnPay);
-        }
+        saleOrder.setPaymentStatus(SaleOrder.PaymentStatus.NONE_PAYMENT);
+        String qr = null, link = null; // giữ biến để mapper cuối hàm, nhưng luôn null
 
         // ===== 5) Lưu Order
         orderRepo.save(saleOrder);
-        log.info("[SaleOrder][save] id={} soCode={} payOsOrderCode={}", saleOrder.getSoId(), saleOrder.getSoCode(), saleOrder.getPayOsOrderCode());
+        log.info("[SaleOrder][save] id={} soCode={}", saleOrder.getSoId(), saleOrder.getSoCode());
 
         // Lưu selections combo vào sale_order_combos
         if (dto.getComboIds() != null && !dto.getComboIds().isEmpty()) {
@@ -220,17 +166,10 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
                 saleOrderComboRepository.save(soc);
             }
         }
-        // Nếu có cảnh báo PayOS thì nối gọn vào description để tra cứu nhanh (không bắt buộc)
-        if (warnPay != null && !warnPay.isBlank()) {
-            String d = Optional.ofNullable(saleOrder.getDescription()).orElse("");
-            d = (d.isBlank() ? "" : (d + " | ")) + "[PAYOS] " + warnPay;
-            saleOrder.setDescription(d); // ✅ giữ nguyên paymentNote = link
-            orderRepo.save(saleOrder);
-        }
 
         SaleOrderResponseDTO resp = SaleOrderMapper.toOrderResponseDTO(saleOrder);
-        resp.setQrCodeUrl(qr);
-        resp.setPaymentLink(link);
+        resp.setQrCodeUrl(null);
+        resp.setPaymentLink(null);
         return resp;
 
     }
@@ -449,38 +388,6 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
             so.setPaymentStatus(status);
             orderRepo.save(so);
         }
-    }
-
-    @Override
-    public void regeneratePayOsOrder(Integer saleOrderId) {
-        SaleOrder so = orderRepo.findById(saleOrderId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
-
-        if (so.getPaymentStatus() == SaleOrder.PaymentStatus.PAID) {
-            throw new IllegalStateException("Đơn đã thanh toán, không thể tạo lại QR");
-        }
-
-        // Sinh orderCode mới dạng số (PayOS yêu cầu numeric)
-        long newOrderCode = Long.parseLong(
-                (System.currentTimeMillis() % 1000000000000L) + "" + (int) (Math.random() * 900 + 100)
-        );
-
-        long amount = so.getTotalAmount() != null ? so.getTotalAmount().longValue() : 0L;
-        String desc = ("SO#" + so.getSoCode()).length() > 25 ? ("SO#" + so.getSoCode()).substring(0, 25) : ("SO#" + so.getSoCode());
-
-        var resp = payOsService.createOrder(String.valueOf(newOrderCode), amount, desc);
-        if (resp == null || !resp.isSuccess()) {
-            throw new IllegalStateException("PayOS không trả về liên kết thanh toán hợp lệ");
-        }
-
-        // Cập nhật đơn: gắn mã PayOS mới, set PENDING, lưu link/QR
-        so.setPayOsOrderCode(String.valueOf(newOrderCode));
-        so.setPaymentStatus(SaleOrder.PaymentStatus.PENDING);
-        String link = resp.getCheckoutUrl() != null ? resp.getCheckoutUrl() : resp.getPaymentLink();
-        if (link != null) {
-            so.setPaymentNote(link);
-        }
-        orderRepo.save(so);
     }
 
     /* ========================== NEW: deleteIfPending ========================== */

@@ -19,7 +19,6 @@ public interface ISaleOrderService {
     List<SaleOrderResponseDTO> searchByKeyword(String keyword);
     SaleOrder getOrderEntityById(Integer id);
     void updatePaymentStatus(Integer orderId, SaleOrder.PaymentStatus status);
-    void regeneratePayOsOrder(Integer saleOrderId);
     List<Long> getComboIdsExpanded(Integer soId);
     void updateOrderItems(Integer orderId, SaleOrderRequestDTO form);
     void deleteIfPending(Integer id);

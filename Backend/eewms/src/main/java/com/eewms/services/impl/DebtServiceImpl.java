@@ -2,7 +2,6 @@ package com.eewms.services.impl;
 
 import com.eewms.entities.Debt;
 import com.eewms.entities.DebtPayment;
-import com.eewms.entities.SaleOrder;
 import com.eewms.entities.WarehouseReceipt;
 import com.eewms.repository.*;
 import com.eewms.repository.warehouseReceipt.WarehouseReceiptItemRepository;
@@ -11,10 +10,15 @@ import com.eewms.services.IDebtService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import com.eewms.services.IPayOsService;
+import com.eewms.dto.payOS.PayOsOrderResponse;
+
+import java.time.LocalDateTime;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 
 import static java.math.BigDecimal.ZERO;
 
@@ -29,6 +33,8 @@ public class DebtServiceImpl implements IDebtService {
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
     private final SaleOrderRepository saleOrderRepository;
     private final GoodIssueNoteRepository goodIssueNoteRepository;
+
+    private final IPayOsService payOsService;
 
     @Override
     @Transactional
@@ -81,7 +87,9 @@ public class DebtServiceImpl implements IDebtService {
         return debt;
     }
 
-    /** ================== NEW: Công nợ cho đơn bán ================== */
+    /**
+     * ================== NEW: Công nợ cho đơn bán ==================
+     */
     @Transactional
     public Debt createDebtForSaleOrder(Long saleOrderId, int termDays) {
         var order = saleOrderRepository.findById(saleOrderId.intValue())
@@ -120,7 +128,10 @@ public class DebtServiceImpl implements IDebtService {
         }
         return debt;
     }
-    /** ============================================================= */
+
+    /**
+     * =============================================================
+     */
 
     @Override
     @Transactional
@@ -134,7 +145,7 @@ public class DebtServiceImpl implements IDebtService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy công nợ: " + debtId));
 
         BigDecimal total = debt.getTotalAmount() == null ? ZERO : debt.getTotalAmount();
-        BigDecimal paid  = debt.getPaidAmount()  == null ? ZERO : debt.getPaidAmount();
+        BigDecimal paid = debt.getPaidAmount() == null ? ZERO : debt.getPaidAmount();
         BigDecimal remaining = total.subtract(paid);
 
         if (remaining.signum() <= 0) {
@@ -206,13 +217,13 @@ public class DebtServiceImpl implements IDebtService {
 
     private Debt recomputeAndSave(Debt debt) {
         BigDecimal total = (debt.getTotalAmount() == null) ? ZERO : debt.getTotalAmount();
-        BigDecimal paid  = (debt.getPaidAmount() == null) ? ZERO : debt.getPaidAmount();
+        BigDecimal paid = (debt.getPaidAmount() == null) ? ZERO : debt.getPaidAmount();
 
         Debt.Status s;
         int cmp = paid.compareTo(total);
         if (paid.signum() == 0) s = Debt.Status.UNPAID;
-        else if (cmp < 0)       s = Debt.Status.PARTIAL;
-        else                    s = Debt.Status.PAID;
+        else if (cmp < 0) s = Debt.Status.PARTIAL;
+        else s = Debt.Status.PAID;
 
         if (s != Debt.Status.PAID && debt.getDueDate() != null && LocalDate.now().isAfter(debt.getDueDate())) {
             s = Debt.Status.OVERDUE;
@@ -221,7 +232,9 @@ public class DebtServiceImpl implements IDebtService {
         return debtRepository.save(debt);
     }
 
-    /** Tính tổng: ưu tiên WR items -> PO items -> PO.totalAmount */
+    /**
+     * Tính tổng: ưu tiên WR items -> PO items -> PO.totalAmount
+     */
     private BigDecimal computeTotal(WarehouseReceipt wr) {
         var wrItems = warehouseReceiptItemRepository.findByWarehouseReceipt(wr);
         if (wrItems != null && !wrItems.isEmpty()) {
@@ -313,4 +326,168 @@ public class DebtServiceImpl implements IDebtService {
         } while (debtPaymentRepository.existsByDebtIdAndReferenceNoIgnoreCase(debtId, candidate));
         return candidate;
     }
+
+    /* ================== NEW: QR for DebtPayment via PayOS ================== */
+    @Transactional
+    public PayOsOrderResponse createDebtPaymentQR(Long debtId,
+                                                  java.math.BigDecimal amount,
+                                                  Long goodIssueNoteId,
+                                                  String createdBy) {
+        if (amount == null || amount.signum() <= 0) {
+            throw new IllegalArgumentException("Số tiền phải > 0");
+        }
+
+        Debt debt = debtRepository.findById(debtId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy công nợ: " + debtId));
+
+        java.math.BigDecimal total = debt.getTotalAmount() == null ? ZERO : debt.getTotalAmount();
+        java.math.BigDecimal paid = debt.getPaidAmount() == null ? ZERO : debt.getPaidAmount();
+        java.math.BigDecimal remaining = total.subtract(paid);
+        if (remaining.signum() <= 0) {
+            throw new IllegalStateException("Công nợ đã thanh toán đủ.");
+        }
+        if (amount.compareTo(remaining) > 0) {
+            throw new IllegalArgumentException("Số tiền vượt quá số còn lại (" + remaining + ").");
+        }
+
+        // 1) Khởi tạo bản ghi DebtPayment ở trạng thái PENDING (chưa cộng vào paidAmount)
+        DebtPayment payment = new DebtPayment();
+        payment.setDebt(debt);
+        payment.setAmount(amount);
+        payment.setMethod(DebtPayment.Method.PAYOS_QR);          // enum của bạn
+        payment.setStatus(DebtPayment.Status.PENDING);           // chờ webhook
+        payment.setPaymentDate(java.time.LocalDate.now());       // ngày tạo yêu cầu
+        payment.setCreatedAt(java.time.LocalDateTime.now());     // nếu entity có
+        payment.setCreatedBy(createdBy);                         // nếu entity có
+        // tham chiếu/ghi chú để null, sẽ điền sau khi có PayOS
+
+        // 2) Mô tả ngắn <= 25 ký tự theo PayOS
+        String base = (goodIssueNoteId != null)
+                ? String.format("[PAYOS] DEBT-%d GIN#%d", debtId, goodIssueNoteId)
+                : String.format("[PAYOS] DEBT-%d", debtId);
+        String desc = (base.length() > 25) ? base.substring(0, 25) : base;
+
+        // 3) Sinh orderCode numeric (unique đủ dùng)
+        long orderCodeNum = (System.currentTimeMillis() / 100) % 1_000_000_000L;
+
+        // 4) Gọi PayOS
+        long amountVnd = amount.longValueExact();
+        com.eewms.dto.payOS.PayOsOrderResponse resp =
+                payOsService.createOrder(String.valueOf(orderCodeNum), amountVnd, desc);
+
+        if (resp == null || !resp.isSuccess()) {
+            String reason = (resp == null) ? "payRes=null"
+                    : ("code=" + resp.getCode() + ", desc=" + resp.getDesc());
+            throw new IllegalStateException("Không tạo được QR PayOS: " + reason);
+        }
+
+        // 5) Lưu thông tin PayOS vào bản ghi payment (không cộng tiền)
+        payment.setPayosOrderCode(String.valueOf(resp.getOrderCode()));
+        payment.setPayosPaymentLinkId(resp.getPaymentLinkId());
+        String checkout = (resp.getCheckoutUrl() != null) ? resp.getCheckoutUrl() : resp.getPaymentLink();
+        payment.setPayosCheckoutUrl(checkout);
+        payment.setPayosQrCode(resp.getQrCode());
+        debtPaymentRepository.save(payment);
+
+        // KHÔNG cập nhật debt.paidAmount ở đây — chờ webhook PAID.
+        org.slf4j.LoggerFactory.getLogger(DebtServiceImpl.class).info(
+                "[Debt][QR][create] debtId={} amount={} orderCode={} link={}",
+                debtId, amount, payment.getPayosOrderCode(), checkout
+        );
+
+        return resp;
+    }
+    /* ====================================================================== */
+
+    /* ================== WEBHOOK/APIs: update PayOS payment ================== */
+    @jakarta.transaction.Transactional
+    @Override
+    public void markPayOsPaymentPaid(String payosOrderCode,
+                                     String referenceNo,
+                                     LocalDate paidDate) {
+        DebtPayment p = debtPaymentRepository.findByPayosOrderCode(payosOrderCode)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy DebtPayment với orderCode=" + payosOrderCode));
+
+        if (p.getMethod() != DebtPayment.Method.PAYOS_QR) {
+            throw new IllegalStateException("Bản ghi không phải thanh toán QR.");
+        }
+
+        // Idempotent
+        if (p.getStatus() == DebtPayment.Status.PAID) {
+            return;
+        }
+        if (p.getStatus() != DebtPayment.Status.PENDING) {
+            throw new IllegalStateException("Chỉ thanh toán được khi trạng thái là PENDING (hiện tại: " + p.getStatus() + ").");
+        }
+
+        // Gắn referenceNo nếu có và chưa trùng trong cùng debt
+        if (referenceNo != null && !referenceNo.isBlank()) {
+            String ref = referenceNo.trim();
+            boolean duplicated = debtPaymentRepository.existsByDebtIdAndReferenceNoIgnoreCase(p.getDebt().getId(), ref);
+            if (!duplicated) {
+                p.setReferenceNo(ref);
+            }
+        }
+
+        // Cập nhật payment
+        p.setStatus(DebtPayment.Status.PAID);
+        p.setPaymentDate(Optional.ofNullable(paidDate).orElse(LocalDate.now()));
+        debtPaymentRepository.save(p);
+
+        // Cộng tiền vào công nợ
+        Debt debt = p.getDebt();
+        BigDecimal paid = Optional.ofNullable(debt.getPaidAmount()).orElse(ZERO);
+        debt.setPaidAmount(paid.add(Optional.ofNullable(p.getAmount()).orElse(ZERO)));
+        recomputeAndSave(debt);
+    }
+
+    @Transactional
+    @Override
+    public void markPayOsPaymentFailed(String payosOrderCode, String reason) {
+        DebtPayment p = debtPaymentRepository.findByPayosOrderCode(payosOrderCode)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy DebtPayment với orderCode=" + payosOrderCode));
+
+        if (p.getMethod() != DebtPayment.Method.PAYOS_QR) {
+            throw new IllegalStateException("Bản ghi không phải thanh toán QR.");
+        }
+        if (p.getStatus() == DebtPayment.Status.PAID) {
+            // Đã ghi nhận tiền rồi thì bỏ qua (idempotent)
+            return;
+        }
+        if (p.getStatus() != DebtPayment.Status.PENDING) {
+            // Nếu đã FAILED/CANCELED/EXPIRED trước đó thì bỏ qua
+            return;
+        }
+
+        p.setStatus(DebtPayment.Status.FAILED);
+        if (reason != null && !reason.isBlank()) {
+            String note = Optional.ofNullable(p.getNote()).orElse("");
+            p.setNote((note.isBlank() ? "" : (note + " | ")) + "[PAYOS] " + reason.trim());
+        }
+        debtPaymentRepository.save(p);
+        // Không thay đổi Debt.paidAmount
+    }
+
+    @Transactional
+    @Override
+    public void cancelPayOsPayment(String payosOrderCode) {
+        DebtPayment p = debtPaymentRepository.findByPayosOrderCode(payosOrderCode)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy DebtPayment với orderCode=" + payosOrderCode));
+
+        if (p.getMethod() != DebtPayment.Method.PAYOS_QR) {
+            throw new IllegalStateException("Bản ghi không phải thanh toán QR.");
+        }
+        if (p.getStatus() == DebtPayment.Status.PAID) {
+            throw new IllegalStateException("Giao dịch đã PAID, không thể hủy.");
+        }
+        if (p.getStatus() != DebtPayment.Status.PENDING) {
+            // Đã FAILED/CANCELED/EXPIRED thì không làm gì thêm
+            return;
+        }
+
+        p.setStatus(DebtPayment.Status.CANCELED);
+        debtPaymentRepository.save(p);
+        // Không thay đổi Debt.paidAmount
+    }
+    /* ======================================================================= */
 }

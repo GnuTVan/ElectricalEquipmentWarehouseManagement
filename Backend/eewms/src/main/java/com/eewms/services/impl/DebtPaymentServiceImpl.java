@@ -27,4 +27,11 @@ public class DebtPaymentServiceImpl {
     public List<DebtPayment> getPaymentsByDebt(Debt debt) {
         return debtPaymentRepository.findByDebt(debt);
     }
+
+    public com.eewms.dto.payOS.PayOsOrderResponse createPaymentQR(Long debtId,
+                                                                  BigDecimal amount,
+                                                                  Long goodIssueNoteId,
+                                                                  String createdBy) {
+        return debtService.createDebtPaymentQR(debtId, amount, goodIssueNoteId, createdBy);
+    }
 }

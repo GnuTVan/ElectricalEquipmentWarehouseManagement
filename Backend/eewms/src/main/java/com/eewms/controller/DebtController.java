@@ -204,4 +204,93 @@ public class DebtController {
         return "redirect:/admin/debts";
     }
     /* =========================================================================== */
+
+    /* ================== Tạo QR PayOS cho công nợ (GIN) ====================
+   - Cho phép nhập số tiền (amount) <= còn lại -> tạo order PayOS
+   - Chỉ áp dụng với công nợ KH từ Phiếu Xuất (GOOD_ISSUE)
+   - Quay lại trang chi tiết GIN sau khi tạo
+*/
+    @PostMapping("/{debtId}/payos/create")
+    public String createPayOsForDebt(@PathVariable Long debtId,
+                                     @RequestParam("amount") BigDecimal amount,
+                                     RedirectAttributes ra) {
+
+        Debt d = debtRepository.findById(debtId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy công nợ: " + debtId));
+
+        // Chỉ hỗ trợ công nợ khách hàng từ Phiếu Xuất
+        if (d.getPartyType() != Debt.PartyType.CUSTOMER || d.getDocumentType() != Debt.DocumentType.GOOD_ISSUE) {
+            ra.addFlashAttribute("message", "Chỉ hỗ trợ PayOS cho công nợ KH từ Phiếu xuất.");
+            ra.addFlashAttribute("messageType", "warning");
+            return "redirect:/admin/debts/view/" + debtId;
+        }
+
+        BigDecimal total = d.getTotalAmount() == null ? BigDecimal.ZERO : d.getTotalAmount();
+        BigDecimal paid = d.getPaidAmount() == null ? BigDecimal.ZERO : d.getPaidAmount();
+        BigDecimal remaining = total.subtract(paid);
+
+        if (remaining.compareTo(BigDecimal.ONE) < 0) {
+            ra.addFlashAttribute("message", "Công nợ đã thanh toán đủ hoặc còn lại quá nhỏ.");
+            ra.addFlashAttribute("messageType", "info");
+            return "redirect:/good-issue/view/" + d.getDocumentId();
+        }
+
+        // Validate amount người dùng nhập
+        if (amount == null || amount.signum() <= 0) {
+            ra.addFlashAttribute("message", "Số tiền thanh toán phải > 0.");
+            ra.addFlashAttribute("messageType", "warning");
+            return "redirect:/good-issue/view/" + d.getDocumentId();
+        }
+        if (amount.compareTo(remaining) > 0) {
+            ra.addFlashAttribute("message", "Số tiền vượt quá phần còn lại (" + remaining.longValue() + ").");
+            ra.addFlashAttribute("messageType", "warning");
+            return "redirect:/good-issue/view/" + d.getDocumentId();
+        }
+
+        try {
+            // goodIssueNoteId = d.getDocumentId() (vì đây là công nợ từ GIN)
+            var res = debtService.createDebtPaymentQR(d.getId(), amount, d.getDocumentId(), "SYSTEM");
+            String link = (res.getCheckoutUrl() != null) ? res.getCheckoutUrl() : res.getPaymentLink();
+
+            ra.addFlashAttribute("paymentLink", link);
+            ra.addFlashAttribute("payOsOrderCode", String.valueOf(res.getOrderCode()));
+            ra.addFlashAttribute("message", "Đã tạo lệnh thanh toán PayOS " + amount.longValue() + "đ. Vui lòng quét QR.");
+            ra.addFlashAttribute("messageType", "success");
+        } catch (IllegalStateException | IllegalArgumentException ex) {
+            ra.addFlashAttribute("message", ex.getMessage());
+            ra.addFlashAttribute("messageType", "warning");
+        } catch (Exception ex) {
+            ra.addFlashAttribute("message", "Lỗi tạo PayOS: " + ex.getMessage());
+            ra.addFlashAttribute("messageType", "danger");
+        }
+
+        return "redirect:/good-issue/view/" + d.getDocumentId();
+    }
+    /* ===================================================================== */
+
+    /* ================== Hủy QR PayOS đang PENDING ==================== */
+    @PostMapping("/{debtId}/payos/cancel")
+    public String cancelPayOsForDebt(@PathVariable Long debtId,
+                                     @RequestParam("orderCode") String payosOrderCode,
+                                     RedirectAttributes ra) {
+        try {
+            debtService.cancelPayOsPayment(payosOrderCode);
+            ra.addFlashAttribute("message", "Đã hủy lệnh thanh toán QR.");
+            ra.addFlashAttribute("messageType", "info");
+        } catch (IllegalStateException | IllegalArgumentException ex) {
+            ra.addFlashAttribute("message", ex.getMessage());
+            ra.addFlashAttribute("messageType", "warning");
+        } catch (Exception ex) {
+            ra.addFlashAttribute("message", "Có lỗi khi hủy QR.");
+            ra.addFlashAttribute("messageType", "danger");
+        }
+
+        // Quay lại GIN nếu là công nợ từ GIN, nếu không thì về trang debt
+        var d = debtRepository.findById(debtId).orElse(null);
+        if (d != null && d.getDocumentType() == Debt.DocumentType.GOOD_ISSUE) {
+            return "redirect:/good-issue/view/" + d.getDocumentId();
+        }
+        return "redirect:/admin/debts/view/" + debtId;
+    }
+    /* ================================================================ */
 }

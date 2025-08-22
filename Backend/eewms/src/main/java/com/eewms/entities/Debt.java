@@ -21,6 +21,7 @@ import java.time.LocalDate;
 @Builder
 public class Debt {
 
+    @Getter
     public enum Status {
         UNPAID("Chưa thanh toán"),
         PARTIAL("Thanh toán một phần"),
@@ -33,9 +34,6 @@ public class Debt {
             this.label = label;
         }
 
-        public String getLabel() {
-            return label;
-        }
     }
 
 

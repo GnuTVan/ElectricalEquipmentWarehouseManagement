@@ -1,8 +1,6 @@
 package com.eewms.controller;
 
-import com.eewms.entities.SaleOrder;
-import com.eewms.entities.SaleOrder.PaymentStatus;
-import com.eewms.repository.SaleOrderRepository;
+import com.eewms.services.IDebtService;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.RequiredArgsConstructor;
@@ -12,9 +10,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.google.gson.JsonElement;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
-import org.springframework.web.servlet.view.RedirectView;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -23,7 +23,14 @@ public class PayOsWebhookController {
     @Value("${payos.webhookSecret}")
     private String webhookSecret;
 
-    private final SaleOrderRepository saleOrderRepository;
+    private final IDebtService debtService;
+
+    @GetMapping(path = {"/api/webhooks/payos", "/api/webhooks/payos/"})
+    public ResponseEntity<String> health() {
+        log.info("[PayOS] Webhook GET check -> ok (no update)");
+        return ResponseEntity.ok("ok");
+    }
+
 
     @PostMapping(path = {"/api/webhooks/payos", "/api/webhooks/payos/"})
     public ResponseEntity<String> handle(
@@ -46,185 +53,118 @@ public class PayOsWebhookController {
                     ? root.getAsJsonObject("data")
                     : root;
 
-            // 2) Lấy chữ ký: ưu tiên header chuẩn, sau đó header thay thế, cuối cùng (tuỳ chọn) fallback body
+            // 2) Lấy chữ ký: CHỈ nhận từ header chuẩn (x-payos-signature hoặc x-signature)
             String usedSig = (sigPayos != null && !sigPayos.isBlank()) ? sigPayos.trim()
                     : (sigAlt != null && !sigAlt.isBlank()) ? sigAlt.trim()
                     : null;
 
-            if (usedSig == null) {
+            // Fallback: nếu header không có, thử lấy "signature" trong body (PayOS có thể gửi như vậy)
+            if ((usedSig == null || usedSig.isBlank())) {
+                String sigInBody = null;
                 if (root.has("signature") && !root.get("signature").isJsonNull()) {
-                    usedSig = root.get("signature").getAsString();
-                    log.warn("[PayOS] Header missing. Using body.signature (dev/test only)");
+                    sigInBody = root.get("signature").getAsString();
                 } else if (data.has("signature") && !data.get("signature").isJsonNull()) {
-                    usedSig = data.get("signature").getAsString();
-                    log.warn("[PayOS] Header missing. Using data.signature (dev/test only)");
+                    sigInBody = data.get("signature").getAsString();
+                }
+                if (sigInBody != null && !sigInBody.isBlank()) {
+                    usedSig = sigInBody.trim();
+                    log.info("[PayOS] Using signature from body field (no signature header)");
                 }
             }
 
-            // 3) Verify HMAC trên RAW BODY
+            // 3) Verify signature (PayOS chuẩn: HMAC_SHA256 trên canonical key=value của data; fallback JSON)
             boolean verified = false;
+
             if (usedSig != null && !usedSig.isBlank()) {
-                String computedSig = HmacUtils.hmacSha256Hex(webhookSecret, rawBody);
-                verified = computedSig.equalsIgnoreCase(usedSig);
+                // Build canonical string: sort keys alphabetically, join as key=value&key2=value2...
+                Map<String, String> kv = new TreeMap<>();
+                for (Map.Entry<String, JsonElement> e : data.entrySet()) {
+                    JsonElement v = e.getValue();
+                    if (v == null || v.isJsonNull()) continue; // bỏ field null
+                    String val = v.isJsonPrimitive() ? v.getAsString() : v.toString(); // không URL-encode
+                    kv.put(e.getKey(), val);
+                }
+                String canonical = kv.entrySet().stream()
+                        .map(en -> en.getKey() + "=" + en.getValue())
+                        .collect(Collectors.joining("&"));
+
+                String expectedKvp = HmacUtils.hmacSha256Hex(webhookSecret, canonical);
+
+                // Fallback theo biến thể JSON (một số môi trường tài liệu cũ)
+                String dataJson = data.toString(); // JSON minified ổn định
+                String expectedJson = HmacUtils.hmacSha256Hex(webhookSecret, dataJson);
+
+                verified = usedSig.equalsIgnoreCase(expectedKvp) || usedSig.equalsIgnoreCase(expectedJson);
+
                 if (!verified) {
-                    log.warn("[PayOS] Invalid signature. expected={}, got={}", computedSig, usedSig);
+                    log.warn("[PayOS] Invalid signature.");
+                    log.warn("[PayOS] expected(HMAC[data-kvp])={}, canonical='{}'", expectedKvp, canonical);
+                    log.warn("[PayOS] expected(HMAC[data-json])={}, dataJson={}", expectedJson, dataJson);
+                    log.warn("[PayOS] got={}", usedSig);
                 }
             } else {
-                log.warn("[PayOS] No signature provided (header/body) -> will not update DB");
+                log.warn("[PayOS] No signature header/body -> will not update DB");
             }
 
-            // 4) Lấy orderCode/status
+            // 4) Rút gọn: lấy orderCode/status/txnId/code từ body
             String orderCode = (data.has("orderCode") && !data.get("orderCode").isJsonNull())
-                    ? data.get("orderCode").getAsString()
-                    : null;
-
+                    ? data.get("orderCode").getAsString() : null;
             String status = (data.has("status") && !data.get("status").isJsonNull())
-                    ? data.get("status").getAsString()
-                    : null;
+                    ? data.get("status").getAsString() : null;
+            String code = (data.has("code") && !data.get("code").isJsonNull())
+                    ? data.get("code").getAsString() : null;
+
+            // transaction id (nếu PayOS gửi) – dùng làm referenceNo
+            String txnId = null;
+            if (root.has("id") && !root.get("id").isJsonNull()) {
+                txnId = root.get("id").getAsString();
+            } else if (data.has("id") && !data.get("id").isJsonNull()) {
+                txnId = data.get("id").getAsString();
+            }
+            //Fallback: nhiều webhook PayOS trả "reference" thay vì "id"
+            if ((txnId == null || txnId.isBlank()) && data.has("reference") && !data.get("reference").isJsonNull()) {
+                txnId = data.get("reference").getAsString();
+            }
 
             // 5) Nếu chưa verify -> trả 200 nhưng bỏ qua cập nhật
             if (!verified) {
                 return ResponseEntity.ok("ignored-unverified");
             }
-
-            if (orderCode == null || status == null) {
-                log.info("[PayOS] Verified but missing orderCode/status -> skip");
+            if (orderCode == null) {
+                log.info("[PayOS] Verified but missing orderCode -> skip");
                 return ResponseEntity.ok("ok");
             }
 
-            // 6) Cập nhật đơn hàng (idempotent)
-            var saleOrderOpt = saleOrderRepository.findByPayOsOrderCode(orderCode);
-            if (saleOrderOpt.isEmpty()) {
-                log.warn("[PayOS] SaleOrder with PayOS orderCode {} not found", orderCode);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("order-not-found");
-            }
+            // 6) Cập nhật theo trạng thái (chỉ dựa vào orderCode đã lưu trong DebtPayment)
+            try {
+                boolean paidVariantA = "PAID".equalsIgnoreCase(status);
+                boolean paidVariantB = (status == null || status.isBlank()) && "00".equals(code);
 
-            SaleOrder order = saleOrderOpt.get();
-            PaymentStatus newStatus = mapPayOsStatus(status);
-// === Anti-downgrade (THÊM NGAY DƯỚI ĐÂY) ===
-            PaymentStatus current = order.getPaymentStatus();
-            if (current == PaymentStatus.PAID && newStatus != PaymentStatus.PAID) {
-                log.info("[PayOS] Skip downgrade from {} to {} (orderCode={})", current, newStatus, orderCode);
-                return ResponseEntity.ok("skip-downgrade");
-            }
-// Tuỳ chọn: tránh FAILED -> PENDING khi webhook cũ tới muộn
-            if (current == PaymentStatus.FAILED && newStatus == PaymentStatus.PENDING) {
-                log.info("[PayOS] Skip downgrade from FAILED to PENDING (orderCode={})", orderCode);
-                return ResponseEntity.ok("skip-downgrade");
-            }
+                if (paidVariantA || paidVariantB) {
+                    debtService.markPayOsPaymentPaid(orderCode, txnId, null); // paidDate = today
+                    log.info("[PayOS] DebtPayment orderCode={} -> PAID (txnId={}, via={})",
+                            orderCode, txnId, paidVariantA ? "status" : "code");
+                    return ResponseEntity.ok("ok-paid");
+                }
 
-            if (order.getPaymentStatus() == newStatus) {
-                log.info("[PayOS] Order {} already {}", orderCode, newStatus);
-                return ResponseEntity.ok("already-processed");
+                if ("FAILED".equalsIgnoreCase(status)
+                        || "CANCELLED".equalsIgnoreCase(status)
+                        || "EXPIRED".equalsIgnoreCase(status)) {
+                    debtService.markPayOsPaymentFailed(orderCode, status.toUpperCase());
+                    log.info("[PayOS] DebtPayment orderCode={} -> {}", orderCode, status.toUpperCase());
+                    return ResponseEntity.ok("ok-" + status.toLowerCase());
+                }
+
+                // các trạng thái khác (PENDING, PROCESSING, …) bỏ qua
+                log.info("[PayOS] orderCode={} status={} -> ignored", orderCode, status);
+                return ResponseEntity.ok("ignored-status");
+            } catch (IllegalArgumentException | IllegalStateException ex) {
+                log.warn("[PayOS] update error: {}", ex.getMessage());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("bad-request");
             }
-
-            order.setPaymentStatus(newStatus);
-            saleOrderRepository.save(order);
-
-            log.info("[PayOS] Order {} -> {}", orderCode, newStatus);
-            return ResponseEntity.ok("ok");
         } catch (Exception ex) {
             log.error("[PayOS] Error handling webhook", ex);
             return ResponseEntity.internalServerError().body("error");
         }
     }
-
-    private PaymentStatus mapPayOsStatus(String status) {
-        if ("PAID".equalsIgnoreCase(status) || "SUCCESS".equalsIgnoreCase(status)) {
-            return PaymentStatus.PAID;
-        }
-        if ("FAILED".equalsIgnoreCase(status) || "CANCELLED".equalsIgnoreCase(status)) {
-            return PaymentStatus.FAILED;
-        }
-        return PaymentStatus.PENDING;
-    }
-
-    @GetMapping({"/payos/return", "/payos/return/"})
-    public RedirectView handleReturn(@RequestParam(required = false) String code,
-                                     @RequestParam(required = false) String id,
-                                     @RequestParam(required = false, defaultValue = "false") boolean cancel,
-                                     @RequestParam(required = false) String status,
-                                     @RequestParam(required = false, name = "orderCode") String orderCode,
-                                     RedirectAttributes ra) {
-        log.info("[PayOS] RETURN code={}, id={}, cancel={}, status={}, orderCode={}", code, id, cancel, status, orderCode);
-
-        if (orderCode == null) {
-            ra.addFlashAttribute("message", "Không có mã orderCode từ PayOS."+ orderCode + " / " + code);
-            ra.addFlashAttribute("messageType", "warning");
-
-            return new RedirectView("/sale-orders");
-        }
-
-        var soOpt = saleOrderRepository.findByPayOsOrderCode(orderCode);
-        if (soOpt.isEmpty()) {
-            ra.addFlashAttribute("error", "Không tìm thấy đơn với orderCode: " + orderCode);
-            return new RedirectView("/sale-orders");
-        }
-
-        var so = soOpt.get();
-        var current = so.getPaymentStatus();
-        PaymentStatus newStatus;
-
-        if (cancel || "CANCELLED".equalsIgnoreCase(status) || "FAILED".equalsIgnoreCase(status)) {
-            newStatus = PaymentStatus.FAILED;
-        } else if ("00".equals(code) && "PAID".equalsIgnoreCase(status)) {
-            newStatus = PaymentStatus.PAID;
-        } else {
-            newStatus = PaymentStatus.PENDING; // chờ webhook nếu chưa xác định
-        }
-
-        if (!(current == PaymentStatus.PAID && newStatus != PaymentStatus.PAID)) {
-            if (newStatus != current) {
-                so.setPaymentStatus(newStatus);
-                saleOrderRepository.save(so);
-                log.info("[PayOS] RETURN set {} -> {} (orderCode={})", current, newStatus, orderCode);
-            }
-        } else {
-            log.info("[PayOS] RETURN skip downgrade {} -> {} (orderCode={})", current, newStatus, orderCode);
-        }
-
-        if (newStatus == PaymentStatus.PAID) {
-            ra.addFlashAttribute("message", "Thanh toán thành công" + (id != null ? " (Mã GD: " + id + ")" : "") + ".");
-            ra.addFlashAttribute("messageType", "success");
-        } else if (newStatus == PaymentStatus.FAILED) {
-            ra.addFlashAttribute("error", "Giao dịch đã bị huỷ/không thành công.");
-        } else {
-            ra.addFlashAttribute("info", "Thanh toán đang được xác nhận. Vui lòng đợi hệ thống cập nhật.");
-        }
-
-        return new RedirectView("/sale-orders/" + so.getSoId() + "/edit");
-    }
-
-    @GetMapping({"/payos/cancel", "/payos/cancel/"})
-    public RedirectView handleCancel(@RequestParam(required = false, name = "orderCode") String orderCode,
-                                     RedirectAttributes ra) {
-        if (orderCode == null || orderCode.isBlank()) {
-            ra.addFlashAttribute("warning", "Huỷ giao dịch – thiếu orderCode.");
-            return new RedirectView("/sale-orders");
-        }
-
-        var soOpt = saleOrderRepository.findByPayOsOrderCode(orderCode);
-        if (soOpt.isEmpty()) {
-            ra.addFlashAttribute("error", "Không tìm thấy đơn với orderCode: " + orderCode);
-            return new RedirectView("/sale-orders");
-        }
-
-        var so = soOpt.get();
-        if (so.getPaymentStatus() != PaymentStatus.PAID) {           // anti-downgrade
-            if (so.getPaymentStatus() != PaymentStatus.UNPAID) {
-                so.setPaymentStatus(PaymentStatus.UNPAID);
-                saleOrderRepository.save(so);
-                log.info("[PayOS] CANCEL -> set UNPAID (orderCode={})", orderCode);
-            } else {
-                log.info("[PayOS] CANCEL -> already UNPAID (orderCode={})", orderCode);
-            }
-        } else {
-            log.info("[PayOS] CANCEL ignored, already PAID (orderCode={})", orderCode);
-        }
-
-        ra.addFlashAttribute("error", "Bạn đã huỷ giao dịch (" + orderCode + ").");
-        return new RedirectView("/sale-orders/" + so.getSoId() + "/edit");
-    }
-
-
 }
