@@ -26,7 +26,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // ✅ Bật lại CSRF và dùng Cookie để cấp token ngay cả khi chưa login
+                // Bật lại CSRF và dùng Cookie để cấp token ngay cả khi chưa login
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .ignoringRequestMatchers("/api/webhooks/payos", "/api/webhooks/payos/**")

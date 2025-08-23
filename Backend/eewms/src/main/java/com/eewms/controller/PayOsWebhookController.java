@@ -8,9 +8,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.HmacUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.google.gson.JsonElement;
+
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -32,33 +36,66 @@ public class PayOsWebhookController {
     }
 
 
-    @PostMapping(path = {"/api/webhooks/payos", "/api/webhooks/payos/"})
     public ResponseEntity<String> handle(
-            @RequestBody String rawBody,
+            @RequestBody(required = false) String rawBody,
             @RequestHeader(name = "x-payos-signature", required = false) String sigPayos,
-            @RequestHeader(name = "x-signature", required = false) String sigAlt
+            @RequestHeader(name = "x-signature", required = false) String sigAlt,
+            @RequestHeader(name = "Content-Type", required = false) String contentType
     ) {
         try {
-            log.info("[PayOS] Webhook RAW: {}", rawBody);
-
             // 0) Guard thiếu secret
             if (webhookSecret == null || webhookSecret.isBlank()) {
                 log.error("[PayOS] Missing webhookSecret. Set PAYOS_WEBHOOK_SECRET or payos.webhookSecret");
                 return ResponseEntity.ok("ignored-misconfigured");
             }
 
+            // Ping/verify: PayOS có thể POST rỗng → trả 200 để pass dashboard
+            if (rawBody == null || rawBody.isBlank()) {
+                log.info("[PayOS] Ping without body -> OK");
+                return ResponseEntity.ok("ok");
+            }
+
+            log.info("[PayOS] Webhook RAW: {}", rawBody);
+
             // 1) Parse JSON (để lấy data.*, orderCode/status)
-            JsonObject root = JsonParser.parseString(rawBody).getAsJsonObject();
+            //    ✅ nếu là form-encoded thì trích 'data' & 'signature' từ body
+            String usedSig = (sigPayos != null && !sigPayos.isBlank()) ? sigPayos.trim()
+                    : (sigAlt != null && !sigAlt.isBlank()) ? sigAlt.trim()
+                    : null;
+
+            String dataJsonString = null;
+            if (contentType != null && contentType.toLowerCase().contains("application/x-www-form-urlencoded")) {
+                // body dạng: data=<urlEncodedJson>&signature=<hex>
+                Map<String, String> form = java.util.Arrays.stream(rawBody.split("&"))
+                        .map(kv -> kv.split("=", 2))
+                        .filter(arr -> arr.length == 2)
+                        .collect(Collectors.toMap(
+                                arr -> URLDecoder.decode(arr[0], StandardCharsets.UTF_8),
+                                arr -> URLDecoder.decode(arr[1], StandardCharsets.UTF_8)
+                        ));
+                if (usedSig == null || usedSig.isBlank()) {
+                    String sigInForm = form.get("signature");
+                    if (sigInForm != null && !sigInForm.isBlank()) usedSig = sigInForm.trim();
+                }
+                dataJsonString = form.get("data"); // có thể null
+            }
+
+            JsonObject root;
+            if (dataJsonString != null && !dataJsonString.isBlank()) {
+                // ✅ form-encoded: 'data' là JSON thật
+                root = new JsonObject();
+                root.add("data", JsonParser.parseString(dataJsonString).getAsJsonObject());
+            } else {
+                // JSON full body (như code cũ)
+                root = JsonParser.parseString(rawBody).getAsJsonObject();
+            }
+
             JsonObject data = root.has("data") && root.get("data").isJsonObject()
                     ? root.getAsJsonObject("data")
                     : root;
 
             // 2) Lấy chữ ký: CHỈ nhận từ header chuẩn (x-payos-signature hoặc x-signature)
-            String usedSig = (sigPayos != null && !sigPayos.isBlank()) ? sigPayos.trim()
-                    : (sigAlt != null && !sigAlt.isBlank()) ? sigAlt.trim()
-                    : null;
-
-            // Fallback: nếu header không có, thử lấy "signature" trong body (PayOS có thể gửi như vậy)
+            //    Fallback: nếu header không có, thử lấy "signature" trong body (PayOS có thể gửi như vậy)
             if ((usedSig == null || usedSig.isBlank())) {
                 String sigInBody = null;
                 if (root.has("signature") && !root.get("signature").isJsonNull()) {
@@ -103,7 +140,9 @@ public class PayOsWebhookController {
                     log.warn("[PayOS] got={}", usedSig);
                 }
             } else {
-                log.warn("[PayOS] No signature header/body -> will not update DB");
+                // PayOS verify URL (không gửi chữ ký) → vẫn trả 200 để dashboard pass
+                log.info("[PayOS] No signature header/body -> treat as verify ping");
+                return ResponseEntity.ok("ok");
             }
 
             // 4) Rút gọn: lấy orderCode/status/txnId/code từ body
@@ -164,7 +203,8 @@ public class PayOsWebhookController {
             }
         } catch (Exception ex) {
             log.error("[PayOS] Error handling webhook", ex);
-            return ResponseEntity.internalServerError().body("error");
+            // Trả 200 để PayOS không retry vô hạn (tuỳ policy), hoặc giữ 500 nếu muốn PayOS retry.
+            return ResponseEntity.ok("error");
         }
     }
 }
