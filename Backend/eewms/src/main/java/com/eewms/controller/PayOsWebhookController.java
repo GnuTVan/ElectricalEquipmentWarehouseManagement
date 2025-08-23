@@ -35,7 +35,10 @@ public class PayOsWebhookController {
         return ResponseEntity.ok("ok");
     }
 
-
+    @PostMapping(
+            path = {"/api/webhooks/payos", "/api/webhooks/payos/"},
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_FORM_URLENCODED_VALUE, MediaType.ALL_VALUE}
+    )
     public ResponseEntity<String> handle(
             @RequestBody(required = false) String rawBody,
             @RequestHeader(name = "x-payos-signature", required = false) String sigPayos,
