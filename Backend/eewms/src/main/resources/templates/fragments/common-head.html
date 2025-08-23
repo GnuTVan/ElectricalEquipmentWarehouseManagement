@@ -9,7 +9,7 @@
     <meta name="_csrf_header" th:content="${_csrf.headerName}" />
 
     <!-- Tailwind (CDN) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link th:href="@{/assets/css/tailwind.min.css}" rel="stylesheet" />
 
     <!-- Remix Icon (local) -->
     <link th:href="@{/assets/css/remixicon.css}" rel="stylesheet" />
@@ -18,13 +18,13 @@
     <link th:href="@{/assets/css/app.css}" rel="stylesheet" />
 
     <!-- Toastr CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet"/>
+    <link th:href="@{/assets/css/toastr.min.css}" rel="stylesheet" />
 
     <!-- Toastr JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script th:src="@{/assets/js/toastr.min.js}" defer></script>
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
-
+    <!-- Choices.js CSS and JS -->
+    <link th:href="@{/assets/css/choices.min.css}" rel="stylesheet">
+    <script th:src="@{/assets/js/choices.min.js}" defer></script>
 </head>
 </html>
