@@ -1,4 +1,4 @@
-name: CI/CD EEWMS (Windows + OIDC)
+name: CI/CD EEWMS (Linux + OIDC)
 
 on:
   push:
@@ -7,10 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
-    env:
-      MAVEN_OPTS: -Dfile.encoding=UTF-8
-      JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     concurrency:
@@ -39,10 +36,7 @@ jobs:
   deploy:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
-    runs-on: windows-latest
-    env:
-      MAVEN_OPTS: -Dfile.encoding=UTF-8
-      JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
@@ -56,6 +50,9 @@ jobs:
           name: eewms-jar
           path: build
 
+      - name: List downloaded files (debug)
+        run: ls -lah build
+
       - name: Azure login (OIDC)
         uses: azure/login@v2
         with:
@@ -63,11 +60,18 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
+      # Thiết lập App Settings trực tiếp trên Web App (QUAN TRỌNG)
+      - name: Configure App Settings
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          app-settings-json: >
+            [
+              {"name": "SPRING_PROFILES_ACTIVE", "value": "prod", "slotSetting": false}
+            ]
+
+      - name: Deploy to Azure Web App (Linux Java SE 21)
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          package: build\*.jar
-        env:
-          SPRING_PROFILES_ACTIVE: prod
+          package: build/*.jar
