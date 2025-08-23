@@ -199,7 +199,7 @@ public class PayOsWebhookController {
                 return ResponseEntity.ok("ignored-status");
             } catch (IllegalArgumentException | IllegalStateException ex) {
                 log.warn("[PayOS] update error: {}", ex.getMessage());
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("bad-request");
+                return ResponseEntity.ok("ignored-business");
             }
         } catch (Exception ex) {
             log.error("[PayOS] Error handling webhook", ex);

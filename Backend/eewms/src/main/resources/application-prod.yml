@@ -36,6 +36,8 @@ payos:
   apiKey: ${PAYOS_API_KEY}
   webhookSecret: ${PAYOS_WEBHOOK_SECRET}
   base-url: ${PAYOS_BASE_URL:https://api-merchant.payos.vn}
+  return-url: ${PAYOS_RETURN_URL}
+  cancel-url: ${PAYOS_CANCEL_URL}
 
 cloudinary:
   cloud_name: ${CLOUDINARY_CLOUD}
