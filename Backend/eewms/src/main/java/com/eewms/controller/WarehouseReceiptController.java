@@ -110,7 +110,7 @@ public class WarehouseReceiptController {
     }
 
     /* ====== CONFIRM (tạo công nợ) ====== */
-    @PostMapping("/admin/warehouse-receipts/{id}/confirm")
+    @PostMapping("/{id}/confirm")
     public String confirm(@PathVariable Long id,
                           @RequestParam int termDays,
                           RedirectAttributes ra) {
