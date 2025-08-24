@@ -143,14 +143,6 @@
 </div>
 
 <script>
-    // Dropdown user menu toggle
-    const btn = document.getElementById("userMenuBtn");
-    const dropdown = document.getElementById("userMenuDropdown");
-    btn?.addEventListener("click", () => dropdown?.classList.toggle("hidden"));
-    document.addEventListener("click", (event) => {
-      if (!event.target.closest("#userMenuWrapper")) dropdown?.classList.add("hidden");
-    });
-
     // ===== Thanh toán công nợ (modal) =====
     function openPayModal(btn) {
       const id = btn.getAttribute('data-debt-id');
