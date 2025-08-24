@@ -16,10 +16,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -31,10 +33,28 @@ public class ReceiptReportServiceImpl implements IReceiptReportService {
     private final WarehouseReceiptRepository receiptRepo;
     private final WarehouseReceiptItemRepository itemRepo;
 
-    @Override
-    public Page<ReceiptReportRowDTO> findReceiptHeaders(ReceiptReportFilter f, Pageable pageable) {
-        List<WarehouseReceipt> receipts = receiptRepo.findAll();
+    // =========================
+    // Helpers for date range
+    // =========================
+    private static LocalDateTime atStart(LocalDate d) {
+        return d != null ? d.atStartOfDay() : null;
+    }
+    private static LocalDateTime atEnd(LocalDate d) {
+        return d != null ? LocalDateTime.of(d, LocalTime.MAX) : null;
+    }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ReceiptReportRowDTO> findReceiptHeaders(ReceiptReportFilter f, Pageable pageable) {
+        List<WarehouseReceipt> receipts;
+        LocalDateTime fromDt = atStart(f.getFromDate());
+        LocalDateTime toDt   = atEnd(f.getToDate());
+
+        if (fromDt != null && toDt != null) {
+            receipts = receiptRepo.findByCreatedAtBetweenWithPoAndSupplier(fromDt, toDt);
+        } else {
+            receipts = receiptRepo.findAllWithPurchaseOrder();
+        }
         List<WarehouseReceipt> filtered = receipts.stream()
                 .filter(r -> testDate(asLocalDate(r.getCreatedAt()), f.getFromDate(), f.getToDate()))
                 .filter(r -> f.getWarehouseId() == null
@@ -101,8 +121,17 @@ public class ReceiptReportServiceImpl implements IReceiptReportService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ReceiptTotalsDTO totalsForFilter(ReceiptReportFilter f) {
-        List<WarehouseReceipt> receipts = receiptRepo.findAll();
+        List<WarehouseReceipt> receipts;
+        LocalDateTime fromDt = atStart(f.getFromDate());
+        LocalDateTime toDt   = atEnd(f.getToDate());
+
+        if (fromDt != null && toDt != null) {
+            receipts = receiptRepo.findByCreatedAtBetweenWithPoAndSupplier(fromDt, toDt);
+        } else {
+            receipts = receiptRepo.findAllWithPurchaseOrder();
+        }
 
         List<WarehouseReceipt> filtered = receipts.stream()
                 .filter(r -> testDate(asLocalDate(r.getCreatedAt()), f.getFromDate(), f.getToDate()))
@@ -149,7 +178,9 @@ public class ReceiptReportServiceImpl implements IReceiptReportService {
         PurchaseOrder po = r.getPurchaseOrder();
         return po != null ? po.getSupplier() : null;
     }
+
     @Override
+    @Transactional(readOnly = true)
     public List<ReceiptReportRowDTO> findAllForExport(ReceiptReportFilter f) {
         // tái dùng logic của findReceiptHeaders nhưng KHÔNG phân trang
         return findReceiptHeaders(f, org.springframework.data.domain.PageRequest.of(0, Integer.MAX_VALUE))

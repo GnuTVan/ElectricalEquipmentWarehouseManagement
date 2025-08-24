@@ -15,29 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface WarehouseReceiptRepository extends JpaRepository<WarehouseReceipt, Long> {
-    Optional<WarehouseReceipt> findByCode(String code);
     Optional<WarehouseReceipt> findByRequestId(String requestId);
-
-
-    @Query("""
-           select r
-           from WarehouseReceipt r
-           where r.createdAt between :from and :to
-           """)
-    List<WarehouseReceipt> findByCreatedAtBetween(LocalDateTime from, LocalDateTime to);
-
-    // ✅ Tính top NCC theo tổng tiền của PurchaseOrder, lọc theo thời gian của WarehouseReceipt.createdAt
-    @Query("""
-           select po.supplier.id, po.supplier.name, coalesce(sum(po.totalAmount), 0)
-           from WarehouseReceipt r
-           join r.purchaseOrder po
-           where r.createdAt between :from and :to
-           group by po.supplier.id, po.supplier.name
-           order by coalesce(sum(po.totalAmount), 0) desc
-           """)
-    List<Object[]> topSuppliers(LocalDateTime from, LocalDateTime to);
-    Page<WarehouseReceipt> findByCreatedAtIsNotNullOrderByCreatedAtDesc(Pageable p);
-
 
     // LIST (phân trang)
     @EntityGraph(attributePaths = "purchaseOrder")
@@ -60,4 +38,16 @@ public interface WarehouseReceiptRepository extends JpaRepository<WarehouseRecei
     })
     @Query("select wr from WarehouseReceipt wr where wr.id = :id")
     Optional<WarehouseReceipt> findByIdWithView(@Param("id") Long id);
+
+    // --- REPORT: FETCH Graph đầy đủ cho PO + SUPPLIER (dùng cho report) ---
+    @EntityGraph(attributePaths = {
+            "purchaseOrder",
+            "purchaseOrder.supplier"
+    })
+    @Query("""
+           select r
+           from WarehouseReceipt r
+           where r.createdAt between :from and :to
+           """)
+    List<WarehouseReceipt> findByCreatedAtBetweenWithPoAndSupplier(LocalDateTime from, LocalDateTime to);
 }
