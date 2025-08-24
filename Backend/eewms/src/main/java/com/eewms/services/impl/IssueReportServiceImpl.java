@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -25,6 +26,7 @@ public class IssueReportServiceImpl implements IIssueReportService {
 
     private final GoodIssueNoteRepository noteRepo;
 
+    @Transactional(readOnly = true)
     @Override
     public Page<IssueReportRowDTO> findIssueHeaders(IssueReportFilter f, Pageable pageable) {
         List<GoodIssueNote> notes = noteRepo.findAll();
@@ -79,6 +81,7 @@ public class IssueReportServiceImpl implements IIssueReportService {
         return new PageImpl<>(rows.subList(start, end), pageable, rows.size());
     }
 
+    @Transactional(readOnly = true)
     @Override
     public IssueTotalsDTO totalsForFilter(IssueReportFilter f) {
         List<GoodIssueNote> notes = noteRepo.findAll();
