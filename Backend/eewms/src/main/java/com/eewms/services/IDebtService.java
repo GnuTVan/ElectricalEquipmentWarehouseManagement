@@ -3,6 +3,7 @@ package com.eewms.services;
 import com.eewms.dto.payOS.PayOsOrderResponse;
 import com.eewms.entities.Debt;
 import com.eewms.entities.DebtPayment;
+import jakarta.transaction.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -65,4 +66,13 @@ public interface IDebtService {
      * Huỷ thanh toán QR đang PENDING (người dùng bấm huỷ).
      */
     void cancelPayOsPayment(String payosOrderCode);
+
+    BigDecimal adjustCustomerDebtBySaleOrder(Long saleOrderId, BigDecimal adjustmentAmount, String note);
+
+
+    @Transactional
+    BigDecimal adjustCustomerDebtForSaleOrderPreferGIN(Long saleOrderId,
+                                                       BigDecimal adjustmentAmount,
+                                                       String note);
+
 }

@@ -32,6 +32,8 @@ public class WarehouseReceiptServiceImpl implements IWarehouseReceiptService {
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
 
+    private final com.eewms.repository.returning.SalesReturnRepository salesReturnRepository;
+
     /**
      * Tạo GRN cho 1 đợt giao từ PurchaseOrder.
      * - Không yêu cầu kho đích (warehouse có thể null).
@@ -154,4 +156,58 @@ public class WarehouseReceiptServiceImpl implements IWarehouseReceiptService {
     private int toNonNegative(Integer v) {
         return v == null ? 0 : Math.max(0, v);
     }
+
+    @Override
+    @Transactional
+    public WarehouseReceipt createFromSalesReturn(Long salesReturnId, String createdByUsername) {
+        var sr = salesReturnRepository.findById(salesReturnId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu hoàn hàng: " + salesReturnId));
+        if (sr.getItems() == null || sr.getItems().isEmpty()) {
+            throw new IllegalStateException("Phiếu hoàn hàng không có dòng nào.");
+        }
+
+        // Idempotent theo requestId = "SRN-{id}"
+        String requestId = "SRN-" + sr.getId();
+        if (warehouseReceiptRepository.findByRequestId(requestId).isPresent()) {
+            // đã tạo rồi → return lại GRN cũ
+            return warehouseReceiptRepository.findByRequestId(requestId).get();
+        }
+
+        WarehouseReceipt receipt = WarehouseReceipt.builder()
+                .code(generateCode())
+                .purchaseOrder(null)
+                .warehouse(null) // chưa chọn kho đích → giữ null như hiện tại
+                .note("Nhập từ hoàn hàng " + sr.getCode())
+                .createdAt(LocalDateTime.now())
+                .createdBy(createdByUsername)
+                .requestId(requestId)
+                .build();
+        warehouseReceiptRepository.save(receipt);
+
+        // Lưu item + cộng tồn (condition=RETURNED)
+        for (var line : sr.getItems()) {
+            var product = productRepository.findById(line.getProduct().getId())
+                    .orElseThrow(() -> new InventoryException("Không tìm thấy sản phẩm id=" + line.getProduct().getId()));
+
+            int qty = Math.max(0, line.getQuantity());
+            if (qty <= 0) continue;
+
+            var gri = WarehouseReceiptItem.builder()
+                    .warehouseReceipt(receipt)
+                    .product(product)
+                    .quantity(qty)
+                    .actualQuantity(qty)
+                    .price(line.getUnitPrice() == null ? java.math.BigDecimal.ZERO : line.getUnitPrice())
+                    .condition(com.eewms.constant.ProductCondition.RETURNED)
+                    .build();
+            warehouseReceiptItemRepository.save(gri);
+
+            // cộng tồn tổng
+            product.setQuantity((product.getQuantity() == null ? 0 : product.getQuantity()) + qty);
+            productRepository.save(product);
+        }
+
+        return receipt;
+    }
+
 }

@@ -13,8 +13,6 @@ import org.springframework.stereotype.Service;
 import com.eewms.services.IPayOsService;
 import com.eewms.dto.payOS.PayOsOrderResponse;
 
-import java.time.LocalDateTime;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -41,6 +39,12 @@ public class DebtServiceImpl implements IDebtService {
     public Debt createDebtForReceipt(Long warehouseReceiptId, int termDays) {
         var wr = warehouseReceiptRepository.findById(warehouseReceiptId)
                 .orElseThrow(() -> new IllegalArgumentException("WarehouseReceipt not found: " + warehouseReceiptId));
+
+        // Guard: GRN từ hoàn hàng -> không tạo công nợ
+        if (wr.getRequestId() != null && wr.getRequestId().startsWith("SR-RECV-")) {
+            throw new IllegalStateException("Phiếu nhập hàng hoàn – không tạo công nợ.");
+        }
+
 
         // 1) Tổng tiền
         BigDecimal total = computeTotal(wr);
@@ -95,33 +99,38 @@ public class DebtServiceImpl implements IDebtService {
         var order = saleOrderRepository.findById(saleOrderId.intValue())
                 .orElseThrow(() -> new IllegalArgumentException("SaleOrder not found: " + saleOrderId));
 
-        // Tổng tiền từ đơn bán
-        BigDecimal total = (order.getTotalAmount() != null) ? order.getTotalAmount() : ZERO;
+        Long soId = (order.getSoId() != null) ? order.getSoId().longValue() : order.getId();
 
-        // Check duplicate
-        var existed = debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.SALES_INVOICE, order.getId());
-        if (existed.isPresent()) return existed.get();
+        // 1) Tìm theo khóa mới (soId)
+        var existedBySoId = debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.SALES_INVOICE, soId);
+        if (existedBySoId.isPresent()) return existedBySoId.get();
 
-        LocalDate invoiceDate = (order.getOrderDate() != null) ? order.getOrderDate().toLocalDate() : LocalDate.now();
-        LocalDate dueDate = invoiceDate.plusDays(Math.max(0, termDays));
+        // 2) Fallback: tìm bản ghi cũ (document_id = order.id), nếu có thì migrate sang soId
+        var existedByOrderId = debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.SALES_INVOICE, order.getId());
+        if (existedByOrderId.isPresent()) {
+            Debt d = existedByOrderId.get();
+            d.setDocumentId(soId);              // migrate khóa
+            return recomputeAndSave(d);
+        }
 
+        // 3) Tạo mới theo soId
+        java.time.LocalDate invDate = (order.getOrderDate() != null) ? order.getOrderDate().toLocalDate() : java.time.LocalDate.now();
         Debt debt = Debt.builder()
                 .partyType(Debt.PartyType.CUSTOMER)
                 .documentType(Debt.DocumentType.SALES_INVOICE)
-                .documentId(order.getId())
+                .documentId(soId) // <-- khóa chuẩn
                 .customerId(order.getCustomer() != null ? order.getCustomer().getId() : null)
-                .totalAmount(total)
-                .paidAmount(ZERO)
+                .totalAmount(order.getTotalAmount() != null ? order.getTotalAmount() : java.math.BigDecimal.ZERO)
+                .paidAmount(java.math.BigDecimal.ZERO)
                 .status(Debt.Status.UNPAID)
-                .invoiceDate(invoiceDate)
-                .dueDate(dueDate)
+                .invoiceDate(invDate)
+                .dueDate(invDate.plusDays(Math.max(0, termDays)))
                 .note("Công nợ từ đơn bán " + order.getSoCode())
                 .build();
 
         debt = debtRepository.save(debt);
-
         if (termDays == 0) {
-            pay(debt.getId(), total, DebtPayment.Method.CASH, invoiceDate,
+            pay(debt.getId(), debt.getTotalAmount(), com.eewms.entities.DebtPayment.Method.CASH, invDate,
                     "AUTO-IMMEDIATE", "Auto pay on sale order confirm");
         } else {
             recomputeAndSave(debt);
@@ -274,6 +283,9 @@ public class DebtServiceImpl implements IDebtService {
         var gin = goodIssueNoteRepository.findById(ginId)
                 .orElseThrow(() -> new IllegalArgumentException("GoodIssueNote not found: " + ginId));
 
+        if (gin.getGinCode() != null && gin.getGinCode().startsWith("RPL")) {
+            throw new IllegalStateException("Phiếu xuất đổi hàng – không tạo công nợ.");
+        }
         // Tổng tiền ưu tiên từ GIN
         BigDecimal total = (gin.getTotalAmount() != null) ? gin.getTotalAmount() : ZERO;
 
@@ -490,4 +502,91 @@ public class DebtServiceImpl implements IDebtService {
         // Không thay đổi Debt.paidAmount
     }
     /* ======================================================================= */
+
+    @jakarta.transaction.Transactional
+    @Override
+    public BigDecimal adjustCustomerDebtBySaleOrder(Long saleOrderId, BigDecimal adjustmentAmount, String note) {
+        if (saleOrderId == null || adjustmentAmount == null || adjustmentAmount.signum() <= 0) return ZERO;
+
+        var opt = debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.SALES_INVOICE, saleOrderId);
+        if (opt.isEmpty()) return ZERO;
+
+        Debt debt = opt.get();
+        BigDecimal total = debt.getTotalAmount() == null ? ZERO : debt.getTotalAmount();
+        BigDecimal paid  = debt.getPaidAmount()  == null ? ZERO : debt.getPaidAmount();
+        BigDecimal remaining = total.subtract(paid);
+        if (remaining.signum() <= 0) return ZERO;
+
+        BigDecimal applied = adjustmentAmount.min(remaining);
+
+        debt.setPaidAmount(paid.add(applied));
+        // nối note nếu có
+        if (note != null && !note.isBlank()) {
+            String old = debt.getNote();
+            debt.setNote((old == null || old.isBlank()) ? note : (old + " | " + note));
+        }
+        recomputeAndSave(debt);  // đã có sẵn trong lớp của bạn
+        return applied;
+    }
+    @Transactional
+    @Override
+    public BigDecimal adjustCustomerDebtForSaleOrderPreferGIN(Long soId,
+                                                              BigDecimal adjustmentAmount,
+                                                              String note) {
+        if (soId == null || adjustmentAmount == null || adjustmentAmount.signum() <= 0)
+            return BigDecimal.ZERO;
+
+        // 1) Ưu tiên công nợ gắn với các GIN của đơn này (mới nhất trước)
+        var ginIds = goodIssueNoteRepository.findGinIdsBySoIdOrderByIssueDateDesc(soId.intValue());
+        for (Long ginId : ginIds) {
+            var dOpt = debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.GOOD_ISSUE, ginId);
+            if (dOpt.isEmpty()) continue;
+
+            BigDecimal applied = applyOffsetAndLog(dOpt.get(), adjustmentAmount, note);
+            if (applied.signum() > 0) return applied;  // ✅ khấu trừ xong và đã ghi lịch sử
+        }
+
+        // 2) Fallback: công nợ theo SALES_INVOICE (nếu bạn còn dùng)
+        var soDebtOpt = debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.SALES_INVOICE, soId);
+        if (soDebtOpt.isPresent()) {
+            return applyOffsetAndLog(soDebtOpt.get(), adjustmentAmount, note);
+        }
+
+        return BigDecimal.ZERO;
+    }
+
+    /** Khấu trừ vào 1 Debt cụ thể + tạo bản ghi DebtPayment (RETURN_OFFSET) */
+    private BigDecimal applyOffsetAndLog(Debt debt, BigDecimal amount, String note) {
+        BigDecimal total = Optional.ofNullable(debt.getTotalAmount()).orElse(BigDecimal.ZERO);
+        BigDecimal paid  = Optional.ofNullable(debt.getPaidAmount()).orElse(BigDecimal.ZERO);
+        BigDecimal remaining = total.subtract(paid);
+        if (remaining.signum() <= 0) return BigDecimal.ZERO;
+
+        BigDecimal applied = amount.min(remaining);
+
+        // 1) Lưu lịch sử thanh toán (đánh dấu đã trả)
+        DebtPayment p = DebtPayment.builder()
+                .debt(debt)
+                .amount(applied)
+                .method(DebtPayment.Method.RETURN_OFFSET)  // ✅ Hiện ở cột “Phương thức”
+                .status(DebtPayment.Status.PAID)
+                .paymentDate(java.time.LocalDate.now())
+                .referenceNo(note)                         // ✅ ví dụ: "[RETURN] SRN00025"
+                .note((note == null || note.isBlank())
+                        ? "Khấu trừ công nợ do hoàn hàng"
+                        : "Khấu trừ công nợ do hoàn hàng: " + note)
+                .build();
+        debtPaymentRepository.save(p);
+
+        // 2) Cập nhật số đã thanh toán & trạng thái công nợ
+        debt.setPaidAmount(paid.add(applied));
+        if (note != null && !note.isBlank()) {
+            String old = debt.getNote();
+            debt.setNote((old == null || old.isBlank()) ? note : (old + " | " + note));
+        }
+        recomputeAndSave(debt);
+
+        return applied;
+    }
+
 }

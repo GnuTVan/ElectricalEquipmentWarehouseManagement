@@ -220,6 +220,16 @@
                     </ul>
                 </div>
             </li>
+            <li>
+                <a th:href="@{/admin/sales-returns}"
+                   class="flex items-center px-4 py-2 hover:bg-gray-100 rounded"
+                   th:classappend="${#httpServletRequest != null and #httpServletRequest.requestURI != null
+                 and #strings.startsWith(#httpServletRequest.requestURI,'/admin/sales-returns')}
+                ? ' bg-gray-200 font-semibold' : ''">
+                    <i class="ri-exchange-line mr-2"></i>
+                    <span>Hoàn hàng</span>
+                </a>
+            </li>
         </ul>
     </nav>
 </aside>

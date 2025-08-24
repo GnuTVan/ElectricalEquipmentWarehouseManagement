@@ -116,6 +116,9 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
 
     private String resolvePaymentStatus(GoodIssueNote gin) {
         // Ưu tiên công nợ theo GIN
+        if (gin.getGinCode() != null && gin.getGinCode().startsWith("RPL")) {
+            return "Đổi hàng (không công nợ)";
+        }
         var st = getPaymentStatusForDocument(Debt.DocumentType.GOOD_ISSUE, gin.getGinId());
         if (!"Chưa thanh toán".equals(st)) return st;
 

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{fragments/common-head :: commonHead('Tạo phiếu hoàn hàng')}"></head>
+<body class="bg-gray-100 font-sans">
+<div class="flex min-h-screen">
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <div class="px-6 py-6 space-y-4">
+            <h1 class="text-2xl font-bold text-gray-800">Tạo phiếu hoàn hàng</h1>
+
+            <div class="bg-white rounded-xl shadow p-4 space-y-4">
+                <div th:if="${saleOrder == null}" class="text-red-600">
+                    Chưa chọn đơn bán. Về trang danh sách và nhập SO ID để tạo phiếu.
+                </div>
+
+                <form th:if="${saleOrder != null}" method="post" th:action="@{/admin/sales-returns}">
+                    <input type="hidden" name="saleOrderId" th:value="${saleOrder.soId}">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm text-gray-600">Mã đơn bán</label>
+                            <div class="font-semibold" th:text="${saleOrder.soCode}"></div>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-600">Khách hàng</label>
+                            <div th:text="${saleOrder.customer != null ? saleOrder.customer.fullName : '—'}"></div>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-600">Lý do hoàn</label>
+                            <select name="reason" class="border rounded px-3 py-2 w-full">
+                                <option th:each="r : ${reasons}" th:value="${r}" th:text="${r}"></option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <table class="w-full text-left">
+                            <thead>
+                            <tr class="text-gray-600">
+                                <th>Sản phẩm</th>
+                                <th class="w-24 text-center">Đặt</th>
+                                <th class="w-24 text-center">Đã hoàn</th>
+                                <th class="w-24 text-center">Còn</th>
+                                <th class="w-28 text-center">SL lỗi</th>
+                                <th class="w-28 text-center">SL hỏng</th>
+                                <th class="w-36">Đơn giá</th>
+                                <th class="w-40">Ghi chú</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="d : ${saleOrder.details}"
+                                class="border-t"
+                                th:with="ret=${returnedMap[d.product.id] != null ? returnedMap[d.product.id] : 0}"
+                                th:attr="data-allow=${d.orderedQuantity - ret}">
+
+                            <td>
+                                    <input type="hidden" name="productId" th:value="${d.product.id}">
+                                    <div class="font-medium" th:text="${d.product.name}"></div>
+                                </td>
+
+                                <td class="text-center" th:text="${d.orderedQuantity}"></td>
+
+                                <td class="text-center"
+                                    th:with="ret=${returnedMap[d.product.id] != null ? returnedMap[d.product.id] : 0}"
+                                    th:text="${ret}"></td>
+
+                                <td class="text-center"
+                                    th:with="ret=${returnedMap[d.product.id] != null ? returnedMap[d.product.id] : 0}"
+                                    th:text="${#numbers.formatInteger(d.orderedQuantity - ret, 0)}"></td>
+
+                                <td class="text-center"
+                                    th:with="ret=${returnedMap[d.product.id] != null ? returnedMap[d.product.id] : 0}">
+                                    <input type="number" min="0"
+                                           th:attr="max=${d.orderedQuantity - ret}"
+                                           name="qtyLoi" value="0"
+                                           class="border rounded px-2 py-1 w-24 text-center">
+                                </td>
+
+                                <td class="text-center"
+                                    th:with="ret=${returnedMap[d.product.id] != null ? returnedMap[d.product.id] : 0}">
+                                    <input type="number" min="0"
+                                           th:attr="max=${d.orderedQuantity - ret}"
+                                           name="qtyHong" value="0"
+                                           class="border rounded px-2 py-1 w-24 text-center">
+                                </td>
+
+                                <td>
+                                    <span th:text="${#numbers.formatDecimal(d.price, 0, 'COMMA', 0, 'POINT')}"></span>
+                                </td>
+
+                                <td>
+                                    <input type="text" name="note"
+                                           class="border rounded px-2 py-1 w-40" placeholder="Ghi chú (nếu có)">
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+
+
+                    </div>
+
+                    <div class="flex justify-end mt-4">
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                            Lưu phiếu (Draft)
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div th:replace="~{fragments/footer :: footer}"></div>
+        <div th:replace="~{fragments/toast-script :: toast-script}"></div>
+    </main>
+</div>
+<script th:inline="javascript">
+    document.querySelectorAll('tr[data-allow]').forEach(function(row){
+      var allow = parseInt(row.dataset.allow||0,10);
+      var ql = row.querySelector('input[name=qtyLoi]');
+      var qh = row.querySelector('input[name=qtyHong]');
+      function clamp(){
+        var sum = (+ql.value||0) + (+qh.value||0);
+        if(sum>allow){
+          var active = document.activeElement===qh ? qh : ql;
+          active.value = Math.max(0, (+active.value||0)-(sum-allow));
+          if(window.toastr) toastr.warning('Tổng (lỗi+hỏng) không vượt ' + allow);
+        }
+      }
+      ql && ql.addEventListener('input', clamp);
+      qh && qh.addEventListener('input', clamp);
+    });
+</script>
+</body>
+</html>

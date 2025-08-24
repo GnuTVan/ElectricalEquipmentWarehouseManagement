@@ -111,16 +111,21 @@ public class WarehouseReceiptController {
     }
 
     /* ====== CONFIRM (tạo công nợ) ====== */
-    @PostMapping("/{id}/confirm")
+    @PostMapping("/admin/warehouse-receipts/{id}/confirm")
     public String confirm(@PathVariable Long id,
-                          @RequestParam(defaultValue = "7") int termDays,
+                          @RequestParam int termDays,
                           RedirectAttributes ra) {
-        warehouseReceiptRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu nhập"));
+        WarehouseReceipt wr = warehouseReceiptRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu nhập: " + id));
+
+        // Không tạo công nợ cho phiếu nhập từ HOÀN HÀNG
+        if (wr.getRequestId() != null && wr.getRequestId().startsWith("SR-RECV-")) {
+            ra.addFlashAttribute("warning", "Phiếu nhập hàng hoàn – không tạo công nợ.");
+            return "redirect:/admin/warehouse-receipts";
+        }
 
         debtService.createDebtForReceipt(id, termDays);
-        ra.addFlashAttribute("message", "Đã xác nhận nhập kho và tạo công nợ (hạn " + termDays + " ngày).");
-        ra.addFlashAttribute("messageType", "success");
+        ra.addFlashAttribute("success", "Đã tạo công nợ.");
         return "redirect:/admin/warehouse-receipts";
     }
 

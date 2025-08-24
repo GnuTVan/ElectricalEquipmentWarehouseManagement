@@ -24,6 +24,13 @@
                    class="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded bg-orange-600 hover:bg-orange-700 text-white">
                     <i class="ri-truck-line"></i> Tạo phiếu xuất tiếp
                 </a>
+                <div th:with="so=${order != null ? order : (saleOrder != null ? saleOrder : (dto != null ? dto : null))}">
+                    <a th:if="${so != null and so.status != null and so.status.name() == 'DELIVERIED'}"
+                       th:href="@{|/admin/sales-returns/create?saleOrderId=${so.soId}|}"
+                       class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded inline-flex items-center">
+                        <i class="ri-recycle-line mr-1"></i> Tạo phiếu hoàn hàng
+                    </a>
+                </div>
             </div>
 
             <!-- Khối thông tin chung -->

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{fragments/common-head :: commonHead('Phiếu hoàn hàng')}"></head>
+<body class="bg-gray-100 font-sans">
+<div class="flex min-h-screen">
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <div class="px-6 py-6 space-y-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-gray-800">Danh sách phiếu hoàn hàng</h1>
+                <form action="/admin/sales-returns/create" method="get" class="flex items-center space-x-2">
+                    <input name="saleOrderId" type="number" placeholder="SO ID"
+                           class="border rounded px-3 py-2 w-40">
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center">
+                        <i class="ri-add-line mr-1"></i> Tạo phiếu
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-xl shadow p-4">
+                <table class="w-full text-left">
+                    <thead>
+                    <tr class="text-gray-600">
+                        <th class="py-2">Mã</th>
+                        <th>Đơn bán</th>
+                        <th>Lý do</th>
+                        <th>Trạng thái</th>
+                        <th>Giá trị</th>
+                        <th>Tạo lúc</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="sr : ${data}" class="border-t">
+                        <td th:text="${sr.code}" class="py-2 font-medium"></td>
+                        <td th:text="${sr.saleOrder.soCode}"></td>
+                        <td th:text="${sr.reason}"></td>
+                        <td>
+                            <span class="px-2 py-1 rounded bg-gray-100 text-gray-700 text-sm" th:text="${sr.status}"></span>
+                        </td>
+                        <td th:text="${#numbers.formatDecimal(sr.totalAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+                        <td th:text="${#temporals.format(sr.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                        <td>
+                            <a th:href="@{|/admin/sales-returns/${sr.id}|}" class="text-blue-600 hover:underline">Chi tiết</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div th:replace="~{fragments/footer :: footer}"></div>
+        <div th:replace="~{fragments/toast-script :: toast-script}"></div>
+    </main>
+</div>
+</body>
+</html>

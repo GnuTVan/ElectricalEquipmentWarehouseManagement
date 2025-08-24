@@ -53,19 +53,36 @@ public class GoodIssueController {
         model.addAttribute("items", dto.getDetails());
         model.addAttribute("showPrint", true);
 
-        debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.GOOD_ISSUE, id)
-                .ifPresent(debt -> {
-                    model.addAttribute("debt", debt);
-                    BigDecimal total = debt.getTotalAmount() == null ? BigDecimal.ZERO : debt.getTotalAmount();
-                    BigDecimal paid  = debt.getPaidAmount()  == null ? BigDecimal.ZERO : debt.getPaidAmount();
-                    BigDecimal remaining = total.subtract(paid);
+        // Ưu tiên công nợ ĐƠN BÁN
+        var ginOpt = goodIssueRepository.findById(id);
+        if (ginOpt.isPresent()) {
+            var gin = ginOpt.get();
+            Long soId = (gin.getSaleOrder()!=null && gin.getSaleOrder().getSoId()!=null)
+                    ? gin.getSaleOrder().getSoId().longValue()
+                    : null;
 
-                    model.addAttribute("total", total);
-                    model.addAttribute("paid", paid);
-                    model.addAttribute("remaining", remaining);
-                    model.addAttribute("payments", debtPaymentRepository.findByDebtId(debt.getId()));
-                    model.addAttribute("termsOptions", List.of(0, 10, 20, 30));
-                });
+            java.util.Optional<com.eewms.entities.Debt> debtOpt = java.util.Optional.empty();
+            if (soId != null) {
+                debtOpt = debtRepository.findByDocumentTypeAndDocumentId(com.eewms.entities.Debt.DocumentType.SALES_INVOICE, soId);
+            }
+            if (debtOpt.isEmpty()) {
+                debtOpt = debtRepository.findByDocumentTypeAndDocumentId(com.eewms.entities.Debt.DocumentType.GOOD_ISSUE, id);
+            }
+
+            debtOpt.ifPresent(debt -> {
+                model.addAttribute("debt", debt);
+                var total = debt.getTotalAmount() == null ? BigDecimal.ZERO : debt.getTotalAmount();
+                var paid  = debt.getPaidAmount()  == null ? BigDecimal.ZERO : debt.getPaidAmount();
+                var remaining = total.subtract(paid);
+                if (remaining.signum() < 0) remaining = BigDecimal.ZERO;
+
+                model.addAttribute("total", total);
+                model.addAttribute("paid", paid);
+                model.addAttribute("remaining", remaining);
+                model.addAttribute("payments", debtPaymentRepository.findByDebtId(debt.getId()));
+                model.addAttribute("termsOptions", java.util.List.of(0,10,20,30));
+            });
+        }
 
         return "good-issue-detail";
     }

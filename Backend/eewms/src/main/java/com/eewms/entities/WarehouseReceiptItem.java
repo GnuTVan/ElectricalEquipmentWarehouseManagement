@@ -3,7 +3,7 @@ package com.eewms.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
+import java.math.BigDecimal;import com.eewms.constant.ProductCondition;
 
 @Entity
 @Table(name = "warehouse_receipt_items")
@@ -25,4 +25,8 @@ public class WarehouseReceiptItem {
 
     @Column(nullable = false)
     private Integer actualQuantity; // số lượng thực nhập kho
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "`condition`", length = 16)  // <-- THÊM backtick
+    private ProductCondition condition;
 }

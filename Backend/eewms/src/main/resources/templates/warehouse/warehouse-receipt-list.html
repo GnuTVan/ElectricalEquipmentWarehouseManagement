@@ -32,24 +32,55 @@
                 <tbody>
                 <tr th:each="r : ${receipts}" class="border-t hover:bg-gray-50 transition">
                     <td class="px-6 py-3 border border-gray-200 font-medium text-blue-700" th:text="${r.code}">RN001</td>
-                    <td class="px-6 py-3 border border-gray-200" th:text="${r.purchaseOrder != null ? r.purchaseOrder.code : '—'}">P0001</td>
+                    <td class="px-6 py-3 border border-gray-200">
+                        <!-- Nếu có PO: hiện mã PO + link như cũ -->
+                        <span th:if="${r.purchaseOrder != null}">
+    <a th:href="@{'/admin/purchase-orders/' + ${r.purchaseOrder.id}}"
+       class="text-blue-700 hover:underline"
+       th:text="${r.purchaseOrder.code}">PO</a>
+  </span>
+
+                        <!-- Nếu KHÔNG có PO (GRN do hoàn hàng): hiện note, kèm link sang phiếu hoàn nếu bắt được requestId -->
+                        <span th:if="${r.purchaseOrder == null}">
+    <a th:if="${r.requestId != null and #strings.startsWith(r.requestId, 'SR-RECV-')}"
+       th:href="@{'/admin/sales-returns/' + ${#strings.substring(r.requestId, 8)}}"
+       class="text-blue-700 hover:underline"
+       th:text="${#strings.isEmpty(r.note) ? 'Hàng hoàn' : r.note}">Hàng hoàn</a>
+    <span th:unless="${r.requestId != null and #strings.startsWith(r.requestId, 'SR-RECV-')}"
+          th:text="${#strings.isEmpty(r.note) ? 'Hàng hoàn' : r.note}">Hàng hoàn</span>
+  </span>
+                    </td>
                     <td class="px-6 py-3 border border-gray-200" th:text="${r.createdBy}">Admin</td>
                     <td class="px-6 py-3 border border-gray-200" th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2025</td>
 
-                    <td class="px-6 py-3 border border-gray-200 w-50">
-                        <span th:if="${hasDebt[r.id]}" class="inline-block px-2 py-1 rounded bg-emerald-100 text-emerald-700">Đã tạo</span>
-                        <span  sec:authorize="hasRole('ADMIN')"
-                               th:if="${!hasDebt[r.id]}" class="inline-block px-2 py-1 rounded bg-red-100 text-red-700">Chưa có công nợ</span>
-                        <form  sec:authorize="hasRole('MANAGER')"
-                               th:if="${!hasDebt[r.id]}" th:action="@{'/admin/warehouse-receipts/' + ${r.id} + '/confirm'}" method="post" class="flex items-center gap-2">
+                    <td class="px-6 py-3 border border-gray-200 w-50"
+                        th:with="isReturn=${r.requestId != null and #strings.startsWith(r.requestId, 'SR-RECV-')},canConfirm=${#authorization.expression('hasRole(''MANAGER'')')}">
+
+                        <!-- ĐÃ có công nợ (mọi loại) -->
+                        <span th:if="${hasDebt[r.id]}"
+                              class="inline-block px-2 py-1 rounded bg-emerald-100 text-emerald-700">Đã tạo</span>
+                        <!-- HÀNG HOÀN: không tạo công nợ -->
+                        <span th:if="${!hasDebt[r.id] and isReturn}"
+                              class="inline-block px-2 py-1 rounded bg-slate-100 text-slate-700">Hàng hoàn</span>
+
+                        <!-- GRN từ PO: MANAGER được tạo công nợ -->
+                        <form th:if="${!hasDebt[r.id] and !isReturn and canConfirm}"
+                              th:action="@{'/admin/warehouse-receipts/' + ${r.id} + '/confirm'}"
+                              method="post" class="flex items-center gap-2">
                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             <select name="termDays" class="border rounded px-2 py-1">
                                 <option value="0">Thanh toán ngay</option>
                                 <option value="7" selected>7 ngày</option>
                                 <option value="10">10 ngày</option>
                             </select>
-                            <button type="submit" class="px-3 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700">Tạo công nợ</button>
+                            <button type="submit" class="px-3 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700">
+                                Tạo công nợ
+                            </button>
                         </form>
+
+                        <!-- GRN từ PO: người KHÔNG phải MANAGER (ví dụ ADMIN) chỉ nhìn -->
+                        <span th:if="${!hasDebt[r.id] and !isReturn and !canConfirm}"
+                              class="inline-block px-2 py-1 rounded bg-red-100 text-red-700">Chưa có công nợ</span>
                     </td>
 
                     <td class="px-4 py-2 border border-gray-200 text-center w-1">

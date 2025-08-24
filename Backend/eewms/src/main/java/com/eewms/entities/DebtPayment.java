@@ -37,7 +37,9 @@ public class DebtPayment {
     public enum Method {
         CASH("Tiền mặt"),
         BANK_TRANSFER("Chuyển khoản"),
-        PAYOS_QR("Chuyển khoản QR");
+        PAYOS_QR("Chuyển khoản QR"),
+        RETURN_OFFSET("Khấu trừ hoàn hàng");
+
 
         private final String label;
 

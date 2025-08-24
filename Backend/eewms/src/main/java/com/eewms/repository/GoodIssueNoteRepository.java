@@ -17,20 +17,23 @@ public interface GoodIssueNoteRepository extends JpaRepository<GoodIssueNote, Lo
 
     // ==== NEW: phục vụ tính 'đã xuất' theo SO / SO+Product ====
     @Query("""
-           select coalesce(sum(d.quantity), 0)
-           from GoodIssueDetail d
-           join d.goodIssueNote g
-           where g.saleOrder.soId = :soId and d.product.id = :productId
-           """)
+       select coalesce(sum(d.quantity), 0)
+       from GoodIssueDetail d
+       join d.goodIssueNote g
+       where g.saleOrder.soId = :soId
+         and d.product.id = :productId
+         and (g.ginCode is null or g.ginCode not like 'RPL%')
+       """)
     Integer sumIssuedQtyBySaleOrderAndProduct(@Param("soId") Integer soId,
                                               @Param("productId") Integer productId);
 
     @Query("""
-           select coalesce(sum(d.quantity), 0)
-           from GoodIssueDetail d
-           join d.goodIssueNote g
-           where g.saleOrder.soId = :soId
-           """)
+       select coalesce(sum(d.quantity), 0)
+       from GoodIssueDetail d
+       join d.goodIssueNote g
+       where g.saleOrder.soId = :soId
+         and (g.ginCode is null or g.ginCode not like 'RPL%')
+       """)
     Integer sumIssuedQtyBySaleOrder(@Param("soId") Integer soId);
 
     // ==== Các query cũ giữ nguyên ====
@@ -83,11 +86,23 @@ public interface GoodIssueNoteRepository extends JpaRepository<GoodIssueNote, Lo
 
     //new
     @Query("""
-   select d.product.id, coalesce(sum(d.quantity), 0)
-   from GoodIssueDetail d
-   join d.goodIssueNote g
-   where g.saleOrder.soId = :soId
-   group by d.product.id
-""")
+       select d.product.id, coalesce(sum(d.quantity), 0)
+       from GoodIssueDetail d
+       join d.goodIssueNote g
+       where g.saleOrder.soId = :soId
+         and (g.ginCode is null or g.ginCode not like 'RPL%')
+       group by d.product.id
+       """)
     List<Object[]> sumIssuedBySaleOrderGroupByProduct(@Param("soId") Integer soId);
+    Optional<GoodIssueNote> findByGinCode(String ginCode);
+
+    //
+    @Query("""
+  select g.ginId
+  from GoodIssueNote g
+  where g.saleOrder.soId = :soId
+  order by g.issueDate desc
+""")
+    List<Long> findGinIdsBySoIdOrderByIssueDateDesc(@Param("soId") Integer soId);
+
 }

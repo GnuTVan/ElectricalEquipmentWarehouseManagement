@@ -133,7 +133,7 @@
                 </div>
 
                 <!-- Chưa có công nợ -->
-                <div th:if="${debt == null}">
+                <div th:if="${debt == null and !#strings.startsWith(note.code, 'RPL')}">
                     <p class="text-gray-600 mb-3">Phiếu xuất này chưa tạo công nợ.</p>
                     <form th:action="@{/admin/debts/create-from-good-issue/{ginId}(ginId=${note.id})}" method="post"
                           class="flex items-center gap-3">
@@ -150,6 +150,12 @@
                             Tạo công nợ
                         </button>
                     </form>
+                </div>
+
+                <!-- Là RPL: hiển thị nhãn thông tin, không cho tạo công nợ -->
+                <div th:if="${debt == null and #strings.startsWith(note.code, 'RPL')}"
+                     class="border rounded px-4 py-3 mb-5 bg-blue-50 border-blue-200 text-blue-800">
+                    Phiếu đổi hàng (RPL) – <b>không tạo công nợ</b>.
                 </div>
 
                 <!-- Đã có công nợ -->
