@@ -3,7 +3,7 @@
       xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/common-head :: commonHead('Chi tiết phiếu hoàn hàng')}"></head>
 <body class="bg-gray-100 font-sans">
-<div class="flex min-h-screen">
+<div class="flex h-screen">
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
     <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
@@ -130,7 +130,6 @@
         </div>
 
         <div th:replace="~{fragments/footer :: footer}"></div>
-        <div th:replace="~{fragments/toast-script :: toast-script}"></div>
     </main>
 </div>
 </body>

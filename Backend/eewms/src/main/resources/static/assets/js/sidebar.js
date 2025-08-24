@@ -1,5 +1,3 @@
-<!--    JS đóng mở sidebar -->
-
 document.addEventListener("DOMContentLoaded", function () {
     const toggleBtn = document.getElementById("toggleSidebarBtn");
     const sidebar = document.getElementById("sidebar");
@@ -12,9 +10,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-<!-- JS toggle submenu trong sidebar -->
+// <!-- JS toggle submenu trong sidebar -->
 
-<!--    sửa lại toggle submenu để nhận id truyền vào thay vì fix cứng(thêm data-submenu-id vào để gọi)-->
+// <!--    sửa lại toggle submenu để nhận id truyền vào thay vì fix cứng(thêm data-submenu-id vào để gọi)-->
 function toggleSubmenu(buttonEl) {
     const submenuId = buttonEl.getAttribute("data-submenu-id");
     const submenu = document.getElementById(submenuId);

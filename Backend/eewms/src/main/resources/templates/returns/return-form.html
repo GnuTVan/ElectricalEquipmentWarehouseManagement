@@ -8,15 +8,15 @@
     <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
         <div th:replace="~{fragments/header :: header}"></div>
 
-        <div class="px-6 py-6 space-y-4">
-            <div class="mb-2"><h1 class="text-2xl font-bold text-gray-800">Tạo phiếu hoàn hàng</h1></div>
-            <div class="mb-6">
+        <section class="p-6 max-w-6xl mx-auto space-y-4">
+            <div class="flex items-center justify-between">
+                <h1 class="text-xl md:text-2xl font-bold text-gray-800">Tạo phiếu hoàn hàng</h1>
                 <a href="/admin/sales-returns"
-                   class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-100">
+                   class="inline-flex items-center px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50">
                     <i class="ri-arrow-left-line mr-2"></i> Quay lại
                 </a>
             </div>
-            <div class="bg-white rounded-xl shadow p-4 space-y-4">
+            <div class="bg-white rounded-xl shadow p-4 space-y-3">
                 <div th:if="${saleOrder == null}" class="text-red-600">
                     Chưa chọn đơn bán. Về trang danh sách và nhập SO ID để tạo phiếu.
                 </div>
@@ -42,42 +42,41 @@
                         </div>
                     </div>
 
-                    <div class="mt-4">
-                        <table class="w-full text-left">
-                            <thead>
-                            <tr class="text-gray-600">
-                                <th>Sản phẩm</th>
-                                <th class="w-24 text-center">Đặt</th>
-                                <th class="w-24 text-center">Đã hoàn</th>
-                                <th class="w-24 text-center">Còn</th>
-                                <th class="w-28 text-center">SL lỗi</th>
-                                <th class="w-28 text-center">SL hỏng</th>
-                                <th class="w-36">Đơn giá</th>
-                                <th class="w-40">Ghi chú</th>
+                    <div class="mt-2 overflow-x-auto">
+                        <table class="min-w-full table-auto text-md border border-gray-200">
+                            <thead class="bg-gray-100 text-left">
+                            <tr>
+                                <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Sản phẩm</th>
+                                <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200 text-center">Đặt</th>
+                                <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200 text-center">Đã hoàn</th>
+                                <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200 text-center">Còn</th>
+                                <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200 text-center">SL Lỗi</th>
+                                <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200 text-center">SL Hỏng</th>
+                                <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200 text-right">Đơn giá</th>
+                                <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Ghi chú</th>
                             </tr>
                             </thead>
                             <tbody>
                             <tr th:each="d : ${saleOrder.details}"
-                                class="border-t"
+                                class="border-t hover:bg-gray-100"
                                 th:with="ret=${returnedMap[d.product.id] != null ? returnedMap[d.product.id] : 0}"
                                 th:attr="data-allow=${d.orderedQuantity - ret}">
-
-                            <td>
+                                <td class="px-4 py-2 border border-gray-200">
                                     <input type="hidden" name="productId" th:value="${d.product.id}">
                                     <div class="font-medium" th:text="${d.product.name}"></div>
                                 </td>
 
-                                <td class="text-center" th:text="${d.orderedQuantity}"></td>
+                                <td class="px-4 py-2 border border-gray-200 text-center w-24" th:text="${d.orderedQuantity}"></td>
 
-                                <td class="text-center"
+                                <td class="px-4 py-2 border border-gray-200 text-center w-24"
                                     th:with="ret=${returnedMap[d.product.id] != null ? returnedMap[d.product.id] : 0}"
                                     th:text="${ret}"></td>
 
-                                <td class="text-center"
+                                <td class="px-4 py-2 border border-gray-200 text-center w-24"
                                     th:with="ret=${returnedMap[d.product.id] != null ? returnedMap[d.product.id] : 0}"
                                     th:text="${#numbers.formatInteger(d.orderedQuantity - ret, 0)}"></td>
 
-                                <td class="text-center"
+                                <td class="px-4 py-2 border border-gray-200 text-center w-1"
                                     th:with="ret=${returnedMap[d.product.id] != null ? returnedMap[d.product.id] : 0}">
                                     <input type="number" min="0"
                                            th:attr="max=${d.orderedQuantity - ret}"
@@ -85,7 +84,7 @@
                                            class="border rounded px-2 py-1 w-24 text-center">
                                 </td>
 
-                                <td class="text-center"
+                                <td class="px-4 py-2 border border-gray-200 text-center w-1"
                                     th:with="ret=${returnedMap[d.product.id] != null ? returnedMap[d.product.id] : 0}">
                                     <input type="number" min="0"
                                            th:attr="max=${d.orderedQuantity - ret}"
@@ -93,49 +92,50 @@
                                            class="border rounded px-2 py-1 w-24 text-center">
                                 </td>
 
-                                <td>
+                                <td class="px-4 py-2 border border-gray-200 text-right">
                                     <span th:text="${#numbers.formatDecimal(d.price, 0, 'COMMA', 0, 'POINT')}"></span>
                                 </td>
 
-                                <td>
-                                    <input type="text" name="note"
-                                           class="border rounded px-2 py-1 w-40" placeholder="Ghi chú (nếu có)">
+                                <td class="px-4 py-2 border border-gray-200 w-128">
+                                    <input type="text" name="note" class="border rounded px-2 py-1 w-full" placeholder="Ghi chú">
                                 </td>
                             </tr>
                             </tbody>
                         </table>
-
-
                     </div>
 
-                    <div class="flex justify-end mt-4">
-                        <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                    <div class="pt-3 px-2 mt-2 border-t flex items-center justify-end sticky bottom-0 bg-white">
+                        <a href="/admin/sales-returns"
+                           class="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-50">
+                            Hủy
+                        </a>
+                        <button class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white">
                             Lưu phiếu
                         </button>
                     </div>
                 </form>
             </div>
-        </div>
-
+        </section>
         <div th:replace="~{fragments/footer :: footer}"></div>
-        <div th:replace="~{fragments/toast-script :: toast-script}"></div>
     </main>
 </div>
 <script th:inline="javascript">
-    document.querySelectorAll('tr[data-allow]').forEach(function(row){
-      var allow = parseInt(row.dataset.allow||0,10);
-      var ql = row.querySelector('input[name=qtyLoi]');
-      var qh = row.querySelector('input[name=qtyHong]');
-      function clamp(){
-        var sum = (+ql.value||0) + (+qh.value||0);
-        if(sum>allow){
-          var active = document.activeElement===qh ? qh : ql;
-          active.value = Math.max(0, (+active.value||0)-(sum-allow));
-          if(window.toastr) toastr.warning('Tổng (lỗi+hỏng) không vượt ' + allow);
+    document.querySelectorAll('tr[data-allow]').forEach(function (row) {
+        var allow = parseInt(row.dataset.allow || 0, 10);
+        var ql = row.querySelector('input[name=qtyLoi]');
+        var qh = row.querySelector('input[name=qtyHong]');
+
+        function clamp() {
+            var sum = (+ql.value || 0) + (+qh.value || 0);
+            if (sum > allow) {
+                var active = document.activeElement === qh ? qh : ql;
+                active.value = Math.max(0, (+active.value || 0) - (sum - allow));
+                if (window.toastr) toastr.warning('Tổng (lỗi+hỏng) không vượt ' + allow);
+            }
         }
-      }
-      ql && ql.addEventListener('input', clamp);
-      qh && qh.addEventListener('input', clamp);
+
+        ql && ql.addEventListener('input', clamp);
+        qh && qh.addEventListener('input', clamp);
     });
 </script>
 </body>
