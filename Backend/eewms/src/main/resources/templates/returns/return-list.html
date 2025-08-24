@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<html xmlns:th="http://www.thymeleaf.org" lang="vi"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/common-head :: commonHead('Phiếu hoàn hàng')}"></head>
 <body class="bg-gray-100 font-sans">
 <div class="flex min-h-screen">
@@ -11,7 +12,8 @@
         <div class="px-6 py-6 space-y-4">
             <div class="flex justify-between items-center">
                 <h1 class="text-2xl font-bold text-gray-800">Danh sách phiếu hoàn hàng</h1>
-                <form action="/admin/sales-returns/create" method="get" class="flex items-center space-x-2">
+                <form sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                      action="/admin/sales-returns/create" method="get" class="flex items-center space-x-2">
                     <input name="saleOrderId" type="number" placeholder="SO ID"
                            class="border rounded px-3 py-2 w-40">
                     <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center">
@@ -20,40 +22,52 @@
                 </form>
             </div>
 
-            <div class="bg-white rounded-xl shadow p-4">
-                <table class="w-full text-left">
-                    <thead>
-                    <tr class="text-gray-600">
-                        <th class="py-2">Mã</th>
-                        <th>Đơn bán</th>
-                        <th>Lý do</th>
-                        <th>Trạng thái</th>
-                        <th>Giá trị</th>
-                        <th>Tạo lúc</th>
-                        <th></th>
+            <div class="overflow-x-auto bg-white rounded-lg shadow">
+                <table id="Table" class="min-w-full table-auto text-sm border border-gray-200">
+                    <thead class="bg-gray-100 text-left">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Mã</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Đơn bán</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Lý do</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200 text-center">Trạng thái</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200 text-right">Giá trị</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Ngày tạo</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200 text-center"> Hành
+                            động
+                        </th>
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="sr : ${data}" class="border-t">
-                        <td th:text="${sr.code}" class="py-2 font-medium"></td>
-                        <td th:text="${sr.saleOrder.soCode}"></td>
-                        <td th:text="${sr.reason}"></td>
-                        <td>
-                            <span class="px-2 py-1 rounded bg-gray-100 text-gray-700 text-sm" th:text="${sr.status}"></span>
+                    <tr th:each="sr : ${data}" class="border-t hover:bg-gray-100">
+                        <td class="px-4 py-2 border border-gray-200" th:text="${sr.code}"></td>
+                        <td class="px-4 py-2 border border-gray-200" th:text="${sr.saleOrder.soCode}"></td>
+                        <td class="px-4 py-2 border border-gray-200" th:text="${sr.reason.label}"></td>
+                        <td class="px-4 py-2 border border-gray-200 text-center">
+                              <span class="px-2 py-1 rounded text-sm font-medium inline-flex items-center gap-1 w-24 justify-center"
+                                    th:classappend="${' ' + sr.status.css}"
+                                    th:text="${sr.status.label}">
+                              </span>
                         </td>
-                        <td th:text="${#numbers.formatDecimal(sr.totalAmount, 0, 'COMMA', 0, 'POINT')}"></td>
-                        <td th:text="${#temporals.format(sr.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
-                        <td>
-                            <a th:href="@{|/admin/sales-returns/${sr.id}|}" class="text-blue-600 hover:underline">Chi tiết</a>
+                        <td class="px-4 py-2 border border-gray-200 text-right"
+                            th:text="${#numbers.formatDecimal(sr.totalAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+                        <td class="px-4 py-2 border border-gray-200"
+                            th:text="${#temporals.format(sr.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                        <td class="px-4 py-2 border border-gray-200 w-1 whitespace-nowrap">
+                            <!-- Xem -->
+                            <a th:href="@{|/admin/sales-returns/${sr.id}|}"
+                               class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200">
+                                <i class="ri-eye-line"></i> Xem chi tiết
+                            </a>
                         </td>
                     </tr>
                     </tbody>
                 </table>
             </div>
+            <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
+
         </div>
 
         <div th:replace="~{fragments/footer :: footer}"></div>
-        <div th:replace="~{fragments/toast-script :: toast-script}"></div>
     </main>
 </div>
 </body>

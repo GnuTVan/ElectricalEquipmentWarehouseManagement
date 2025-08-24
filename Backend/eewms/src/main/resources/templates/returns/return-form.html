@@ -9,8 +9,13 @@
         <div th:replace="~{fragments/header :: header}"></div>
 
         <div class="px-6 py-6 space-y-4">
-            <h1 class="text-2xl font-bold text-gray-800">Tạo phiếu hoàn hàng</h1>
-
+            <div class="mb-2"><h1 class="text-2xl font-bold text-gray-800">Tạo phiếu hoàn hàng</h1></div>
+            <div class="mb-6">
+                <a href="/admin/sales-returns"
+                   class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-100">
+                    <i class="ri-arrow-left-line mr-2"></i> Quay lại
+                </a>
+            </div>
             <div class="bg-white rounded-xl shadow p-4 space-y-4">
                 <div th:if="${saleOrder == null}" class="text-red-600">
                     Chưa chọn đơn bán. Về trang danh sách và nhập SO ID để tạo phiếu.
@@ -104,8 +109,8 @@
                     </div>
 
                     <div class="flex justify-end mt-4">
-                        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-                            Lưu phiếu (Draft)
+                        <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                            Lưu phiếu
                         </button>
                     </div>
                 </form>

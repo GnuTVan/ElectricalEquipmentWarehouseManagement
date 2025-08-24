@@ -220,13 +220,10 @@
                     </ul>
                 </div>
             </li>
-            <li>
+            <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
                 <a th:href="@{/admin/sales-returns}"
-                   class="flex items-center px-4 py-2 hover:bg-gray-100 rounded"
-                   th:classappend="${#httpServletRequest != null and #httpServletRequest.requestURI != null
-                 and #strings.startsWith(#httpServletRequest.requestURI,'/admin/sales-returns')}
-                ? ' bg-gray-200 font-semibold' : ''">
-                    <i class="ri-exchange-line mr-2"></i>
+                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                    <i class="ri-exchange-line w-6 text-lg"></i>
                     <span>Hoàn hàng</span>
                 </a>
             </li>

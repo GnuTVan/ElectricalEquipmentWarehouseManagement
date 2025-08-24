@@ -57,6 +57,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/admin/debts/*/payos/create")
                         .hasAnyRole("STAFF","MANAGER","ADMIN")
 
+                        .requestMatchers(HttpMethod.GET, "/admin/sales-returns/**").hasAnyRole("ADMIN","MANAGER","STAFF")
+                        .requestMatchers( "/admin/sales-returns/**").hasAnyRole("MANAGER","STAFF")
 
                         // ---------------------------------------------------------
                         // 2) STAFF-only WRITE
