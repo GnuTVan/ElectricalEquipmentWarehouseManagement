@@ -14,7 +14,9 @@ import java.util.List;
 public class WarehouseReceiptDTO {
 
     private Long id;
-
+    private String code;
+    private String purchaseOrderCode;
+    private String warehouseName;
     @NotNull(message = "Vui lòng chọn đơn hàng")
     private Long purchaseOrderId;
 

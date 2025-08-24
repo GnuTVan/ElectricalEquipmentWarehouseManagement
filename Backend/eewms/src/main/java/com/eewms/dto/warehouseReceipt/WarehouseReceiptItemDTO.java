@@ -10,8 +10,9 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 public class WarehouseReceiptItemDTO {
-    private Long productId;
+    private Integer productId;
     private Integer quantity;
+    private String productName;
     private BigDecimal price;        // Giá nhập hàng thực tế
     private Integer actualQuantity;
 }

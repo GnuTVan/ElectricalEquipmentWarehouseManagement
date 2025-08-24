@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -38,5 +39,13 @@ public class WarehouseReceipt {
     // ✅ Idempotency cho mỗi đợt nhập
     @Column(name = "request_id", length = 64, unique = true)
     private String requestId;
+
+    @OneToMany(
+            mappedBy = "warehouseReceipt",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    private List<WarehouseReceiptItem> items = new ArrayList<>();
 }
 

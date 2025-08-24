@@ -15,4 +15,6 @@ public interface IWarehouseReceiptService {
     void saveReceipt(WarehouseReceiptDTO dto, PurchaseOrder order, User user);
     WarehouseReceipt createFromSalesReturn(Long salesReturnId, String createdByUsername);
 
+    @Transactional(readOnly = true)
+    WarehouseReceiptDTO getViewDTO(Long id);
 }

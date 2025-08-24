@@ -87,9 +87,9 @@ class WarehouseReceiptServiceImplTest {
 
     private WarehouseReceiptDTO dto(int q1, int q2) {
         WarehouseReceiptItemDTO r1 = WarehouseReceiptItemDTO.builder()
-                .productId(1L).actualQuantity(q1).price(new BigDecimal("1.0")).build();
+                .productId(1).actualQuantity(q1).price(new BigDecimal("1.0")).build();
         WarehouseReceiptItemDTO r2 = WarehouseReceiptItemDTO.builder()
-                .productId(2L).actualQuantity(q2).price(new BigDecimal("1.0")).build();
+                .productId(2).actualQuantity(q2).price(new BigDecimal("1.0")).build();
         WarehouseReceiptDTO d = new WarehouseReceiptDTO();
         setWarehouseOnDto(d, 1L);            // << không gọi trực tiếp setter, tránh lỗi “không tồn tại”
         d.setItems(List.of(r1, r2));

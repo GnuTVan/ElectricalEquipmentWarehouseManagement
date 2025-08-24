@@ -12,13 +12,12 @@ import com.eewms.repository.warehouseReceipt.WarehouseReceiptItemRepository;
 import com.eewms.repository.warehouseReceipt.WarehouseReceiptRepository;
 import com.eewms.services.IWarehouseReceiptService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -208,6 +207,35 @@ public class WarehouseReceiptServiceImpl implements IWarehouseReceiptService {
         }
 
         return receipt;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public WarehouseReceiptDTO getViewDTO(Long id) {
+        var wr = warehouseReceiptRepository.findByIdWithView(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu nhập: " + id));
+
+        return WarehouseReceiptDTO.builder()
+                .id(wr.getId())
+                .code(wr.getCode())
+                .purchaseOrderId(wr.getPurchaseOrder() != null ? wr.getPurchaseOrder().getId() : null)
+                .purchaseOrderCode(wr.getPurchaseOrder() != null ? wr.getPurchaseOrder().getCode() : null)
+                .warehouseName(wr.getWarehouse() != null ? wr.getWarehouse().getName() : null)
+                .note(wr.getNote())
+                .createdAt(wr.getCreatedAt())
+                .createdByName(wr.getCreatedBy())
+                .requestId(wr.getRequestId())
+                .items((wr.getItems() == null ? List.<WarehouseReceiptItem>of() : wr.getItems())
+                        .stream()
+                        .map(it -> WarehouseReceiptItemDTO.builder()
+                                .productId(it.getProduct() != null ? it.getProduct().getId() : null)
+                                .productName(it.getProduct() != null ? it.getProduct().getName() : null)
+                                .quantity(it.getQuantity())
+                                .price(it.getPrice())
+                                .actualQuantity(it.getActualQuantity())
+                                .build()
+                        ).toList())
+                .build();
     }
 
 }

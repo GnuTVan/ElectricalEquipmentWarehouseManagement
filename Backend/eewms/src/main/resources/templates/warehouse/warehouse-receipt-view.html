@@ -51,17 +51,17 @@
                     </div>
                     <div>
                         <p class="text-gray-600 font-semibold">Đơn hàng:</p>
-                        <p th:text="${receipt.purchaseOrder != null ? receipt.purchaseOrder.code : '—'}"
+                        <p th:text="${receipt.purchaseOrderCode != null ? receipt.purchaseOrderCode : '—'}"
                            class="text-gray-800"></p>
                     </div>
                     <div>
                         <p class="text-gray-600 font-semibold">Kho:</p>
-                        <p th:text="${receipt.warehouse != null ? receipt.warehouse.name : '—'}"
+                        <p th:text="${receipt.warehouseName != null ? receipt.warehouseName : '—'}"
                            class="text-gray-800"></p>
                     </div>
                     <div>
                         <p class="text-gray-600 font-semibold">Người tạo:</p>
-                        <p th:text="${receipt.createdBy}" class="text-gray-800"></p>
+                        <p th:text="${receipt.createdByName}" class="text-gray-800"></p>
                     </div>
                     <div>
                         <p class="text-gray-600 font-semibold">Thời gian:</p>
@@ -89,7 +89,7 @@
                     <tbody>
                     <tr th:each="item, iStat : ${items}" class="border-t hover:bg-gray-50">
                         <td class="px-4 py-2 border-b" th:text="${iStat.index + 1}"></td>
-                        <td class="px-4 py-2 border-b" th:text="${item.product != null ? item.product.name : '—'}"></td>
+                        <td class="px-4 py-2 border-b" th:text="${item.productName  != null ? item.productName : '—'}"></td>
                         <td class="px-4 py-2 border-b" th:text="${item.quantity}"></td>
                     </tr>
                     </tbody>

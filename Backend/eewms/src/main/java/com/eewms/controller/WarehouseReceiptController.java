@@ -10,6 +10,7 @@ import com.eewms.services.IWarehouseReceiptService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -41,7 +42,7 @@ public class WarehouseReceiptController {
     /* ====== LIST ====== */
     @GetMapping
     public String list(Model model) {
-        List<WarehouseReceipt> receipts = warehouseReceiptRepository.findAll();
+        List<WarehouseReceipt> receipts = warehouseReceiptRepository.findAllWithPurchaseOrder();
         Map<Long, Boolean> hasDebt = receipts.stream()
                 .collect(Collectors.toMap(
                         WarehouseReceipt::getId,
@@ -94,14 +95,12 @@ public class WarehouseReceiptController {
     }
 
     /* ====== VIEW ====== */
+    @Transactional(readOnly = true)
     @GetMapping("/view/{id}")
     public String view(@PathVariable Long id, Model model) {
-        WarehouseReceipt receipt = warehouseReceiptRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu nhập"));
-        List<WarehouseReceiptItem> items = warehouseReceiptItemRepository.findByWarehouseReceipt(receipt);
-
-        model.addAttribute("receipt", receipt);
-        model.addAttribute("items", items);
+        var dto = warehouseReceiptService.getViewDTO(id);
+        model.addAttribute("receipt", dto);
+        model.addAttribute("items", dto.getItems());
 
         debtRepository.findByDocumentTypeAndDocumentId(Debt.DocumentType.WAREHOUSE_RECEIPT, id).ifPresent(d -> {
             model.addAttribute("debt", d);
