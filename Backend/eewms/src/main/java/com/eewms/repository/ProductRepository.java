@@ -25,38 +25,38 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     // ===== Tìm kiếm theo keyword (cũ, không phân trang) =====
     @EntityGraph(attributePaths = "suppliers")
     @Query("""
-        SELECT p FROM Product p
-        WHERE
-            LOWER(p.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-            LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-            LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-            LOWER(p.status) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-            STR(p.originPrice) LIKE CONCAT('%', :keyword, '%') OR
-            STR(p.listingPrice) LIKE CONCAT('%', :keyword, '%') OR
-            STR(p.quantity) LIKE CONCAT('%', :keyword, '%') OR
-            LOWER(p.brand.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-            LOWER(p.category.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-            LOWER(p.unit.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
-    """)
+                SELECT p FROM Product p
+                WHERE
+                    LOWER(p.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                    LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                    LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                    LOWER(p.status) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                    STR(p.originPrice) LIKE CONCAT('%', :keyword, '%') OR
+                    STR(p.listingPrice) LIKE CONCAT('%', :keyword, '%') OR
+                    STR(p.quantity) LIKE CONCAT('%', :keyword, '%') OR
+                    LOWER(p.brand.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                    LOWER(p.category.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                    LOWER(p.unit.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            """)
     List<Product> searchByKeyword(@Param("keyword") String keyword);
 
     // ===== Tìm kiếm theo keyword + category (cũ, không phân trang) =====
     @EntityGraph(attributePaths = "suppliers")
     @Query("""
-        SELECT p FROM Product p
-        WHERE (:keyword IS NULL OR
-               LOWER(p.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(p.status) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               STR(p.originPrice) LIKE CONCAT('%', :keyword, '%') OR
-               STR(p.listingPrice) LIKE CONCAT('%', :keyword, '%') OR
-               STR(p.quantity) LIKE CONCAT('%', :keyword, '%') OR
-               LOWER(p.brand.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(p.category.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(p.unit.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
-          AND (:categoryId IS NULL OR p.category.id = :categoryId)
-    """)
+                SELECT p FROM Product p
+                WHERE (:keyword IS NULL OR
+                       LOWER(p.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                       LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                       LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                       LOWER(p.status) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                       STR(p.originPrice) LIKE CONCAT('%', :keyword, '%') OR
+                       STR(p.listingPrice) LIKE CONCAT('%', :keyword, '%') OR
+                       STR(p.quantity) LIKE CONCAT('%', :keyword, '%') OR
+                       LOWER(p.brand.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                       LOWER(p.category.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                       LOWER(p.unit.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+                  AND (:categoryId IS NULL OR p.category.id = :categoryId)
+            """)
     List<Product> searchByKeywordAndCategory(@Param("keyword") String keyword,
                                              @Param("categoryId") Long categoryId);
 
@@ -72,37 +72,37 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     // Lưu ý: ép chỉ lấy ACTIVE cho landing. Nếu muốn bao cả INACTIVE, bỏ điều kiện status dưới đây.
     @EntityGraph(attributePaths = "images")
     @Query(value = """
-        SELECT p FROM Product p
-        WHERE (:keyword IS NULL OR
-               LOWER(p.code)        LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(p.name)        LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(p.status)      LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               STR(p.originPrice)   LIKE CONCAT('%', :keyword, '%') OR
-               STR(p.listingPrice)  LIKE CONCAT('%', :keyword, '%') OR
-               STR(p.quantity)      LIKE CONCAT('%', :keyword, '%') OR
-               LOWER(p.brand.name)    LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(p.category.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(p.unit.name)     LIKE LOWER(CONCAT('%', :keyword, '%')))
-          AND (:categoryId IS NULL OR p.category.id = :categoryId)
-          AND p.status = com.eewms.entities.Product$ProductStatus.ACTIVE
-        """,
+            SELECT p FROM Product p
+            WHERE (:keyword IS NULL OR
+                   LOWER(p.code)        LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                   LOWER(p.name)        LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                   LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                   LOWER(p.status)      LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                   STR(p.originPrice)   LIKE CONCAT('%', :keyword, '%') OR
+                   STR(p.listingPrice)  LIKE CONCAT('%', :keyword, '%') OR
+                   STR(p.quantity)      LIKE CONCAT('%', :keyword, '%') OR
+                   LOWER(p.brand.name)    LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                   LOWER(p.category.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                   LOWER(p.unit.name)     LIKE LOWER(CONCAT('%', :keyword, '%')))
+              AND (:categoryId IS NULL OR p.category.id = :categoryId)
+              AND p.status = com.eewms.entities.Product$ProductStatus.ACTIVE
+            """,
             countQuery = """
-        SELECT COUNT(p) FROM Product p
-        WHERE (:keyword IS NULL OR
-               LOWER(p.code)        LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(p.name)        LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(p.status)      LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               STR(p.originPrice)   LIKE CONCAT('%', :keyword, '%') OR
-               STR(p.listingPrice)  LIKE CONCAT('%', :keyword, '%') OR
-               STR(p.quantity)      LIKE CONCAT('%', :keyword, '%') OR
-               LOWER(p.brand.name)    LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(p.category.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(p.unit.name)     LIKE LOWER(CONCAT('%', :keyword, '%')))
-          AND (:categoryId IS NULL OR p.category.id = :categoryId)
-          AND p.status = com.eewms.entities.Product$ProductStatus.ACTIVE
-        """)
+                    SELECT COUNT(p) FROM Product p
+                    WHERE (:keyword IS NULL OR
+                           LOWER(p.code)        LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                           LOWER(p.name)        LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                           LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                           LOWER(p.status)      LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                           STR(p.originPrice)   LIKE CONCAT('%', :keyword, '%') OR
+                           STR(p.listingPrice)  LIKE CONCAT('%', :keyword, '%') OR
+                           STR(p.quantity)      LIKE CONCAT('%', :keyword, '%') OR
+                           LOWER(p.brand.name)    LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                           LOWER(p.category.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                           LOWER(p.unit.name)     LIKE LOWER(CONCAT('%', :keyword, '%')))
+                      AND (:categoryId IS NULL OR p.category.id = :categoryId)
+                      AND p.status = com.eewms.entities.Product$ProductStatus.ACTIVE
+                    """)
     Page<Product> searchByKeywordAndCategory(@Param("keyword") String keyword,
                                              @Param("categoryId") Long categoryId,
                                              Pageable pageable);
@@ -123,19 +123,45 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 
     // tổng giá trị tồn kho
     @Query("""
-      select coalesce(sum( coalesce(p.listingPrice, 0) * coalesce(p.quantity, 0) ), 0)
-      from Product p
-    """)
+              select coalesce(sum( coalesce(p.listingPrice, 0) * coalesce(p.quantity, 0) ), 0)
+              from Product p
+            """)
     BigDecimal sumInventoryValue();
 
     @Query("""
-    select distinct p
-    from Product p
-    left join fetch p.category c
-    left join fetch p.brand b
-    left join fetch p.unit u
-    left join fetch p.images i
-    where p.status = com.eewms.entities.Product$ProductStatus.ACTIVE
-""")
+                select distinct p
+                from Product p
+                left join fetch p.category c
+                left join fetch p.brand b
+                left join fetch p.unit u
+                left join fetch p.images i
+                where p.status = com.eewms.entities.Product$ProductStatus.ACTIVE
+            """)
     List<Product> findAllActiveWithSetting();
+
+    @EntityGraph(attributePaths = { "brand", "category", "unit", "images", "suppliers" })
+    @Query("""
+              SELECT p FROM Product p
+              LEFT JOIN p.suppliers s
+              LEFT JOIN p.category c
+              LEFT JOIN p.brand b
+              WHERE
+                (:keyword IS NULL OR
+                  LOWER(p.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                  LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+                AND (:supplierId IS NULL OR s.id = :supplierId)
+                AND (:categoryId IS NULL OR c.id = :categoryId)
+                AND (:brandId IS NULL OR b.id = :brandId)
+                AND (:status IS NULL OR p.status = :status)
+            """)
+    Page<Product> search(
+            @Param("keyword") String keyword,
+            @Param("supplierId") Integer supplierId,
+            @Param("categoryId") Integer categoryId,
+            @Param("brandId") Integer brandId,
+            @Param("status") Product.ProductStatus status,
+            Pageable pageable
+    );
 }
+
+

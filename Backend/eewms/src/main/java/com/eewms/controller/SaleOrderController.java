@@ -17,6 +17,8 @@ import com.eewms.services.ISaleOrderService;
 import com.eewms.utils.ComboJsonHelper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,6 +26,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,20 +48,41 @@ public class SaleOrderController {
     private final ComboRepository cbRepo;
 
     // ========== LIST ==========
+
     @GetMapping
-    public String listOrders(@RequestParam(value = "keyword", required = false) String keyword,
-                             Model model) {
+    public String listOrders(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "status", required = false) SaleOrder.SaleOrderStatus status,
+            @RequestParam(value = "from", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(value = "to", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "100") int size,
+            Model model
+    ) {
         if (!model.containsAttribute("saleOrderForm")) {
             model.addAttribute("saleOrderForm", new SaleOrderRequestDTO());
         }
-        if (keyword != null && !keyword.isBlank()) {
-            model.addAttribute("sale_orders", saleOrderService.searchByKeyword(keyword));
-        } else {
-            model.addAttribute("sale_orders", saleOrderService.getAllOrders());
-        }
+
+        Page<SaleOrder> result = saleOrderService.searchWithFilters(
+                (keyword != null && !keyword.isBlank()) ? keyword : null,
+                status, from, to, page, size
+        );
+        model.addAttribute("orderStatuses", SaleOrder.SaleOrderStatus.values());
+        model.addAttribute("sale_orders", result.getContent()); // nếu view đang duyệt "sale_orders"
+        model.addAttribute("page", result);
+        model.addAttribute("size", size);
+
+        // giữ lại filter để bind lại UI
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("status", status);
+        model.addAttribute("from", from);
+        model.addAttribute("to", to);
+
         model.addAttribute("customers", customerService.findAll());
         model.addAttribute("products", productService.getAll()); // dùng cho list
-        model.addAttribute("keyword", keyword);
+
         return "sale-order/sale-order-list";
     }
 

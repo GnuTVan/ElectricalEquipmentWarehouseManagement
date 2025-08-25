@@ -56,68 +56,118 @@
         </div>
 
         <!-- Page Title + Button -->
-        <div class="flex justify-between items-center mb-4 px-4 py-2">
-            <h1 class="text-2xl font-bold text-gray-800">Danh sách đơn hàng bán</h1>
-            <a sec:authorize="hasRole('STAFF')"
-               href="/sale-orders/create"
-               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center">
-                <i class="ri-add-line mr-1"></i> Thêm đơn hàng
-            </a>
-        </div>
-
-        <!-- Sale Order Table -->
         <div class="px-6 py-6">
+
+            <!-- Page Title + Button (bỏ px-4 ở đây) -->
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-2xl font-bold text-gray-800">Danh sách đơn hàng bán</h1>
+                <a sec:authorize="hasRole('STAFF')" href="/sale-orders/create"
+                   class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center">
+                    <i class="ri-add-line mr-1"></i> Thêm đơn hàng
+                </a>
+            </div>
+
+            <!-- Filter Bar (nằm trong cùng wrapper nên canh trái khớp bảng) -->
+            <form method="get" class="mb-4 flex items-center gap-2">
+                <input type="text" name="keyword" th:value="${keyword}" placeholder="Mã, Người tạo"
+                       class="border p-2 rounded w-60"/>
+
+                <select name="status" class="border p-2 rounded">
+                    <option value="" th:selected="${status == null}">-- Trạng thái --</option>
+                    <option th:each="st : ${orderStatuses}"
+                            th:value="${st}" th:text="${st.label}" th:selected="${status == st}">
+                    </option>
+                </select>
+
+                <input type="datetime-local" name="from"
+                       th:value="${from != null ? #temporals.format(from, 'yyyy-MM-dd''T''HH:mm') : null}"
+                       class="border p-2 rounded"/>
+
+                <input type="datetime-local" name="to"
+                       th:value="${to != null ? #temporals.format(to, 'yyyy-MM-dd''T''HH:mm') : null}"
+                       class="border p-2 rounded"/>
+
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Lọc</button>
+            </form>
+
+            <!-- Sale Order Table -->
             <div class="overflow-x-auto bg-white rounded-lg shadow">
-                <table id="Table" class="min-w-full table-auto text-sm border border-gray-200">
+                <table id="Table" class="min-w-full table-auto text-sm">
                     <thead class="bg-gray-100 text-left">
                     <tr>
-                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">STT</th>
-                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Mã đơn</th>
-                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Khách hàng</th>
-                        <!-- ✅ Cột Số điện thoại -->
-                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Số điện thoại</th>
-                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Ngày tạo</th>
-                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Người tạo</th>
-                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Tổng tiền</th>
-                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Trạng thái</th>
-                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200 text-center">Hành động</th>
+                        <th class="px-4 py-3 font-semibold">STT</th>
+                        <th class="px-4 py-3 font-semibold">Mã đơn</th>
+                        <th class="px-4 py-3 font-semibold">Khách hàng</th>
+                        <th class="px-4 py-3 font-semibold">Số điện thoại</th>
+                        <th class="px-4 py-3 font-semibold">Ngày tạo</th>
+                        <th class="px-4 py-3 font-semibold">Người tạo</th>
+                        <th class="px-4 py-3 font-semibold">Tổng tiền</th>
+                        <th class="px-4 py-3 font-semibold">Trạng thái</th>
+                        <th class="px-4 py-3 font-semibold text-center">Hành động</th>
                     </tr>
                     </thead>
+
                     <tbody>
-                    <tr th:each="order, iStat : ${sale_orders}" class="border-t hover:bg-gray-100">
-                        <td class="px-4 py-2 border border-gray-200" th:text="${iStat.index + 1}"></td>
-                        <td class="px-4 py-2 border border-gray-200 font-medium text-blue-600" th:text="${order.orderCode}"></td>
-                        <td class="px-4 py-2 border border-gray-200" th:text="${order.customerName}"></td>
+                    <!-- Empty state (giống Product) -->
+                    <tr th:if="${sale_orders == null or #lists.isEmpty(sale_orders)}">
+                        <td colspan="9" class="px-4 py-6 text-center text-gray-500 italic">
+                            Không có đơn hàng phù hợp hiện tại.
+                        </td>
+                    </tr>
+
+                    <!-- Rows -->
+                    <tr th:each="order, iStat : ${sale_orders}"
+                        th:unless="${sale_orders == null or #lists.isEmpty(sale_orders)}"
+                        class="border-t"
+                        th:attr="data-od=${order.orderDate != null ? #temporals.format(order.orderDate, 'yyyyMMddHHmmss') : '00000000000000'},
+                                 data-id=${order.soId}">
+                        <td class="px-4 py-2 stt" th:text="${iStat.index + 1}"></td>
+                        <td class="px-4 py-2 font-medium text-blue-600" th:text="${order.soCode}"></td>
+                        <td class="px-4 py-2" th:text="${order.customer != null ? order.customer.fullName : '-'}"></td>
 
                         <!-- ✅ Dữ liệu số điện thoại (fallback & link gọi) -->
-                        <td class="px-4 py-2 border border-gray-200">
-                            <a th:if="${order.customerPhone}"
-                               th:href="${'tel:' + order.customerPhone}"
+                        <td class="px-4 py-2">
+                            <a th:if="${order.customer != null and order.customer.phone != null}"
+                               th:href="${'tel:' + order.customer.phone}"
                                class="text-gray-700 hover:underline"
-                               th:text="${order.customerPhone}">0123456789</a>
-                            <span th:if="${order.customerPhone == null}" class="text-gray-400">-</span>
+                               th:text="${order.customer.phone}">0123456789</a>
+                            <span th:if="${order.customer == null or order.customer.phone == null}"
+                                  class="text-gray-400">-</span>
                         </td>
 
-                        <td class="px-4 py-2 border border-gray-200" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
-                        <td class="px-4 py-2 border border-gray-200" th:text="${order.createdBy}"></td>
-                        <td class="px-4 py-2 border border-gray-200"
+                        <td class="px-4 py-2" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
+
+                        <!-- ❗Tránh gọi toString trên proxy User -->
+                        <td class="px-4 py-2"
+                            th:text="${
+                              (order.createdByUser != null
+                               and T(org.hibernate.Hibernate).isInitialized(order.createdByUser)
+                               and order.createdByUser.username != null)
+                                 ? order.createdByUser.username
+                                 : '-'
+                            }">
+                        </td>
+
+                        <td class="px-4 py-2"
                             th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
-                        <td class="px-4 py-2 border border-gray-200 w-36 text-center">
-                        <span class="inline-block w-full truncate px-2 py-1 rounded text-xs font-medium"
-                              th:classappend="
+
+                        <td class="px-4 py-2 w-36 text-center">
+                            <span class="inline-block w-full truncate px-2 py-1 rounded text-xs font-medium"
+                                  th:classappend="
                                     ${order.status.name() == 'CANCELLED'} ? 'bg-red-100 text-red-700' :
                                  (${order.status.name() == 'DELIVERIED'} ? 'bg-yellow-100 text-yellow-700' :
                                  (${order.status.name() == 'COMPLETED'} ? 'bg-green-100 text-green-700' :
                                  'bg-gray-100 text-gray-700'))"
-                              th:text="${order.status.label}">
-                        </span>
+                                  th:text="${order.status.label}">
+                            </span>
                         </td>
-                        <td class="px-4 py-2 border border-gray-200 text-center">
+
+                        <td class="px-4 py-2 text-center">
                             <div class="flex justify-center items-center space-x-2">
                                 <!-- PENDING: Sửa + Xóa -->
                                 <a sec:authorize="hasRole('STAFF')"
                                    th:if="${order.status.name() == 'PENDING'}"
-                                   th:href="@{/sale-orders/{id}/edit(id=${order.orderId})}"
+                                   th:href="@{/sale-orders/{id}/edit(id=${order.soId})}"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded shadow">
                                     <i class="ri-edit-line text-base"></i>
                                     Sửa
@@ -125,7 +175,7 @@
 
                                 <form sec:authorize="hasRole('STAFF')"
                                       th:if="${order.status.name() == 'PENDING'}"
-                                      th:action="@{/sale-orders/{id}/delete(id=${order.orderId})}"
+                                      th:action="@{/sale-orders/{id}/delete(id=${order.soId})}"
                                       method="post"
                                       onsubmit="return confirm('Bạn có chắc muốn xóa đơn này?');"
                                       class="inline-flex">
@@ -139,7 +189,7 @@
 
                                 <!-- DELIVERIED / COMPLETED: Xem đơn -->
                                 <a th:if="${order.status.name() != 'PENDING'}"
-                                   th:href="@{/sale-orders/{id}/view(id=${order.orderId})}"
+                                   th:href="@{/sale-orders/{id}/view(id=${order.soId})}"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 text-sm shadow">
                                     <i class="ri-eye-line text-base"></i>
                                     Chi tiết
@@ -150,6 +200,37 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- 🔽 Sort ngay sau khi table render để chạy trước script phân trang -->
+            <script>
+                (function () {
+                    var tbody = document.querySelector('#Table tbody');
+                    if (!tbody) return;
+
+                    // Lấy tất cả tr có data-od (bỏ qua dòng empty-state)
+                    var rows = Array.from(tbody.querySelectorAll('tr[data-od]'));
+
+                    // Sort DESC theo thời gian tạo; nếu bằng nhau thì so theo id DESC
+                    rows.sort(function (a, b) {
+                        var ao = a.dataset.od || '0';
+                        var bo = b.dataset.od || '0';
+                        if (ao !== bo) return bo.localeCompare(ao);
+
+                        var ai = parseInt(a.dataset.id || '0', 10);
+                        var bi = parseInt(b.dataset.id || '0', 10);
+                        if (!isNaN(ai) && !isNaN(bi)) return bi - ai;
+                        return (b.dataset.id || '').localeCompare(a.dataset.id || '');
+                    });
+
+                    // Gắn lại theo thứ tự mới và đánh lại STT
+                    rows.forEach(function (r, idx) {
+                        tbody.appendChild(r);
+                        var sttCell = r.querySelector('td.stt');
+                        if (sttCell) sttCell.textContent = String(idx + 1);
+                    });
+                })();
+            </script>
+
             <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
         </div>
     </main>

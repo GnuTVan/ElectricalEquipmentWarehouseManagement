@@ -32,23 +32,65 @@ public class ProductController {
     private final ISupplierService supplierService;
 
     @GetMapping
-    public String list(@RequestParam(value = "keyword",
-                               required = false) String keyword,
-                       Model model) throws InventoryException {
+    public String list(
+            @RequestParam(value = "keyword",    required = false) String keyword,
+            @RequestParam(value = "supplierId", required = false) String supplierIdStr,
+            @RequestParam(value = "categoryId", required = false) String categoryIdStr,
+            @RequestParam(value = "brandId",    required = false) String brandIdStr,
+            @RequestParam(value = "status",     required = false) String statusStr,
+            Model model
+    ) throws InventoryException {
 
-        if (keyword != null && !keyword.isBlank()) {
-            model.addAttribute("products", productService.searchByKeyword(keyword));
-        } else {
-            model.addAttribute("products", productService.getAll());
-        }
+        // 1) Chuẩn hoá keyword
+        String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
 
-        model.addAttribute("keyword", keyword);
+        // 2) Ép kiểu an toàn: "" hoặc null -> null, còn lại -> Long
+        Integer supplierId = parseIntegerOrNull(supplierIdStr);
+        Integer categoryId = parseIntegerOrNull(categoryIdStr);
+        Integer brandId    = parseIntegerOrNull(brandIdStr);
+
+
+        // 3) Ép Enum an toàn: "" hoặc null -> null
+        Product.ProductStatus status = parseEnumOrNull(statusStr, Product.ProductStatus.class);
+
+        // 4) Gọi service (khớp với repo: Page<Product> + Long)
+        var page = productService.searchByFilters(
+                kw, supplierId, categoryId, brandId, status,
+                org.springframework.data.domain.Pageable.unpaged()
+        );
+
+        model.addAttribute("products", page.getContent());
+
+        // 5) Giữ lại giá trị filter cho view
+        model.addAttribute("keyword", kw);
+        model.addAttribute("supplierId", supplierId);
+        model.addAttribute("categoryId", categoryId);
+        model.addAttribute("brandId", brandId);
+        model.addAttribute("status", status);
+        model.addAttribute("productStatuses", Product.ProductStatus.values());
+
+        // 6) Dữ liệu cho select + modal
         model.addAttribute("productDTO", new ProductFormDTO());
         model.addAttribute("units", settingService.findByTypeAndActive(SettingType.UNIT));
         model.addAttribute("brands", settingService.findByTypeAndActive(SettingType.BRAND));
         model.addAttribute("categories", settingService.findByTypeAndActive(SettingType.CATEGORY));
-        model.addAttribute("suppliers", supplierService.findAll()); // k cần lọc active
+        model.addAttribute("suppliers", supplierService.findAll());
+
         return "product/product-list";
+    }
+
+    // ===== Helpers =====
+    private Integer parseIntegerOrNull(String s) {
+        if (s == null || s.isBlank()) return null;
+        try { return Integer.valueOf(s.trim()); }
+        catch (NumberFormatException e) { return null; }
+    }
+
+
+    private <E extends Enum<E>> E parseEnumOrNull(String s, Class<E> type) {
+        if (s == null || s.isBlank()) return null;
+        try { return Enum.valueOf(type, s.trim()); }
+        catch (IllegalArgumentException e) { return null; }
     }
 
     // xử lý submit modal form thêm sản phẩm
