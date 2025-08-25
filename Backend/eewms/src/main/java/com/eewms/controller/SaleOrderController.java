@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -92,7 +93,7 @@ public class SaleOrderController {
      */
     @PostMapping("/create")
     public String createOrder(@Valid @ModelAttribute("saleOrderForm") SaleOrderRequestDTO dto,
-                              org.springframework.validation.BindingResult result,
+                              BindingResult result,
                               @RequestParam(name = "action", defaultValue = "SAVE") String action,
                               Model model,
                               RedirectAttributes ra) {
@@ -304,10 +305,13 @@ public class SaleOrderController {
 
     // ====== DELETE (chỉ cho PENDING) ======
     @PostMapping("/{id}/delete")
-    public String deleteOrder(@PathVariable Integer id, RedirectAttributes ra) {
+    public String deleteOrder(@PathVariable Integer id,
+                              RedirectAttributes ra,
+                              Model model) {
         try {
+            SaleOrderResponseDTO dto = saleOrderService.getById(id);
             saleOrderService.deleteIfPending(id);
-            ra.addFlashAttribute("toastSuccess", "Đã xoá đơn hàng #" + id + " thành công.");
+            ra.addFlashAttribute("toastSuccess", "Đã xoá đơn hàng " + dto.getOrderCode() + " thành công.");
         } catch (Exception ex) {
             ra.addFlashAttribute("error", ex.getMessage());
         }

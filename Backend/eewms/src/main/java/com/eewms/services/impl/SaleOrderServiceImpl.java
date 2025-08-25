@@ -369,8 +369,8 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
     }
 
     private String generateOrderCode() {
-        long count = orderRepo.count() + 1;
-        return String.format("ORD%05d", count);
+        long next = Optional.ofNullable(orderRepo.findMaxSoCodeNumber()).orElse(0L) + 1L;
+        return String.format("ORD%05d", next);
     }
 
     @Override

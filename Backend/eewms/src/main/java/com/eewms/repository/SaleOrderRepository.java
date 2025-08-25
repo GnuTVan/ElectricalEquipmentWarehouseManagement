@@ -20,6 +20,9 @@ public interface SaleOrderRepository extends JpaRepository<SaleOrder, Integer> {
     @Query("SELECT so FROM SaleOrder so WHERE so.status = :status")
     List<SaleOrder> findByStatus(@Param("status") SaleOrder.SaleOrderStatus status);
 
+    @Query(value = "SELECT COALESCE(MAX(CAST(SUBSTRING(so_code,4) AS UNSIGNED)), 0) FROM sale_orders", nativeQuery = true)
+    Long findMaxSoCodeNumber();
+
     // Trang LIST khi có từ khoá -> cần fetch customer/createdByUser để mapper đọc phone & creator
     @EntityGraph(attributePaths = {"customer", "createdByUser"})
     @Query("SELECT o FROM SaleOrder o WHERE LOWER(o.soCode) LIKE LOWER(CONCAT('%', :keyword, '%'))")

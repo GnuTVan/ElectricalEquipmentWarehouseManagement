@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/debts") // <-- URL bạn đang bấm
@@ -24,23 +26,28 @@ public class DebtListController {
 
     @GetMapping
     public String list(Model model) {
-        // Lấy tất cả công nợ nhưng chỉ hiển thị loại gắn với phiếu nhập (supplier side)
-        List<Row> rows = debtRepository.findAll().stream()
-                .filter(d -> d.getDocumentType() == Debt.DocumentType.WAREHOUSE_RECEIPT)
+        // Lấy đúng loại cần hiển thị + supplier đã nạp sẵn
+        List<Debt> debts = debtRepository.findAllByDocumentType(Debt.DocumentType.WAREHOUSE_RECEIPT);
+
+        // Gom tất cả documentId (WR) để batch-load một lần
+        List<Long> wrIds = debts.stream()
+                .map(Debt::getDocumentId)
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+
+        // Tải 1 lần tất cả WR rồi map theo id để tránh N+1
+        Map<Long, WarehouseReceipt> wrMap = warehouseReceiptRepository.findAllById(wrIds).stream()
+                .collect(Collectors.toMap(WarehouseReceipt::getId, wr -> wr));
+
+        List<Row> rows = debts.stream()
                 .map(d -> {
-                    // Lấy mã phiếu nhập (nếu có)
-                    String docCode = "";
-                    Long receiptId = null;
-                    if (d.getDocumentId() != null) {
-                        WarehouseReceipt wr = warehouseReceiptRepository.findById(d.getDocumentId()).orElse(null);
-                        if (wr != null) {
-                            docCode = wr.getCode();
-                            receiptId = wr.getId();
-                        }
-                    }
+                    WarehouseReceipt wr = d.getDocumentId() != null ? wrMap.get(d.getDocumentId()) : null;
+                    String docCode = wr != null ? wr.getCode() : "";
+                    Long receiptId = wr != null ? wr.getId() : null;
 
                     BigDecimal total = nz(d.getTotalAmount());
-                    BigDecimal paid  = nz(d.getPaidAmount());
+                    BigDecimal paid = nz(d.getPaidAmount());
                     BigDecimal remain = total.subtract(paid);
                     if (remain.signum() < 0) remain = BigDecimal.ZERO;
 
@@ -61,12 +68,13 @@ public class DebtListController {
                 .toList();
 
         model.addAttribute("rows", rows);
-        return "debt/debt-list"; // -> templates/debt/debt-list.html
+        return "debt/debt-list";
     }
 
-    private static BigDecimal nz(BigDecimal v) { return v == null ? BigDecimal.ZERO : v; }
+    private static BigDecimal nz(BigDecimal v) {
+        return v == null ? BigDecimal.ZERO : v;
+    }
 
-    // View model đơn giản cho bảng
     public record Row(
             Long id,
             String supplierName,
@@ -77,5 +85,6 @@ public class DebtListController {
             LocalDate dueDate,
             Debt.Status status,
             Long receiptId
-    ) {}
+    ) {
+    }
 }
