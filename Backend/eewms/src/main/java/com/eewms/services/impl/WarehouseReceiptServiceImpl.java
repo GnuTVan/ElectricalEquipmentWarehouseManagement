@@ -120,6 +120,7 @@ public class WarehouseReceiptServiceImpl implements IWarehouseReceiptService {
                     .quantity(deliver)
                     .actualQuantity(deliver)
                     .price(poItem.getPrice())
+                    .condition(com.eewms.constant.ProductCondition.NEW)
                     .build();
             warehouseReceiptItemRepository.save(gri);
 

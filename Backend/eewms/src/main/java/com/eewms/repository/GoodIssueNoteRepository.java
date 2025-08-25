@@ -105,4 +105,22 @@ public interface GoodIssueNoteRepository extends JpaRepository<GoodIssueNote, Lo
 """)
     List<Long> findGinIdsBySoIdOrderByIssueDateDesc(@Param("soId") Integer soId);
 
+    @Query("""
+      select d.product.id, coalesce(sum(d.quantity),0)
+      from GoodIssueDetail d
+      join d.goodIssueNote g
+      where (g.ginCode is null or g.ginCode not like 'RPL%')
+      group by d.product.id
+    """)
+    List<Object[]> sumExportedNewByProduct();
+
+    @Query("""
+      select d.product.id, coalesce(sum(d.quantity),0)
+      from GoodIssueDetail d
+      join d.goodIssueNote g
+      where g.ginCode like 'RPL%'
+      group by d.product.id
+    """)
+    List<Object[]> sumExportedReturnedByProduct();
+
 }

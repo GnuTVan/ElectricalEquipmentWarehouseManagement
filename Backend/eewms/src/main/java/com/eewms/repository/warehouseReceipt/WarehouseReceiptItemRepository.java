@@ -21,4 +21,21 @@ public interface WarehouseReceiptItemRepository extends JpaRepository<WarehouseR
     """)
     Integer sumReceivedByPoAndProduct(@Param("poId") Long poId,
                                       @Param("productId") Integer productId);
+
+    @Query("""
+    select i.product.id as pid, coalesce(sum(i.actualQuantity),0) as qty
+    from WarehouseReceiptItem i
+    where (i.condition is null or i.condition = com.eewms.constant.ProductCondition.NEW)
+    group by i.product.id
+  """)
+    List<Object[]> sumNewByProduct();
+
+    // Tổng hoàn
+    @Query("""
+    select i.product.id as pid, coalesce(sum(i.actualQuantity),0) as qty
+    from WarehouseReceiptItem i
+    where i.condition = com.eewms.constant.ProductCondition.RETURNED
+    group by i.product.id
+  """)
+    List<Object[]> sumReturnedByProduct();
 }

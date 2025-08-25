@@ -5,6 +5,7 @@ import com.eewms.dto.ProductDetailsDTO;
 import com.eewms.constant.SettingType;
 import com.eewms.entities.Product;
 import com.eewms.exception.InventoryException;
+import com.eewms.repository.GoodIssueNoteRepository;
 import com.eewms.services.IProductServices;
 import com.eewms.services.ISettingServices;
 import com.eewms.services.ISupplierService;
@@ -17,9 +18,18 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.eewms.repository.warehouseReceipt.WarehouseReceiptItemRepository;
+import com.eewms.entities.Product;
 
+import java.util.*;
+
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.stream.Collectors;
+import com.eewms.dto.ProductDetailsDTO;
 
 @Controller
 @RequestMapping({"/products", "/product-list"})
@@ -30,46 +40,52 @@ public class ProductController {
     private final ISettingServices settingService;
     private final ImageUploadService imageUploadService;
     private final ISupplierService supplierService;
+    private final WarehouseReceiptItemRepository warehouseReceiptItemRepository;
+
+    private final GoodIssueNoteRepository goodIssueNoteRepository;
+
+
 
     @GetMapping
-    public String list(
-            @RequestParam(value = "keyword",    required = false) String keyword,
-            @RequestParam(value = "supplierId", required = false) String supplierIdStr,
-            @RequestParam(value = "categoryId", required = false) String categoryIdStr,
-            @RequestParam(value = "brandId",    required = false) String brandIdStr,
-            @RequestParam(value = "status",     required = false) String statusStr,
-            Model model
-    ) throws InventoryException {
+    public String list(@RequestParam(value="keyword", required=false) String keyword, Model model) {
 
-        // 1) Chuẩn hoá keyword
-        String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        // 1) Lấy danh sách sản phẩm (DTO)
+        List<ProductDetailsDTO> products = (keyword != null && !keyword.isBlank())
+                ? productService.searchByKeyword(keyword)
+                : productService.getAll();
+        model.addAttribute("products", products);
+        model.addAttribute("keyword", keyword);
 
-        // 2) Ép kiểu an toàn: "" hoặc null -> null, còn lại -> Long
-        Integer supplierId = parseIntegerOrNull(supplierIdStr);
-        Integer categoryId = parseIntegerOrNull(categoryIdStr);
-        Integer brandId    = parseIntegerOrNull(brandIdStr);
+        // 2) Tổng nhập HOÀN (RETURNED) theo product
+        Map<Integer, Long> inReturned =
+                toMap(warehouseReceiptItemRepository.sumReturnedByProduct());
 
+        // 3) Tồn hiện tại lấy từ DTO (quantity trong bảng product)
+        Map<Integer, Long> onHand = products.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        p -> p.getId(),                                        // <-- id từ DTO
+                        p -> p.getQuantity() == null ? 0L                      // <-- quantity từ DTO
+                                : ((Number) p.getQuantity()).longValue()
+                ));
 
-        // 3) Ép Enum an toàn: "" hoặc null -> null
-        Product.ProductStatus status = parseEnumOrNull(statusStr, Product.ProductStatus.class);
+        // 4) Suy ra “Hoàn” và “Mới” theo tồn thực tế (không để âm, không vượt tổng)
+        java.util.Map<Integer, Long> returnedQtyMap = new java.util.HashMap<>();
+        java.util.Map<Integer, Long> newQtyMap      = new java.util.HashMap<>();
 
-        // 4) Gọi service (khớp với repo: Page<Product> + Long)
-        var page = productService.searchByFilters(
-                kw, supplierId, categoryId, brandId, status,
-                org.springframework.data.domain.Pageable.unpaged()
-        );
+        for (ProductDetailsDTO p : products) {
+            int  pid     = p.getId();
+            long total   = onHand.getOrDefault(pid, 0L);
+            long retIn   = inReturned.getOrDefault(pid, 0L);
+            long returned = Math.min(retIn, total);
+            long fresh    = Math.max(0L, total - returned);
+            returnedQtyMap.put(pid, returned);
+            newQtyMap.put(pid, fresh);
+        }
 
-        model.addAttribute("products", page.getContent());
+        model.addAttribute("newQtyMap", newQtyMap);
+        model.addAttribute("returnedQtyMap", returnedQtyMap);
 
-        // 5) Giữ lại giá trị filter cho view
-        model.addAttribute("keyword", kw);
-        model.addAttribute("supplierId", supplierId);
-        model.addAttribute("categoryId", categoryId);
-        model.addAttribute("brandId", brandId);
-        model.addAttribute("status", status);
-        model.addAttribute("productStatuses", Product.ProductStatus.values());
-
-        // 6) Dữ liệu cho select + modal
+        // 5) master data
         model.addAttribute("productDTO", new ProductFormDTO());
         model.addAttribute("units", settingService.findByTypeAndActive(SettingType.UNIT));
         model.addAttribute("brands", settingService.findByTypeAndActive(SettingType.BRAND));
@@ -79,18 +95,13 @@ public class ProductController {
         return "product/product-list";
     }
 
-    // ===== Helpers =====
-    private Integer parseIntegerOrNull(String s) {
-        if (s == null || s.isBlank()) return null;
-        try { return Integer.valueOf(s.trim()); }
-        catch (NumberFormatException e) { return null; }
-    }
-
-
-    private <E extends Enum<E>> E parseEnumOrNull(String s, Class<E> type) {
-        if (s == null || s.isBlank()) return null;
-        try { return Enum.valueOf(type, s.trim()); }
-        catch (IllegalArgumentException e) { return null; }
+    /** rows: [productId, sumQty] */
+    private static java.util.Map<Integer, Long> toMap(java.util.List<Object[]> rows) {
+        if (rows == null) return java.util.Collections.emptyMap();
+        return rows.stream().collect(java.util.stream.Collectors.toMap(
+                r -> ((Number) r[0]).intValue(),
+                r -> ((Number) r[1]).longValue()
+        ));
     }
 
     // xử lý submit modal form thêm sản phẩm

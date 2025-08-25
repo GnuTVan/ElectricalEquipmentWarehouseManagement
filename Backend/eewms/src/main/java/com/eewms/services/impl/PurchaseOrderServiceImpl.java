@@ -217,7 +217,8 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService {
                     .product(product)
                     .quantity(qty)               // nếu còn dùng field này
                     .actualQuantity(qty)         // chuẩn thực nhận
-                    .price(poItem.getPrice())    // lấy giá từ PO
+                    .price(poItem.getPrice())
+                    .condition(com.eewms.constant.ProductCondition.NEW)// lấy giá từ PO
                     .build();
             warehouseReceiptItemRepository.save(gri);
 
@@ -375,6 +376,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService {
                     .quantity(deliver)
                     .actualQuantity(deliver)
                     .price(poItem.getPrice())
+                    .condition(com.eewms.constant.ProductCondition.NEW)
                     .build();
             // lưu GRN item
             warehouseReceiptItemRepository.save(gri);
