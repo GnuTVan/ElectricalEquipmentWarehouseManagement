@@ -26,6 +26,8 @@ spring:
 app:
   activation:
     base-url: ${ACTIVATION_BASE_URL}
+  reset-password:
+    base-url: ${RESET_PASSWORD_BASE_URL}
 logging:
   level:
     root: INFO
