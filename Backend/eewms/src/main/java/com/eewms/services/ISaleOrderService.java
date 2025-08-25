@@ -3,7 +3,9 @@ package com.eewms.services;
 import com.eewms.dto.SaleOrderRequestDTO;
 import com.eewms.dto.SaleOrderResponseDTO;
 import com.eewms.entities.SaleOrder;
+import org.springframework.data.domain.Page;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ISaleOrderService {
@@ -22,5 +24,12 @@ public interface ISaleOrderService {
     List<Long> getComboIdsExpanded(Integer soId);
     void updateOrderItems(Integer orderId, SaleOrderRequestDTO form);
     void deleteIfPending(Integer id);
-
+    Page<SaleOrder> searchWithFilters(
+            String keyword,
+            SaleOrder.SaleOrderStatus status,
+            LocalDateTime from,
+            LocalDateTime to,
+            int page,
+            int size
+    );
 }

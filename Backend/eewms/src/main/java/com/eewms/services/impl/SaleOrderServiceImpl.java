@@ -14,6 +14,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -411,5 +413,23 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
 
         orderRepo.delete(so);
         log.info("[SaleOrder][delete] id={} code={}", id, so.getSoCode());
+    }
+
+    @Override
+    public Page<SaleOrder> searchWithFilters(
+            String keyword,
+            SaleOrder.SaleOrderStatus status,
+            LocalDateTime from,
+            LocalDateTime to,
+            int page,
+            int size
+    ) {
+        return orderRepo.searchWithFilters(
+                (keyword != null && !keyword.isBlank()) ? keyword.trim() : null,
+                status,
+                from,
+                to,
+                PageRequest.of(page, size)
+        );
     }
 }

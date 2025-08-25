@@ -52,6 +52,7 @@ public class Product {
     public enum ProductStatus {
         ACTIVE,     // Đang hoạt động
         INACTIVE    // Ngưng hoạt động
+
     }
 
 

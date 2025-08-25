@@ -96,4 +96,27 @@ public interface SaleOrderRepository extends JpaRepository<SaleOrder, Integer> {
     """)
     List<SaleOrder> findOpenOrdersInRange(@Param("start") LocalDateTime start,
                                           @Param("end") LocalDateTime end);
+
+    @EntityGraph(attributePaths = { "createdByUser","customer" })
+    @Query("""
+    SELECT so FROM SaleOrder so
+    LEFT JOIN so.customer c
+    WHERE (:keyword IS NULL OR
+           LOWER(so.soCode) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+           (c IS NOT NULL AND (
+               LOWER(c.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               LOWER(c.phone) LIKE LOWER(CONCAT('%', :keyword, '%'))
+           )))
+      AND (:status IS NULL OR so.status = :status)
+      AND (:from IS NULL OR so.orderDate >= :from)
+      AND (:to   IS NULL OR so.orderDate <= :to)
+    ORDER BY so.soCode ASC
+""")
+    Page<SaleOrder> searchWithFilters(
+            @Param("keyword") String keyword,
+            @Param("status") com.eewms.entities.SaleOrder.SaleOrderStatus status,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            Pageable pageable
+    );
 }

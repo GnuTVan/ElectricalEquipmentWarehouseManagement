@@ -27,6 +27,56 @@
                 </form>
             </div>
         </div>
+        <!-- Filter Bar -->
+        <!-- Filter Bar (đã thêm px-6 để thẳng hàng với bảng) -->
+        <div class="px-6">
+            <form method="get" class="mb-4 flex items-center gap-2">
+                <input type="text" name="keyword" th:value="${keyword}" placeholder="Mã / Tên SP"
+                       class="border rounded w-60 h-10 px-3"/>
+
+                <!-- Nhà cung cấp -->
+                <select name="supplierId" class="border rounded h-10 px-3">
+                    <option value="" th:selected="${supplierId == null}">Nhà cung cấp</option>
+                    <option th:each="s : ${suppliers}"
+                            th:value="${s.id}"
+                            th:text="${s.name}"
+                            th:selected="${supplierId != null and supplierId == s.id}">
+                    </option>
+                </select>
+
+                <!-- Danh mục -->
+                <select name="categoryId" class="border rounded h-10 px-3">
+                    <option value="" th:selected="${categoryId == null}">Danh mục</option>
+                    <option th:each="c : ${categories}"
+                            th:value="${c.id}"
+                            th:text="${c.name}"
+                            th:selected="${categoryId != null and categoryId == c.id}">
+                    </option>
+                </select>
+
+                <!-- Thương hiệu -->
+                <select name="brandId" class="border rounded h-10 px-3">
+                    <option value="" th:selected="${brandId == null}">Thương hiệu</option>
+                    <option th:each="b : ${brands}"
+                            th:value="${b.id}"
+                            th:text="${b.name}"
+                            th:selected="${brandId != null and brandId == b.id}">
+                    </option>
+                </select>
+
+                <!-- Trạng thái (Enum) -->
+                <select name="status" class="border rounded h-10 px-3">
+                    <option value="" th:selected="${status == null}">Trạng thái</option>
+                    <option th:each="st : ${productStatuses}"
+                            th:value="${st.name()}"
+                            th:text="${st.name()}"
+                            th:selected="${status != null and status.name() == st.name()}">
+                    </option>
+                </select>
+
+                <button type="submit" class="px-4 h-10 bg-blue-600 text-white rounded">Lọc</button>
+            </form>
+        </div>
 
         <!-- Bảng dữ liệu -->
         <div class="px-6 py-6">
@@ -45,10 +95,18 @@
                         <th class="px-4 py-3 text-center whitespace-nowrap border border-gray-200">Trạng thái</th>
                         <th class="px-4 py-3 text-center whitespace-nowrap border border-gray-200">Hành động</th>
                     </tr>
-
                     </thead>
                     <tbody>
+                    <!-- Empty state -->
+                    <tr th:if="${products == null or #lists.isEmpty(products)}">
+                        <td colspan="10" class="px-4 py-6 text-center text-gray-500 italic">
+                            Không có sản phẩm phù hợp hiện tại.
+                        </td>
+                    </tr>
+
+                    <!-- Rows -->
                     <tr th:each="product : ${products}"
+                        th:unless="${products == null or #lists.isEmpty(products)}"
                         class="border-t hover:bg-gray-100"
                         th:data-id="${product.id}"
                         th:data-code="${product.code}"
@@ -63,14 +121,13 @@
                         th:data-category-id="${product.category.id}"
                         th:data-unit="${product.unit.name}"
                         th:data-unit-id="${product.unit.id}"
-                        th:data-description="${product.description}"
-                        th:data-images="${#strings.arrayJoin(imageUrls, ',')}"
-                        th:data-supplier-names="${product.supplierNames} != null ? ${#strings.arrayJoin(product.supplierNames, ',')} : ''"
-                        th:data-supplier-ids="${product.supplierIds} != null ? ${#strings.arrayJoin(product.supplierIds, ',')} : ''">
-
+                        th:data-images="${product.images != null and !#lists.isEmpty(product.images) ? product.images[0].imageUrl : ''}"
+                        th:data-supplier-names="${product.supplierNames != null ? #strings.arrayJoin(product.supplierNames, ',') : ''}"
+                        th:data-supplier-ids="${product.supplierIds != null ? #strings.arrayJoin(product.supplierIds, ',') : ''}">
 
                         <td class="px-4 py-3 border border-gray-200" th:text="${product.code}"></td>
                         <td class="px-4 py-3 border border-gray-200" th:text="${product.name}"></td>
+
                         <td class="px-4 py-3 border border-gray-200">
                             <div th:if="${#lists.isEmpty(product.images)}">
                                 <span class="text-gray-500 italic text-center">Không có ảnh</span>
@@ -81,6 +138,7 @@
                                      class="w-20 h-15 object-cover rounded border"/>
                             </div>
                         </td>
+
                         <td class="px-4 py-3 border border-gray-200" th:text="${product.listingPrice}"></td>
                         <td class="px-4 py-3 border border-gray-200" th:text="${product.quantity}"></td>
                         <td class="px-4 py-3 border border-gray-200" th:text="${product.brand.name}"></td>
@@ -88,18 +146,15 @@
                         <td class="px-4 py-3 border border-gray-200"
                             th:text="${#lists.isEmpty(product.supplierNames) ? '—' : #strings.arrayJoin(product.supplierNames, ', ')}">
                         </td>
-                        <!--                    <td class="px-4 py-3" th:text="${#strings.arrayJoin(product.supplierNames, ', ')}"></td>-->
+
                         <td class="px-4 py-3 border border-gray-200">
                             <div class="flex items-center justify-center gap-3">
-                                <!-- Badge cố định chiều rộng -->
                                 <span class="inline-flex items-center justify-center w-32 px-2 py-1 rounded text-xs font-medium whitespace-nowrap"
                                       th:classappend="${product.status.name() == 'ACTIVE'} ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
                                       th:text="${product.status.name() == 'ACTIVE'} ? 'Đang hoạt động' : 'Ngưng hoạt động'">
-                            </span>
+                                </span>
 
-                                <!-- Toggle giữ hành vi cũ -->
-                                <label sec:authorize="hasAnyRole('MANAGER','STAFF')"
-                                       class="inline-flex relative items-center cursor-pointer">
+                                <label sec:authorize="hasAnyRole('MANAGER','STAFF')" class="inline-flex relative items-center cursor-pointer">
                                     <input type="checkbox"
                                            th:checked="${product.status.name() == 'ACTIVE'}"
                                            th:data-id="${product.id}"
@@ -110,29 +165,26 @@
                                 </label>
                             </div>
                         </td>
+
                         <td class="px-4 py-3 border border-gray-200 text-center">
                             <div class="inline-flex items-center gap-2">
-                                <!-- Nút Xem -->
                                 <a href="#" onclick="openDetailModal(this)"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 whitespace-nowrap shadow">
                                     <i class="ri-eye-line text-sm"></i> Chi tiết
                                 </a>
-
-                                <!-- Nút Sửa -->
-                                <a sec:authorize="hasAnyRole('MANAGER', 'STAFF')"
-                                   href="#" onclick="openEditModal(this)"
+                                <a sec:authorize="hasAnyRole('MANAGER', 'STAFF')" href="#" onclick="openEditModal(this)"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded shadow">
                                     <i class="ri-pencil-line text-sm"></i> Sửa
                                 </a>
                             </div>
                         </td>
                     </tr>
-
                     </tbody>
                 </table>
             </div>
             <div th:replace="~{fragments/pagination :: clientPager('Table', 5)}"></div>
         </div>
+
         <!-- Modal Chi tiết sản phẩm -->
         <div id="detailProductModal" class="fixed inset-0 z-50 hidden">
             <!-- Backdrop -->

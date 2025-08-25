@@ -367,4 +367,19 @@ public class ProductServicesImpl implements IProductServices {
         Page<Product> pageData = productRepo.searchByKeywordAndCategory(kw, categoryId, pageable);
         return pageData.map(this::toLandingDTO);
     }
+    @Override
+    public Page<Product> searchByFilters(
+            String keyword,
+            Integer supplierId,
+            Integer categoryId,
+            Integer brandId,
+            Product.ProductStatus status,
+            Pageable pageable) {
+        String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        Pageable pb = (pageable == null) ? Pageable.unpaged() : pageable;
+        return productRepo.search(kw, supplierId, categoryId, brandId, status, pb);
+    }
+
+
+
 }
