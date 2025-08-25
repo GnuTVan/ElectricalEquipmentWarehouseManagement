@@ -33,9 +33,7 @@ public class Debt {
         Status(String label) {
             this.label = label;
         }
-
     }
-
 
     public enum PartyType { SUPPLIER, CUSTOMER }
 
@@ -50,14 +48,18 @@ public class Debt {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // === NEW: dùng chung cho NCC & KH ===
+    // === Dùng chung cho NCC & KH ===
     @Enumerated(EnumType.STRING)
     @Column(name = "party_type", nullable = false)
     private PartyType partyType = PartyType.SUPPLIER; // default cho dữ liệu hiện tại
 
-    // Nếu chưa có Customer entity thì để customerId dạng Long để compile an toàn
     @Column(name = "customer_id")
-    private Long customerId; // sau này đổi sang ManyToOne Customer
+    private Long customerId; // sau này có thể đổi ManyToOne Customer
+
+    // ✅ READ-ONLY link to Customer từ cột customer_id (không ảnh hưởng insert/update)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id", insertable = false, updatable = false)
+    private Customer customerRef;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "document_type", nullable = false)
@@ -68,7 +70,7 @@ public class Debt {
 
     // === Các field cũ vẫn giữ nguyên ===
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "supplier_id", nullable = true)   // NOTE: đổi nullable = true
+    @JoinColumn(name = "supplier_id", nullable = true)
     private Supplier supplier;
 
     @ManyToOne(fetch = FetchType.LAZY)

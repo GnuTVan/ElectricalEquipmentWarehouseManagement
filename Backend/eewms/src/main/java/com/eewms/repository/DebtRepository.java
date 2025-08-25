@@ -32,4 +32,8 @@ public interface DebtRepository extends JpaRepository<Debt, Long> {
 
     @EntityGraph(attributePaths = {"supplier"})  // bảo đảm supplier đã sẵn sàng
     List<Debt> findAllByDocumentType(Debt.DocumentType documentType);
+
+    // ✅ NEW: Lấy toàn bộ công nợ KH và nạp sẵn Customer (customerRef) để đọc tên/SĐT
+    @EntityGraph(attributePaths = {"customerRef"})
+    List<Debt> findAllByPartyType(PartyType partyType);
 }

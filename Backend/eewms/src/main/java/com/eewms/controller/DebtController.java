@@ -10,16 +10,195 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import org.springframework.transaction.annotation.Transactional;
 
 @Controller
-@RequestMapping("/admin/debts")
+@RequestMapping({"/admin/debts", "/debts"}) // khớp link ở sidebar
 @RequiredArgsConstructor
 public class DebtController {
 
     private final IDebtService debtService;
     private final DebtRepository debtRepository;
+
+    /* ================== Helpers (reflection an toàn) ================== */
+    private static Object invokeNoArg(Object target, String methodName) {
+        if (target == null) return null;
+        try {
+            Method m = target.getClass().getMethod(methodName);
+            m.setAccessible(true);
+            return m.invoke(target);
+        } catch (Throwable ignored) { return null; }
+    }
+
+    private static String tryGetString(Object target, String... candidateMethods) {
+        for (String m : candidateMethods) {
+            Object v = invokeNoArg(target, m);
+            if (v != null) return String.valueOf(v);
+        }
+        return "";
+    }
+
+    private static Object tryGet(Object target, String... candidateMethods) {
+        for (String m : candidateMethods) {
+            Object v = invokeNoArg(target, m);
+            if (v != null) return v;
+        }
+        return null;
+    }
+
+    private static BigDecimal nz(BigDecimal x) { return x == null ? BigDecimal.ZERO : x; }
+
+    /* ================== NCC list ================== */
+    @Transactional(readOnly = true)
+    @GetMapping("/suppliers")
+    public String suppliersList(Model model) {
+
+        class SupplierRow {
+            public String supplierName;
+            public String docCode;
+            public java.math.BigDecimal total;
+            public java.math.BigDecimal paid;
+            public java.math.BigDecimal remain;
+            public java.time.LocalDate dueDate;
+            public Object status;   // r.status.label trong template
+            public Long receiptId;
+
+            SupplierRow(String supplierName, String docCode,
+                        java.math.BigDecimal total, java.math.BigDecimal paid, java.math.BigDecimal remain,
+                        java.time.LocalDate dueDate, Object status, Long receiptId) {
+                this.supplierName = supplierName;
+                this.docCode = docCode;
+                this.total = total;
+                this.paid = paid;
+                this.remain = remain;
+                this.dueDate = dueDate;
+                this.status = status;
+                this.receiptId = receiptId;
+            }
+        }
+
+        var rows = debtRepository.findAll().stream()
+                .filter(d -> {
+                    var pt = d.getPartyType();
+                    if (pt == null) return false;
+                    var name = pt.name();
+                    return "SUPPLIER".equals(name) || "PROVIDER".equals(name) || "VENDOR".equals(name);
+                })
+                .filter(d -> {
+                    var dt = d.getDocumentType() == null ? "" : d.getDocumentType().name();
+                    return "WAREHOUSE_RECEIPT".equals(dt) || "RECEIPT".equals(dt) || "WR".equals(dt);
+                })
+                .map(d -> {
+                    var total  = nz(d.getTotalAmount());
+                    var paid   = nz(d.getPaidAmount());
+                    var remain = total.subtract(paid);
+
+                    String docCode = "WR#" + d.getDocumentId();
+                    Long receiptId = (d.getWarehouseReceipt() != null)
+                            ? d.getWarehouseReceipt().getId()
+                            : d.getDocumentId();
+
+                    String supplierName = "";
+                    if (d.getSupplier() != null && d.getSupplier().getName() != null) {
+                        supplierName = d.getSupplier().getName();
+                    }
+
+                    String statusLabel = (d.getStatus() == null) ? "" : String.valueOf(d.getStatus());
+                    Object statusObj = java.util.Map.of("label", statusLabel);
+
+                    return new SupplierRow(
+                            supplierName, docCode,
+                            total, paid, remain,
+                            d.getDueDate(),
+                            statusObj,
+                            receiptId
+                    );
+                })
+                .toList();
+
+        model.addAttribute("rows", rows);
+        return "debt/debt-supplier-list";
+    }
+
+    /* ========= KH list: dùng customerRef (read-only) ========= */
+    public static class CustomerRow {
+        public String customer;   // tên KH
+        public String phone;      // SĐT KH
+        public String docCode;    // Mã chứng từ (GIN#/SO#)
+        public BigDecimal total;
+        public BigDecimal paid;
+        public BigDecimal remain;
+        public LocalDate dueDate;
+        public Object status;
+        public Long goodIssueId;
+        public Long debtId;
+
+        public CustomerRow(String customer, String phone, String docCode,
+                           BigDecimal total, BigDecimal paid, BigDecimal remain,
+                           LocalDate dueDate, Object status, Long goodIssueId, Long debtId) {
+            this.customer = customer;
+            this.phone = phone;
+            this.docCode = docCode;
+            this.total = total;
+            this.paid = paid;
+            this.remain = remain;
+            this.dueDate = dueDate;
+            this.status = status;
+            this.goodIssueId = goodIssueId;
+            this.debtId = debtId;
+        }
+    }
+
+    @Transactional(readOnly = true)
+    @GetMapping("/customers")
+    public String listCustomerDebts(Model model) {
+        var rows = debtRepository.findAllByPartyType(Debt.PartyType.CUSTOMER).stream()
+                .map(d -> {
+                    BigDecimal total  = nz(d.getTotalAmount());
+                    BigDecimal paid   = nz(d.getPaidAmount());
+                    BigDecimal remain = total.subtract(paid);
+
+                    String docCode;
+                    Long goodIssueId = null;
+                    var dt = d.getDocumentType();
+                    if (dt == Debt.DocumentType.GOOD_ISSUE) {
+                        docCode = "GIN#" + d.getDocumentId();
+                        goodIssueId = d.getDocumentId();
+                    } else if (dt == Debt.DocumentType.SALES_INVOICE) {
+                        docCode = "SO#" + d.getDocumentId();
+                    } else if (dt == Debt.DocumentType.WAREHOUSE_RECEIPT) {
+                        docCode = "WR#" + d.getDocumentId();
+                    } else {
+                        docCode = String.valueOf(d.getDocumentId());
+                    }
+
+                    String name  = "";
+                    String phone = "";
+                    if (d.getCustomerRef() != null) {
+                        if (d.getCustomerRef().getFullName() != null) name  = d.getCustomerRef().getFullName();
+                        if (d.getCustomerRef().getPhone()    != null) phone = d.getCustomerRef().getPhone();
+                    }
+
+                    return new CustomerRow(
+                            name,
+                            phone,
+                            docCode,
+                            total, paid, remain,
+                            d.getDueDate(),
+                            d.getStatus(),
+                            goodIssueId,
+                            d.getId()
+                    );
+                })
+                .toList();
+
+        model.addAttribute("rows", rows);
+        return "debt/debt-customer-list";
+    }
+    /* ================================================================ */
 
     /* ================== Xem chi tiết công nợ ================== */
     @GetMapping("/view/{id}")
@@ -27,13 +206,10 @@ public class DebtController {
         Debt debt = debtRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy công nợ: " + id));
         model.addAttribute("debt", debt);
-        return "debts/view"; // => templates/debts/view.html (nếu bạn có trang này)
+        return "debt/view";
     }
-    /* ========================================================== */
 
-    /* ============ Tạo công nợ từ ĐƠN BÁN (KH) =================
-       Nhận thêm ginId để tạo xong quay lại trang chi tiết phiếu xuất.
-     */
+    /* ============ Tạo công nợ từ ĐƠN BÁN (KH) ================= */
     @PostMapping("/create-from-sale-order/{soId}")
     public String createFromSaleOrder(@PathVariable("soId") Long soId,
                                       @RequestParam(value = "termDays", required = false, defaultValue = "30") int termDays,
@@ -51,7 +227,6 @@ public class DebtController {
             return (ginId != null) ? ("redirect:/good-issue/view/" + ginId) : "redirect:/good-issue";
         }
     }
-    /* ========================================================== */
 
     /* ============ (Tuỳ chọn) Tạo công nợ từ PHIẾU NHẬP (NCC) === */
     @PostMapping("/create-from-receipt/{wrId}")
@@ -69,11 +244,8 @@ public class DebtController {
             return "redirect:/admin/warehouse-receipts/view/" + wrId;
         }
     }
-    /* ========================================================== */
 
-    /* ================== Thanh toán công nợ ====================
-       Hỗ trợ ginId để thanh toán xong quay lại trang chi tiết GIN.
-     */
+    /* ================== Thanh toán công nợ ==================== */
     @PostMapping("/{debtId}/pay")
     public String pay(@PathVariable Long debtId,
                       @RequestParam BigDecimal amount,
@@ -86,7 +258,6 @@ public class DebtController {
 
         Debt d = debtRepository.findById(debtId).orElseThrow();
 
-        // Ưu tiên quay lại trang chi tiết GIN nếu có ginId
         String back = (ginId != null) ? "redirect:/good-issue/view/" + ginId : null;
         if (back == null) {
             if (d.getWarehouseReceipt() != null) {
@@ -127,9 +298,8 @@ public class DebtController {
 
         return back;
     }
-    /* ========================================================== */
 
-    /* ================== Cập nhật hạn thanh toán (đặt ngày cụ thể) ================ */
+    /* ================== Cập nhật hạn thanh toán ================== */
     @PostMapping("/{debtId}/due-date")
     public String updateDueDate(@PathVariable Long debtId,
                                 @RequestParam String dueDate,
@@ -160,7 +330,6 @@ public class DebtController {
         }
         return "redirect:/admin/debts";
     }
-    /* =========================================================================== */
 
     /* ============= Tạo công nợ từ PHIẾU XUẤT (KH từ GIN) ====================== */
     @PostMapping("/create-from-good-issue/{ginId}")
@@ -177,12 +346,8 @@ public class DebtController {
         }
         return "redirect:/good-issue/view/" + ginId;
     }
-    /* =========================================================================== */
 
-    /* =============== ĐỔI KỲ HẠN theo số ngày (0/10/20/30) ======================
-       Endpoint này khớp với form ở giao diện: /admin/debts/{id}/update-terms
-       Tính dueDate = invoiceDate + termDays (nếu invoiceDate null thì dùng today).
-     */
+    /* =============== ĐỔI KỲ HẠN theo số ngày (0/10/20/30) ====================== */
     @PostMapping("/{id}/update-terms")
     public String updateTerms(@PathVariable("id") Long debtId,
                               @RequestParam("termDays") int termDays,
@@ -203,13 +368,8 @@ public class DebtController {
         }
         return "redirect:/admin/debts";
     }
-    /* =========================================================================== */
 
-    /* ================== Tạo QR PayOS cho công nợ (GIN) ====================
-   - Cho phép nhập số tiền (amount) <= còn lại -> tạo order PayOS
-   - Chỉ áp dụng với công nợ KH từ Phiếu Xuất (GOOD_ISSUE)
-   - Quay lại trang chi tiết GIN sau khi tạo
-*/
+    /* ================== Tạo QR PayOS cho công nợ (GIN) ==================== */
     @PostMapping("/{debtId}/payos/create")
     public String createPayOsForDebt(@PathVariable Long debtId,
                                      @RequestParam("amount") BigDecimal amount,
@@ -218,7 +378,6 @@ public class DebtController {
         Debt d = debtRepository.findById(debtId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy công nợ: " + debtId));
 
-        // Chỉ hỗ trợ công nợ khách hàng từ Phiếu Xuất
         if (d.getPartyType() != Debt.PartyType.CUSTOMER || d.getDocumentType() != Debt.DocumentType.GOOD_ISSUE) {
             ra.addFlashAttribute("message", "Chỉ hỗ trợ PayOS cho công nợ KH từ Phiếu xuất.");
             ra.addFlashAttribute("messageType", "warning");
@@ -235,7 +394,6 @@ public class DebtController {
             return "redirect:/good-issue/view/" + d.getDocumentId();
         }
 
-        // Validate amount người dùng nhập
         if (amount == null || amount.signum() <= 0) {
             ra.addFlashAttribute("message", "Số tiền thanh toán phải > 0.");
             ra.addFlashAttribute("messageType", "warning");
@@ -248,7 +406,6 @@ public class DebtController {
         }
 
         try {
-            // goodIssueNoteId = d.getDocumentId() (vì đây là công nợ từ GIN)
             var res = debtService.createDebtPaymentQR(d.getId(), amount, d.getDocumentId(), "SYSTEM");
             String link = (res.getCheckoutUrl() != null) ? res.getCheckoutUrl() : res.getPaymentLink();
 
@@ -266,7 +423,6 @@ public class DebtController {
 
         return "redirect:/good-issue/view/" + d.getDocumentId();
     }
-    /* ===================================================================== */
 
     /* ================== Hủy QR PayOS đang PENDING ==================== */
     @PostMapping("/{debtId}/payos/cancel")
@@ -285,12 +441,10 @@ public class DebtController {
             ra.addFlashAttribute("messageType", "danger");
         }
 
-        // Quay lại GIN nếu là công nợ từ GIN, nếu không thì về trang debt
         var d = debtRepository.findById(debtId).orElse(null);
         if (d != null && d.getDocumentType() == Debt.DocumentType.GOOD_ISSUE) {
             return "redirect:/good-issue/view/" + d.getDocumentId();
         }
         return "redirect:/admin/debts/view/" + debtId;
     }
-    /* ================================================================ */
 }

@@ -125,14 +125,36 @@
                     <span>Bán hàng</span>
                 </a>
             </li>
-            <!-- Công nợ -->
+
+            <!-- Công nợ (dropdown) — CHỈ PHẦN NÀY ĐƯỢC THAY ĐỔI -->
             <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
-                <a th:href="@{/debts}"
-                   class="menu-link flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <i class="ri-file-text-line w-6 text-lg"></i>
-                    <span>Công nợ</span>
-                </a>
+                <div class="flex flex-col">
+                    <button type="button"
+                            data-submenu-id="debt-submenu"
+                            class="flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700 w-full"
+                            onclick="toggleSubmenu(this)">
+                        <div class="flex items-center">
+                            <i class="ri-file-text-line w-6 text-lg"></i>
+                            <span>Công nợ</span>
+                        </div>
+                        <i class="ri-arrow-down-s-line transform transition-transform duration-300 ease-in-out origin-center"></i>
+                    </button>
+                    <ul id="debt-submenu"
+                        class="ml-8 mt-1 space-y-1 overflow-hidden transition-all duration-300 max-h-0">
+                        <li>
+                            <a th:href="@{/debts/suppliers}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">
+                                Công nợ nhà cung cấp
+                            </a>
+                        </li>
+                        <li>
+                            <a th:href="@{/debts/customers}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">
+                                Công nợ khách hàng
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </li>
+
             <!-- Yêu cầu mua hàng -->
             <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
                 <a th:href="@{/admin/purchase-requests}"
@@ -230,4 +252,3 @@
         </ul>
     </nav>
 </aside>
-
