@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface CustomerRefundRepository extends JpaRepository<CustomerRefund, Long> {
     List<CustomerRefund> findBySaleOrderSoIdOrderByIdDesc(Integer soId);
+
+    boolean existsByReturnCode(String returnCode);
 }

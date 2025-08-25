@@ -31,7 +31,7 @@
                 </thead>
                 <tbody>
                 <tr th:each="r : ${receipts}" class="border-t hover:bg-gray-50 transition">
-                    <td class="px-6 py-3 border border-gray-200 font-medium text-blue-700" th:text="${r.code}">RN001</td>
+                    <td class="px-6 py-3 border border-gray-200 font-medium" th:text="${r.code}">RN001</td>
                     <td class="px-6 py-3 border border-gray-200">
                         <!-- Nếu có PO: hiện mã PO + link như cũ -->
                         <span th:if="${r.purchaseOrder != null}">

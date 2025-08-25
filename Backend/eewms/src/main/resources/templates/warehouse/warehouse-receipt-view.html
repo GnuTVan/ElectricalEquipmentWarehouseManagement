@@ -54,7 +54,7 @@
                         <p th:text="${receipt.purchaseOrderCode != null ? receipt.purchaseOrderCode : '—'}"
                            class="text-gray-800"></p>
                     </div>
-                    <div>
+                    <div class="hidden">
                         <p class="text-gray-600 font-semibold">Kho:</p>
                         <p th:text="${receipt.warehouseName != null ? receipt.warehouseName : '—'}"
                            class="text-gray-800"></p>
@@ -98,6 +98,7 @@
 
             <!-- CÔNG NỢ -->
             <div sec:authorize="hasRole('MANAGER')"
+                 th:if="${receipt.purchaseOrderCode != null}"
                  class="bg-white p-6 rounded shadow">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-semibold text-gray-800">Công nợ nhà cung cấp</h2>

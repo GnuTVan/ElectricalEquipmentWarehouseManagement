@@ -119,16 +119,16 @@
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-semibold">Công nợ khách hàng</h2>
                     <div th:if="${debt != null}">
-          <span class="px-2 py-1 rounded text-xs font-medium"
-                th:text="${debt.status}"
-                th:classappend="${debt.status.name() == 'PAID' ?
-                    ' bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                   (debt.status.name() == 'PARTIAL' ?
-                    ' bg-amber-50 text-amber-700 border border-amber-200' :
-                   (debt.status.name() == 'OVERDUE' ?
-                    ' bg-rose-50 text-rose-700 border border-rose-200' :
-                    ' bg-gray-50 text-gray-700 border border-gray-200'))}">
-          </span>
+                          <span class="px-2 py-1 rounded text-xs font-medium"
+                                th:text="${debt.status.label}"
+                                th:classappend="${debt.status.name() == 'PAID' ?
+                                    ' bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                   (debt.status.name() == 'PARTIAL' ?
+                                    ' bg-amber-50 text-amber-700 border border-amber-200' :
+                                   (debt.status.name() == 'OVERDUE' ?
+                                    ' bg-rose-50 text-rose-700 border border-rose-200' :
+                                    ' bg-gray-50 text-gray-700 border border-gray-200'))}">
+                          </span>
                     </div>
                 </div>
 
@@ -257,7 +257,14 @@
                     <div class="mt-6">
                         <h3 class="font-semibold mb-3">Lịch sử thanh toán</h3>
                         <div class="overflow-x-auto border rounded">
-                            <table class="min-w-full text-sm">
+                            <table class="min-w-full text-sm table-fixed">
+                                <colgroup>
+                                    <col style="width:15%"><!-- Ngày -->
+                                    <col style="width:10%"><!-- Số tiền -->
+                                    <col style="width:15%"><!-- Phương thức -->
+                                    <col style="width:20%"><!-- Mã tham chiếu -->
+                                    <col style="width:40%"><!-- Ghi chú -->
+                                </colgroup>
                                 <thead class="bg-gray-100 text-gray-700">
                                 <tr>
                                     <th class="px-4 py-2 text-left">Ngày</th>
@@ -294,27 +301,38 @@
 
                     <!-- Hoàn tiền cho khách hàng -->
                     <div th:if="${refunds != null and !#lists.isEmpty(refunds)}" class="mt-6">
-                        <h3 class="font-semibold mb-2">Hoàn tiền cho khách hàng</h3>
-                        <table class="w-full text-left">
-                            <thead>
-                            <tr class="text-gray-600">
-                                <th>Ngày</th>
-                                <th class="w-32">Số tiền</th>
-                                <th class="w-40">Phương thức</th>
-                                <th class="w-40">Số tham chiếu</th>
-                                <th>Ghi chú</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr th:each="r : ${refunds}" class="border-t">
-                                <td th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
-                                <td th:text="${#numbers.formatDecimal(r.amount,0,'COMMA',0,'POINT')}"></td>
-                                <td th:text="${r.method}"></td>
-                                <td th:text="${r.referenceNo}">-</td>
-                                <td th:text="${r.note}"></td>
-                            </tr>
-                            </tbody>
-                        </table>
+                        <h3 class="font-semibold mb-3">Hoàn tiền cho khách hàng</h3>
+                        <div class="overflow-x-auto border rounded">
+                            <table class="min-w-full text-sm table-fixed">
+                                <colgroup>
+                                    <col style="width:15%"><!-- Ngày -->
+                                    <col style="width:10%"><!-- Số tiền -->
+                                    <col style="width:15%"><!-- Phương thức -->
+                                    <col style="width:20%"><!-- Mã tham chiếu -->
+                                    <col style="width:40%"><!-- Ghi chú -->
+                                </colgroup>
+                                <thead class="bg-gray-100 text-gray-700">
+                                <tr>
+                                    <th class="px-4 py-2 text-left">Ngày</th>
+                                    <th class="px-4 py-2 text-right">Số tiền</th>
+                                    <th class="px-4 py-2 text-left">Phương thức</th>
+                                    <th class="px-4 py-2 text-left">Mã tham chiếu</th>
+                                    <th class="px-4 py-2 text-left">Ghi chú</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="r : ${refunds}" class="border-t">
+                                    <td class="px-4 py-2"
+                                        th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                                    <td class="px-4 py-2 text-right "
+                                        th:text="${#numbers.formatDecimal(r.amount,0,'COMMA',0,'POINT')}"></td>
+                                    <td class="px-4 py-2" th:text="${r.method.label}"></td>
+                                    <td class="px-4 py-2" th:text="${r.referenceNo}">-</td>
+                                    <td class="px-4 py-2" th:text="${r.note}"></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <!-- Thanh toán QR (PayOS) -->

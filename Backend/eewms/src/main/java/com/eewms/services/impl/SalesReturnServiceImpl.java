@@ -205,7 +205,7 @@ public class SalesReturnServiceImpl implements ISalesReturnService {
         sr.setTotalAmount(total);
 
         java.math.BigDecimal appliedVnd = java.math.BigDecimal.ZERO; // đã khấu trừ vào công nợ
-        java.math.BigDecimal refundVnd  = java.math.BigDecimal.ZERO; // số tiền phải hoàn cho KH (nếu có)
+        java.math.BigDecimal refundVnd = java.math.BigDecimal.ZERO; // số tiền phải hoàn cho KH (nếu có)
 
         if (mode == com.eewms.constant.ReturnSettlementOption.OFFSET_THEN_REPLACE) {
             // === HOÀN TIỀN: trừ công nợ tối đa, nếu còn dư thì trả khách ===
@@ -217,7 +217,31 @@ public class SalesReturnServiceImpl implements ISalesReturnService {
                 if (appliedVnd == null) appliedVnd = java.math.BigDecimal.ZERO;
 
                 refundVnd = total.subtract(appliedVnd);
+                //TH số tiền hoàn âm (do dư nợ) -> coi như không hoàn
                 if (refundVnd.signum() < 0) refundVnd = java.math.BigDecimal.ZERO;
+
+                //TH số tiền hoàn dương -> tạo phiếu hoàn tiền
+                if (refundVnd.signum() > 0) {
+                    final SaleOrder soRef = sr.getSaleOrder();
+                    final Integer soIdKey = (soRef != null ? soRef.getSoId() : null);
+                    final String srCode = (sr.getCode() != null ? sr.getCode() : ("SR-" + sr.getId()));
+
+                    // Idempotent: nếu đã có refund cho phiếu này thì bỏ qua
+                    boolean refundedExists = customerRefundRepository.existsByReturnCode(srCode);
+                    if (!refundedExists) {
+                        CustomerRefund refund = CustomerRefund.builder()
+                                .saleOrderSoId(soIdKey)                // khóa nhóm theo SO
+                                .returnCode(srCode)                    // tra cứu ngược theo phiếu hoàn
+                                .amount(refundVnd)                     // số tiền hoàn dương
+                                .method(CustomerRefund.Method.CASH)    // mặc định; PrePersist cũng sẽ set CASH nếu null
+                                .referenceNo(null)                     // nếu có số UNC/phiếu chi thì set ở UI/flow thanh toán
+                                .note("Hoàn tiền phần dư từ phiếu hoàn " + srCode
+                                        + (soRef != null && soRef.getSoCode() != null ? " (đơn " + soRef.getSoCode() + ")" : ""))
+                                .build();
+
+                        customerRefundRepository.save(refund);
+                    }
+                }
 
                 // TODO: nếu bạn muốn ghi lịch sử hoàn tiền cho khách để hiển thị ở màn phiếu xuất,
                 // hãy lưu một bản ghi refund riêng (CustomerRefund) hoặc nơi bạn mong muốn hiển thị.
@@ -231,7 +255,7 @@ public class SalesReturnServiceImpl implements ISalesReturnService {
         } else {
             // === HOÀN HÀNG: KHÔNG trừ nợ, KHÔNG hoàn tiền ===
             appliedVnd = java.math.BigDecimal.ZERO;
-            refundVnd  = java.math.BigDecimal.ZERO;
+            refundVnd = java.math.BigDecimal.ZERO;
 
             // Đánh dấu sẽ đổi hàng
             sr.setReplacementAmount(java.math.BigDecimal.ZERO);
