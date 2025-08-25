@@ -53,4 +53,7 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Lo
             @Param("to") LocalDateTime to,
             Pageable pageable
     );
+    @EntityGraph(attributePaths = {"supplier", "items", "items.product"})
+    @Query("SELECT po FROM PurchaseOrder po WHERE po.id = :id")
+    Optional<PurchaseOrder> findWithDetailById(@Param("id") Long id);
 }

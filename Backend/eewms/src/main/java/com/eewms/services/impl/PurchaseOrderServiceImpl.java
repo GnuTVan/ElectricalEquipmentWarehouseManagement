@@ -260,7 +260,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService {
     @Override
     @Transactional(readOnly = true)
     public Optional<PurchaseOrder> findById(Long id) {
-        return orderRepo.findById(id);
+        return orderRepo.findWithDetailById(id); // ✅ thay vì findById(id)
     }
 
     /** Deprecated trong luồng mới: chỉ dùng để đổi nhãn trạng thái, KHÔNG cộng tồn */
