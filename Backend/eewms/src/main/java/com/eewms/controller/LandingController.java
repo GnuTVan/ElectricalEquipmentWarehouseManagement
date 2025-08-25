@@ -7,12 +7,11 @@ import com.eewms.dto.ComboDTO;
 import com.eewms.services.IProductServices;
 import com.eewms.services.ISettingServices;
 import com.eewms.services.IComboService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.PathVariable;
 
 import java.math.BigDecimal;
@@ -24,7 +23,12 @@ public class LandingController {
 
     private final IProductServices productService;
     private final ISettingServices settingService;
-    private final IComboService comboService;    // ✨ thêm
+    private final IComboService comboService;
+
+    @ModelAttribute("path")
+    public String path(HttpServletRequest request) {
+        return request != null ? request.getRequestURI() : "";
+    }
 
     // Trang chủ
     @GetMapping("/landing-page")

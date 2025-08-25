@@ -107,7 +107,7 @@
         <h3 class="font-semibold text-base mb-1" th:text="${p.name}">Tên sản phẩm</h3>
 
         <!-- Danh mục -->
-        <p class="text-sm text-gray-500" th:text="${p.category.name}">Danh mục</p>
+          <span th:text="${p.category != null ? p.category.name : 'Chưa phân loại'}"></span>
 
         <!-- Giá -->
         <p class="text-red-600 font-semibold mt-2"

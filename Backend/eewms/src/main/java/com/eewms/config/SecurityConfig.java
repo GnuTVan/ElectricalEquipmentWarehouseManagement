@@ -39,7 +39,7 @@ public class SecurityConfig {
                                 "/payos/cancel", "/payos/cancel/").permitAll()
                         // Public/static
                         .requestMatchers("/",
-                                "/landing/**",
+                                "/landing/**","/gioi-thieu","/san-pham/**",
                                 "/css/**", "/js/**", "/images/**", "/assets/**",
                                 "/login",
                                 "/activate", "/activate/**",
@@ -163,7 +163,7 @@ public class SecurityConfig {
                 // ✅ Logout
                 .logout(logout -> logout
                         .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout=true")
+                        .logoutSuccessUrl("/landing-page")
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")
                         .permitAll()
