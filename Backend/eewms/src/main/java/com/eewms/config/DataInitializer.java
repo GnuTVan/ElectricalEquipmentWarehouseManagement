@@ -25,7 +25,6 @@ public class DataInitializer {
         createRoleIfNotExists("ROLE_ADMIN");
         createRoleIfNotExists("ROLE_MANAGER");
         createRoleIfNotExists("ROLE_STAFF");
-        createRoleIfNotExists("ROLE_GUEST");
 
         // Tạo admin mặc định
         if (!userRepository.existsByUsername("admin")) {
