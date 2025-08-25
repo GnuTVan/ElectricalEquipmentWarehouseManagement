@@ -7,7 +7,8 @@
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
     <!-- Main content -->
-    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+    <main id="mainContent"
+          class="flex-1 ml-64 transition-all duration-300 relative min-w-0">
         <!-- Header -->
         <div th:replace="~{fragments/header :: header}"></div>
 
@@ -36,7 +37,18 @@
         <div class="px-6 py-6">
             <!-- Table -->
             <div class="bg-white shadow-md rounded-lg">
-                <table id="Table" class="min-w-full table-auto text-sm text-left border border-gray-200">
+                <table id="Table" class="min-w-full table-fixed text-sm text-left border border-gray-200">
+                    <colgroup>
+                        <col style="width:1%">    <!-- ID -->
+                        <col style="width:10%">   <!-- Họ và tên -->
+                        <col style="width:10%">   <!-- Tài khoản -->
+                        <col style="width:10%">   <!-- Email -->
+                        <col style="width:20%">   <!-- SĐT -->
+                        <col style="width:15%">   <!-- Địa chỉ -->
+                        <col style="width:15%">   <!-- Chức vụ -->
+                        <col style="width:10%">   <!-- Trạng thái -->
+                        <col style="width:9%">   <!-- Hành động -->
+                    </colgroup>
                     <thead class="bg-gray-100 text-gray-700 font-semibold">
                     <tr>
                         <th class="px-4 py-3 border border-gray-200 whitespace-nowrap text-left">ID</th>
@@ -66,14 +78,14 @@
                         <td class="px-4 py-3 border border-gray-200" th:text="${user.phone}"></td>
                         <td class="px-4 py-3 border border-gray-200" th:text="${user.address}"></td>
                         <td class="px-4 py-3 border border-gray-200 text-center whitespace-nowrap w-1">
-  <span th:each="role : ${user.roleNames}" class="inline-block mr-1">
-    <span th:switch="${role}" class="text-sm font-medium">
-      <span th:case="'ADMIN'" class="inline-block px-2 py-1 rounded bg-red-100 text-red-700">Quản trị viên</span>
-      <span th:case="'MANAGER'" class="inline-block px-2 py-1 rounded bg-yellow-100 text-yellow-700">Quản lý</span>
-      <span th:case="'STAFF'" class="inline-block px-2 py-1 rounded bg-blue-100 text-blue-700">Nhân viên</span>
-      <span th:case="*" class="bg-green-100 text-green-700" th:text="${role}"></span>
-    </span>
-  </span>
+                              <span th:each="role : ${user.roleNames}" class="inline-block mr-1">
+                                <span th:switch="${role}" class="text-sm font-medium">
+                                  <span th:case="'ADMIN'" class="inline-block px-2 py-1 rounded bg-red-100 text-red-700">Quản trị viên</span>
+                                  <span th:case="'MANAGER'" class="inline-block px-2 py-1 rounded bg-yellow-100 text-yellow-700">Quản lý</span>
+                                  <span th:case="'STAFF'" class="inline-block px-2 py-1 rounded bg-blue-100 text-blue-700">Nhân viên</span>
+                                  <span th:case="*" class="bg-green-100 text-green-700" th:text="${role}"></span>
+                                </span>
+                              </span>
                         </td>
 
                         <td class="px-4 py-3">

@@ -68,29 +68,29 @@
         <!-- Sale Order Table -->
         <div class="px-6 py-6">
             <div class="overflow-x-auto bg-white rounded-lg shadow">
-                <table id="Table" class="min-w-full table-auto text-sm">
+                <table id="Table" class="min-w-full table-auto text-sm border border-gray-200">
                     <thead class="bg-gray-100 text-left">
                     <tr>
-                        <th class="px-4 py-3 font-semibold">STT</th>
-                        <th class="px-4 py-3 font-semibold">Mã đơn</th>
-                        <th class="px-4 py-3 font-semibold">Khách hàng</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">STT</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Mã đơn</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Khách hàng</th>
                         <!-- ✅ Cột Số điện thoại -->
-                        <th class="px-4 py-3 font-semibold">Số điện thoại</th>
-                        <th class="px-4 py-3 font-semibold">Ngày tạo</th>
-                        <th class="px-4 py-3 font-semibold">Người tạo</th>
-                        <th class="px-4 py-3 font-semibold">Tổng tiền</th>
-                        <th class="px-4 py-3 font-semibold">Trạng thái</th>
-                        <th class="px-4 py-3 font-semibold text-center">Hành động</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Số điện thoại</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Ngày tạo</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Người tạo</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Tổng tiền</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Trạng thái</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200 text-center">Hành động</th>
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="order, iStat : ${sale_orders}" class="border-t">
-                        <td class="px-4 py-2" th:text="${iStat.index + 1}"></td>
-                        <td class="px-4 py-2 font-medium text-blue-600" th:text="${order.orderCode}"></td>
-                        <td class="px-4 py-2" th:text="${order.customerName}"></td>
+                    <tr th:each="order, iStat : ${sale_orders}" class="border-t hover:bg-gray-100">
+                        <td class="px-4 py-2 border border-gray-200" th:text="${iStat.index + 1}"></td>
+                        <td class="px-4 py-2 border border-gray-200 font-medium text-blue-600" th:text="${order.orderCode}"></td>
+                        <td class="px-4 py-2 border border-gray-200" th:text="${order.customerName}"></td>
 
                         <!-- ✅ Dữ liệu số điện thoại (fallback & link gọi) -->
-                        <td class="px-4 py-2">
+                        <td class="px-4 py-2 border border-gray-200">
                             <a th:if="${order.customerPhone}"
                                th:href="${'tel:' + order.customerPhone}"
                                class="text-gray-700 hover:underline"
@@ -98,11 +98,11 @@
                             <span th:if="${order.customerPhone == null}" class="text-gray-400">-</span>
                         </td>
 
-                        <td class="px-4 py-2" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
-                        <td class="px-4 py-2" th:text="${order.createdBy}"></td>
-                        <td class="px-4 py-2"
+                        <td class="px-4 py-2 border border-gray-200" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
+                        <td class="px-4 py-2 border border-gray-200" th:text="${order.createdBy}"></td>
+                        <td class="px-4 py-2 border border-gray-200"
                             th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
-                        <td class="px-4 py-2 w-36 text-center">
+                        <td class="px-4 py-2 border border-gray-200 w-36 text-center">
                         <span class="inline-block w-full truncate px-2 py-1 rounded text-xs font-medium"
                               th:classappend="
                                     ${order.status.name() == 'CANCELLED'} ? 'bg-red-100 text-red-700' :
@@ -112,7 +112,7 @@
                               th:text="${order.status.label}">
                         </span>
                         </td>
-                        <td class="px-4 py-2 text-center">
+                        <td class="px-4 py-2 border border-gray-200 text-center">
                             <div class="flex justify-center items-center space-x-2">
                                 <!-- PENDING: Sửa + Xóa -->
                                 <a sec:authorize="hasRole('STAFF')"
