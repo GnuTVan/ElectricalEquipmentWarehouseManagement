@@ -58,7 +58,7 @@
         <!-- Page Title + Button -->
         <div class="px-6 py-6">
 
-            <!-- Page Title + Button (bỏ px-4 ở đây) -->
+            <!-- Page Title + Button -->
             <div class="flex justify-between items-center mb-4">
                 <h1 class="text-2xl font-bold text-gray-800">Danh sách đơn hàng bán</h1>
                 <a sec:authorize="hasRole('STAFF')" href="/sale-orders/create"
@@ -67,8 +67,8 @@
                 </a>
             </div>
 
-            <!-- Filter Bar (nằm trong cùng wrapper nên canh trái khớp bảng) -->
-            <form method="get" class="mb-4 flex items-center gap-2">
+            <!-- Filter Bar -->
+            <form id="filterForm" method="get" class="mb-4 flex items-center gap-2">
                 <input type="text" name="keyword" th:value="${keyword}" placeholder="Mã, Người tạo"
                        class="border p-2 rounded w-60"/>
 
@@ -87,7 +87,11 @@
                        th:value="${to != null ? #temporals.format(to, 'yyyy-MM-dd''T''HH:mm') : null}"
                        class="border p-2 rounded"/>
 
-                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Lọc</button>
+                <button type="submit" id="btnFilter"
+                        class="px-4 py-2 bg-blue-600 text-white rounded"
+                        title="Nhấn lại lần nữa với bộ lọc y hệt để xóa lọc">Lọc</button>
+
+
             </form>
 
             <!-- Sale Order Table -->
@@ -108,7 +112,7 @@
                     </thead>
 
                     <tbody>
-                    <!-- Empty state (giống Product) -->
+                    <!-- Empty state -->
                     <tr th:if="${sale_orders == null or #lists.isEmpty(sale_orders)}">
                         <td colspan="9" class="px-4 py-6 text-center text-gray-500 italic">
                             Không có đơn hàng phù hợp hiện tại.
@@ -125,7 +129,6 @@
                         <td class="px-4 py-2 font-medium text-blue-600" th:text="${order.soCode}"></td>
                         <td class="px-4 py-2" th:text="${order.customer != null ? order.customer.fullName : '-'}"></td>
 
-                        <!-- ✅ Dữ liệu số điện thoại (fallback & link gọi) -->
                         <td class="px-4 py-2">
                             <a th:if="${order.customer != null and order.customer.phone != null}"
                                th:href="${'tel:' + order.customer.phone}"
@@ -137,7 +140,7 @@
 
                         <td class="px-4 py-2" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
 
-                        <!-- ❗Tránh gọi toString trên proxy User -->
+                        <!-- Tránh gọi toString() trên proxy User -->
                         <td class="px-4 py-2"
                             th:text="${
                               (order.createdByUser != null
@@ -201,16 +204,14 @@
                 </table>
             </div>
 
-            <!-- 🔽 Sort ngay sau khi table render để chạy trước script phân trang -->
+            <!-- 🔽 Sort mới → cũ + xử lý lọc/clear -->
             <script>
+                // --- SẮP XẾP: mới → cũ & đánh lại STT
                 (function () {
                     var tbody = document.querySelector('#Table tbody');
                     if (!tbody) return;
 
-                    // Lấy tất cả tr có data-od (bỏ qua dòng empty-state)
                     var rows = Array.from(tbody.querySelectorAll('tr[data-od]'));
-
-                    // Sort DESC theo thời gian tạo; nếu bằng nhau thì so theo id DESC
                     rows.sort(function (a, b) {
                         var ao = a.dataset.od || '0';
                         var bo = b.dataset.od || '0';
@@ -222,12 +223,71 @@
                         return (b.dataset.id || '').localeCompare(a.dataset.id || '');
                     });
 
-                    // Gắn lại theo thứ tự mới và đánh lại STT
                     rows.forEach(function (r, idx) {
                         tbody.appendChild(r);
                         var sttCell = r.querySelector('td.stt');
                         if (sttCell) sttCell.textContent = String(idx + 1);
                     });
+                })();
+
+                // --- LỌC LẦN 2 = RESET
+                (function () {
+                    var form = document.getElementById('filterForm');
+                    if (!form) return;
+
+                    var KEY = 'saleOrders:lastQuery';
+
+                    function buildNormalizedQuery() {
+                        var fd = new FormData(form);
+                        var params = new URLSearchParams();
+
+                        ['keyword', 'status', 'from', 'to'].forEach(function (n) {
+                            var v = (fd.get(n) || '').toString().trim();
+                            if (v) params.set(n, v);
+                        });
+
+                        return params.toString(); // đã loại rỗng
+                    }
+
+                    // Submit: nếu query y hệt lần trước => clear & submit lại
+                    form.addEventListener('submit', function (e) {
+                        var current = buildNormalizedQuery();
+                        var last = sessionStorage.getItem(KEY);
+
+                        if (last && last === current) {
+                            e.preventDefault(); // chặn submit hiện tại
+
+                            // Clear các input
+                            ['keyword', 'from', 'to'].forEach(function (n) {
+                                var el = form.querySelector('[name="' + n + '"]');
+                                if (el) el.value = '';
+                            });
+                            var sel = form.querySelector('[name="status"]');
+                            if (sel) sel.value = '';
+
+                            sessionStorage.removeItem(KEY);
+
+                            // Submit lại không kèm query rỗng
+                            // Tối ưu: disable field rỗng để browser không đính kèm tham số
+                            form.querySelectorAll('input,select').forEach(function (el) {
+                                if (!el.value) el.disabled = true;
+                            });
+                            form.submit();
+                        } else {
+                            sessionStorage.setItem(KEY, current);
+                        }
+                    });
+
+                    // Nút "Xóa lọc"
+                    var resetBtn = document.getElementById('btnReset');
+                    if (resetBtn) {
+                        resetBtn.addEventListener('click', function () {
+                            sessionStorage.removeItem(KEY);
+                            // Cách nhanh nhất: về URL base không có query
+                            var base = form.getAttribute('action') || window.location.pathname;
+                            window.location.href = base;
+                        });
+                    }
                 })();
             </script>
 
