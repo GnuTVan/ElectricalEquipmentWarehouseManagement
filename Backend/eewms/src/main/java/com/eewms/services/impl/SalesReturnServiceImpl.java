@@ -35,6 +35,7 @@ public class SalesReturnServiceImpl implements ISalesReturnService {
     private final WarehouseReceiptRepository warehouseReceiptRepository;
     private final WarehouseReceiptItemRepository warehouseReceiptItemRepository;
     private final GoodIssueNoteRepository goodIssueNoteRepository;
+    private final com.eewms.repository.CustomerRefundRepository customerRefundRepository;
 
     private String genCode() {
         long count = salesReturnRepository.count() + 1;
@@ -163,9 +164,6 @@ public class SalesReturnServiceImpl implements ISalesReturnService {
         sr.setTotalAmount(total);
         sr.setManagerNote(managerNote);
 
-        // ❌ KHÔNG set replacementAmount / needsReplacement ở đây
-        // ❌ KHÔNG gọi adjustCustomerDebt* ở đây
-
         // Chuyển trạng thái sang ĐÃ DUYỆT (chờ nhận hàng)
         sr.setStatus(ReturnStatus.DA_DUYET);
         salesReturnRepository.save(sr);
@@ -195,56 +193,52 @@ public class SalesReturnServiceImpl implements ISalesReturnService {
             throw new IllegalStateException("Chỉ nhận hàng khi phiếu đang ở trạng thái ĐÃ DUYỆT.");
         }
 
-        // 2) Lựa chọn xử lý
-        if (opt != null) sr.setSettlementOption(opt);
-        com.eewms.constant.ReturnSettlementOption mode =
-                sr.getSettlementOption() == null
-                        ? com.eewms.constant.ReturnSettlementOption.OFFSET_THEN_REPLACE
-                        : sr.getSettlementOption();
+        // 2) Xác định mode xử lý (ưu tiên theo tham số từ form)
+        final com.eewms.constant.ReturnSettlementOption mode =
+                (opt != null) ? opt :
+                        (sr.getSettlementOption() != null ? sr.getSettlementOption()
+                                : com.eewms.constant.ReturnSettlementOption.REPLACE_ONLY);
+        sr.setSettlementOption(mode);
 
-        // 3) Tổng tiền hoàn & trừ nợ 1 lần (service tự giới hạn theo nợ còn lại)
+        // 3) Tổng tiền hoàn
         java.math.BigDecimal total = computeTotal(sr);
         sr.setTotalAmount(total);
 
-        java.math.BigDecimal appliedVnd = java.math.BigDecimal.ZERO;
-        if (mode == com.eewms.constant.ReturnSettlementOption.OFFSET_THEN_REPLACE && total.signum() > 0) {
-            appliedVnd = debtService.adjustCustomerDebtForSaleOrderPreferGIN(
-                    sr.getSaleOrder().getSoId().longValue(),
-                    total,
-                    "[RETURN] " + sr.getCode());
-            if (appliedVnd == null) appliedVnd = java.math.BigDecimal.ZERO;
+        java.math.BigDecimal appliedVnd = java.math.BigDecimal.ZERO; // đã khấu trừ vào công nợ
+        java.math.BigDecimal refundVnd  = java.math.BigDecimal.ZERO; // số tiền phải hoàn cho KH (nếu có)
+
+        if (mode == com.eewms.constant.ReturnSettlementOption.OFFSET_THEN_REPLACE) {
+            // === HOÀN TIỀN: trừ công nợ tối đa, nếu còn dư thì trả khách ===
+            if (total.signum() > 0) {
+                appliedVnd = debtService.adjustCustomerDebtForSaleOrderPreferGIN(
+                        sr.getSaleOrder().getSoId().longValue(),
+                        total,
+                        "[RETURN] " + sr.getCode());
+                if (appliedVnd == null) appliedVnd = java.math.BigDecimal.ZERO;
+
+                refundVnd = total.subtract(appliedVnd);
+                if (refundVnd.signum() < 0) refundVnd = java.math.BigDecimal.ZERO;
+
+                // TODO: nếu bạn muốn ghi lịch sử hoàn tiền cho khách để hiển thị ở màn phiếu xuất,
+                // hãy lưu một bản ghi refund riêng (CustomerRefund) hoặc nơi bạn mong muốn hiển thị.
+                // Ví dụ: customerRefundRepository.save(...);
+            }
+
+            // Không tạo yêu cầu/phiếu đổi hàng
+            sr.setReplacementAmount(java.math.BigDecimal.ZERO);
+            sr.setNeedsReplacement(false);
+
+        } else {
+            // === HOÀN HÀNG: KHÔNG trừ nợ, KHÔNG hoàn tiền ===
+            appliedVnd = java.math.BigDecimal.ZERO;
+            refundVnd  = java.math.BigDecimal.ZERO;
+
+            // Đánh dấu sẽ đổi hàng
+            sr.setReplacementAmount(java.math.BigDecimal.ZERO);
+            sr.setNeedsReplacement(true);
         }
 
-        // 4) Phân bổ số tiền đã bù trừ theo từng dòng -> xác định SL cần RPL
-        java.math.BigDecimal appliedRemain = appliedVnd;
-        java.util.Map<com.eewms.entities.Product, Integer> replacementMap = new java.util.LinkedHashMap<>();
-
-        for (SalesReturnItem it : (sr.getItems() == null ? java.util.List.<SalesReturnItem>of() : sr.getItems())) {
-            if (it == null || it.getProduct() == null) continue;
-            int qty = it.getQuantity() == null ? 0 : it.getQuantity();
-            java.math.BigDecimal price = it.getUnitPrice() == null ? java.math.BigDecimal.ZERO : it.getUnitPrice();
-
-            int offUnits = 0;
-            if (mode == com.eewms.constant.ReturnSettlementOption.OFFSET_THEN_REPLACE &&
-                    qty > 0 && price.signum() > 0 && appliedRemain.signum() > 0) {
-                java.math.BigDecimal unitsCanCover = appliedRemain.divide(price, 0, java.math.RoundingMode.DOWN);
-                offUnits = (int) Math.min(qty, unitsCanCover.longValue());
-                if (offUnits > 0) {
-                    appliedRemain = appliedRemain.subtract(price.multiply(java.math.BigDecimal.valueOf(offUnits)));
-                }
-            }
-            int replUnits = qty - offUnits;
-            if (replUnits > 0) {
-                replacementMap.merge(it.getProduct(), replUnits, Integer::sum);
-            }
-        }
-
-        java.math.BigDecimal remainderVnd = total.subtract(appliedVnd);
-        if (remainderVnd.signum() < 0) remainderVnd = java.math.BigDecimal.ZERO;
-        sr.setReplacementAmount(remainderVnd);
-        sr.setNeedsReplacement(!replacementMap.isEmpty());
-
-        // 5) NHẬP KHO HÀNG HOÀN (giữ nguyên code cũ của bạn)
+        // 4) NHẬP KHO HÀNG HOÀN (giữ nguyên logic cũ, idempotent theo requestId)
         final String requestId = "SR-RECV-" + sr.getId();
         java.util.Optional<WarehouseReceipt> existed = warehouseReceiptRepository.findByRequestId(requestId);
         WarehouseReceipt receipt;
@@ -295,8 +289,8 @@ public class SalesReturnServiceImpl implements ISalesReturnService {
             }
         }
 
-        // 6) Nếu còn phần đổi -> tự tạo GIN RPL… (không công nợ)
-        if (!replacementMap.isEmpty()) {
+        // 5) Nếu chọn HOÀN HÀNG (REPLACE_ONLY) -> tạo GIN RPL xuất trả TẤT CẢ số lượng hoàn, đơn giá = 0
+        if (mode == com.eewms.constant.ReturnSettlementOption.REPLACE_ONLY) {
             final String replCode = String.format("RPL%05d", sr.getId());
             java.util.Optional<GoodIssueNote> existedRpl = goodIssueNoteRepository.findByGinCode(replCode);
 
@@ -323,26 +317,34 @@ public class SalesReturnServiceImpl implements ISalesReturnService {
             }
 
             java.util.List<com.eewms.entities.GoodIssueDetail> details = new java.util.ArrayList<>();
-            for (var e : replacementMap.entrySet()) {
-                if (e.getValue() == null || e.getValue() <= 0) continue;
+            for (SalesReturnItem rit : (sr.getItems() == null ? java.util.List.<SalesReturnItem>of() : sr.getItems())) {
+                if (rit == null || rit.getProduct() == null) continue;
                 com.eewms.entities.GoodIssueDetail d = com.eewms.entities.GoodIssueDetail.builder()
                         .goodIssueNote(gin)
-                        .product(e.getKey())
-                        .quantity(e.getValue())
+                        .product(rit.getProduct())
+                        .quantity(Math.max(0, rit.getQuantity() == null ? 0 : rit.getQuantity()))
                         .price(java.math.BigDecimal.ZERO) // KHÔNG phát sinh công nợ
                         .build();
                 details.add(d);
             }
             gin.setDetails(details);
+            gin.setTotalAmount(java.math.BigDecimal.ZERO);
             goodIssueNoteRepository.saveAndFlush(gin);
 
-            // đã auto tạo RPL -> không cần nút tạo yêu cầu đổi hàng
+            // Đã tạo RPL → ẩn nút lần sau
             sr.setNeedsReplacement(false);
         }
 
-        // 7) Cập nhật trạng thái
+        // 6) Cập nhật trạng thái phiếu hoàn
         sr.setStatus(com.eewms.constant.ReturnStatus.DA_NHAP_KHO);
         salesReturnRepository.save(sr);
+
+        // (tùy chọn) bạn có thể lưu refundVnd vào ghi chú để dễ truy vết nếu chưa có bảng lịch sử hoàn tiền
+        if (refundVnd.signum() > 0) {
+            String note = (sr.getManagerNote() == null ? "" : sr.getManagerNote() + " | ");
+            sr.setManagerNote(note + "Refund khách: " + refundVnd);
+            salesReturnRepository.save(sr);
+        }
     }
 
     @Override

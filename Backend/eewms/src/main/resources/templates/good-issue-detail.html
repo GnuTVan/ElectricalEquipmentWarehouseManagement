@@ -291,6 +291,32 @@
                             </table>
                         </div>
                     </div>
+
+                    <!-- Hoàn tiền cho khách hàng -->
+                    <div th:if="${refunds != null and !#lists.isEmpty(refunds)}" class="mt-6">
+                        <h3 class="font-semibold mb-2">Hoàn tiền cho khách hàng</h3>
+                        <table class="w-full text-left">
+                            <thead>
+                            <tr class="text-gray-600">
+                                <th>Ngày</th>
+                                <th class="w-32">Số tiền</th>
+                                <th class="w-40">Phương thức</th>
+                                <th class="w-40">Số tham chiếu</th>
+                                <th>Ghi chú</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="r : ${refunds}" class="border-t">
+                                <td th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                                <td th:text="${#numbers.formatDecimal(r.amount,0,'COMMA',0,'POINT')}"></td>
+                                <td th:text="${r.method}"></td>
+                                <td th:text="${r.referenceNo}">-</td>
+                                <td th:text="${r.note}"></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
                     <!-- Thanh toán QR (PayOS) -->
                     <div class="mt-6"
                          th:if="${payments != null and !payments.?[method?.name() == 'PAYOS_QR' and status?.name() == 'PENDING'].isEmpty()}">

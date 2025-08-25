@@ -6,6 +6,7 @@ import com.eewms.entities.Debt;
 import com.eewms.entities.GoodIssueNote;
 import com.eewms.entities.SaleOrder;
 import com.eewms.entities.SaleOrderDetail;
+import com.eewms.repository.CustomerRefundRepository;
 import com.eewms.repository.DebtPaymentRepository;
 import com.eewms.repository.DebtRepository;
 import com.eewms.repository.GoodIssueNoteRepository;
@@ -32,6 +33,7 @@ public class GoodIssueController {
     private final GoodIssueNoteRepository goodIssueRepository;
     private final DebtRepository debtRepository;
     private final DebtPaymentRepository debtPaymentRepository;
+    private final CustomerRefundRepository customerRefundRepository;
 
     /** Danh sách phiếu xuất */
     @GetMapping
@@ -53,28 +55,31 @@ public class GoodIssueController {
         model.addAttribute("items", dto.getDetails());
         model.addAttribute("showPrint", true);
 
-        // Ưu tiên công nợ ĐƠN BÁN
         var ginOpt = goodIssueRepository.findById(id);
         if (ginOpt.isPresent()) {
             var gin = ginOpt.get();
-            Long soId = (gin.getSaleOrder()!=null && gin.getSaleOrder().getSoId()!=null)
-                    ? gin.getSaleOrder().getSoId().longValue()
-                    : null;
+            Integer soId = (gin.getSaleOrder()!=null) ? gin.getSaleOrder().getSoId() : null;
 
+            // (giữ nguyên) Nạp công nợ & payments
             java.util.Optional<com.eewms.entities.Debt> debtOpt = java.util.Optional.empty();
             if (soId != null) {
-                debtOpt = debtRepository.findByDocumentTypeAndDocumentId(com.eewms.entities.Debt.DocumentType.SALES_INVOICE, soId);
+                debtOpt = debtRepository.findByDocumentTypeAndDocumentId(
+                        com.eewms.entities.Debt.DocumentType.SALES_INVOICE,
+                        soId.longValue()
+                );
             }
             if (debtOpt.isEmpty()) {
-                debtOpt = debtRepository.findByDocumentTypeAndDocumentId(com.eewms.entities.Debt.DocumentType.GOOD_ISSUE, id);
+                debtOpt = debtRepository.findByDocumentTypeAndDocumentId(
+                        com.eewms.entities.Debt.DocumentType.GOOD_ISSUE,
+                        id
+                );
             }
-
             debtOpt.ifPresent(debt -> {
                 model.addAttribute("debt", debt);
-                var total = debt.getTotalAmount() == null ? BigDecimal.ZERO : debt.getTotalAmount();
-                var paid  = debt.getPaidAmount()  == null ? BigDecimal.ZERO : debt.getPaidAmount();
+                var total = debt.getTotalAmount()==null?java.math.BigDecimal.ZERO:debt.getTotalAmount();
+                var paid  = debt.getPaidAmount()==null?java.math.BigDecimal.ZERO:debt.getPaidAmount();
                 var remaining = total.subtract(paid);
-                if (remaining.signum() < 0) remaining = BigDecimal.ZERO;
+                if (remaining.signum()<0) remaining = java.math.BigDecimal.ZERO;
 
                 model.addAttribute("total", total);
                 model.addAttribute("paid", paid);
@@ -82,6 +87,12 @@ public class GoodIssueController {
                 model.addAttribute("payments", debtPaymentRepository.findByDebtId(debt.getId()));
                 model.addAttribute("termsOptions", java.util.List.of(0,10,20,30));
             });
+
+            // NEW: Lấy danh sách hoàn tiền theo SO
+            if (soId != null) {
+                var refunds = customerRefundRepository.findBySaleOrderSoIdOrderByIdDesc(soId);
+                model.addAttribute("refunds", refunds);
+            }
         }
 
         return "good-issue-detail";

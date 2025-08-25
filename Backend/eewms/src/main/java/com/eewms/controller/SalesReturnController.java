@@ -176,7 +176,7 @@ public class SalesReturnController {
 
     @PostMapping("/{id}/receive")
     public String receive(@PathVariable Long id,
-                          @RequestParam(value = "settlementOption", required = false)
+                          @RequestParam("settlementOption") // <- required=true mặc định
                           com.eewms.constant.ReturnSettlementOption settlementOption,
                           RedirectAttributes ra) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
