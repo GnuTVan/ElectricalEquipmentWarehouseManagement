@@ -127,8 +127,8 @@ public class SecurityConfig {
                         .hasAnyRole("ADMIN","MANAGER","STAFF")
                         .requestMatchers("/products/**").hasAnyRole("ADMIN","MANAGER")
                         .requestMatchers("/product-list/**").hasAnyRole("ADMIN","MANAGER")
-                        .requestMatchers("/combos/**").hasAnyRole("ADMIN","MANAGER")
-                        .requestMatchers("/combo-list/**").hasAnyRole("ADMIN","MANAGER")
+                        .requestMatchers("/combos/**").hasAnyRole("ADMIN","MANAGER","STAFF")
+                        .requestMatchers("/combo-list/**").hasAnyRole("ADMIN","MANAGER","STAFF")
 
                         // 6.7 Debts (GET mở cho cả 3)
                         .requestMatchers(HttpMethod.GET, "/debts/**")
