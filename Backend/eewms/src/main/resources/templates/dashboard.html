@@ -121,7 +121,7 @@
                             </thead>
                             <tbody>
                             <tr th:each="a : ${recent}">
-                                <td class="p-2" th:text="${a.type}">ISSUE</td>
+                                <td class="p-2" th:text="${a.type.label}">ISSUE</td>
                                 <td class="p-2" th:text="${a.code}">PXK0001</td>
                                 <td class="p-2" th:text="${a.partnerName}">KH A</td>
                                 <td class="p-2" th:text="${#temporals.format(a.dateTime, 'yyyy-MM-dd HH:mm')}">2025-08-12</td>
