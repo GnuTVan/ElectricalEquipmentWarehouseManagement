@@ -114,14 +114,14 @@
                             <div class="inline-flex items-center gap-2">
                                 <!-- Nút Xem -->
                                 <a href="#" onclick="openDetailModal(this)"
-                                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200">
-                                    <i class="ri-eye-line text-sm"></i> Xem
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 whitespace-nowrap shadow">
+                                    <i class="ri-eye-line text-sm"></i> Chi tiết
                                 </a>
 
                                 <!-- Nút Sửa -->
                                 <a sec:authorize="hasAnyRole('MANAGER', 'STAFF')"
                                    href="#" onclick="openEditModal(this)"
-                                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded">
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded shadow">
                                     <i class="ri-pencil-line text-sm"></i> Sửa
                                 </a>
                             </div>
