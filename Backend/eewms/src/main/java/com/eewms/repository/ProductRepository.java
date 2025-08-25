@@ -63,14 +63,13 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     // ===== Lấy theo status (cũ, không phân trang) =====
     List<Product> findByStatus(Product.ProductStatus status);
 
-    // ===== MỚI: Lấy theo status + SORT ở DB + PHÂN TRANG (cho landing "tất cả sản phẩm") =====
-    // Dùng images để tránh N+1 khi render landing
-    @EntityGraph(attributePaths = "images")
+    // ===== MỚI: Lấy theo status + SORT ở DB + PHÂN TRANG (landing "tất cả sản phẩm") =====
+    // Fetch luôn images + category (+brand, +unit) để tránh N+1 và có đủ dữ liệu cho card
+    @EntityGraph(attributePaths = {"images", "category", "brand", "unit"})
     Page<Product> findByStatus(Product.ProductStatus status, Pageable pageable);
 
-    // ===== MỚI: Lọc ACTIVE + search keyword + category + SORT ở DB + PHÂN TRANG (cho landing search) =====
-    // Lưu ý: ép chỉ lấy ACTIVE cho landing. Nếu muốn bao cả INACTIVE, bỏ điều kiện status dưới đây.
-    @EntityGraph(attributePaths = "images")
+    // ===== MỚI: Lọc ACTIVE + search keyword + category + SORT + PHÂN TRANG (landing search) =====
+    @EntityGraph(attributePaths = {"images", "category", "brand", "unit"})
     @Query(value = """
         SELECT p FROM Product p
         WHERE (:keyword IS NULL OR
@@ -107,11 +106,11 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
                                              @Param("categoryId") Long categoryId,
                                              Pageable pageable);
 
-    // ===== (tuỳ chọn) Lấy theo status + Sort (không phân trang) — dùng ở nơi khác nếu cần =====
-    @EntityGraph(attributePaths = "images")
+    // ===== (tuỳ chọn) Lấy theo status + Sort (không phân trang) =====
+    @EntityGraph(attributePaths = {"images", "category", "brand", "unit"})
     List<Product> findByStatus(Product.ProductStatus status, Sort sort);
 
-    // ===== Load kèm suppliers để map DTO chi tiết tránh LazyInitialization/N+1 =====
+    // ===== Load kèm suppliers để map DTO chi tiết =====
     @EntityGraph(attributePaths = "suppliers")
     Optional<Product> findById(Integer id);
 
@@ -128,14 +127,15 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     """)
     BigDecimal sumInventoryValue();
 
+    // Legacy: lấy full cho landing cũ (đã fetch join đầy đủ)
     @Query("""
-    select distinct p
-    from Product p
-    left join fetch p.category c
-    left join fetch p.brand b
-    left join fetch p.unit u
-    left join fetch p.images i
-    where p.status = com.eewms.entities.Product$ProductStatus.ACTIVE
-""")
+        select distinct p
+        from Product p
+        left join fetch p.category c
+        left join fetch p.brand b
+        left join fetch p.unit u
+        left join fetch p.images i
+        where p.status = com.eewms.entities.Product$ProductStatus.ACTIVE
+    """)
     List<Product> findAllActiveWithSetting();
 }

@@ -17,7 +17,6 @@ import com.eewms.repository.SupplierRepository;
 import com.eewms.services.IProductServices;
 import com.eewms.services.ImageUploadService;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,14 +24,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ProductServicesImpl implements IProductServices {
+
     private final ProductRepository productRepo;
     private final SettingRepository settingRepo;
     private final ImagesRepository imageRepo;
@@ -53,6 +51,7 @@ public class ProductServicesImpl implements IProductServices {
 
     // ===== Helper: DTO mapping =====
     private SettingDTO mapSetting(Setting s) {
+        if (s == null) return null;
         return SettingDTO.builder()
                 .id(s.getId())
                 .name(s.getName())
@@ -82,29 +81,12 @@ public class ProductServicesImpl implements IProductServices {
         dto.setStatus(product.getStatus());
         dto.setQuantity(product.getQuantity());
 
-        // 🔒 An toàn với LAZY khi open-in-view=false
-        if (product.getCategory() != null && Hibernate.isInitialized(product.getCategory())) {
-            dto.setCategory(SettingDTO.builder()
-                    .id(product.getCategory().getId())
-                    .name(product.getCategory().getName())
-                    .build());
-        }
-        if (product.getBrand() != null && Hibernate.isInitialized(product.getBrand())) {
-            dto.setBrand(SettingDTO.builder()
-                    .id(product.getBrand().getId())
-                    .name(product.getBrand().getName())
-                    .build());
-        }
-        if (product.getUnit() != null && Hibernate.isInitialized(product.getUnit())) {
-            dto.setUnit(SettingDTO.builder()
-                    .id(product.getUnit().getId())
-                    .name(product.getUnit().getName())
-                    .build());
-        }
+        // Map trực tiếp (đã fetch bằng @EntityGraph ở repository)
+        dto.setCategory(mapSetting(product.getCategory()));
+        dto.setBrand(mapSetting(product.getBrand()));
+        dto.setUnit(mapSetting(product.getUnit()));
 
-        if (product.getImages() != null
-                && Hibernate.isInitialized(product.getImages())
-                && !product.getImages().isEmpty()) {
+        if (product.getImages() != null && !product.getImages().isEmpty()) {
             dto.setImages(product.getImages().stream()
                     .map(img -> ImageDTO.builder()
                             .id(img.getId())
@@ -118,7 +100,6 @@ public class ProductServicesImpl implements IProductServices {
 
     // ===== Save/Update chung =====
     private ProductDetailsDTO saveOrUpdate(Integer id, ProductFormDTO dto) throws InventoryException {
-        System.out.println(">>> saveOrUpdate called with id = " + id);
         Product product;
 
         if (id != null) {
@@ -143,7 +124,7 @@ public class ProductServicesImpl implements IProductServices {
             });
         }
 
-        // Gán trường
+        // Gán trường cơ bản
         product.setCode(code);
         product.setName(dto.getName());
         product.setOriginPrice(dto.getOriginPrice());
@@ -152,7 +133,7 @@ public class ProductServicesImpl implements IProductServices {
         product.setStatus(dto.getStatus());
         product.setQuantity(dto.getQuantity());
 
-        // Settings
+        // Settings (đơn vị, danh mục, thương hiệu)
         Setting unit = settingRepo.findById(dto.getUnitId())
                 .orElseThrow(() -> new InventoryException("Đơn vị không tồn tại"));
         Setting category = settingRepo.findById(dto.getCategoryId())
@@ -165,7 +146,7 @@ public class ProductServicesImpl implements IProductServices {
 
         // Suppliers
         List<Long> supplierIds = dto.getSupplierIds() == null ? List.of() : dto.getSupplierIds();
-        List<Supplier> foundSuppliers = supplierRepo.findAllById(supplierIds);
+        var foundSuppliers = supplierRepo.findAllById(supplierIds);
         if (foundSuppliers.size() != supplierIds.size()) {
             throw new InventoryException("Một hoặc nhiều nhà cung cấp không tồn tại");
         }
@@ -178,6 +159,7 @@ public class ProductServicesImpl implements IProductServices {
         // Ảnh
         List<Image> imgs;
         if (dto.getUploadedImageUrls() != null && !dto.getUploadedImageUrls().isEmpty()) {
+            // Xoá ảnh cũ (DB + Cloud)
             List<Image> oldImages = imageRepo.findByProductId(saved.getId());
             for (Image img : oldImages) {
                 try {
@@ -188,6 +170,7 @@ public class ProductServicesImpl implements IProductServices {
             }
             imageRepo.deleteAll(oldImages);
 
+            // Lưu ảnh mới
             imgs = dto.getUploadedImageUrls().stream()
                     .map(data -> {
                         boolean isThumb = data.endsWith("|thumbnail");
@@ -199,13 +182,12 @@ public class ProductServicesImpl implements IProductServices {
                                 .build();
                     })
                     .collect(Collectors.toList());
-
             imageRepo.saveAll(imgs);
         } else {
             imgs = imageRepo.findByProductId(saved.getId());
         }
 
-        // Build DTO
+        // Build DTO trả về
         return ProductDetailsDTO.builder()
                 .id(saved.getId())
                 .code(saved.getCode())
@@ -226,7 +208,7 @@ public class ProductServicesImpl implements IProductServices {
                 .build();
     }
 
-    // ===== CRUD/legacy giữ nguyên =====
+    // ===== CRUD =====
     @Override
     @Transactional
     public ProductDetailsDTO create(ProductFormDTO dto) throws InventoryException {
@@ -254,6 +236,7 @@ public class ProductServicesImpl implements IProductServices {
         productRepo.delete(p);
     }
 
+    // ===== Read/Query =====
     @Override
     @Transactional(readOnly = true)
     public ProductDetailsDTO getById(Integer id) throws InventoryException {
@@ -344,7 +327,7 @@ public class ProductServicesImpl implements IProductServices {
         imageRepo.deleteAll(toDelete);
     }
 
-    // ===== Landing legacy (không phân trang) – giữ nguyên để tương thích =====
+    // ===== Landing legacy (không phân trang) =====
     @Override
     @Transactional(readOnly = true)
     public List<ProductDetailsDTO> getAllActiveProducts() {
@@ -367,7 +350,7 @@ public class ProductServicesImpl implements IProductServices {
                 .collect(Collectors.toList());
     }
 
-    // ===== MỚI: Landing + sort + phân trang (DB-side) =====
+    // ===== Landing mới: sort + phân trang (DB-side) =====
     @Override
     @Transactional(readOnly = true)
     public Page<ProductDetailsDTO> getAllActiveProducts(String sort, int page, int size) {
