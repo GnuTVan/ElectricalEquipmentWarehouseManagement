@@ -105,7 +105,7 @@
 
                     <!-- Tạo công nợ nhanh khi chưa có -->
                     <form th:if="${debt == null}"
-                          th:action="@{'/admin/warehouse-receipts/' + ${receipt.id} + '/confirm'}"
+                          th:action="@{'/admin/debts/create-from-receipt/' + ${receipt.id}}"
                           method="post" class="flex items-center gap-2">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                         <select name="termDays" class="border rounded px-2 py-1">
@@ -137,7 +137,6 @@
                             <p class="text-gray-500 text-sm">Còn lại</p>
                             <p class="text-xl font-bold"
                                th:text="${#numbers.formatDecimal(remain, 0, 'DEFAULT', 0, 'DEFAULT')}"></p>
-                            <!-- Giá trị thô để JS sử dụng -->
                             <input type="hidden" id="remainValue" th:value="${remain}"/>
                         </div>
                     </div>
@@ -158,39 +157,58 @@
                         </div>
                     </div>
 
-                    <!-- Form thanh toán nhanh -->
+                    <!-- Form thanh toán nhanh (giữ nguyên) -->
                     <form id="payForm"
                           th:action="@{'/admin/debts/' + ${debt.id} + '/pay'}"
                           method="post"
-                          class="flex items-end gap-3 mb-6">
+                          class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-6 items-end">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
-                        <div>
+                        <div class="md:col-span-2 min-w-0">
                             <label class="block text-sm text-gray-600 mb-1">Số tiền</label>
                             <input id="amountInput" name="amount" type="number" step="0.01" min="0"
                                    th:attr="max=${remain}"
                                    th:disabled="${remain.compareTo(T(java.math.BigDecimal).ZERO) <= 0}"
-                                   class="border rounded px-3 py-2" placeholder="0.00" required/>
+                                   class="w-full border rounded px-3 py-2" placeholder="0.00" required/>
                         </div>
-                        <div>
+
+                        <div class="md:col-span-2 min-w-0">
                             <label class="block text-sm text-gray-600 mb-1">Phương thức</label>
-                            <select name="method" class="border rounded px-3 py-2"
+                            <select name="method" id="methodSelect"
+                                    class="w-full border rounded px-3 py-2"
                                     th:disabled="${remain.compareTo(T(java.math.BigDecimal).ZERO) <= 0}">
                                 <option value="CASH">Tiền mặt</option>
                                 <option value="BANK_TRANSFER">Chuyển khoản</option>
                             </select>
                         </div>
-                        <div class="flex-1">
-                            <label class="block text-sm text-gray-600 mb-1">Ghi chú</label>
-                            <input name="note" class="border rounded px-3 py-2 w-full" placeholder="Ghi chú (tuỳ chọn)"
+
+                        <div class="md:col-span-3 min-w-0">
+                            <label class="block text-sm text-gray-600 mb-1">
+                                Mã tham chiếu
+                                <span class="text-xs text-gray-500 font-normal">
+                                    (bắt buộc khi chọn Chuyển khoản)
+                                </span>
+                            </label>
+                            <input name="referenceNo" id="referenceNo"
+                                   class="w-full border rounded px-3 py-2"
+                                   placeholder="Số UNC / mã giao dịch…"
                                    th:disabled="${remain.compareTo(T(java.math.BigDecimal).ZERO) <= 0}"/>
                         </div>
-                        <button sec:authorize="hasAnyRole('MANAGER','STAFF')"
-                                id="payBtn" type="submit"
-                                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded disabled:opacity-50"
-                                th:disabled="${remain.compareTo(T(java.math.BigDecimal).ZERO) <= 0}">
-                            Thanh toán
-                        </button>
+
+                        <div class="md:col-span-4 min-w-0">
+                            <label class="block text-sm text-gray-600 mb-1">Ghi chú</label>
+                            <input name="note" class="w-full border rounded px-3 py-2" placeholder="Ghi chú (tuỳ chọn)"
+                                   th:disabled="${remain.compareTo(T(java.math.BigDecimal).ZERO) <= 0}"/>
+                        </div>
+
+                        <div class="md:col-span-1">
+                            <button sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                                    id="payBtn" type="submit"
+                                    class="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded disabled:opacity-50"
+                                    th:disabled="${remain.compareTo(T(java.math.BigDecimal).ZERO) <= 0}">
+                                Thanh toán
+                            </button>
+                        </div>
                     </form>
 
                     <!-- Bảng lịch sử thanh toán -->
@@ -201,6 +219,7 @@
                             <th class="px-4 py-2 border-b">Ngày</th>
                             <th class="px-4 py-2 border-b">Số tiền</th>
                             <th class="px-4 py-2 border-b">Phương thức</th>
+                            <th class="px-4 py-2 border-b">Mã tham chiếu</th>
                             <th class="px-4 py-2 border-b">Ghi chú</th>
                         </tr>
                         </thead>
@@ -211,10 +230,11 @@
                                 th:text="${#numbers.formatDecimal(p.amount,0,'DEFAULT',0,'DEFAULT')}">0
                             </td>
                             <td class="px-4 py-2 border-b" th:text="${p.method}">CASH</td>
+                            <td class="px-4 py-2 border-b" th:text="${p.referenceNo}">—</td>
                             <td class="px-4 py-2 border-b" th:text="${p.note}">—</td>
                         </tr>
                         <tr th:if="${payments == null || #lists.isEmpty(payments)}">
-                            <td class="px-4 py-2 border-b" colspan="4">Chưa có thanh toán.</td>
+                            <td class="px-4 py-2 border-b" colspan="5">Chưa có thanh toán.</td>
                         </tr>
                         </tbody>
                     </table>
@@ -236,43 +256,49 @@
         if (!event.target.closest("#userMenuWrapper")) dropdown?.classList.add("hidden");
     });
 
-    // Validate client-side (tránh submit thừa)
+    // Validate client-side
     (function () {
         const form = document.getElementById('payForm');
         const amount = document.getElementById('amountInput');
         const remain = Number(document.getElementById('remainValue')?.value || 0);
+        const methodEl = document.getElementById('methodSelect');
+        const refEl = document.getElementById('referenceNo');
+
+        function toggleRefRequired() {
+            if (!refEl) return;
+            refEl.required = methodEl && methodEl.value === 'BANK_TRANSFER';
+        }
+        methodEl?.addEventListener('change', toggleRefRequired);
+        toggleRefRequired();
 
         form?.addEventListener('submit', function (e) {
             const val = Number(amount?.value || 0);
 
-            if (remain <= 0) {
-                e.preventDefault();
-                notify('Công nợ đã được thanh toán đủ, không thể thanh toán tiếp.', 'warning');
-                return;
-            }
-            if (val <= 0) {
-                e.preventDefault();
-                notify('Vui lòng nhập số tiền > 0.', 'warning');
-                return;
-            }
-            if (val > remain) {
-                e.preventDefault();
-                notify('Số tiền vượt quá số còn lại (' + remain.toLocaleString('vi-VN') + ').', 'warning');
+            if (remain <= 0) { e.preventDefault(); notify('Công nợ đã được thanh toán đủ, không thể thanh toán tiếp.', 'warning'); return; }
+            if (val <= 0)    { e.preventDefault(); notify('Vui lòng nhập số tiền > 0.', 'warning'); return; }
+            if (val > remain){ e.preventDefault(); notify('Số tiền vượt quá số còn lại (' + remain.toLocaleString('vi-VN') + ').', 'warning'); return; }
+            if (methodEl && methodEl.value === 'BANK_TRANSFER' && refEl && !refEl.value.trim()) {
+                e.preventDefault(); notify('Vui lòng nhập mã tham chiếu khi chọn chuyển khoản.', 'warning');
             }
         });
 
         function notify(msg, type) {
-            // Nếu bạn có hệ thống toast, thay bằng toastWarning/toastError
-            if (window.toastWarning && type === 'warning') {
-                toastWarning(msg);
-                return;
-            }
-            if (window.toastError && type === 'danger') {
-                toastError(msg);
-                return;
-            }
+            if (window.toastSuccess && type === 'success') { toastSuccess(msg); return; }
+            if (window.toastWarning && type === 'warning') { toastWarning(msg); return; }
+            if (window.toastError   && type === 'danger')  { toastError(msg);   return; }
             alert(msg);
         }
+    })();
+</script>
+
+<!-- Gọi toast từ flash message (nếu có) -->
+<script th:if="${message}" th:inline="javascript">
+    (function(){
+        var type = /*[[${messageType}]]*/ 'success';
+        var msg  = /*[[${message}]]*/ '';
+        if (window.toastSuccess && type === 'success') toastSuccess(msg);
+        else if (window.toastWarning && type === 'warning') toastWarning(msg);
+        else if (window.toastError && type === 'danger') toastError(msg);
     })();
 </script>
 </body>
