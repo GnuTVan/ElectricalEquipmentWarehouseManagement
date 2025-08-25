@@ -33,7 +33,7 @@ public class SalesReturnController {
     /* ============== LIST ============== */
     @GetMapping
     public String list(Model model) {
-        List<SalesReturn> data = salesReturnRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
+        var data = salesReturnRepository.findAllWithSaleOrder(Sort.by(Sort.Direction.DESC, "id"));
         model.addAttribute("data", data);
         return "returns/return-list";
     }
@@ -53,7 +53,7 @@ public class SalesReturnController {
         java.util.Map<Integer, Long> returnedMap = java.util.Collections.emptyMap();
 
         if (saleOrderId != null) {
-            so = saleOrderRepository.findById(saleOrderId).orElse(null);
+            so = saleOrderRepository.findByIdWithDetails(saleOrderId).orElse(null);
             if (so != null) {
                 var statuses = java.util.List.of(
                         com.eewms.constant.ReturnStatus.CHO_DUYET,
@@ -85,7 +85,7 @@ public class SalesReturnController {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
         // Lấy SO để map giá
-        var so = saleOrderRepository.findById(saleOrderId)
+        var so = saleOrderRepository.findByIdWithDetails(saleOrderId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn bán"));
         java.util.Map<Long, java.math.BigDecimal> priceByPid =
                 so.getDetails().stream().collect(java.util.stream.Collectors.toMap(

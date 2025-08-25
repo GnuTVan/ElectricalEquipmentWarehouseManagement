@@ -52,7 +52,7 @@ public class SalesReturnServiceImpl implements ISalesReturnService {
     @Transactional
     public SalesReturnDTO createDraft(SalesReturnDTO dto, String username) {
         if (dto.getSaleOrderId() == null) throw new IllegalArgumentException("Thiếu saleOrderId");
-        SaleOrder so = saleOrderRepository.findById(dto.getSaleOrderId())
+        SaleOrder so = saleOrderRepository.findByIdWithDetails(dto.getSaleOrderId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn bán"));
 
         if (so.getStatus() != SaleOrder.SaleOrderStatus.DELIVERIED) {
