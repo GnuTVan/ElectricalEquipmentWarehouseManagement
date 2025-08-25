@@ -10,7 +10,6 @@ public class HomeController {
         boolean loggedIn = auth != null && auth.isAuthenticated()
                 && !(auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken);
         return loggedIn ? "redirect:/dashboard" : "redirect:/login";
-//        return "redirect:/landing-page";
     }
-    }
+}
 

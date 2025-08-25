@@ -25,10 +25,6 @@ public class LoginController {
         return "auth/login";
     }
 
-    //    @GetMapping("/dashboard")
-//    public String dashboard() {
-//        return "dashboard";
-//    }
 // Hiển thị form quên mật khẩu
     @GetMapping("/forgot-password")
     public String showForgotPasswordForm() {

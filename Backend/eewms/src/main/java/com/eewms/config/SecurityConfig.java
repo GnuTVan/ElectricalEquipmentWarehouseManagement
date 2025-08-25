@@ -46,6 +46,8 @@ public class SecurityConfig {
                                 "/forgot-password",
                                 "/reset-password", "/reset-password/**"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/do-login").permitAll()
+
 
                         // ====== Common authenticated ======
                         .requestMatchers(
