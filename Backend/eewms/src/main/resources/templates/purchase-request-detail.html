@@ -7,209 +7,140 @@
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
     <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
         <div th:replace="~{fragments/header :: header}"></div>
-        <section class="p-6 space-y-4 max-w-5xl mx-auto">
 
-            <!-- Header + Back -->
-            <div class="flex items-center justify-between">
-                <h1 class="text-2xl font-bold text-gray-800">
-                    Chi tiết yêu cầu mua hàng <span th:text="${request.code}"></span>
-                </h1>
-                <a th:href="@{/admin/purchase-requests}"
-                   class="inline-flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">
-                    <i class="ri-arrow-left-line"></i> Quay lại
-                </a>
-            </div>
-
-            <!-- Alerts -->
-            <div th:if="${message}" class="bg-green-100 text-green-800 px-4 py-2 rounded">
+        <section class="p-6 max-w-5xl">
+            <div th:if="${message}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4">
                 <i class="ri-check-line mr-1"></i><span th:text="${message}"></span>
             </div>
-            <div th:if="${error}" class="bg-red-100 text-red-800 px-4 py-2 rounded">
+            <div th:if="${error}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
                 <i class="ri-error-warning-line mr-1"></i><span th:text="${error}"></span>
             </div>
 
-            <!-- ========== Card: Thông tin chung ========== -->
-            <div class="bg-white shadow rounded-lg p-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2">
-                    <p><span class="font-semibold">Mã yêu cầu:</span>
-                        <span th:text="${request.code}">PR00001</span>
-                    </p>
-
-                    <p class="flex items-center gap-2">
-                        <span class="font-semibold">Trạng thái:</span>
-                        <span class="inline-flex justify-center items-center w-40 px-2 py-1 rounded text-sm font-semibold"
-                              th:classappend="${request.status.name()=='DA_DUYET'} ? 'bg-green-100 text-green-700' :
-                              (${request.status.name()=='DA_TAO_PO'} ? 'bg-blue-100 text-blue-700' :
-                              'bg-gray-100 text-gray-700')">
-                <span th:text="${request.status.label}"></span>
-        </span>
-                    </p>
-
-                    <p><span class="font-semibold">Người tạo:</span>
-                        <span th:text="${request.createdByName}">Nguyễn Văn A</span>
-                    </p>
-
-                    <p><span class="font-semibold">Ngày tạo:</span>
-                        <span th:text="${request.createdAt != null ? #temporals.format(request.createdAt, 'dd/MM/yyyy HH:mm') : '---'}">01/08/2025</span>
-                    </p>
-                </div>
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold mb-2">Chi tiết yêu cầu mua hàng</h1>
+                <p class="text-sm text-gray-600">
+                    Mã yêu cầu: <span class="font-semibold" th:text="${request.code}">PR00001</span><br/>
+                    Người tạo: <span class="font-semibold" th:text="${request.createdByName}">Nguyễn Văn A</span><br/>
+                    Ngày tạo: <span class="font-semibold"
+                                    th:text="${request.createdAt != null ? #temporals.format(request.createdAt, 'dd/MM/yyyy HH:mm') : '---'}">01/08/2025</span><br/>
+                    Trạng thái:
+                    <span class="font-semibold" th:switch="${request.status}">
+                        <span th:case="'MOI_TAO'">Mới tạo</span>
+                        <span th:case="'DA_DUYET'">Đã duyệt</span>
+                        <span th:case="'DA_TAO_PO'">Đã tạo PO</span>
+                        <span th:case="*">---</span>
+                    </span>
+                </p>
             </div>
 
-            <!-- ========== Card: Danh sách sản phẩm ========== -->
-            <div class="bg-white shadow rounded-lg p-6 space-y-4">
-                <!-- Chế độ chỉnh sửa: chỉ khi MỚI TẠO -->
-                <div th:if="${request.status.name() == 'MOI_TAO'}">
-                    <form th:action="@{'/admin/purchase-requests/' + ${request.id} + '/update'}" method="post"
-                          class="space-y-4">
+            <div th:if="${request.status.name() == 'MOI_TAO'}">
+                <form th:action="@{'/admin/purchase-requests/' + ${request.id} + '/update'}" method="post" class="mb-6">
+                    <table class="w-full table-auto border border-gray-300 mb-4">
+                        <thead class="bg-gray-100">
+                        <tr>
+                            <th class="border p-2">Sản phẩm</th>
+                            <th class="border p-2">Số lượng cần mua</th>
+                            <th class="border p-2">Nhà cung cấp gợi ý</th>
+                            <th class="border p-2">Ghi chú</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="item, iStat : ${request.items}">
+                            <td class="border p-2">
+                                <span th:text="${item.productName}">Tên SP</span>
+                                <input type="hidden" th:name="'items[' + ${iStat.index} + '].productId'" th:value="${item.productId}"/>
+                                <input type="hidden" th:name="'items[' + ${iStat.index} + '].id'" th:value="${item.id}"/>
+                            </td>
+                            <td class="border p-2">
+                                <input type="number" min="1"
+                                       th:name="'items[' + ${iStat.index} + '].quantityNeeded'"
+                                       th:value="${item.quantityNeeded}" class="w-full border rounded px-2 py-1"/>
+                            </td>
+                            <td class="border p-2">
+                                <select th:name="'items[' + ${iStat.index} + '].suggestedSupplierId'" class="w-full border rounded px-2 py-1">
+                                    <option value="">-- Không chọn --</option>
+                                    <option th:each="s : ${allowedSuppliers[ item.productId ]}"
+                                            th:value="${s.id}" th:text="${s.name}"
+                                            th:selected="${item.suggestedSupplierId != null and item.suggestedSupplierId == s.id}">
+                                    </option>
+                                </select>
+                            </td>
+                            <td class="border p-2">
+                                <input type="text"
+                                       th:name="'items[' + ${iStat.index} + '].note'"
+                                       th:value="${item.note}" class="w-full border rounded px-2 py-1"/>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+                    <form sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                          id="prForm" th:action="@{'/admin/purchase-requests/' + ${request.id} + '/update'}" method="post" class="mb-4">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <!-- bảng items ... -->
 
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full table-auto border border-gray-200 text-sm">
-                                <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="border p-2 text-left">Sản phẩm</th>
-                                    <th class="border p-2 text-center w-36">Số lượng cần mua</th>
-                                    <th class="border p-2 text-left w-72">Nhà cung cấp gợi ý</th>
-                                    <th class="border p-2 text-left">Ghi chú</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr th:each="item, iStat : ${request.items}" class="hover:bg-gray-50">
-                                    <td class="border p-2">
-                                        <span class="font-medium" th:text="${item.productName}">Tên SP</span>
-                                        <input type="hidden" th:name="'items[' + ${iStat.index} + '].id'"
-                                               th:value="${item.id}"/>
-                                        <input type="hidden" th:name="'items[' + ${iStat.index} + '].productId'"
-                                               th:value="${item.productId}"/>
-                                    </td>
-                                    <td class="border p-2 text-center">
-                                        <input type="number" min="1"
-                                               th:name="'items[' + ${iStat.index} + '].quantityNeeded'"
-                                               th:value="${item.quantityNeeded}"
-                                               class="w-28 text-center border rounded px-2 py-1"/>
-                                    </td>
-                                    <td class="border p-2">
-                                        <select th:name="'items[' + ${iStat.index} + '].suggestedSupplierId'"
-                                                class="w-full border rounded px-2 py-1">
-                                            <option value="">-- Không chọn --</option>
-                                            <option th:each="s : ${allowedSuppliers[item.productId]}"
-                                                    th:value="${s.id}" th:text="${s.name}"
-                                                    th:selected="${item.suggestedSupplierId != null and item.suggestedSupplierId == s.id}">
-                                            </option>
-                                        </select>
-                                    </td>
-                                    <td class="border p-2">
-                                        <input type="text"
-                                               th:name="'items[' + ${iStat.index} + '].note'"
-                                               th:value="${item.note}" class="w-full border rounded px-2 py-1"/>
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </form>
-                </div>
+                        <!-- Lưu items: dùng action mặc định của form -->
+                        <button type="submit" class="bg-yellow-600 text-white px-4 py-2 rounded">
+                            Cập nhật sản phẩm
+                        </button>
 
-                <!-- Chế độ chỉ xem -->
-                <div th:if="${request.status.name() != 'MOI_TAO'}">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full table-auto border border-gray-200 text-sm">
-                            <thead class="bg-gray-50">
-                            <tr>
-                                <th class="border p-2 text-left">Sản phẩm</th>
-                                <th class="border p-2 text-center w-36">Số lượng cần mua</th>
-                                <th class="border p-2 text-left w-72">Nhà cung cấp gợi ý</th>
-                                <th class="border p-2 text-left">Ghi chú</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr th:each="item : ${request.items}" class="hover:bg-gray-50">
-                                <td class="border p-2" th:text="${item.productName}">SP</td>
-                                <td class="border p-2 text-center" th:text="${item.quantityNeeded}">SL</td>
-                                <td class="border p-2" th:text="${item.suggestedSupplierName} ?: '--'">NCC</td>
-                                <td class="border p-2" th:text="${item.note} ?: '--'">Note</td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Tạo PO khi đã duyệt -->
-                    <div th:if="${request.status.name() == 'DA_DUYET'}" class="pt-2 flex justify-end">
-                        <form th:action="@{'/admin/purchase-requests/' + ${request.id} + '/generate-po'}" method="post"
-                              onsubmit="return confirm('Tạo các đơn mua hàng theo nhà cung cấp đã chọn?');">
-                            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-                                <i class="ri-add-line mr-1"></i> Tạo phiếu mua hàng
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Thanh hành động -->
-            <div class="flex flex-col md:flex-row md:items-center gap-3 md:justify-between mt-4">
-                <!-- Nút cập nhật -->
-                <div class="flex justify-end w-full">
-                    <button type="submit"
-                            class="inline-flex items-center justify-center w-40 h-11
-                                    bg-blue-600 hover:bg-blue-700 text-white rounded
-                                    whitespace-nowrap">
-                        Cập nhật sản phẩm
-                    </button>
-                </div>
-
-                <div class="flex gap-2" sec:authorize="hasAnyRole('MANAGER')">
-                    <!-- Duyệt -->
-                    <form th:action="@{'/admin/purchase-requests/' + ${request.id} + '/status'}" method="post">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                        <input type="hidden" name="status" value="DA_DUYET"/>
-                        <button type="submit"
-                                class="inline-flex items-center justify-center w-40 h-11
-                                         bg-green-600 hover:bg-green-700 text-white rounded
-                                         whitespace-nowrap">
+                        <!-- Duyệt: override action qua formaction và gửi param status -->
+                        <button sec:authorize="hasAnyRole('MANAGER')"
+                                type="submit"
+                                th:formaction="@{'/admin/purchase-requests/' + ${request.id} + '/status'}"
+                                name="status" value="DA_DUYET"
+                                class="bg-green-600 text-white px-4 py-2 rounded">
                             Duyệt yêu cầu
                         </button>
+
+                        <!-- Hủy: override action qua formaction -->
+                        <div sec:authorize="hasAnyRole('MANAGER')">
+                            <input type="text" name="reason" placeholder="Lý do hủy" class="border rounded px-2 py-1"/>
+                            <button type="submit"
+                                    th:formaction="@{'/admin/purchase-requests/' + ${request.id} + '/cancel'}"
+                                    class="bg-red-600 text-white px-4 py-2 rounded">
+                                Hủy yêu cầu
+                            </button>
+                        </div>
+
                     </form>
 
-                    <!-- Hủy -->
-                    <form th:action="@{'/admin/purchase-requests/' + ${request.id} + '/cancel'}"
-                          method="post" onsubmit="return askReason(this);">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                        <input type="hidden" name="reason"/>
-                        <button type="submit"
-                                class="inline-flex items-center justify-center w-40 h-11
-                                       bg-red-600 hover:bg-red-700 text-white rounded
-                                       whitespace-nowrap">
-                            Hủy yêu cầu
-                        </button>
-                    </form>
-                </div>
+                </form>
+            </div>
+
+            <div th:if="${request.status.name() != 'MOI_TAO'}" class="mb-6">
+                <table class="w-full table-auto border border-gray-300 mb-4">
+                    <thead class="bg-gray-100">
+                    <tr>
+                        <th class="border p-2">Sản phẩm</th>
+                        <th class="border p-2">Số lượng cần mua</th>
+                        <th class="border p-2">Nhà cung cấp gợi ý</th>
+                        <th class="border p-2">Ghi chú</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item : ${request.items}">
+                        <td class="border p-2" th:text="${item.productName}">SP</td>
+                        <td class="border p-2" th:text="${item.quantityNeeded}">SL</td>
+                        <td class="border p-2" th:text="${item.suggestedSupplierName} ?: '--'">NCC</td>
+                        <td class="border p-2" th:text="${item.note} ?: '--'">Note</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- >>> NEW: Nút tạo PO khi đã duyệt -->
+            <div th:if="${request.status.name() == 'DA_DUYET'}" class="mt-6">
+                <form th:action="@{'/admin/purchase-requests/' + ${request.id} + '/generate-po'}" method="post"
+                      onsubmit="return confirm('Tạo các đơn mua hàng theo nhà cung cấp đã chọn?');">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                        <i class="ri-add-line mr-1"></i> Tạo phiếu mua hàng
+                    </button>
+                </form>
             </div>
         </section>
-
-        <script>
-            function askReason(form) {
-                const reason = prompt("Nhập lý do hủy:");
-                if (reason === null) return false;
-                if (!reason.trim()) {
-                    alert("Vui lòng nhập lý do.");
-                    return false;
-                }
-                form.querySelector('input[name=reason]').value = reason.trim();
-                return true;
-            }
-        </script>
     </main>
 </div>
-<script>
-    const btn = document.getElementById("userMenuBtn");
-    const dropdown = document.getElementById("userMenuDropdown");
-    btn?.addEventListener("click", () => {
-        dropdown?.classList.toggle("hidden");
-    });
-    document.addEventListener("click", (event) => {
-        if (!event.target.closest("#userMenuWrapper")) dropdown?.classList.add("hidden");
-    });
-</script>
 <div th:replace="~{fragments/footer :: footer}"></div>
 </body>
 </html>
