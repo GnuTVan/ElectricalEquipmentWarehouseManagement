@@ -10,13 +10,9 @@
         <!-- Header -->
         <div th:replace="~{fragments/header :: header}"></div>
 
-        <div class="px-6 pt-4">
+        <div class="px-6 py-6">
             <!-- Hàng tiêu đề + nút quay lại (căn trái gọn đẹp) -->
-            <div class="flex items-center gap-3 mb-4">
-                <a href="/sale-orders"
-                   class="inline-flex items-center gap-2 border border-slate-200 px-3 py-1.5 rounded-md hover:bg-slate-50 text-slate-700">
-                    <i class="ri-arrow-left-line"></i> Quay lại
-                </a>
+            <div class="flex items-center justify-between gap-3 mb-4">
                 <h1 class="text-2xl font-bold">Chi tiết đơn hàng bán</h1>
 
                 <a th:if="${saleOrder.status != null and saleOrder.status.name() == 'PARTLY_DELIVERED'}"
@@ -27,10 +23,16 @@
                 <div th:with="so=${order != null ? order : (saleOrder != null ? saleOrder : (dto != null ? dto : null))}">
                     <a th:if="${so != null and so.status != null and so.status.name() == 'DELIVERIED'}"
                        th:href="@{|/admin/sales-returns/create?saleOrderId=${so.soId}|}"
-                       class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded inline-flex items-center">
+                       class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded inline-flex items-center shadow">
                         <i class="ri-recycle-line mr-1"></i> Tạo phiếu hoàn hàng
                     </a>
                 </div>
+            </div>
+            <div class="mb-6">
+                <a href="javascript:history.back()"
+                   class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-100 shadow">
+                    <i class="ri-arrow-left-line mr-2"></i> Quay lại
+                </a>
             </div>
 
             <!-- Khối thông tin chung -->

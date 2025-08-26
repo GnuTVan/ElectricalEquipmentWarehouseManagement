@@ -12,7 +12,12 @@
         <div class="max-w-4xl mx-auto px-6 py-6 bg-white rounded shadow">
             <div class="flex justify-between items-center mb-4">
                 <h1 class="text-xl font-semibold">Tạo combo</h1>
-                <a th:href="@{/combos}" class="text-sm text-blue-600 hover:underline">← Quay lại danh sách</a>
+                <div class="mb-6">
+                    <a href="javascript:history.back()"
+                       class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-100 shadow">
+                        <i class="ri-arrow-left-line mr-2"></i> Quay lại
+                    </a>
+                </div>
             </div>
 
             <form id="createComboForm" th:action="@{/combos/create}" th:object="${comboForm}" method="post">
@@ -53,7 +58,7 @@
                                class="border rounded px-3 py-2 w-28"/>
 
                         <button type="button" onclick="addSelectedProduct()"
-                                class="bg-gray-700 text-white px-3 py-2 rounded">Thêm</button>
+                                class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded shadow">Thêm</button>
                     </div>
 
                     <div id="selectedList" class="border rounded p-3 min-h-[80px] bg-gray-50">
@@ -62,8 +67,8 @@
                 </div>
 
                 <div class="flex justify-end gap-2 mt-6">
-                    <a th:href="@{/combos}" class="bg-gray-500 text-white px-4 py-2 rounded">Hủy</a>
-                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Tạo</button>
+                    <a th:href="@{/combos}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded shadow">Hủy</a>
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow">Tạo</button>
                 </div>
             </form>
 

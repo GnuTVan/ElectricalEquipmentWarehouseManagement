@@ -11,11 +11,15 @@
         <section class="p-6 max-w-6xl mx-auto space-y-4">
             <div class="flex items-center justify-between">
                 <h1 class="text-xl md:text-2xl font-bold text-gray-800">Tạo phiếu hoàn hàng</h1>
-                <a href="/admin/sales-returns"
-                   class="inline-flex items-center px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50">
+            </div>
+
+            <div class="mb-6">
+                <a href="javascript:history.back()"
+                   class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-100 shadow">
                     <i class="ri-arrow-left-line mr-2"></i> Quay lại
                 </a>
             </div>
+
             <div class="bg-white rounded-xl shadow p-4 space-y-3">
                 <div th:if="${saleOrder == null}" class="text-red-600">
                     Chưa chọn đơn bán. Về trang danh sách và nhập SO ID để tạo phiếu.
@@ -104,11 +108,12 @@
                         </table>
                     </div>
 
-                    <div class="pt-3 px-2 mt-2 border-t flex items-center justify-end sticky bottom-0 bg-white">
-                        <a href="/admin/sales-returns"
+                    <div class="pt-3 px-2 mt-2 border-t flex items-center justify-end sticky bottom-0 bg-white gap-2">
+                        <a href="javascript:history.back()"
                            class="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-50">
                             Hủy
                         </a>
+
                         <button class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white">
                             Lưu phiếu
                         </button>

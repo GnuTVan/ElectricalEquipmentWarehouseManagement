@@ -14,9 +14,15 @@
 
             <div class="flex items-center justify-between mb-4">
                 <h1 class="text-2xl font-bold">
-                    Sửa đơn <span class="text-blue-700" th:text="${saleOrder.orderCode}">ORD000</span>
+                    Sửa đơn
+                    <span class="text-blue-700" th:text="${saleOrder.orderCode}">ORD000</span>
                 </h1>
-
+            </div>
+            <div class="mb-6">
+                <a href="javascript:history.back()"
+                   class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-100">
+                    <i class="ri-arrow-left-line mr-2"></i> Quay lại
+                </a>
                 <div th:if="${prExists}"
                      class="inline-flex items-center px-3 py-2 rounded bg-gray-100 text-gray-700 border">
                     Đã tạo yêu cầu mua

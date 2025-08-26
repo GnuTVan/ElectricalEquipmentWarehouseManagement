@@ -18,6 +18,12 @@
 
             <div class="mb-6">
                 <h1 class="text-2xl font-bold mb-2">Chi tiết yêu cầu mua hàng</h1>
+                <div class="mb-6">
+                    <a href="javascript:history.back()"
+                       class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-100">
+                        <i class="ri-arrow-left-line mr-2"></i> Quay lại
+                    </a>
+                </div>
                 <p class="text-sm text-gray-600">
                     Mã yêu cầu: <span class="font-semibold" th:text="${request.code}">PR00001</span><br/>
                     Người tạo: <span class="font-semibold" th:text="${request.createdByName}">Nguyễn Văn A</span><br/>

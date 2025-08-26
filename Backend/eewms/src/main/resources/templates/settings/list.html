@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/common-head :: commonHead('Quản lý chung')}"></head>
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
@@ -43,7 +44,8 @@
                             <span th:case="*">Danh sách</span> <!-- fallback -->
                         </span>
                         </h1>
-                        <button onclick="openModal()"
+                        <button sec:authorize="hasRole('MANAGER')"
+                                onclick="openModal()"
                                 class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer">+ Thêm
                         </button>
                     </div>
@@ -54,7 +56,7 @@
                                 <th class="px-4 py-2 border border-200 whitespace-nowrap">STT</th>
                                 <th class="px-4 py-2 border border-200 whitespace-nowrap">Tên</th>
                                 <th class="px-4 py-2 border border-200 whitespace-nowrap">Trạng thái</th>
-                                <th class="px-4 py-2 border border-200 whitespace-nowrap text-center">Hành động</th>
+                                <th class="px-4 py-2 border border-200 whitespace-nowrap w-[50px] text-center">Hành động</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -68,12 +70,13 @@
                                 <td class="px-4 py-2 border border-200" th:text="${s.name}">Tên</td>
                                 <td class="px-4 py-2 border border-200 whitespace-nowrap h-full w-1">
                                     <div class="flex items-center gap-2">
-                                        <label class="inline-flex relative items-center cursor-pointer">
-                                            <input type="checkbox"
+                                        <label sec:authorize="hasRole('MANAGER')"
+                                               class="inline-flex relative items-center cursor-pointer">
+                                            <input  type="checkbox"
                                                    th:checked="${s.status.name()=='ACTIVE'}"
                                                    class="sr-only peer"
                                                    onchange="toggleStatus(this)"/>
-                                            <div class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-blue-600 transition"></div>
+                                            <div class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-green-600 transition"></div>
                                             <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
                                         </label>
                                         <span data-label
@@ -82,8 +85,9 @@
                                               class="inline-flex items-center justify-center w-32 px-2 py-1 rounded text-xs font-medium whitespace-nowrap"></span>
                                     </div>
                                 </td>
-                                <td class="px-4 py-2 border border-200 text-center w-1">
-                                    <a th:href="@{/settings/edit/{type}/{id}(type=${settingType},id=${s.id})}"
+                                <td class="px-4 py-2 border border-200 text-center w-30">
+                                    <a sec:authorize="hasRole('MANAGER')"
+                                       th:href="@{/settings/edit/{type}/{id}(type=${settingType},id=${s.id})}"
                                        class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white border rounded hover:bg-blue-700">
                                         <i class="ri-pencil-line"></i>Sửa
                                     </a>

@@ -37,7 +37,7 @@
                         <th class="px-4 py-3 whitespace-nowrap border border-gray-200">Mã SP</th>
                         <th class="px-4 py-3 whitespace-nowrap border border-gray-200">Tên</th>
                         <th class="px-4 py-3 whitespace-nowrap border border-gray-200">Ảnh</th>
-                        <th class="px-4 py-3 whitespace-nowrap border border-gray-200">Giá niêm yết</th>
+                        <th class="px-4 py-3 whitespace-nowrap border border-gray-200 text-right">Giá niêm yết</th>
                         <th class="px-4 py-3 whitespace-nowrap">Số lượng</th>
                         <th class="px-4 py-3 whitespace-nowrap border border-gray-200">Thương hiệu</th>
                         <th class="px-4 py-3 whitespace-nowrap border border-gray-200">Danh mục</th>
@@ -82,7 +82,7 @@
                                      class="w-20 h-15 object-cover rounded border"/>
                             </div>
                         </td>
-                        <td class="px-4 py-3 border border-gray-200" th:text="${product.listingPrice}"></td>
+                        <td class="px-4 py-3 border border-gray-200 text-right" th:text="${#numbers.formatDecimal(product.listingPrice, 0, 'DEFAULT', 0, 'DEFAULT')}+ ' đ'"></td>
 
                         <!-- Cột Số lượng -->
                         <td class="px-4 py-3 border border-gray-200">

@@ -20,13 +20,12 @@
             </div>
 
             <div class="flex justify-between items-center mb-6">
-                <a href="/good-issue"
-                   class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded inline-flex items-center">
+                <a href="javascript:history.back()"
+                   class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-100 shadow">
                     <i class="ri-arrow-left-line mr-2"></i> Quay lại
                 </a>
-
                 <a th:href="@{'/admin/good-issues/export/' + ${note.id}}"
-                   class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded inline-flex items-center"
+                   class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded inline-flex items-center shadow"
                    target="_blank">
                     <i class="ri-printer-line mr-2"></i> In phiếu (PDF)
                 </a>
@@ -78,22 +77,22 @@
                 <table class="min-w-full table-auto text-sm border">
                     <thead class="bg-gray-100 text-left">
                     <tr>
-                        <th class="px-4 py-2 border-b">STT</th>
-                        <th class="px-4 py-2 border-b">Tên sản phẩm</th>
-                        <th class="px-4 py-2 border-b">Số lượng</th>
-                        <th class="px-4 py-2 border-b">Đơn giá</th>
-                        <th class="px-4 py-2 border-b">Thành tiền</th>
+                        <th class="px-4 py-2 border border-gray-200">STT</th>
+                        <th class="px-4 py-2 border border-gray-200">Tên sản phẩm</th>
+                        <th class="px-4 py-2 border border-gray-200">Số lượng</th>
+                        <th class="px-4 py-2 border border-gray-200 text-right">Đơn giá</th>
+                        <th class="px-4 py-2 border border-gray-200 text-right">Thành tiền</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr th:each="detail, iStat : ${items}" class="border-t hover:bg-gray-50">
-                        <td th:text="${iStat.index + 1}" class="px-4 py-2 border-b"></td>
-                        <td th:text="${detail.productName}" class="px-4 py-2 border-b"></td>
-                        <td th:text="${detail.quantity}" class="px-4 py-2 border-b"></td>
-                        <td th:text="${#numbers.formatDecimal(detail.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"
-                            class="px-4 py-2 border-b"></td>
-                        <td th:text="${#numbers.formatDecimal(detail.total, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"
-                            class="px-4 py-2 border-b"></td>
+                        <td th:text="${iStat.index + 1}" class="px-4 py-2 border border-gray-200"></td>
+                        <td th:text="${detail.productName}" class="px-4 py-2 border border-gray-200"></td>
+                        <td th:text="${detail.quantity}" class="px-4 py-2 border border-gray-200"></td>
+                        <td th:text="${#numbers.formatDecimal(detail.price, 0, 'COMMA', 0, 'POINT')} + ' đ'"
+                            class="px-4 py-2 border border-gray-200 text-right"></td>
+                        <td th:text="${#numbers.formatDecimal(detail.total, 0, 'COMMA', 0, 'POINT')} + ' đ'"
+                            class="px-4 py-2 border border-gray-200 text-right"></td>
                     </tr>
                     </tbody>
                 </table>
@@ -180,10 +179,18 @@
                     </div>
 
                     <!-- Hạn & đổi kỳ hạn -->
-                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="flex items-center gap-3">
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
                             <div class="text-gray-600 font-medium">Hạn thanh toán:</div>
                             <div class="text-gray-900" th:text="${debt.dueDate}"></div>
+                        </div>
+                        <div>
+                            <p class="text-gray-600 font-semibold">Trạng thái:</p>
+                            <span class="inline-block px-2 py-1 rounded bg-gray-100"
+                                  th:text="${debt.status.label}"
+                                  th:classappend="${debt.status.label == 'Chưa thanh toán'}  ? 'bg-gray-100  text-gray-700'  :
+                                              (${debt.status.label == 'Đã thanh toán'} ? 'bg-emerald-100 text-emerald-700' :
+                                              (${debt.status.label == 'Thanh toán một phần'} ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'))">UNPAID</span>
                         </div>
                         <form th:action="@{'/admin/debts/' + ${debt.id} + '/update-terms'}" method="post"
                               class="flex items-center gap-2 justify-start md:justify-end">
@@ -201,7 +208,8 @@
                     <hr class="my-5"/>
 
                     <!-- Form thanh toán -->
-                    <form th:action="@{'/admin/debts/' + ${debt.id} + '/pay'}" method="post"
+                    <form sec:authorize="hasRole('STAFF')"
+                          th:action="@{'/admin/debts/' + ${debt.id} + '/pay'}" method="post"
                           class="grid grid-cols-1 md:grid-cols-3 gap-4" id="payForm">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                         <input type="hidden" name="ginId" th:value="${note.id}"/>
@@ -257,7 +265,7 @@
                     <div class="mt-6">
                         <h3 class="font-semibold mb-3">Lịch sử thanh toán</h3>
                         <div class="overflow-x-auto border rounded">
-                            <table class="min-w-full text-sm table-fixed">
+                            <table class="min-w-full text-sm table-fixed border border-gray-200">
                                 <colgroup>
                                     <col style="width:15%"><!-- Ngày -->
                                     <col style="width:10%"><!-- Số tiền -->
@@ -267,11 +275,11 @@
                                 </colgroup>
                                 <thead class="bg-gray-100 text-gray-700">
                                 <tr>
-                                    <th class="px-4 py-2 text-left">Ngày</th>
-                                    <th class="px-4 py-2 text-right">Số tiền</th>
-                                    <th class="px-4 py-2 text-left">Phương thức</th>
-                                    <th class="px-4 py-2 text-left">Mã tham chiếu</th>
-                                    <th class="px-4 py-2 text-left">Ghi chú</th>
+                                    <th class="px-4 py-2 border border-gray-200 text-left">Ngày</th>
+                                    <th class="px-4 py-2 border border-gray-200 text-right">Số tiền</th>
+                                    <th class="px-4 py-2 border border-gray-200 text-left">Phương thức</th>
+                                    <th class="px-4 py-2 border border-gray-200 text-left">Mã tham chiếu</th>
+                                    <th class="px-4 py-2 border border-gray-200 text-left">Ghi chú</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -281,18 +289,18 @@
                                 <tr th:each="p : ${payments}"
                                     th:if="${(p.method == null || p.method.name() != 'PAYOS_QR')
                                         or (p.status != null and p.status.name() == 'PAID')}"
-                                    class="border-t">
+                                    class="border-t hover:bg-gray-100">
                                     <!-- ✅ HIỂN THỊ NGÀY + GIỜ: ưu tiên createdAt; fallback paymentDate -->
-                                    <td class="px-4 py-2"
+                                    <td class="px-4 py-2 border border-gray-200"
                                         th:text="${p.createdAt != null ? #temporals.format(p.createdAt, 'dd/MM/yyyy HH:mm') : #temporals.format(p.paymentDate, 'dd/MM/yyyy')}">
                                     </td>
 
-                                    <td class="px-4 py-2 text-right"
-                                        th:text="${#numbers.formatDecimal(p.amount,0,'COMMA',0,'POINT')}"></td>
-                                    <td class="px-4 py-2"
+                                    <td class="px-4 py-2 border border-gray-200 text-right"
+                                        th:text="${#numbers.formatDecimal(p.amount,0,'COMMA',0,'POINT')} + ' đ'"></td>
+                                    <td class="px-4 py-2 border border-gray-200"
                                         th:text="${p.method != null ? p.method.label : 'Không xác định'}"></td>
-                                    <td class="px-4 py-2" th:text="${p.referenceNo}"></td>
-                                    <td class="px-4 py-2" th:text="${p.note}"></td>
+                                    <td class="px-4 py-2 border border-gray-200" th:text="${p.referenceNo}"></td>
+                                    <td class="px-4 py-2 border border-gray-200" th:text="${p.note}"></td>
                                 </tr>
                                 </tbody>
                             </table>

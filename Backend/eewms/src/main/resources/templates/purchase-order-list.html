@@ -48,8 +48,8 @@
                         <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Nhà cung cấp</th>
                         <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Ngày tạo</th>
                         <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Người tạo</th>
-                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Thành tiền</th>
-                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Trạng thái</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200 text-right">Thành tiền</th>
+                        <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200 text-center">Trạng thái</th>
                         <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200 text-center">Hành động</th>
                     </tr>
                     </thead>
@@ -60,8 +60,8 @@
                         <td class="px-4 py-2 border border-gray-200" th:text="${order.supplierName}"></td>
                         <td class="px-4 py-2 border border-gray-200 whitespace-nowrap" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
                         <td class="px-4 py-2 border border-gray-200" th:text="${order.createdByName}"></td>
-                        <td class="px-4 py-2 border border-gray-200"
-                            th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+                        <td class="px-4 py-2 border border-gray-200 text-right"
+                            th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
                         <td class="px-4 py-2 border border-gray-200 text-center">
                             <span class="inline-flex justify-center items-center w-32 px-2 py-1 rounded text-s font-semibold whitespace-nowrap"
                                 th:classappend="${order.status.name()=='HUY'} ? 'bg-red-100 text-red-700' :

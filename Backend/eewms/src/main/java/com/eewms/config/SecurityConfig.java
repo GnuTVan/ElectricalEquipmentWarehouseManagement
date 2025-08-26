@@ -69,7 +69,7 @@ public class SecurityConfig {
                         // (GET ADMIN)
                         .requestMatchers(HttpMethod.GET, "/sale-orders/**").hasAnyRole("ADMIN","STAFF")
                         .requestMatchers("/sale-orders/**").hasRole("STAFF")
-                        .requestMatchers(HttpMethod.GET, "/good-issue/**").hasAnyRole("ADMIN","STAFF")
+                        .requestMatchers(HttpMethod.GET, "/good-issue/**").hasAnyRole("ADMIN","MANAGER","STAFF")
                         .requestMatchers("/good-issue/**").hasRole("STAFF")
 
                         .requestMatchers(HttpMethod.GET, "/customers/**").hasAnyRole("ADMIN","STAFF")
@@ -101,7 +101,7 @@ public class SecurityConfig {
                         // 5) ADMIN-only
                         // ---------------------------------------------------------
                         .requestMatchers("/admin/users/**").hasRole("ADMIN")
-                        .requestMatchers("/settings/**").hasRole("ADMIN")
+                        .requestMatchers("/settings/**").hasAnyRole("ADMIN","MANAGER")
 
                         // ---------------------------------------------------------
                         // 6) READ-ONLY ADMIN
