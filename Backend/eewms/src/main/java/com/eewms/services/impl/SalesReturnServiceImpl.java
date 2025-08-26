@@ -355,6 +355,19 @@ public class SalesReturnServiceImpl implements ISalesReturnService {
             gin.setTotalAmount(java.math.BigDecimal.ZERO);
             goodIssueNoteRepository.saveAndFlush(gin);
 
+            for (GoodIssueDetail d : (gin.getDetails() == null ? java.util.List.<GoodIssueDetail>of() : gin.getDetails())) {
+                if (d.getProduct() == null || d.getQuantity() == null || d.getQuantity() <= 0) continue;
+
+                int affected = productRepository.tryDecreaseOnHand(d.getProduct().getId(), d.getQuantity());
+                if (affected == 0) {
+                    // rollback transaction: không đủ hàng xuất đổi
+                    throw new RuntimeException(
+                            "Không đủ hàng trong kho để xuất đổi cho sản phẩm: "
+                                    + d.getProduct().getName() + " (cần " + d.getQuantity() + ")"
+                    );
+                }
+            }
+
             // Đã tạo RPL → ẩn nút lần sau
             sr.setNeedsReplacement(false);
         }
@@ -430,7 +443,20 @@ public class SalesReturnServiceImpl implements ISalesReturnService {
                 .totalAmount(java.math.BigDecimal.ZERO)
                 .build();
 
-        goodIssueNoteRepository.saveAndFlush(gin);         // ép INSERT ngay
+        goodIssueNoteRepository.saveAndFlush(gin);
+
+        for (GoodIssueDetail d : (gin.getDetails() == null ? java.util.List.<GoodIssueDetail>of() : gin.getDetails())) {
+            if (d.getProduct() == null || d.getQuantity() == null || d.getQuantity() <= 0) continue;
+
+            int affected = productRepository.tryDecreaseOnHand(d.getProduct().getId(), d.getQuantity());
+            if (affected == 0) {
+                // rollback transaction: không đủ hàng xuất đổi
+                throw new RuntimeException(
+                        "Không đủ hàng trong kho để xuất đổi cho sản phẩm: "
+                                + d.getProduct().getName() + " (cần " + d.getQuantity() + ")"
+                );
+            }
+        }// ép INSERT ngay
 
         // Ẩn nút cho lần sau
         sr.setNeedsReplacement(false);
