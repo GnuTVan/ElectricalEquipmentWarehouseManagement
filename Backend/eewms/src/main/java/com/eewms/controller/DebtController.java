@@ -58,6 +58,7 @@ public class DebtController {
 
         class SupplierRow {
             public String supplierName;
+            public String supplierPhone; // NEW
             public String docCode;
             public java.math.BigDecimal total;
             public java.math.BigDecimal paid;
@@ -66,10 +67,11 @@ public class DebtController {
             public Object status;   // r.status.label trong template
             public Long receiptId;
 
-            SupplierRow(String supplierName, String docCode,
+            SupplierRow(String supplierName, String supplierPhone, String docCode,
                         java.math.BigDecimal total, java.math.BigDecimal paid, java.math.BigDecimal remain,
                         java.time.LocalDate dueDate, Object status, Long receiptId) {
                 this.supplierName = supplierName;
+                this.supplierPhone = supplierPhone; // NEW
                 this.docCode = docCode;
                 this.total = total;
                 this.paid = paid;
@@ -80,16 +82,13 @@ public class DebtController {
             }
         }
 
-        var rows = debtRepository.findAll().stream()
+        var rows = debtRepository
+                // preload supplier để tránh N+1 (repo đã có @EntityGraph(attributePaths={"supplier"}))
+                .findAllByDocumentType(Debt.DocumentType.WAREHOUSE_RECEIPT)
+                .stream()
                 .filter(d -> {
                     var pt = d.getPartyType();
-                    if (pt == null) return false;
-                    var name = pt.name();
-                    return "SUPPLIER".equals(name) || "PROVIDER".equals(name) || "VENDOR".equals(name);
-                })
-                .filter(d -> {
-                    var dt = d.getDocumentType() == null ? "" : d.getDocumentType().name();
-                    return "WAREHOUSE_RECEIPT".equals(dt) || "RECEIPT".equals(dt) || "WR".equals(dt);
+                    return pt != null && (pt.name().equals("SUPPLIER") || pt.name().equals("PROVIDER") || pt.name().equals("VENDOR"));
                 })
                 .map(d -> {
                     var total  = nz(d.getTotalAmount());
@@ -101,16 +100,21 @@ public class DebtController {
                             ? d.getWarehouseReceipt().getId()
                             : d.getDocumentId();
 
-                    String supplierName = "";
-                    if (d.getSupplier() != null && d.getSupplier().getName() != null) {
-                        supplierName = d.getSupplier().getName();
+                    String supplierName  = "";
+                    String supplierPhone = "";
+                    if (d.getSupplier() != null) {
+                        if (d.getSupplier().getName() != null)
+                            supplierName = d.getSupplier().getName();
+                        if (d.getSupplier().getContactMobile() != null)
+                            supplierPhone = d.getSupplier().getContactMobile(); // NEW
                     }
 
                     String statusLabel = (d.getStatus() == null) ? "" : String.valueOf(d.getStatus());
                     Object statusObj = java.util.Map.of("label", statusLabel);
 
                     return new SupplierRow(
-                            supplierName, docCode,
+                            supplierName, supplierPhone, // NEW
+                            docCode,
                             total, paid, remain,
                             d.getDueDate(),
                             statusObj,
