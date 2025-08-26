@@ -49,21 +49,23 @@
                                            th:checked="${c.status.name() == 'ACTIVE'}"
                                            th:data-id="${c.id}"
                                            onchange="toggleComboStatus(this)">
-                                    <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition duration-300"></div>
+                                    <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-green-600 transition duration-300"></div>
                                     <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition duration-200 transform peer-checked:translate-x-5"></div>
                                 </label>
-                                <span class="text-sm font-medium text-gray-700" data-label
+                                <span class="inline-flex items-center justify-center w-32 px-2 py-1 rounded text-xs font-medium whitespace-nowrap"
+                                      data-label
+                                      th:classappend="${c.status.name() == 'ACTIVE'} ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
                                       th:text="${c.status.name() == 'ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động'}">
                                 </span>
                             </div>
                         </td>
                         <td class="px-4 py-3 border border-gray-200" th:text="${c.description} ?: '—'"></td>
                         <td class="px-4 py-2 text-center border border-gray-200 w-1">
-                            <div class="flex items-center justify-center gap-3">
+                            <div class="flex items-center justify-center gap-3 whitespace-nowrap">
                                 <a th:href="@{/combos/{id}/view(id=${c.id})}"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200"
                                    title="Xem">
-                                    <i class="ri-eye-line"></i> Xem
+                                    <i class="ri-eye-line"></i> Chi tiết
                                 </a>
                                 <a th:href="@{/combos/{id}/edit(id=${c.id})}"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded"

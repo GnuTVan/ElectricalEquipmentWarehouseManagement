@@ -21,11 +21,11 @@
             <table id="Table" class="min-w-full table-auto text-sm text-left border border-gray-200">
                 <thead class="bg-gray-100 text-gray-700 font-semibold">
                 <tr>
-                    <th class="px-6 py-3 border border-gray-200">Mã phiếu</th>
-                    <th class="px-6 py-3 border border-gray-200">Đơn hàng</th>
-                    <th class="px-6 py-3 border border-gray-200">Người tạo</th>
-                    <th class="px-6 py-3 border border-gray-200">Thời gian</th>
-                    <th class="px-6 py-3 border border-gray-200">Công nợ</th>
+                    <th class="px-6 py-3 border border-gray-200 whitespace-nowrap">Mã phiếu</th>
+                    <th class="px-6 py-3 border border-gray-200 whitespace-nowrap">Đơn hàng</th>
+                    <th class="px-6 py-3 border border-gray-200 whitespace-nowrap">Người tạo</th>
+                    <th class="px-6 py-3 border border-gray-200 whitespace-nowrap">Thời gian</th>
+                    <th class="px-6 py-3 border border-gray-200 whitespace-nowrap">Công nợ</th>
                     <th class="px-4 py-2 border border-gray-200 whitespace-nowrap text-center">Hành động</th>
                 </tr>
                 </thead>
@@ -51,7 +51,7 @@
   </span>
                     </td>
                     <td class="px-6 py-3 border border-gray-200" th:text="${r.createdBy}">Admin</td>
-                    <td class="px-6 py-3 border border-gray-200" th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2025</td>
+                    <td class="px-6 py-3 border border-gray-200 whitespace-nowrap" th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2025</td>
 
                     <td class="px-6 py-3 border border-gray-200 w-50"
                         th:with="isReturn=${r.requestId != null and #strings.startsWith(r.requestId, 'SR-RECV-')},canConfirm=${#authorization.expression('hasRole(''MANAGER'')')}">

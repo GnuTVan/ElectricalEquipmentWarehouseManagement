@@ -57,11 +57,11 @@
                     <table id="Table" class="min-w-full table-auto text-sm border border-gray-200">
                         <thead class="bg-gray-100 text-left">
                         <tr>
-                            <th class="px-4 py-3 border border-gray-200 font-semibold">Mã yêu cầu</th>
-                            <th class="px-4 py-3 border border-gray-200 font-semibold">Người tạo</th>
-                            <th class="px-4 py-3 border border-gray-200 font-semibold">Ngày tạo</th>
-                            <th class="px-4 py-3 border border-gray-200 font-semibold">Trạng thái</th>
-                            <th class="px-4 py-3 border border-gray-200 font-semibold text-center">Thao tác</th>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap">Mã yêu cầu</th>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap">Người tạo</th>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap">Ngày tạo</th>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap text-center">Trạng thái</th>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap text-center">Thao tác</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -70,7 +70,7 @@
                             <td class="px-4 py-2 border border-gray-200" th:text="${request.createdByName}">Nguyễn Văn
                                 A
                             </td>
-                            <td class="px-4 py-2 border border-gray-200">
+                            <td class="px-4 py-2 border border-gray-200 whitespace-nowrap">
           <span th:if="${request.createdAt != null}"
                 th:text="${#temporals.format(request.createdAt, 'dd/MM/yyyy HH:mm')}">01/08/2025</span>
                                 <span th:if="${request.createdAt == null}">---</span>
@@ -81,8 +81,8 @@
           <span class="inline-flex items-center justify-center px-2 py-1 rounded text-md font-semibold whitespace-nowrap w-32"
                 th:classappend="
             ${request.status?.name() == 'MOI_TAO'}  ? 'bg-gray-100  text-gray-700'  :
-            (${request.status?.name() == 'DA_DUYET'} ? 'bg-emerald-100 text-emerald-700' :
-            (${request.status?.name() == 'DA_TAO_PO'} ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'))"
+            (${request.status?.name() == 'DA_DUYET'} ? 'bg-amber-100 text-amber-700' :
+            (${request.status?.name() == 'DA_TAO_PO'} ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'))"
                 th:text="${request.status != null ? request.status.label : '---'}">
     </span>
                             </td>

@@ -98,7 +98,7 @@
 
                             <!-- ★ FIX: format BigDecimal an toàn -->
                             <td class="border p-2 text-right"
-                                th:text="${#numbers.formatDecimal((it.price != null ? it.price : T(java.math.BigDecimal).ZERO), 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0</td>
+                                th:text="${#numbers.formatDecimal((it.price != null ? it.price : T(java.math.BigDecimal).ZERO), 0, 'COMMA', 0, 'POINT')} + ' đ'">0</td>
 
                             <!-- ★ FIX: tránh mơ hồ valueOf(Integer) – ép Long rõ ràng -->
                             <td class="border p-2 text-right"
@@ -106,14 +106,14 @@
                                    (it.price != null ? it.price : T(java.math.BigDecimal).ZERO)
                                      .multiply(T(java.math.BigDecimal)
                                      .valueOf( (it.contractQuantity != null) ? it.contractQuantity.longValue() : 0L )),
-                                   0, 'COMMA', 0, 'POINT')}">0</td>
+                                   0, 'COMMA', 0, 'POINT')}+ ' đ'">0</td>
                         </tr>
                         </tbody>
                         <tfoot>
                         <tr class="bg-gray-50 font-semibold">
                             <td colspan="4" class="border p-2 text-right">Tổng cộng:</td>
                             <td class="border p-2 text-right"
-                                th:text="${#numbers.formatDecimal(order.totalAmount != null ? order.totalAmount : T(java.math.BigDecimal).ZERO, 0, 'COMMA', 0, 'POINT')}">0</td>
+                                th:text="${#numbers.formatDecimal(order.totalAmount != null ? order.totalAmount : T(java.math.BigDecimal).ZERO, 0, 'COMMA', 0, 'POINT')}+ ' đ'">0</td>
                         </tr>
                         </tfoot>
                     </table>

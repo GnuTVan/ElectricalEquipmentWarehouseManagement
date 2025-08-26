@@ -98,7 +98,7 @@
                th:text="${totals != null} ? ${totals.totalAmount} : 0"></div>
         </div>
         <div class="bg-white p-4 rounded-lg shadow">
-          <div class="text-sm text-gray-500">Số combo</div>
+          <div class="text-sm text-gray-500">Số combo đã bán</div>
           <div class="text-xl font-semibold num-plain"
                th:attr="data-value=${totals != null} ? ${totals.totalCombos} : 0"
                th:text="${totals != null} ? ${totals.totalCombos} : 0">0</div>
@@ -109,7 +109,7 @@
       <div class="bg-white rounded-lg shadow overflow-auto">
         <table class="min-w-full text-sm border border-200">
           <thead class="bg-gray-100 border border-200">
-          <tr>
+          <tr class="whitespace-nowrap">
             <th class="text-left p-3 border border-200">Mã PXK</th>
             <th class="text-left p-3 border border-200">Ngày xuất</th>
             <th class="text-left p-3 border border-200">Khách hàng</th>
@@ -121,7 +121,7 @@
           </tr>
           </thead>
           <tbody>
-          <tr th:each="r : ${data.content}" class="border-t hover:bg-gray-50">
+          <tr th:each="r : ${data.content}" class="border-t hover:bg-gray-50 whitespace-nowrap">
             <td class="p-3 border border-200" th:text="${r.issueCode}">PXK0001</td>
             <td class="p-3 border border-200" th:text="${r.issueDate}">2025-08-01</td>
             <td class="p-3 border border-200" th:text="${r.customerName}">KH A</td>

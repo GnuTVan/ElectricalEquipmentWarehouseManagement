@@ -109,15 +109,14 @@ public class DebtController {
                             supplierPhone = d.getSupplier().getContactMobile(); // NEW
                     }
 
-                    String statusLabel = (d.getStatus() == null) ? "" : String.valueOf(d.getStatus());
-                    Object statusObj = java.util.Map.of("label", statusLabel);
+                    String statusLabel = (d.getStatus() == null) ? "" : d.getStatus().getLabel();
 
                     return new SupplierRow(
                             supplierName, supplierPhone, // NEW
                             docCode,
                             total, paid, remain,
                             d.getDueDate(),
-                            statusObj,
+                            statusLabel,
                             receiptId
                     );
                 })
@@ -192,7 +191,7 @@ public class DebtController {
                             docCode,
                             total, paid, remain,
                             d.getDueDate(),
-                            d.getStatus(),
+                            d.getStatus().getLabel(),
                             goodIssueId,
                             d.getId()
                     );

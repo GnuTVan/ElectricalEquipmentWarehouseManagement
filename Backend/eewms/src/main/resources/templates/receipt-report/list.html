@@ -86,10 +86,10 @@
             <div class="bg-white rounded-lg shadow overflow-auto">
                 <table class="min-w-full text-sm border border-200">
                     <thead class="bg-gray-100 border border-200">
-                    <tr>
+                    <tr class="whitespace-nowrap">
                         <th class="text-left p-3 border border-200">Mã phiếu</th>
                         <th class="text-left p-3 border border-200">Ngày nhập</th>
-                        <th class="text-left p-3 border border-200">Kho</th>
+                        <th class="text-left p-3 border border-200 hidden">Kho</th>
                         <th class="text-left p-3 border border-200">Nhà cung cấp</th>
                         <th class="text-left p-3 border border-200">Người tạo</th>
                         <th class="text-right p-3 border border-200">Số lượng</th>
@@ -100,7 +100,7 @@
                     <tr th:each="r : ${data.content}" class="border-t hover:bg-gray-50">
                         <td class="p-3 border border-200" th:text="${r.receiptCode}">RN00001</td>
                         <td class="p-3 border border-200" th:text="${r.receiptDate}">2025-08-01</td>
-                        <td class="p-3 border border-200" th:text="${r.warehouseName}">Kho A</td>
+                        <td class="p-3 border border-200 hidden" th:text="${r.warehouseName}">Kho A</td>
                         <td class="p-3 border border-200" th:text="${r.supplierName}">NCC A</td>
                         <td class="p-3 border border-200" th:text="${r.createdByName}">Admin</td>
                         <td class="p-3 border border-200 text-right num-plain"

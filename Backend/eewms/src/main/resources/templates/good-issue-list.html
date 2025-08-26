@@ -37,12 +37,12 @@
                         <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Mã phiếu</th>
                         <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Khách hàng</th>
                         <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Người tạo</th>
-                        <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Ngày xuất</th>
-                        <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Tổng tiền</th>
+                        <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200 text-center">Ngày xuất</th>
+                        <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200 text-center">Tổng tiền</th>
                         <th sec:authorize="hasAnyRole('MANAGER','STAFF')"
-                            class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Công nợ
+                            class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200 text-center">Công nợ
                         </th>
-                        <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200">Trạng thái</th>
+                        <th class="px-6 py-3 font-semibold whitespace-nowrap border border-gray-200 text-center">Trạng thái</th>
                         <th class="px-4 py-2 font-semibold whitespace-nowrap border border-gray-200 text-center">Hành động</th>
                     </tr>
                     </thead>
@@ -52,27 +52,26 @@
                             th:text="${gin.code}"></td>
                         <td class="px-6 py-3 border border-gray-200" th:text="${gin.customerName}"></td>
                         <td class="px-6 py-3 border border-gray-200" th:text="${gin.createdBy}"></td>
-                        <td class="px-6 py-3 border border-gray-200"
+                        <td class="px-6 py-3 border border-gray-200 whitespace-nowrap"
                             th:text="${#temporals.format(gin.issueDate, 'dd/MM/yyyy HH:mm')}"></td>
-                        <td class="px-6 py-3 border border-gray-200"
-                            th:text="${#numbers.formatDecimal(gin.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+                        <td class="px-6 py-3 border border-gray-200 text-right whitespace-nowrap"
+                            th:text="${#numbers.formatDecimal(gin.totalAmount, 0, 'COMMA', 0, 'POINT')} + '  đ'"></td>
 
                         <!-- Cột Công nợ -->
-                        <td sec:authorize="hasAnyRole('MANAGER','STAFF')" class="px-6 py-3 border border-gray-200">
+                        <td sec:authorize="hasAnyRole('MANAGER','STAFF')" class="px-6 py-3 border border-gray-200 text-center">
                             <!-- Có debt & còn nợ -->
                             <div th:if="${gin.debtId != null and gin.remainingAmount != null and gin.remainingAmount > 0}">
                                 <button type="button"
                                         class="px-3 py-1 rounded bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
                                         th:attr="data-debt-id=${gin.debtId},data-remaining=${gin.remainingAmount}"
                                         onclick="openPayModal(this)">
-                                    Thanh toán (còn
-                                    <span th:text="${#numbers.formatDecimal(gin.remainingAmount,0,'COMMA',0,'POINT')}"></span>
-                                    VNĐ)
+                                    <span> Thanh toán</span>
+                                    <span class="whitespace-nowrap">(còn <span th:text="${#numbers.formatDecimal(gin.remainingAmount,0,'COMMA',0,'POINT')}+' đ'"></span>)</span>
                                 </button>
                             </div>
 
                             <!-- Chưa có debt -->
-                            <div th:if="${gin.debtId == null and gin.status != 'Đã thanh toán'}">
+                            <div th:if="${gin.debtId == null and gin.status == 'Chưa thanh toán'}">
                                 <form th:action="@{/admin/debts/create-from-good-issue/{ginId}(ginId=${gin.id})}" method="post">
                                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                                     <button type="submit"
@@ -87,18 +86,30 @@
 
                             <!-- Đã tất toán -->
                             <div th:if="${gin.debtId != null and (gin.remainingAmount == null or gin.remainingAmount <= 0)}">
-                                <span class="text-green-600 font-semibold">Đã tất toán</span>
+                                <span class="inline-flex items-center justify-center px-2 py-1 rounded text-md whitespace-nowrap w-32 bg-green-100 text-green-600">
+                                    Đã tất toán
+                                </span>
+                            </div>
+                            <!-- Đổi hàng -->
+                            <div th:if="${gin.debtId == null and gin.status == 'Đổi hàng'}">
+                                <span class="inline-flex items-center justify-center px-2 py-1 rounded text-md whitespace-nowrap w-32 bg-gray-100 text-gray-600">
+                                    Không tạo công nợ
+                                </span>
                             </div>
                         </td>
 
                         <!-- Trạng thái -->
-                        <td class="px-6 py-3 border border-gray-200">
-                          <span th:text="${gin.status}"
-                                th:classappend="${gin.status == 'Đã thanh toán'} ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'">
-                          </span>
+                        <td class="px-6 py-3 border border-gray-200 text-center">
+          <span class="inline-flex items-center justify-center px-2 py-1 rounded text-md font-semibold whitespace-nowrap w-32"
+                                  th:text="${gin.status}"
+                                th:classappend="${gin.status == 'Đã thanh toán'} ? 'bg-green-100 text-green-600 font-semibold'
+                     : (${#strings.equals(gin.status, 'Chưa thanh toán')} ? 'bg-red-100 text-red-600 font-semibold'
+                     : 'bg-amber-100 text-amber-600 font-semibold')">
+</span>
+
                         </td>
 
-                        <td class="px-4 py-2 border border-gray-200 text-center">
+                        <td class="px-4 py-2 border border-gray-200 text-center whitespace-nowrap">
                             <a th:href="@{'/good-issue/view/' + ${gin.id}}"
                                class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 text-sm border rounded hover:bg-gray-200 shadow">
                                 <i class="ri-eye-line"></i>Chi tiết</a>

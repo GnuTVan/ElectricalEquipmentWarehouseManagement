@@ -23,8 +23,8 @@
                         <th class="px-6 py-3 border border-gray-200 text-right whitespace-nowrap">Tổng</th>
                         <th class="px-6 py-3 border border-gray-200 text-right whitespace-nowrap">Đã thu</th>
                         <th class="px-6 py-3 border border-gray-200 text-right whitespace-nowrap">Còn lại</th>
-                        <th class="px-6 py-3 border border-gray-200 whitespace-nowrap">Hạn thanh toán</th>
-                        <th class="px-6 py-3 border border-gray-200 whitespace-nowrap">Trạng thái</th>
+                        <th class="px-6 py-3 border border-gray-200 text-center whitespace-nowrap">Hạn thanh toán</th>
+                        <th class="px-6 py-3 border border-gray-200 text-center whitespace-nowrap">Trạng thái</th>
                         <th class="px-6 py-3 border border-gray-200 text-center whitespace-nowrap">Hành động</th>
                     </tr>
                     </thead>
@@ -33,15 +33,22 @@
                         <td class="px-6 py-3 border border-gray-200" th:text="${r.customer}">Khách hàng</td>
                         <td class="px-6 py-3 border border-gray-200" th:text="${r.phone}">090...</td>
                         <td class="px-6 py-3 border border-gray-200" th:text="${r.docCode}">GIN#1</td>
-                        <td class="px-6 py-3 border border-gray-200 text-right"
-                            th:text="${#numbers.formatDecimal(r.total, 0, 'DEFAULT', 0, 'DEFAULT')}">0</td>
-                        <td class="px-6 py-3 border border-gray-200 text-right"
-                            th:text="${#numbers.formatDecimal(r.paid, 0, 'DEFAULT', 0, 'DEFAULT')}">0</td>
-                        <td class="px-6 py-3 border border-gray-200 text-right font-semibold"
-                            th:text="${#numbers.formatDecimal(r.remain, 0, 'DEFAULT', 0, 'DEFAULT')}">0</td>
-                        <td class="px-6 py-3 border border-gray-200"
+                        <td class="px-6 py-3 border border-gray-200 text-right whitespace-nowrap"
+                            th:text="${#numbers.formatDecimal(r.total, 0, 'DEFAULT', 0, 'DEFAULT')}+ ' đ'">0</td>
+                        <td class="px-6 py-3 border border-gray-200 text-right whitespace-nowrap"
+                            th:text="${#numbers.formatDecimal(r.paid, 0, 'DEFAULT', 0, 'DEFAULT')}+ ' đ'">0</td>
+                        <td class="px-6 py-3 border border-gray-200 text-right whitespace-nowrap font-semibold"
+                            th:text="${#numbers.formatDecimal(r.remain, 0, 'DEFAULT', 0, 'DEFAULT')}+ ' đ'">0</td>
+                        <td class="px-6 py-3 border border-gray-200 text-center"
                             th:text="${r.dueDate != null ? #temporals.format(r.dueDate, 'dd/MM/yyyy') : ''}"></td>
-                        <td class="px-6 py-3 border border-gray-200 whitespace-nowrap" th:text="${r.status}">UNPAID</td>
+                        <td class="px-6 py-3 border border-gray-200 whitespace-nowrap">
+                        <span class="inline-flex items-center justify-center px-2 py-1 rounded text-md font-semibold whitespace-nowrap w-36"
+                              th:classappend="${r.status == 'Chưa thanh toán'}  ? 'bg-gray-100  text-gray-700'  :
+                                              (${r.status == 'Đã thanh toán'} ? 'bg-emerald-100 text-emerald-700' :
+                                              (${r.status == 'Thanh toán một phần'} ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'))"
+                            th:text="${r.status}">
+                        </span>
+                        </td>
                         <td class="px-6 py-3 border border-gray-200 text-center space-x-3 whitespace-nowrap">
                             <a th:if="${r.goodIssueId != null}"
                                th:href="@{'/good-issue/view/' + ${r.goodIssueId}}"

@@ -13,11 +13,11 @@
         <div th:replace="~{fragments/header :: header}"></div>
 
         <div class="flex justify-between items-center mb-4 px-6 py-6">
-            <h1 class="text-2xl font-bold">Danh sách khách hàng</h1>
+            <h1 class="text-2xl font-bold whitespace-nowrap">Danh sách khách hàng</h1>
             <div class="flex gap-2">
                 <a sec:authorize="hasAnyRole('MANAGER','STAFF')"
                    onclick="openAddModal()"
-                   class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer">+ Thêm</a>
+                   class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer whitespace-nowrap">+ Thêm</a>
                 <form th:action="@{/customers}" method="get" class="flex gap-2">
                     <input type="text" name="keyword" th:value="${keyword}" placeholder="Tìm theo tên, email..."
                            class="border px-3 py-2 rounded-md w-64"/>
@@ -37,7 +37,7 @@
                         <th class="px-4 py-3 border border-200 whitespace-nowrap text-left">Địa chỉ</th>
                         <th class="hidden px-4 py-3 border border-200 whitespace-nowrap">Mã số thuế</th>
                         <th class="hidden px-4 py-3 border border-200 whitespace-nowrap">Ngân hàng</th>
-                        <th class="px-4 py-3 border border-200 whitespace-nowrap">Trạng thái</th>
+                        <th class="px-4 py-3 border border-200 whitespace-nowrap text-center">Trạng thái</th>
                         <th class="px-4 py-3 border border-200 whitespace-nowrap text-center">Hành động</th>
                     </tr>
                     </thead>
@@ -65,10 +65,11 @@
                                        class="inline-flex relative items-center cursor-pointer">
                                     <input type="checkbox" th:checked="${c.status.name() == 'ACTIVE'}"
                                            th:data-id="${c.id}" class="sr-only peer" onchange="toggleStatus(this)">
-                                    <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition duration-300"></div>
+                                    <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-green-600 transition duration-300"></div>
                                     <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition duration-200 transform peer-checked:translate-x-5"></div>
                                 </label>
-                                <span class="text-sm font-medium text-gray-700"
+                                <span class="inline-flex items-center justify-center w-32 px-2 py-1 rounded text-xs font-medium whitespace-nowrap"
+                                      th:classappend="${c.status.name() == 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}"
                                       th:text="${c.status.name() == 'ACTIVE' ? 'Đang hoạt động' : 'Ngưng hoạt động'}">
               </span>
                             </div>
