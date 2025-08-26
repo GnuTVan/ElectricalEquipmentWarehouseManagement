@@ -105,8 +105,8 @@
                         <th class="px-4 py-3 font-semibold">Số điện thoại</th>
                         <th class="px-4 py-3 font-semibold">Ngày tạo</th>
                         <th class="px-4 py-3 font-semibold">Người tạo</th>
-                        <th class="px-4 py-3 font-semibold">Tổng tiền</th>
-                        <th class="px-4 py-3 font-semibold">Trạng thái</th>
+                        <th class="px-4 py-3 font-semibold text-right">Tổng tiền</th>
+                        <th class="px-4 py-3 font-semibold text-center">Trạng thái</th>
                         <th class="px-4 py-3 font-semibold text-center">Hành động</th>
                     </tr>
                     </thead>
@@ -151,15 +151,15 @@
                             }">
                         </td>
 
-                        <td class="px-4 py-2"
-                            th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+                        <td class="px-4 py-2 text-right"
+                            th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
 
                         <td class="px-4 py-2 w-36 text-center">
                             <span class="inline-block w-full truncate px-2 py-1 rounded text-xs font-medium"
                                   th:classappend="
                                     ${order.status.name() == 'CANCELLED'} ? 'bg-red-100 text-red-700' :
+                                 (${order.status.name() == 'PARTLY_DELIVERED'} ? 'bg-amber-100 text-amber-700' :
                                  (${order.status.name() == 'DELIVERIED'} ? 'bg-green-100 text-green-700' :
-                                 (${order.status.name() == 'COMPLETED'} ? 'bg-green-100 text-green-700' :
                                  'bg-gray-100 text-gray-700'))"
                                   th:text="${order.status.label}">
                             </span>
