@@ -171,10 +171,11 @@
                         <!-- Trạng thái -->
                         <td class="px-4 py-3 border border-gray-200">
                             <div class="flex items-center justify-center gap-3">
-                                <span class="inline-flex items-center justify-center w-32 px-2 py-1 rounded text-xs font-medium whitespace-nowrap"
+                                <span data-status-badge
+                                      class="inline-flex items-center justify-center w-32 px-2 py-1 rounded text-xs font-medium whitespace-nowrap"
                                       th:classappend="${product.status.name() == 'ACTIVE'} ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
                                       th:text="${product.status.name() == 'ACTIVE'} ? 'Đang hoạt động' : 'Ngưng hoạt động'">
-                                </span>
+</span>
                                 <label sec:authorize="hasAnyRole('MANAGER','STAFF')"
                                        class="inline-flex relative items-center cursor-pointer">
                                     <input type="checkbox"
@@ -843,19 +844,25 @@
                 return res.text();
             })
             .then(msg => {
-                console.log("✅ Đã cập nhật trạng thái:", msg);
-                const label = checkbox.closest("td").querySelector("[data-label]");
-                if (label) label.innerText = checkbox.checked ? "Đang hoạt động" : "Ngưng hoạt động";
+    // Cập nhật badge
+    const td = checkbox.closest("td");
+    const badge = td.querySelector("[data-status-badge]");
+    if (badge) {
+        if (checkbox.checked) {
+            badge.textContent = "Đang hoạt động";
+            badge.classList.remove("bg-red-100","text-red-700");
+            badge.classList.add("bg-green-100","text-green-700");
+        } else {
+            badge.textContent = "Ngưng hoạt động";
+            badge.classList.remove("bg-green-100","text-green-700");
+            badge.classList.add("bg-red-100","text-red-700");
+        }
+    }
 
-                // update dataset của <tr> chứa sản phẩm
-                const tr = checkbox.closest("tr");
-                tr.dataset.status = checkbox.checked ? "ACTIVE" : "INACTIVE";
-            })
-            .catch(err => {
-                console.error("❌", err);
-                checkbox.checked = !checkbox.checked; // rollback lại trạng thái
-                alert("Cập nhật trạng thái thất bại.");
-            });
+    // Cập nhật dataset của hàng
+    const tr = checkbox.closest("tr");
+    tr.dataset.status = checkbox.checked ? "ACTIVE" : "INACTIVE";
+});
     }
 
     function openEditFromDetail() {
