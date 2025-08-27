@@ -29,7 +29,8 @@ public class IssueReportServiceImpl implements IIssueReportService {
     @Transactional(readOnly = true)
     @Override
     public Page<IssueReportRowDTO> findIssueHeaders(IssueReportFilter f, Pageable pageable) {
-        List<GoodIssueNote> notes = noteRepo.findAll();
+        // ★ CHANGED: fetch đủ saleOrder, customer, details, product để tránh lazy
+        List<GoodIssueNote> notes = noteRepo.findAllWithDetails(); // ★ CHANGED
 
         List<GoodIssueNote> filtered = notes.stream()
                 .filter(n -> testDate(asLocalDate(n.getIssueDate()), f.getFromDate(), f.getToDate()))
@@ -84,7 +85,8 @@ public class IssueReportServiceImpl implements IIssueReportService {
     @Transactional(readOnly = true)
     @Override
     public IssueTotalsDTO totalsForFilter(IssueReportFilter f) {
-        List<GoodIssueNote> notes = noteRepo.findAll();
+        // ★ CHANGED: fetch đủ để tránh lazy khi tính tổng
+        List<GoodIssueNote> notes = noteRepo.findAllWithDetails(); // ★ CHANGED
         int totalCombos = 0;
 
         List<GoodIssueNote> filtered = notes.stream()
@@ -114,6 +116,8 @@ public class IssueReportServiceImpl implements IIssueReportService {
         return new IssueTotalsDTO(filtered.size(), totalQty, totalAmt, totalCombos);
     }
 
+    // ★ CHANGED: mở transaction ngay entrypoint export (tránh self-invocation bỏ qua @Transactional)
+    @Transactional(readOnly = true) // ★ CHANGED
     @Override
     public List<IssueReportRowDTO> findAllForExport(IssueReportFilter f) {
         return findIssueHeaders(f, org.springframework.data.domain.PageRequest.of(0, Integer.MAX_VALUE)).getContent();
