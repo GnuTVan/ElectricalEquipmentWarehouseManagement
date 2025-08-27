@@ -55,14 +55,14 @@ class ComboServiceImplTest {
         when(comboRepository.existsByCodeIgnoreCase(anyString())).thenReturn(false);
         when(comboRepository.existsByNameIgnoreCase(eq("Combo Test"))).thenReturn(false);
         when(productRepository.findAllById(List.of(1,2))).thenReturn(List.of(p1,p2));
-        when(comboRepository.findAll()).thenReturn(List.of());
-        when(comboRepository.existsByCodeIgnoreCase(anyString())).thenReturn(false);
         when(comboRepository.save(any(Combo.class))).thenAnswer(inv -> inv.getArgument(0));
 
         ComboDTO dto = service.create(r);
+
         assertEquals("Combo Test", dto.getName(), "Tên phải được normalize");
         assertNotNull(dto.getCode(), "Phải sinh code tự động khi bỏ trống");
     }
+
 
     @Test
     void create_DuplicateName_Throws() {
