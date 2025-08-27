@@ -15,6 +15,9 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.data.domain.Page;
+import com.eewms.entities.VerificationToken;
+import java.time.Duration;
+
 
 @Controller
 @RequestMapping("/admin/users")
@@ -99,8 +102,13 @@ public class UserController {
             User user = UserMapper.toEntity(userDTO, roleRepository);
             userService.saveUser(user);
 
-            String token = verificationTokenService.createVerificationToken(user);
+            String token = verificationTokenService.createToken(
+                    user,
+                    VerificationToken.TokenType.ACTIVATION,
+                    Duration.ofHours(24)
+            );
             emailService.sendActivationEmail(user, token);
+
 
             redirect.addFlashAttribute("message", "Tạo người dùng " + userDTO.getUsername()
                     + " thành công. Đã gửi email kích hoạt tới: " + userDTO.getEmail());
@@ -148,17 +156,20 @@ public class UserController {
             User user = userService.findUserById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng."));
 
-            String token = verificationTokenService.createVerificationToken(user);
-            emailService.sendResetPasswordEmail(user, token);
+            String token = verificationTokenService.createToken(
+                    user,
+                    VerificationToken.TokenType.RESET_PASSWORD,
+                    Duration.ofHours(2)
+            );
+            emailService.sendResetPasswordEmail(user, token); // đảm bảo link /reset-password
 
-            redirect.addFlashAttribute("message", "Đã gửi email đặt lại mật khẩu cho người dùng " + user.getUsername());
+            redirect.addFlashAttribute("message",
+                    "Đã gửi email đặt lại mật khẩu cho người dùng " + user.getUsername());
             redirect.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
             redirect.addFlashAttribute("message", "Lỗi khi gửi email đặt lại mật khẩu: " + e.getMessage());
             redirect.addFlashAttribute("messageType", "error");
         }
-
         return "redirect:/admin/users";
     }
-
 }

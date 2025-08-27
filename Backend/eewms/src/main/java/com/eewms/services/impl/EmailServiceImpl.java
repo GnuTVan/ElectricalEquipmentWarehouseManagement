@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @Service
 @RequiredArgsConstructor
@@ -37,7 +39,7 @@ public class EmailServiceImpl implements IEmailService {
             throw new IllegalArgumentException("Email người nhận trống.");
         }
         String subject = "Kích hoạt tài khoản của bạn";
-        String activationLink = activationBaseUrl + "?token=" + token;
+        String activationLink = activationBaseUrl + "?token=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
 
         String content = """
                 <p>Xin chào <b>%s</b>,</p>
@@ -54,23 +56,21 @@ public class EmailServiceImpl implements IEmailService {
             helper.setFrom(fromEmail);
             helper.setTo(to);
             helper.setSubject(subject);
-            helper.setText(content, true); // true = gửi HTML
+            helper.setText(content, true);
             mailSender.send(message);
         } catch (MessagingException e) {
-            throw new RuntimeException("Không thể gửi email: " + e.getMessage());
+            throw new RuntimeException("Không thể gửi email: " + e.getMessage(), e);
         }
     }
 
     @Override
     public void sendResetPasswordEmail(User user, String token) {
         String to = user.getEmail();
-        if (to == null || to.isBlank()) {
-            throw new IllegalArgumentException("Email người nhận trống.");
-        }
-        String subject = "Đặt lại mật khẩu của bạn";
-        String resetLink = resetPasswordBaseUrl + "?token=" + token;
+        if (to == null || to.isBlank()) throw new IllegalArgumentException("Email người nhận trống.");
 
-        // TTL reset đang set 2h trong service (Duration.ofHours(2))
+        String subject = "Đặt lại mật khẩu của bạn";
+        String resetLink = resetPasswordBaseUrl + "?token=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
+
         String content = """
                 <p>Xin chào <b>%s</b>,</p>
                 <p>Gần đây có yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>

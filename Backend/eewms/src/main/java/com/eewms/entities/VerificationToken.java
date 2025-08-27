@@ -6,6 +6,10 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
+@NamedEntityGraph(
+        name = "VerificationToken.withUser",
+        attributeNodes = @NamedAttributeNode("user")
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,7 +25,7 @@ public class VerificationToken {
     @Column(unique = true, nullable = false)
     private String token;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 

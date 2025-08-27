@@ -13,7 +13,7 @@
             <div class="flex justify-between items-center">
                 <h1 class="text-2xl font-bold text-gray-800">Danh sách phiếu hoàn hàng</h1>
                 <form sec:authorize="hasAnyRole('MANAGER','STAFF')"
-                      action="/admin/sales-returns/create" method="get" class="flex items-center space-x-2">
+                      action="/admin/sales-returns/create" method="get" class="hidden flex items-center space-x-2">
                     <input name="saleOrderId" type="number" placeholder="SO ID"
                            class="border rounded px-3 py-2 w-40">
                     <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center">

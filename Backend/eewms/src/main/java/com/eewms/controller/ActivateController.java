@@ -26,13 +26,13 @@ public class ActivateController {
     public String showActivationForm(@RequestParam("token") String token,
                                      Model model,
                                      RedirectAttributes redirect) {
-        var vt = tokenService.getByTokenAndType(token, VerificationToken.TokenType.ACTIVATION).orElse(null);
-        if (vt == null || vt.isUsed() || vt.getExpiryDate().isBefore(LocalDateTime.now())) {
+        boolean ok = tokenService.isValid(token, VerificationToken.TokenType.ACTIVATION);
+        if (!ok) {
             redirect.addFlashAttribute("error", "Token không hợp lệ hoặc đã hết hạn.");
             return "redirect:/login";
         }
         model.addAttribute("token", token);
-        model.addAttribute("mode", "ACTIVATION"); // để template đổi title/nút/action
+        model.addAttribute("mode", "ACTIVATION");
         return "auth/activation-form";
     }
 
@@ -41,25 +41,17 @@ public class ActivateController {
                                     @RequestParam("newPassword") String newPassword,
                                     @RequestParam("confirmPassword") String confirmPassword,
                                     RedirectAttributes redirect) {
-
-        var vt = tokenService.getByTokenAndType(token, VerificationToken.TokenType.ACTIVATION).orElse(null);
-        if (vt == null || vt.isUsed() || vt.getExpiryDate().isBefore(LocalDateTime.now())) {
-            redirect.addFlashAttribute("error", "Token không hợp lệ hoặc đã hết hạn.");
-            return "redirect:/login";
-        }
-
         if (!newPassword.equals(confirmPassword)) {
             redirect.addFlashAttribute("error", "Mật khẩu xác nhận không khớp.");
             redirect.addAttribute("token", token);
             return "redirect:/activate";
         }
 
-        User user = vt.getUser();
-        user.setPassword(passwordEncoder.encode(newPassword));
-        user.setEnabled(true);
-        userService.saveUser(user);
-
-        tokenService.markTokenAsUsed(vt);
+        boolean ok = tokenService.activateAccountByToken(token, newPassword);
+        if (!ok) {
+            redirect.addFlashAttribute("error", "Token không hợp lệ hoặc đã hết hạn.");
+            return "redirect:/login";
+        }
 
         redirect.addFlashAttribute("message", "Bạn đã kích hoạt tài khoản thành công. Vui lòng đăng nhập.");
         return "redirect:/login";
@@ -68,13 +60,13 @@ public class ActivateController {
     // ====== RESET PASSWORD ======
     @GetMapping("/reset-password")
     public String showResetForm(@RequestParam("token") String token, Model model, RedirectAttributes redirect) {
-        var vt = tokenService.getByTokenAndType(token, VerificationToken.TokenType.RESET_PASSWORD).orElse(null);
-        if (vt == null || vt.isUsed() || vt.getExpiryDate().isBefore(LocalDateTime.now())) {
+        boolean ok = tokenService.isValid(token, VerificationToken.TokenType.RESET_PASSWORD);
+        if (!ok) {
             redirect.addFlashAttribute("error", "Liên kết không hợp lệ hoặc đã hết hạn.");
             return "redirect:/login";
         }
         model.addAttribute("token", token);
-        model.addAttribute("mode", "RESET"); // đổi title/nút
+        model.addAttribute("mode", "RESET");
         return "auth/activation-form"; // tái sử dụng template
     }
 
@@ -83,22 +75,17 @@ public class ActivateController {
                                @RequestParam("newPassword") String newPassword,
                                @RequestParam("confirmPassword") String confirmPassword,
                                RedirectAttributes redirect) {
-        var vt = tokenService.getByTokenAndType(token, VerificationToken.TokenType.RESET_PASSWORD).orElse(null);
-        if (vt == null || vt.isUsed() || vt.getExpiryDate().isBefore(LocalDateTime.now())) {
-            redirect.addFlashAttribute("error", "Liên kết không hợp lệ hoặc đã hết hạn.");
-            return "redirect:/login";
-        }
         if (!newPassword.equals(confirmPassword)) {
             redirect.addFlashAttribute("error", "Mật khẩu xác nhận không khớp.");
             redirect.addAttribute("token", token);
             return "redirect:/reset-password";
         }
 
-        User user = vt.getUser();
-        user.setPassword(passwordEncoder.encode(newPassword));
-        // KHÔNG bật enabled ở flow reset
-        userService.saveUser(user);
-        tokenService.markTokenAsUsed(vt);
+        boolean ok = tokenService.resetPasswordByToken(token, VerificationToken.TokenType.RESET_PASSWORD, newPassword);
+        if (!ok) {
+            redirect.addFlashAttribute("error", "Liên kết không hợp lệ hoặc đã hết hạn.");
+            return "redirect:/login";
+        }
 
         redirect.addFlashAttribute("message", "Đặt lại mật khẩu thành công. Vui lòng đăng nhập.");
         return "redirect:/login";

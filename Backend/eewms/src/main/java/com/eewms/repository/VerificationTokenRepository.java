@@ -16,26 +16,12 @@ public interface VerificationTokenRepository extends JpaRepository<VerificationT
     // Tìm token theo token + type + chưa dùng
     Optional<VerificationToken> findByTokenAndTypeAndUsedFalse(String token, TokenType type);
 
-    // === NEW: fetch luôn user để tránh proxy ngoài session ===
-    @Query("""
-        SELECT t FROM VerificationToken t
-        JOIN FETCH t.user u
-        WHERE t.token = :token
-    """)
-    Optional<VerificationToken> findByTokenWithUser(@Param("token") String token);
-
-    @Query("""
-        SELECT t FROM VerificationToken t
-        JOIN FETCH t.user u
-        WHERE t.token = :token AND t.type = :type AND t.used = false
-    """)
-    Optional<VerificationToken> findByTokenAndTypeAndUsedFalseWithUser(@Param("token") String token,
-                                                                       @Param("type") TokenType type);
-
     // Vô hiệu hóa toàn bộ token chưa dùng của 1 user cho 1 loại type
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE VerificationToken t SET t.used = true " +
             "WHERE t.user.id = :userId AND t.type = :type AND t.used = false")
     void invalidateAllByUserAndType(@Param("userId") Long userId,
                                     @Param("type") TokenType type);
+
+    Optional<VerificationToken> findByUserAndType(User user, TokenType type);
 }

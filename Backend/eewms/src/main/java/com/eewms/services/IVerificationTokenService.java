@@ -57,4 +57,7 @@ public interface IVerificationTokenService {
      */
     @Deprecated
     Optional<VerificationToken> getByToken(String token);
+
+    boolean resetPasswordByToken(String token, TokenType type, String rawPassword);
+    boolean activateAccountByToken(String token, String rawPassword);
 }
