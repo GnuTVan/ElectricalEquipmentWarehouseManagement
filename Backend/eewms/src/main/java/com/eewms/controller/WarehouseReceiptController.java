@@ -129,5 +129,21 @@ public class WarehouseReceiptController {
     }
 
     /* ====== EXPORT PDF (giữ nguyên logic, chỉ null-safe kho) ====== */
-    // Giữ lại phương thức export bạn đang có.
+    @GetMapping("/export/{id}")
+    @Transactional(readOnly = true)
+    public void exportPdf(@PathVariable Long id, HttpServletResponse response) {
+        var dto = warehouseReceiptService.getViewDTO(id); // đã load đủ items
+        try {
+            String filename = "phieu-nhap-" + (dto.getCode() != null ? dto.getCode() : id) + ".pdf";
+            response.setContentType("application/pdf");
+            // inline để mở tab mới; đổi thành attachment nếu muốn tải về
+            response.setHeader("Content-Disposition", "inline; filename=\"" + filename + "\"");
+
+            com.eewms.utils.ReceiptPdfExporter.export(dto, response.getOutputStream()); // ★ util mới
+            response.flushBuffer();
+        } catch (Exception e) {
+            throw new RuntimeException("Xuất PDF lỗi: " + e.getMessage(), e);
+        }
+    }
+
 }
