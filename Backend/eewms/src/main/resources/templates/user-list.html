@@ -64,6 +64,7 @@
                     </thead>
                     <tbody>
                     <tr th:each="user : ${users}" class="border-b hover:bg-gray-50"
+                        th:if="${!#authorization.expression('hasRole(''ADMIN'' )') or user.username != #authentication?.name}"
                         th:data-id="${user.id}"
                         th:data-username="${user.username}"
                         th:data-fullname="${user.fullName}"
