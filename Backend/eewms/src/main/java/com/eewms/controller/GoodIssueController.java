@@ -138,8 +138,9 @@ public class GoodIssueController {
                                 "). Phần còn lại thiếu hàng. Bấm 'Tạo yêu cầu mua'");
                 return "redirect:/admin/purchase-requests";
             } else {
-                ra.addFlashAttribute("success", "Đã lưu phiếu xuất: " + note.getGinCode());
-                return "redirect:/good-issue/view/" + note.getGinId();
+                ra.addFlashAttribute("success", "Đã lưu phiếu xuất kho thành công: " + note.getGinCode());
+                // ⬇️ ĐỔI: quay về danh sách thay vì trang chi tiết
+                return "redirect:/good-issue";
             }
         } catch (com.eewms.exception.NoIssueableStockException ex) {
             ra.addFlashAttribute("warning",
@@ -188,8 +189,9 @@ public class GoodIssueController {
                                 "Phần còn lại chưa đủ hàng, vui lòng tạo yêu cầu mua.");
                 return "redirect:/admin/purchase-requests?customerId=" + order.getCustomer().getId();
             } else {
-                ra.addFlashAttribute("success", "Đã lưu phiếu xuất: " + note.getGinCode());
-                return "redirect:/good-issue/view/" + note.getGinId();
+                ra.addFlashAttribute("success", "Đã lưu phiếu xuất kho thành công: " + note.getGinCode());
+                // ⬇️ ĐỔI: quay về danh sách thay vì trang chi tiết
+                return "redirect:/good-issue";
             }
         } catch (com.eewms.exception.NoIssueableStockException ex) {
             ra.addFlashAttribute("warning",
