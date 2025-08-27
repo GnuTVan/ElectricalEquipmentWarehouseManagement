@@ -20,7 +20,7 @@
                 <h1 class="text-2xl font-bold mb-2">Chi tiết yêu cầu mua hàng</h1>
                 <div class="mb-6">
                     <a href="javascript:history.back()"
-                       class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-100">
+                       class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-100 shadow">
                         <i class="ri-arrow-left-line mr-2"></i> Quay lại
                     </a>
                 </div>
@@ -137,11 +137,12 @@
             </div>
 
             <!-- >>> NEW: Nút tạo PO khi đã duyệt -->
-            <div th:if="${request.status.name() == 'DA_DUYET'}" class="mt-6">
+            <div sec:authorize="hasRole('MANAGER')"
+                    th:if="${request.status.name() == 'DA_DUYET'}" class="mt-6">
                 <form th:action="@{'/admin/purchase-requests/' + ${request.id} + '/generate-po'}" method="post"
                       onsubmit="return confirm('Tạo các đơn mua hàng theo nhà cung cấp đã chọn?');">
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-                        <i class="ri-add-line mr-1"></i> Tạo phiếu mua hàng
+                        <i class="ri-add-line mr-1"></i>Tạo phiếu mua hàng
                     </button>
                 </form>
             </div>

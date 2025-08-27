@@ -15,8 +15,13 @@
         <div class="px-6 py-6">
             <!-- Page title -->
             <div class="mb-6 flex items-center justify-between">
-                <h1 class="text-2xl font-bold text-gray-800">Tạo phiếu xuất kho từ đơn hàng</h1>
-
+                <div class="space-y-2">
+                    <h1 class="text-2xl font-bold text-gray-800">Tạo phiếu xuất kho từ đơn hàng</h1>
+                    <a href="javascript:history.back()"
+                       class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-100 shadow">
+                        <i class="ri-arrow-left-line mr-2"></i> Quay lại
+                    </a>
+                </div>
                 <!-- Nút In PDF chỉ hiện sau khi lưu (view thực) -->
                 <a th:if="${showPrint} == true"
                    th:href="@{'/good-issue/export/' + ${note.id}}"
@@ -119,7 +124,9 @@
                         </tbody>
                         <tfoot>
                         <tr class="border-t">
-                            <td class="px-4 py-2 font-semibold border border-gray-200 text-right" colspan="3">Tổng tiền:</td>
+                            <td class="px-4 py-2 font-semibold border border-gray-200 text-right" colspan="3">Tổng
+                                tiền:
+                            </td>
                             <td class="px-4 py-2 font-bold border border-gray-200 text-right"
                                 th:text="${#numbers.formatDecimal(saleOrder.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'">
                                 0 VNĐ
@@ -131,7 +138,8 @@
 
                 <!-- ====== Nút hành động ====== -->
                 <div class="flex justify-end space-x-3">
-                    <a th:href="@{/sale-orders/{id}/edit(id=${saleOrder.soId})}"
+                    <a th:if="${saleOrder.status?.name() != 'PARTLY_DELIVERED'}"
+                       th:href="@{/sale-orders/{id}/edit(id=${saleOrder.soId})}"
                        class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-100">
                         <i class="ri-edit-line"></i> Sửa đơn
                     </a>
