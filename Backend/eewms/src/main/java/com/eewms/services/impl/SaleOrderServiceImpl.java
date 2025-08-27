@@ -346,14 +346,8 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
 
         SaleOrder.SaleOrderStatus currentStatus = saleOrder.getStatus();
 
-        if (currentStatus == SaleOrder.SaleOrderStatus.COMPLETED) {
-            throw new RuntimeException("Đơn hàng đã hoàn thành không thể cập nhật.");
-        }
-
         if (currentStatus == SaleOrder.SaleOrderStatus.PENDING && newStatus == SaleOrder.SaleOrderStatus.DELIVERIED) {
             saleOrder.setStatus(SaleOrder.SaleOrderStatus.DELIVERIED);
-        } else if (currentStatus == SaleOrder.SaleOrderStatus.DELIVERIED && newStatus == SaleOrder.SaleOrderStatus.COMPLETED) {
-            saleOrder.setStatus(SaleOrder.SaleOrderStatus.COMPLETED);
         } else {
             throw new RuntimeException("Không thể cập nhật từ " + currentStatus + " sang " + newStatus);
         }

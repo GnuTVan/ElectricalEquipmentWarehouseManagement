@@ -56,12 +56,7 @@ public class SaleOrder {
         // ===== Trạng thái dùng hiện tại =====
         PENDING("Chờ lấy hàng"),
         PARTLY_DELIVERED("Đã giao một phần"),
-        DELIVERIED("Hoàn thành"),
-        CANCELLED("Hủy"),
-
-        // ===== Giữ lại cho tương thích cũ (không dùng nữa) =====
-        PROCESSING("Đang xử lý"),     // legacy
-        COMPLETED("Hoàn thành");      // legacy
+        DELIVERIED("Hoàn thành") ; // legacy
 
         private final String label;
         SaleOrderStatus(String label) { this.label = label; }

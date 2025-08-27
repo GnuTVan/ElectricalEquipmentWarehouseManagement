@@ -60,8 +60,7 @@ public interface SaleOrderRepository extends JpaRepository<SaleOrder, Integer> {
 
     @Query("""
       select count(o) from SaleOrder o
-      where o.status in (com.eewms.entities.SaleOrder$SaleOrderStatus.PENDING,
-                         com.eewms.entities.SaleOrder$SaleOrderStatus.PROCESSING)
+      where o.status in (com.eewms.entities.SaleOrder$SaleOrderStatus.PENDING)
     """)
     long countPending();
 
