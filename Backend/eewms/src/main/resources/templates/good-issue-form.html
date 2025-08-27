@@ -19,7 +19,7 @@
 
                 <!-- Nút In PDF chỉ hiện sau khi lưu (view thực) -->
                 <a th:if="${showPrint} == true"
-                   th:href="@{/good-issue/print/{id}(id=${note.id})}"
+                   th:href="@{'/good-issue/export/' + ${note.id}}"
                    class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">
                     <i class="ri-printer-line"></i> In phiếu (PDF)
                 </a>

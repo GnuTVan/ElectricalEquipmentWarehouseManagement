@@ -12,14 +12,14 @@ import com.eewms.repository.DebtRepository;
 import com.eewms.repository.GoodIssueNoteRepository;
 import com.eewms.services.IGoodIssueService;
 import com.eewms.services.ISaleOrderService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.math.BigDecimal;
+import com.eewms.utils.GoodIssuePdfExporter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -222,5 +222,22 @@ public class GoodIssueController {
                 .description("Phiếu xuất từ đơn #" + order.getSoCode())
                 .details(lines)
                 .build();
+    }
+
+
+
+    @GetMapping("/export/{id}")
+    public void exportPdf(@PathVariable Long id, HttpServletResponse response) {
+        var dto = goodIssueService.getById(id); // đã có DTO + details
+        if (dto == null) throw new RuntimeException("Không tìm thấy phiếu xuất: " + id);
+        try {
+            String filename = "phieu-xuat-" + (dto.getCode() != null ? dto.getCode() : id) + ".pdf";
+            response.setContentType("application/pdf");
+            response.setHeader("Content-Disposition", "inline; filename=\"" + filename + "\"");
+            com.eewms.utils.GoodIssuePdfExporter.export(dto, response.getOutputStream());
+            response.flushBuffer();
+        } catch (Exception e) {
+            throw new RuntimeException("Xuất PDF lỗi: " + e.getMessage(), e);
+        }
     }
 }
