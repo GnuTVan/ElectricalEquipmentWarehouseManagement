@@ -38,7 +38,7 @@
                             <label class="block text-sm text-gray-600">Khách hàng</label>
                             <div th:text="${saleOrder.customer != null ? saleOrder.customer.fullName : '—'}"></div>
                         </div>
-                        <div>
+                        <div class="hidden">
                             <label class="block text-sm text-gray-600">Lý do hoàn</label>
                             <select name="reason" class="border rounded px-3 py-2 w-full">
                                 <option th:each="r : ${reasons}" th:value="${r}" th:text="${r}"></option>
@@ -110,11 +110,11 @@
 
                     <div class="pt-3 px-2 mt-2 border-t flex items-center justify-end sticky bottom-0 bg-white gap-2">
                         <a href="javascript:history.back()"
-                           class="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-50">
+                           class="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 shadow">
                             Hủy
                         </a>
 
-                        <button class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white">
+                        <button class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white shadow">
                             Lưu phiếu
                         </button>
                     </div>

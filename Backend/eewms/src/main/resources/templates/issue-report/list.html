@@ -123,10 +123,17 @@
           <tbody>
           <tr th:each="r : ${data.content}"
               class="border-t hover:bg-gray-50 whitespace-nowrap"
-              th:attr="data-od=${r.issueDate != null} ? ${#strings.replace(r.issueDate, '-', '')} : '00000000',
-                       data-id=${r.issueCode != null} ? ${r.issueCode} : '0'">
+              th:attr="
+              data-od=${r.issueDateTime != null} ? ${#temporals.format(r.issueDateTime, 'yyyyMMddHHmmss')}
+                     : (${r.issueDate != null} ? ${#strings.replace(r.issueDate, '-', '')} : '00000000'),
+              data-id=${r.issueCode != null} ? ${r.issueCode} : '0'">
             <td class="p-3 border border-200" th:text="${r.issueCode}">PXK0001</td>
-            <td class="p-3 border border-200" th:text="${r.issueDate}">2025-08-01</td>
+              <td class="p-3 border border-200"
+                  th:text="${r.issueDateTime != null}
+              ? ${#temporals.format(r.issueDateTime, 'yyyy-MM-dd HH:mm')}
+              : (${r.issueDate} != null ? ${r.issueDate} : '')">
+                  2025-08-01 09:30
+              </td>
             <td class="p-3 border border-200" th:text="${r.customerName}">KH A</td>
             <td class="p-3 border border-200" th:text="${r.createdByName}">user</td>
             <td class="p-3 border border-200" th:text="${r.saleOrderCode}">SO0001</td>

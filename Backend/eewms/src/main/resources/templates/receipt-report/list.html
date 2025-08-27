@@ -99,10 +99,17 @@
                     <tbody>
                     <tr th:each="r : ${data.content}"
                         class="border-t hover:bg-gray-50"
-                        th:attr="data-od=${r.receiptDate != null} ? ${#strings.replace(r.receiptDate, '-', '')} : '00000000',
-                                 data-id=${r.receiptCode != null} ? ${r.receiptCode} : '0'">
-                        <td class="p-3 border border-200" th:text="${r.receiptCode}">RN00001</td>
-                        <td class="p-3 border border-200" th:text="${r.receiptDate}">2025-08-01</td>
+                        th:attr="
+                              data-od=${r.receiptDateTime != null} ? ${#temporals.format(r.receiptDateTime, 'yyyyMMddHHmmss')}
+                                     : (${r.receiptDate != null} ? ${#strings.replace(r.receiptDate, '-', '')} : '00000000'),
+                              data-id=${r.receiptCode != null} ? ${r.receiptCode} : '0'">
+                    <td class="p-3 border border-200" th:text="${r.receiptCode}">RN00001</td>
+                        <td class="p-3 border border-200"
+                            th:text="${r.receiptDateTime != null}
+                              ? ${#temporals.format(r.receiptDateTime, 'yyyy-MM-dd HH:mm')}
+                              : (${r.receiptDate} != null ? ${r.receiptDate} : '')">
+                                            2025-08-01 09:30
+                        </td>
                         <td class="p-3 border border-200 hidden" th:text="${r.warehouseName}">Kho A</td>
                         <td class="p-3 border border-200" th:text="${r.supplierName}">NCC A</td>
                         <td class="p-3 border border-200" th:text="${r.createdByName}">Admin</td>

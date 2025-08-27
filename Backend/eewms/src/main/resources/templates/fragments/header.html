@@ -16,7 +16,7 @@
         <!-- Nút avatar -->
         <div class="flex relative">
             <button id="userMenuBtn"
-                    class="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 focus:outline-none">
+                    class="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 focus:outline-none shadow">
                 <img th:src="${(loggedInAvatarUrl != null and !#strings.isEmpty(loggedInAvatarUrl))
                 ? loggedInAvatarUrl + '?t=' + avatarTimestamp
                 : 'https://placehold.co/40x40?text=User'}"
@@ -26,13 +26,15 @@
 
 
                 <div class="hidden md:block text-left">
-                    <p class="font-semibold text-sm" th:text="${#authentication.name}">Người dùng</p>
+                    <p class="font-semibold text-sm"
+                       th:text="${!#strings.isEmpty(loggedInFullName) ? loggedInFullName : #authentication.name}">
+                        Người dùng
+                    </p>
                     <p class="text-xs text-gray-500"
                        th:switch="${#authentication.authorities[0].authority}">
-                        <span th:case="'ROLE_ADMIN'">Admin</span>
-                        <span th:case="'ROLE_MANAGER'">Manager</span>
-                        <span th:case="'ROLE_STAFF'">Staff</span>
-                        <span th:case="'ROLE_GUEST'">Guest</span>
+                        <span th:case="'ROLE_ADMIN'">Quản trị viên</span>
+                        <span th:case="'ROLE_MANAGER'">Quản lý</span>
+                        <span th:case="'ROLE_STAFF'">Nhân viên</span>
                         <span th:case="*">Unknown</span>
                     </p>
                 </div>

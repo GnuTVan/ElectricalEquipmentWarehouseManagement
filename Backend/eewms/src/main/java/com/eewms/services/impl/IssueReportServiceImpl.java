@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -58,10 +59,14 @@ public class IssueReportServiceImpl implements IIssueReportService {
                                 .sum();
                     }
 
+                    LocalDateTime issueDt = n.getIssueDate();          // ✅ lấy cả ngày giờ từ entity
+                    LocalDate issueD = asLocalDate(issueDt);
+
                     return new IssueReportRowDTO(
                             n.getGinId(),
                             n.getGinCode(),
                             asLocalDate(n.getIssueDate()),
+                            issueDt,
                             n.getCustomer() != null ? n.getCustomer().getId() : null,
                             n.getCustomer() != null ? n.getCustomer().getFullName() : null,
                             n.getCreatedBy() != null ? n.getCreatedBy().getId() : null,

@@ -106,11 +106,14 @@ public class ReceiptReportServiceImpl implements IReceiptReportService {
                     Warehouse w = r.getWarehouse();
                     Supplier s = getSupplier(r);
                     LocalDate receiptDate = asLocalDate(r.getCreatedAt());
+                    LocalDateTime receiptDateTime = r.getCreatedAt();
+
 
                     return new ReceiptReportRowDTO(
                             r.getId(),
                             r.getCode(),
                             receiptDate,
+                            receiptDateTime,
                             w != null ? w.getId() : null,
                             w != null ? w.getName() : null,
                             s != null ? s.getId() : null,

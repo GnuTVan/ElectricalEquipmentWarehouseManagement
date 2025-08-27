@@ -33,4 +33,13 @@ public class GlobalModelAttributeAdvice {
         Long sessionTs = (Long) session.getAttribute("avatarTimestamp");
         return (sessionTs != null) ? sessionTs : System.currentTimeMillis();
     }
+
+    @ModelAttribute("loggedInFullName")
+    public String getFullName(@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) return null;
+        return userService.findByUsername(userDetails.getUsername())
+                .map(User::getFullName)
+                .filter(fn -> fn != null && !fn.isBlank())
+                .orElse(null);
+    }
 }
