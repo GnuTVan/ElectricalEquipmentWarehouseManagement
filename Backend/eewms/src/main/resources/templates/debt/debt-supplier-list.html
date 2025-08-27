@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<html xmlns:th="http://www.thymeleaf.org" lang="vi"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/common-head :: commonHead('Công nợ')}"></head>
 <body class="bg-gray-100 font-sans">
 <div class="flex min-h-screen">
@@ -60,7 +61,8 @@
                               th:text="${r.status}">
                         </span>
                         </td>
-                        <td class="px-6 py-3 border border-gray-200 text-center space-x-3 whitespace-nowrap">
+                        <td sec:authorize="hasRole('MANAGER')"
+                            class="px-6 py-3 border border-gray-200 text-center space-x-3 whitespace-nowrap">
                             <a th:if="${r.receiptId != null}"
                                th:href="@{'/admin/warehouse-receipts/view/' + ${r.receiptId}}"
                                class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 hover:bg-gray-200 border text-sm rounded shadow">
