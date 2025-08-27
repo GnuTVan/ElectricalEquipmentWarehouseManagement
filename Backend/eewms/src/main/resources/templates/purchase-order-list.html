@@ -24,19 +24,26 @@
             <div th:if="${error}" id="alertError" class="mb-4 bg-red-100 text-red-800 px-4 py-2 rounded"
                  th:text="${error}"></div>
 
-            <!-- Bộ lọc -->
-            <form method="get" class="mb-4 flex items-center gap-2">
-                <input type="text" name="keyword" th:value="${keyword}" placeholder="Mã, Người tạo)"
+            <!-- Bộ lọc (giống SO: có id và logic nhấn 2 lần để reset) -->
+            <form id="filterForm" method="get" class="mb-4 flex items-center gap-2">
+                <input type="text" name="keyword" th:value="${keyword}" placeholder="Mã, Người tạo"
                        class="border p-2 rounded w-60"/>
+
                 <select name="status" class="border p-2 rounded">
                     <option value=""> Trạng thái</option>
-                    <option th:each="st : ${T(com.eewms.constant.PurchaseOrderStatus).values()}" th:value="${st}"
-                            th:text="${st.label}" th:selected="${status == st}"
+                    <option th:each="st : ${T(com.eewms.constant.PurchaseOrderStatus).values()}"
+                            th:value="${st}"
+                            th:text="${st.label}"
+                            th:selected="${status == st}"
                             class="whitespace-nowrap"></option>
                 </select>
+
                 <input type="datetime-local" name="from" th:value="${from}" class="border p-2 rounded"/>
                 <input type="datetime-local" name="to" th:value="${to}" class="border p-2 rounded"/>
-                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Lọc</button>
+
+                <button type="submit" id="btnFilter"
+                        class="px-4 py-2 bg-blue-600 text-white rounded"
+                        title="Nhấn lại lần nữa với bộ lọc y hệt để xóa lọc">Lọc</button>
             </form>
 
             <div class="overflow-x-auto bg-white rounded-lg shadow">
@@ -53,27 +60,41 @@
                         <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200 text-center">Hành động</th>
                     </tr>
                     </thead>
+
                     <tbody>
-                    <tr th:each="order, iStat : ${orders}" class="border-t hover:bg-gray-100">
-                        <td class="px-4 py-2 border border-gray-200" th:text="${iStat.index + 1}"></td>
+                    <!-- Empty state -->
+                    <tr th:if="${orders == null or #lists.isEmpty(orders)}">
+                        <td colspan="8" class="px-4 py-6 text-center text-gray-500 italic">
+                            Không có đơn mua phù hợp hiện tại.
+                        </td>
+                    </tr>
+
+                    <!-- Rows (gắn data-od để sort mới→cũ giống SO) -->
+                    <tr th:each="order, iStat : ${orders}"
+                        th:unless="${orders == null or #lists.isEmpty(orders)}"
+                        class="border-t hover:bg-gray-100"
+                        th:attr="data-od=${order.createdAt != null ? #temporals.format(order.createdAt, 'yyyyMMddHHmmss') : '00000000000000'},
+                                 data-id=${order.id}">
+                        <td class="px-4 py-2 border border-gray-200 stt" th:text="${iStat.index + 1}"></td>
                         <td class="px-4 py-2 border border-gray-200 font-medium text-blue-600" th:text="${order.code}"></td>
                         <td class="px-4 py-2 border border-gray-200" th:text="${order.supplierName}"></td>
-                        <td class="px-4 py-2 border border-gray-200 whitespace-nowrap" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                        <td class="px-4 py-2 border border-gray-200 whitespace-nowrap"
+                            th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
                         <td class="px-4 py-2 border border-gray-200" th:text="${order.createdByName}"></td>
                         <td class="px-4 py-2 border border-gray-200 text-right"
                             th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
                         <td class="px-4 py-2 border border-gray-200 text-center">
                             <span class="inline-flex justify-center items-center w-32 px-2 py-1 rounded text-s font-semibold whitespace-nowrap"
-                                th:classappend="${order.status.name()=='HUY'} ? 'bg-red-100 text-red-700' :
-                                    (${order.status.name()=='DA_GIAO_MOT_PHAN'} ? 'bg-yellow-100 text-yellow-700' :
-                                    (${order.status.name()=='HOAN_THANH'} ? 'bg-green-100 text-green-700' :
-                                    (${order.status.name()=='CHO_DUYET'} ? 'bg-purple-100 text-purple-700' :
-                                    'bg-gray-100 text-gray-700')))"
-                                th:text="${order.status.label}">
+                                  th:classappend="${order.status.name()=='HUY'} ? 'bg-red-100 text-red-700' :
+                                      (${order.status.name()=='DA_GIAO_MOT_PHAN'} ? 'bg-yellow-100 text-yellow-700' :
+                                      (${order.status.name()=='HOAN_THANH'} ? 'bg-green-100 text-green-700' :
+                                      (${order.status.name()=='CHO_DUYET'} ? 'bg-purple-100 text-purple-700' :
+                                      'bg-gray-100 text-gray-700')))"
+                                  th:text="${order.status.label}">
                             </span>
                         </td>
 
-                        <!-- ★ Hành động -->
+                        <!-- Hành động -->
                         <td class="px-4 py-2 border border-gray-200 text-center">
                             <div class="flex justify-center items-center gap-2">
 
@@ -124,16 +145,94 @@
                     </tr>
                     </tbody>
                 </table>
-
-<!--                &lt;!&ndash; Phân trang &ndash;&gt;-->
-<!--                <div class="mt-4 flex justify-center space-x-2">-->
-<!--                    <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"-->
-<!--                       th:href="@{'/admin/purchase-orders'(page=${i}, keyword=${keyword}, status=${status}, from=${from}, to=${to})}"-->
-<!--                       th:text="${i + 1}"-->
-<!--                       th:class="'px-3 py-1 border rounded ' + (${i} == ${currentPage} ? 'bg-blue-600 text-white' : 'bg-white text-blue-600')">-->
-<!--                    </a>-->
-<!--                </div>-->
             </div>
+
+            <!-- 🔽 Sort mới → cũ + xử lý lọc/clear (copy chuẩn từ SO, đổi KEY riêng) -->
+            <script>
+                // --- SẮP XẾP: mới → cũ & đánh lại STT
+                (function () {
+                    var tbody = document.querySelector('#Table tbody');
+                    if (!tbody) return;
+
+                    var rows = Array.from(tbody.querySelectorAll('tr[data-od]'));
+                    if (!rows.length) return;
+
+                    rows.sort(function (a, b) {
+                        var ao = a.dataset.od || '0';
+                        var bo = b.dataset.od || '0';
+                        if (ao !== bo) return bo.localeCompare(ao); // desc theo thời gian
+
+                        var ai = parseInt(a.dataset.id || '0', 10);
+                        var bi = parseInt(b.dataset.id || '0', 10);
+                        if (!isNaN(ai) && !isNaN(bi)) return bi - ai; // desc theo id
+                        return (b.dataset.id || '').localeCompare(a.dataset.id || '');
+                    });
+
+                    rows.forEach(function (r, idx) {
+                        tbody.appendChild(r);
+                        var sttCell = r.querySelector('td.stt');
+                        if (sttCell) sttCell.textContent = String(idx + 1);
+                    });
+                })();
+
+                // --- LỌC LẦN 2 = RESET (dùng KEY khác SO để không đè nhau)
+                (function () {
+                    var form = document.getElementById('filterForm');
+                    if (!form) return;
+
+                    var KEY = 'purchaseOrders:lastQuery';
+
+                    function buildNormalizedQuery() {
+                        var fd = new FormData(form);
+                        var params = new URLSearchParams();
+
+                        ['keyword', 'status', 'from', 'to'].forEach(function (n) {
+                            var v = (fd.get(n) || '').toString().trim();
+                            if (v) params.set(n, v);
+                        });
+
+                        return params.toString(); // đã loại rỗng
+                    }
+
+                    form.addEventListener('submit', function (e) {
+                        var current = buildNormalizedQuery();
+                        var last = sessionStorage.getItem(KEY);
+
+                        if (last && last === current) {
+                            e.preventDefault(); // chặn submit hiện tại
+
+                            // Clear các input
+                            ['keyword', 'from', 'to'].forEach(function (n) {
+                                var el = form.querySelector('[name="' + n + '"]');
+                                if (el) el.value = '';
+                            });
+                            var sel = form.querySelector('[name="status"]');
+                            if (sel) sel.value = '';
+
+                            sessionStorage.removeItem(KEY);
+
+                            // Submit lại không kèm tham số rỗng
+                            form.querySelectorAll('input,select').forEach(function (el) {
+                                if (!el.value) el.disabled = true;
+                            });
+                            form.submit();
+                        } else {
+                            sessionStorage.setItem(KEY, current);
+                        }
+                    });
+
+                    // Nếu có nút reset riêng, hỗ trợ luôn
+                    var resetBtn = document.getElementById('btnReset');
+                    if (resetBtn) {
+                        resetBtn.addEventListener('click', function () {
+                            sessionStorage.removeItem(KEY);
+                            var base = form.getAttribute('action') || window.location.pathname;
+                            window.location.href = base;
+                        });
+                    }
+                })();
+            </script>
+
             <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
         </div>
     </main>

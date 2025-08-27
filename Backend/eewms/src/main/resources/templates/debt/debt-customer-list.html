@@ -29,26 +29,53 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="r : ${rows}" class="border-t hover:bg-gray-50">
+                    <!-- Empty state -->
+                    <tr th:if="${rows == null or #lists.isEmpty(rows)}">
+                        <td colspan="9" class="px-6 py-5 text-center text-gray-500 italic">
+                            Không có bản ghi nào phù hợp.
+                        </td>
+                    </tr>
+
+                    <!-- Rows -->
+                    <tr th:each="r : ${rows}"
+                        th:unless="${rows == null or #lists.isEmpty(rows)}"
+                        class="border-t hover:bg-gray-50"
+                        th:attr="data-od=${r.dueDate != null ? #temporals.format(r.dueDate, 'yyyyMMdd') : '00000000'},
+                                 data-id=${r.goodIssueId != null ? r.goodIssueId : (r.debtId != null ? r.debtId : 0)}">
                         <td class="px-6 py-3 border border-gray-200" th:text="${r.customer}">Khách hàng</td>
-                        <td class="px-6 py-3 border border-gray-200" th:text="${r.phone}">090...</td>
+
+                        <!-- Phone: click-to-call nếu có -->
+                        <td class="px-6 py-3 border border-gray-200">
+                            <a th:if="${r.phone != null}"
+                               th:href="${'tel:' + r.phone}"
+                               class="text-gray-700 hover:underline"
+                               th:text="${r.phone}">090...</a>
+                            <span th:if="${r.phone == null}" class="text-gray-400">—</span>
+                        </td>
+
                         <td class="px-6 py-3 border border-gray-200" th:text="${r.docCode}">GIN#1</td>
+
                         <td class="px-6 py-3 border border-gray-200 text-right whitespace-nowrap"
                             th:text="${#numbers.formatDecimal(r.total, 0, 'DEFAULT', 0, 'DEFAULT')}+ ' đ'">0</td>
+
                         <td class="px-6 py-3 border border-gray-200 text-right whitespace-nowrap"
                             th:text="${#numbers.formatDecimal(r.paid, 0, 'DEFAULT', 0, 'DEFAULT')}+ ' đ'">0</td>
+
                         <td class="px-6 py-3 border border-gray-200 text-right whitespace-nowrap font-semibold"
                             th:text="${#numbers.formatDecimal(r.remain, 0, 'DEFAULT', 0, 'DEFAULT')}+ ' đ'">0</td>
+
                         <td class="px-6 py-3 border border-gray-200 text-center"
                             th:text="${r.dueDate != null ? #temporals.format(r.dueDate, 'dd/MM/yyyy') : ''}"></td>
-                        <td class="px-6 py-3 border border-gray-200 whitespace-nowrap">
-                        <span class="inline-flex items-center justify-center px-2 py-1 rounded text-md font-semibold whitespace-nowrap w-36"
-                              th:classappend="${r.status == 'Chưa thanh toán'}  ? 'bg-gray-100  text-gray-700'  :
-                                              (${r.status == 'Đã thanh toán'} ? 'bg-emerald-100 text-emerald-700' :
-                                              (${r.status == 'Thanh toán một phần'} ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'))"
-                            th:text="${r.status}">
-                        </span>
+
+                        <td class="px-6 py-3 border border-gray-200 whitespace-nowrap text-center">
+                            <span class="inline-flex items-center justify-center px-2 py-1 rounded text-md font-semibold whitespace-nowrap w-36"
+                                  th:classappend="${r.status == 'Chưa thanh toán'}  ? 'bg-gray-100  text-gray-700'  :
+                                                  (${r.status == 'Đã thanh toán'} ? 'bg-emerald-100 text-emerald-700' :
+                                                  (${r.status == 'Thanh toán một phần'} ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'))"
+                                  th:text="${r.status}">
+                            </span>
                         </td>
+
                         <td class="px-6 py-3 border border-gray-200 text-center space-x-3 whitespace-nowrap">
                             <a th:if="${r.goodIssueId != null}"
                                th:href="@{'/good-issue/view/' + ${r.goodIssueId}}"
@@ -65,6 +92,30 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- 🔽 Sắp xếp mới → cũ giống SO -->
+            <script>
+                (function () {
+                    var tbody = document.querySelector('#Table tbody');
+                    if (!tbody) return;
+
+                    var rows = Array.from(tbody.querySelectorAll('tr[data-od]'));
+                    if (!rows.length) return;
+
+                    rows.sort(function (a, b) {
+                        var ao = a.dataset.od || '0';
+                        var bo = b.dataset.od || '0';
+                        if (ao !== bo) return bo.localeCompare(ao); // desc theo dueDate (yyyyMMdd)
+
+                        var ai = parseInt(a.dataset.id || '0', 10);
+                        var bi = parseInt(b.dataset.id || '0', 10);
+                        if (!isNaN(ai) && !isNaN(bi)) return bi - ai; // desc theo id
+                        return (b.dataset.id || '').localeCompare(a.dataset.id || '');
+                    });
+
+                    rows.forEach(function (r) { tbody.appendChild(r); });
+                })();
+            </script>
 
             <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
         </div>

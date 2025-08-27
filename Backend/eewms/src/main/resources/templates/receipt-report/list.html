@@ -84,7 +84,7 @@
 
             <!-- Table -->
             <div class="bg-white rounded-lg shadow overflow-auto">
-                <table class="min-w-full text-sm border border-200">
+                <table id="Table" class="min-w-full text-sm border border-200">
                     <thead class="bg-gray-100 border border-200">
                     <tr class="whitespace-nowrap">
                         <th class="text-left p-3 border border-200">Mã phiếu</th>
@@ -97,7 +97,10 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="r : ${data.content}" class="border-t hover:bg-gray-50">
+                    <tr th:each="r : ${data.content}"
+                        class="border-t hover:bg-gray-50"
+                        th:attr="data-od=${r.receiptDate != null} ? ${#strings.replace(r.receiptDate, '-', '')} : '00000000',
+                                 data-id=${r.receiptCode != null} ? ${r.receiptCode} : '0'">
                         <td class="p-3 border border-200" th:text="${r.receiptCode}">RN00001</td>
                         <td class="p-3 border border-200" th:text="${r.receiptDate}">2025-08-01</td>
                         <td class="p-3 border border-200 hidden" th:text="${r.warehouseName}">Kho A</td>
@@ -119,27 +122,14 @@
                 </table>
             </div>
 
-            <!-- Pagination -->
+            <!-- Pagination (center buttons) -->
             <div class="bg-white rounded-lg shadow p-3 flex justify-center">
                 <ul class="inline-flex items-center gap-1">
-                    <!-- First -->
-                    <li>
-                        <button type="button" class="px-3 py-1 border rounded disabled:opacity-40"
-                                th:disabled="${data.first}" data-page="0">« Đầu
-                        </button>
-                    </li>
-                    <!-- Prev -->
-                    <li>
-                        <button type="button" class="px-3 py-1 border rounded disabled:opacity-40"
-                                th:disabled="${!data.hasPrevious()}" th:attr="data-page=${data.number - 1}">‹ Trước
-                        </button>
-                    </li>
+                    <li><button type="button" class="px-3 py-1 border rounded disabled:opacity-40" th:disabled="${data.first}" data-page="0">« Đầu</button></li>
+                    <li><button type="button" class="px-3 py-1 border rounded disabled:opacity-40" th:disabled="${!data.hasPrevious()}" th:attr="data-page=${data.number - 1}">‹ Trước</button></li>
 
-                    <!-- Page numbers -->
-                    <th:block th:with="
-        start=${(data.number - 2) < 0 ? 0 : (data.number - 2)},
-        end=${(data.number + 2) >= (data.totalPages - 1) ? (data.totalPages - 1) : (data.number + 2)}
-      ">
+                    <th:block th:with="start=${(data.number - 2) < 0 ? 0 : (data.number - 2)},
+                                       end=${(data.number + 2) >= (data.totalPages - 1) ? (data.totalPages - 1) : (data.number + 2)}">
                         <li th:each="i : ${#numbers.sequence(start, end)}">
                             <button type="button"
                                     class="px-3 py-1 border rounded"
@@ -150,115 +140,115 @@
                         </li>
                     </th:block>
 
-                    <!-- Next -->
-                    <li>
-                        <button type="button" class="px-3 py-1 border rounded disabled:opacity-40"
-                                th:disabled="${!data.hasNext()}" th:attr="data-page=${data.number + 1}">Sau ›
-                        </button>
-                    </li>
-                    <!-- Last -->
-                    <li>
-                        <button type="button" class="px-3 py-1 border rounded disabled:opacity-40"
-                                th:disabled="${data.last}" th:attr="data-page=${data.totalPages - 1}">Cuối »
-                        </button>
-                    </li>
+                    <li><button type="button" class="px-3 py-1 border rounded disabled:opacity-40" th:disabled="${!data.hasNext()}" th:attr="data-page=${data.number + 1}">Sau ›</button></li>
+                    <li><button type="button" class="px-3 py-1 border rounded disabled:opacity-40" th:disabled="${data.last}" th:attr="data-page=${data.totalPages - 1}">Cuối »</button></li>
                 </ul>
             </div>
 
         </section>
 
-        <!-- Script nhỏ cho preset & toggle -->
+        <!-- Script nhỏ cho preset, toggle, sort, pagination -->
         <script>
+            // refs
+            const form = document.getElementById('filterForm');
             const pageInput = document.getElementById('pageInput');
- document.querySelectorAll('[data-page]').forEach(btn => {
-   btn.addEventListener('click', () => {
-     pageInput.value = btn.getAttribute('data-page');
-     form.submit();
-   });
- });
-         // --- DATE PRESETS ---
-         const fromEl = document.getElementById('fromDate');
-         const toEl   = document.getElementById('toDate');
-         const form   = document.getElementById('filterForm');
 
-         function fmt(d){ return d.toISOString().slice(0,10); } // yyyy-MM-dd
-         function startOfWeek(d){  // tuần bắt đầu Thứ 2
-           const day = d.getDay(); // 0 CN .. 6 T7
-           const diff = (day === 0 ? -6 : 1 - day); // về thứ 2
-           const r = new Date(d); r.setDate(d.getDate() + diff); return r;
-         }
-         function endOfWeek(d){
-           const s = startOfWeek(d); const r = new Date(s);
-           r.setDate(s.getDate() + 6); return r;
-         }
-         function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
-         function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0); }
-         function startOfQuarter(d){
-           const qStartMonth = Math.floor(d.getMonth()/3)*3;
-           return new Date(d.getFullYear(), qStartMonth, 1);
-         }
-         function endOfQuarter(d){
-           const s = startOfQuarter(d);
-           return new Date(s.getFullYear(), s.getMonth()+3, 0);
-         }
-         function startOfYear(d){ return new Date(d.getFullYear(), 0, 1); }
-         function endOfYear(d){ return new Date(d.getFullYear(), 11, 31); }
+            // click các nút phân trang (button[data-page])
+            document.querySelectorAll('[data-page]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (!pageInput) return;
+                    pageInput.value = btn.getAttribute('data-page');
+                    form.submit();
+                });
+            });
 
-         document.querySelectorAll('[data-preset]').forEach(btn=>{
-           btn.addEventListener('click', ()=>{
-             const now = new Date();
-             let f = now, t = now;
-             switch(btn.dataset.preset){
-               case 'today':   f = t = now; break;
-               case 'week':    f = startOfWeek(now); t = endOfWeek(now); break;
-               case 'month':   f = startOfMonth(now); t = endOfMonth(now); break;
-               case 'quarter': f = startOfQuarter(now); t = endOfQuarter(now); break;
-               case 'year':    f = startOfYear(now); t = endOfYear(now); break;
-             }
-             fromEl.value = fmt(f);
-             toEl.value   = fmt(t);
-             form.submit();
-           });
-         });
+            // --- DATE PRESETS ---
+            const fromEl = document.getElementById('fromDate');
+            const toEl   = document.getElementById('toDate');
 
-         // --- FORMAT TOGGLE ---
-const toggle = document.getElementById('fmtToggle');
-const nfVND  = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 });
+            function fmt(d){ return d.toISOString().slice(0,10); } // yyyy-MM-dd
+            function startOfWeek(d){ const day=d.getDay(); const diff=(day===0?-6:1-day); const r=new Date(d); r.setDate(d.getDate()+diff); return r; }
+            function endOfWeek(d){ const s=startOfWeek(d); const r=new Date(s); r.setDate(s.getDate()+6); return r; }
+            function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+            function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0); }
+            function startOfQuarter(d){ const qStartMonth=Math.floor(d.getMonth()/3)*3; return new Date(d.getFullYear(), qStartMonth, 1); }
+            function endOfQuarter(d){ const s=startOfQuarter(d); return new Date(s.getFullYear(), s.getMonth()+3, 0); }
+            function startOfYear(d){ return new Date(d.getFullYear(), 0, 1); }
+            function endOfYear(d){ return new Date(d.getFullYear(), 11, 31); }
 
-// bật mặc định VND khi vào trang
-toggle.checked = true;
+            document.querySelectorAll('[data-preset]').forEach(btn=>{
+                btn.addEventListener('click', ()=>{
+                    const now = new Date(); let f=now, t=now;
+                    switch(btn.dataset.preset){
+                        case 'today':   f=t=now; break;
+                        case 'week':    f=startOfWeek(now); t=endOfWeek(now); break;
+                        case 'month':   f=startOfMonth(now); t=endOfMonth(now); break;
+                        case 'quarter': f=startOfQuarter(now); t=endOfQuarter(now); break;
+                        case 'year':    f=startOfYear(now); t=endOfYear(now); break;
+                    }
+                    fromEl.value = fmt(f);
+                    toEl.value   = fmt(t);
+                    if (pageInput) pageInput.value = 0; // reset về trang 1
+                    form.submit();
+                });
+            });
 
-function asNumber(raw) {
- // raw có thể là "18000", "18000.00" hoặc BigDecimal in ra
- const n = Number(raw);
- return isNaN(n) ? 0 : n;
-}
+            // --- FORMAT TOGGLE ---
+            const toggle = document.getElementById('fmtToggle');
+            const nfVND  = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 });
 
-function applyFormat(){
- const moneyEls = document.querySelectorAll('.money');
- const numEls   = document.querySelectorAll('.num-plain');
+            // bật mặc định VND khi vào trang
+            toggle.checked = true;
 
- moneyEls.forEach(el=>{
-   const raw = el.getAttribute('data-value') || '0';
-   const n = asNumber(raw);
-   el.textContent = toggle.checked
-     ? nfVND.format(n)                                          // VND
-     : n.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 0 }); // thuần số
- });
+            function asNumber(raw) {
+                const n = Number(raw);
+                return isNaN(n) ? 0 : n;
+            }
 
- numEls.forEach(el=>{
-   const raw = el.getAttribute('data-value') || '0';
-   const n = asNumber(raw);
-   el.textContent = toggle.checked
-     ? n.toLocaleString('vi-VN')                                // số có dấu phân tách
-     : n.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 0 }); // thuần số
- });
-}
+            function applyFormat(){
+                document.querySelectorAll('.money').forEach(el=>{
+                    const n = asNumber(el.getAttribute('data-value') || '0');
+                    el.textContent = toggle.checked
+                        ? nfVND.format(n)
+                        : n.toLocaleString('en-US', { useGrouping:false, maximumFractionDigits:0 });
+                });
 
-toggle.addEventListener('change', applyFormat);
-applyFormat(); // áp dụng ngay khi load (VND mặc định)
+                document.querySelectorAll('.num-plain').forEach(el=>{
+                    const n = asNumber(el.getAttribute('data-value') || '0');
+                    el.textContent = toggle.checked
+                        ? n.toLocaleString('vi-VN')
+                        : n.toLocaleString('en-US', { useGrouping:false, maximumFractionDigits:0 });
+                });
+            }
 
+            toggle.addEventListener('change', applyFormat);
+            applyFormat(); // áp dụng ngay
 
+            // Reset về trang 1 khi submit form lọc
+            form.addEventListener('submit', ()=> { if (pageInput) pageInput.value = 0; });
+
+            // --- SORT trong page: mới → cũ (theo receiptDate); tie-break theo mã phiếu (số)
+            (function () {
+                const tbody = document.querySelector('#Table tbody');
+                if (!tbody) return;
+                const rows = Array.from(tbody.querySelectorAll('tr[data-od]'));
+                if (!rows.length) return;
+
+                const idNum = (el) => {
+                    const raw = (el.dataset.id || '').toString();
+                    const n = parseInt(raw.replace(/\D/g, ''), 10);
+                    return isNaN(n) ? 0 : n;
+                };
+
+                rows.sort((a, b) => {
+                    const ao = a.dataset.od || '0';
+                    const bo = b.dataset.od || '0';
+                    if (ao !== bo) return bo.localeCompare(ao);     // desc theo ngày (yyyyMMdd)
+                    return idNum(b) - idNum(a);                    // tie-break desc theo số trong mã
+                });
+
+                rows.forEach(r => tbody.appendChild(r));
+            })();
         </script>
     </main>
 </div>
