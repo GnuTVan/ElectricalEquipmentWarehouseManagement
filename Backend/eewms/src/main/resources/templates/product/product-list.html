@@ -35,14 +35,17 @@
                        class="border rounded w-60 h-10 px-3"/>
 
                 <!-- Nhà cung cấp -->
-                <select name="supplierId" class="border rounded h-10 px-3">
-                    <option value="" th:selected="${supplierId == null}">Nhà cung cấp</option>
-                    <option th:each="s : ${suppliers}"
-                            th:value="${s.id}"
-                            th:text="${s.name}"
-                            th:selected="${supplierId != null and supplierId == s.id}">
-                    </option>
-                </select>
+                <div class="relative w-64 md:w-80 lg:w-[28rem]">  <!-- KHÓA RỘNG TẠI ĐÂY -->
+                    <select name="supplierId" class="border rounded h-10 px-3 w-full">
+                        <option value="" th:selected="${supplierId == null}">Nhà cung cấp</option>
+                        <option th:each="s : ${suppliers}"
+                                th:value="${s.id}"
+                                th:text="${s.name}"
+                                th:selected="${supplierId != null and supplierId == s.id}">
+                        </option>
+                    </select>
+                </div>
+
 
                 <!-- Danh mục -->
                 <select name="categoryId" class="border rounded h-10 px-3">
