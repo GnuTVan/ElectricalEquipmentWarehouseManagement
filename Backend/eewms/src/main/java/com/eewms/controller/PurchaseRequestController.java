@@ -215,7 +215,7 @@ public class PurchaseRequestController {
         } catch (Exception e) {
             redirect.addFlashAttribute("error", e.getMessage());
         }
-        return "redirect:/admin/purchase-requests/" + id;
+        return "redirect:/admin/purchase-orders";
     }
 
     // ========= helpers =========
