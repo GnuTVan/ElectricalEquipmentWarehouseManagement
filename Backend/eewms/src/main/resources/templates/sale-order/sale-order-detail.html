@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="vi">
-<head th:replace="~{fragments/common-head :: commonHead('Chi tiết đơn hàng bán')}"></head>
+<head th:replace="~{fragments/common-head :: commonHead('Chi tiết đơn bán hàng')}"></head>
 <body class="bg-gray-100 font-sans">
-<div class="flex">
+<div class="flex min-h-screen">
     <!-- Sidebar -->
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
@@ -10,138 +10,148 @@
         <!-- Header -->
         <div th:replace="~{fragments/header :: header}"></div>
 
-        <div class="px-6 py-6">
-            <!-- Hàng tiêu đề + nút quay lại (căn trái gọn đẹp) -->
+        <div class="px-6 py-6 max-w-7xl mx-auto">
+            <!-- Header + Actions -->
             <div class="flex items-center justify-between gap-3 mb-4">
-                <h1 class="text-2xl font-bold">Chi tiết đơn hàng bán</h1>
+                <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                    <span>Chi tiết đơn bán hàng</span><span th:text="${saleOrder.soCode}">ORD000</span>
+                </h1>
 
-                <a th:if="${saleOrder.status != null and saleOrder.status.name() == 'PARTLY_DELIVERED'}"
-                   th:href="@{'/good-issue/create-from-sale/' + ${saleOrder.soId}}"
-                   class="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded bg-orange-600 hover:bg-orange-700 text-white">
-                    <i class="ri-truck-line"></i> Tạo phiếu xuất tiếp
-                </a>
-                <div th:with="so=${order != null ? order : (saleOrder != null ? saleOrder : (dto != null ? dto : null))}">
-                    <a th:if="${so != null and so.status != null and so.status.name() == 'DELIVERIED'}"
-                       th:href="@{|/admin/sales-returns/create?saleOrderId=${so.soId}|}"
-                       class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded inline-flex items-center shadow">
-                        <i class="ri-recycle-line mr-1"></i> Tạo phiếu hoàn hàng
+                <!-- Actions (giữ nguyên điều kiện hiện có) -->
+                <div class="flex items-center gap-2">
+                    <a th:if="${saleOrder.status != null and saleOrder.status.name() == 'PARTLY_DELIVERED'}"
+                       th:href="@{'/good-issue/create-from-sale/' + ${saleOrder.soId}}"
+                       class="inline-flex items-center gap-2 px-4 py-2 rounded bg-orange-600 hover:bg-orange-700 text-white shadow-sm">
+                        <i class="ri-truck-line"></i> Tạo phiếu xuất tiếp
                     </a>
+
+                    <div th:with="so=${order != null ? order : (saleOrder != null ? saleOrder : (dto != null ? dto : null))}">
+                        <!-- LƯU Ý: giữ nguyên 'DELIVERIED' như code gốc -->
+                        <a th:if="${so != null and so.status != null and so.status.name() == 'DELIVERIED'}"
+                           th:href="@{|/admin/sales-returns/create?saleOrderId=${so.soId}|}"
+                           class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded inline-flex items-center shadow-sm">
+                            <i class="ri-recycle-line mr-1"></i> Tạo phiếu hoàn hàng
+                        </a>
+                    </div>
                 </div>
             </div>
+
+            <!-- Back -->
             <div class="mb-6">
                 <a href="javascript:history.back()"
-                   class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-100 shadow">
+                   class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-50 shadow-sm">
                     <i class="ri-arrow-left-line mr-2"></i> Quay lại
                 </a>
             </div>
 
-            <!-- Khối thông tin chung -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <!-- Mã đơn -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Mã đơn hàng</label>
-                    <input type="text" class="w-full border rounded px-3 py-2 bg-gray-100"
-                           th:value="${saleOrder.soCode}" readonly>
-                </div>
+            <!-- Card: Thông tin chung -->
+            <div class="bg-white rounded-xl shadow p-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- Mã đơn -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mã đơn hàng</label>
+                        <input type="text" class="w-full border rounded-lg px-3 py-2 bg-gray-50 text-gray-700"
+                               th:value="${saleOrder.soCode}" readonly>
+                    </div>
 
-                <!-- Khách hàng -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Khách hàng</label>
-                    <input type="text" class="w-full border rounded px-3 py-2 bg-gray-100"
-                           th:value="${saleOrder.customer != null ? saleOrder.customer.fullName : ''}" readonly>
-                </div>
+                    <!-- Khách hàng -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Khách hàng</label>
+                        <input type="text" class="w-full border rounded-lg px-3 py-2 bg-gray-50 text-gray-700"
+                               th:value="${saleOrder.customer != null ? saleOrder.customer.fullName : ''}" readonly>
+                    </div>
 
-                <!-- Trạng thái -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
-                    <input type="text" class="w-full border rounded px-3 py-2 bg-gray-100"
-                           th:value="${saleOrder.status != null ? saleOrder.status.label : ''}" readonly>
-                </div>
+                    <!-- Trạng thái -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
+                        <input type="text" class="w-full border rounded-lg px-3 py-2 bg-gray-50 text-gray-700"
+                               th:value="${saleOrder.status != null ? saleOrder.status.label : ''}" readonly>
+                    </div>
 
-                <!-- Người tạo -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Người tạo</label>
-                    <input type="text" class="w-full border rounded px-3 py-2 bg-gray-100"
-                           th:value="${saleOrder.createdByUser != null ? (saleOrder.createdByUser.fullName != null ? saleOrder.createdByUser.fullName : saleOrder.createdByUser.username) : ''}"
-                           readonly>
-                </div>
+                    <!-- Người tạo -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Người tạo</label>
+                        <input type="text" class="w-full border rounded-lg px-3 py-2 bg-gray-50 text-gray-700"
+                               th:value="${saleOrder.createdByUser != null ? (saleOrder.createdByUser.fullName != null ? saleOrder.createdByUser.fullName : saleOrder.createdByUser.username) : ''}"
+                               readonly>
+                    </div>
 
-                <!-- Số điện thoại -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
-                    <input type="text" class="w-full border rounded px-3 py-2 bg-gray-100"
-                           th:value="${saleOrder.customer != null ? saleOrder.customer.phone : ''}" readonly>
-                </div>
+                    <!-- Số điện thoại -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
+                        <input type="text" class="w-full border rounded-lg px-3 py-2 bg-gray-50 text-gray-700"
+                               th:value="${saleOrder.customer != null ? saleOrder.customer.phone : ''}" readonly>
+                    </div>
 
-                <!-- Ngày tạo -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Ngày tạo</label>
-                    <input type="text" class="w-full border rounded px-3 py-2 bg-gray-100"
-                           th:value="${#temporals.format(saleOrder.orderDate, 'dd/MM/yyyy HH:mm')}" readonly>
-                </div>
+                    <!-- Ngày tạo -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Ngày tạo</label>
+                        <input type="text" class="w-full border rounded-lg px-3 py-2 bg-gray-50 text-gray-700"
+                               th:value="${#temporals.format(saleOrder.orderDate, 'dd/MM/yyyy HH:mm')}" readonly>
+                    </div>
 
-                <!-- Ghi chú (chiếm full width) -->
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
-                    <textarea rows="3" class="w-full border rounded px-3 py-2 bg-gray-100" readonly
-                              th:text="${saleOrder.description}"></textarea>
+                    <!-- Ghi chú -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
+                        <textarea rows="3" class="w-full border rounded-lg px-3 py-2 bg-gray-50 text-gray-700" readonly
+                                  th:text="${saleOrder.description}"></textarea>
+                    </div>
                 </div>
             </div>
 
-            <!-- Danh sách sản phẩm -->
-            <div class="overflow-x-auto bg-white rounded shadow">
-                <table class="min-w-full text-sm">
-                    <thead>
-                    <tr class="bg-gray-50 text-left">
-                        <th class="px-3 py-2">Sản phẩm</th>
-                        <th class="px-3 py-2 text-center">Số lượng bán ra</th>
-                        <th class="px-3 py-2 text-center">Đã giao</th>
-                        <th class="px-3 py-2 text-center">Còn lại</th>
-                        <th class="px-3 py-2 text-center">Đơn giá</th>
-                        <th class="px-3 py-2 text-right">Thành tiền</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <!-- ✅ Tô nền và hiển thị nhãn “Từ combo” nếu dòng thuộc combo -->
-                    <tr th:each="d : ${saleOrder.details}"
-                        th:classappend="${d.origin != null and d.origin.name() == 'COMBO'} ? 'bg-amber-50' : ''">
-                        <td class="px-3 py-2">
-                            <div class="flex items-center gap-2">
-                <span th:if="${d.origin != null and d.origin.name() == 'COMBO'}"
-                      class="inline-flex text-[11px] px-2 py-0.5 rounded-full border border-amber-400 bg-amber-100 text-amber-800">
-                  Từ combo
-                </span>
-                                <span th:text="${d.product != null ? d.product.name : ''}">Tên SP</span>
-                            </div>
-                        </td>
-                        <td class="px-3 py-2 text-center" th:text="${d.orderedQuantity}">1</td>
-                        <!-- NEW: Đã giao = issuedByPid[productId] -->
-                        <td class="px-3 py-2 text-center"
-                            th:text="${issuedByPid[d.product.id] != null ? issuedByPid[d.product.id] : 0}">0</td>
-
-                        <!-- NEW: Còn lại = ordered - issued -->
-                        <td class="px-3 py-2 text-center"
-                            th:text="${(d.orderedQuantity != null ? d.orderedQuantity : 0) -
-                    (issuedByPid[d.product.id] != null ? issuedByPid[d.product.id] : 0)}">0</td>
-                        <td class="px-3 py-2 text-center"
-                            th:text="${#numbers.formatDecimal(d.price, 0, 'COMMA', 0, 'POINT')}">0</td>
-                        <td class="px-3 py-2 text-right"
-                            th:text="${#numbers.formatDecimal(d.price * d.orderedQuantity, 0, 'COMMA', 0, 'POINT')}">0</td>
-                    </tr>
-                    </tbody>
-                    <tfoot>
-                    <tr>
-                        <td colspan="3" class="px-3 py-2 text-right font-semibold">Tổng tiền:</td>
-                        <td class="px-3 py-2 text-right font-bold"
-                            th:text="${#numbers.formatDecimal(saleOrder.totalAmount, 0, 'COMMA', 0, 'POINT')}">0</td>
-                    </tr>
-                    </tfoot>
-                </table>
+            <!-- Card: Danh sách sản phẩm -->
+            <div class="bg-white rounded-xl shadow overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-50 sticky top-0 z-10">
+                        <tr class="text-left text-gray-700">
+                            <th class="px-3 py-2 font-semibold">Sản phẩm</th>
+                            <th class="px-3 py-2 text-center font-semibold">Số lượng bán ra</th>
+                            <th class="px-3 py-2 text-center font-semibold">Đã giao</th>
+                            <th class="px-3 py-2 text-center font-semibold">Còn lại</th>
+                            <th class="px-3 py-2 text-center font-semibold">Đơn giá</th>
+                            <th class="px-3 py-2 text-right font-semibold">Thành tiền</th>
+                        </tr>
+                        </thead>
+                        <tbody class="[&>tr:nth-child(even)]:bg-gray-50">
+                        <!-- Giữ nguyên logic combo & tính toán -->
+                        <tr th:each="d : ${saleOrder.details}"
+                            th:classappend="${d.origin != null and d.origin.name() == 'COMBO'} ? 'bg-amber-50' : ''">
+                            <td class="px-3 py-2">
+                                <div class="flex items-center gap-2">
+                                    <span th:if="${d.origin != null and d.origin.name() == 'COMBO'}"
+                                          class="inline-flex text-[11px] px-2 py-0.5 rounded-full border border-amber-400 bg-amber-100 text-amber-800">
+                                        Từ combo
+                                    </span>
+                                    <span th:text="${d.product != null ? d.product.name : ''}">Tên SP</span>
+                                </div>
+                            </td>
+                            <td class="px-3 py-2 text-center" th:text="${d.orderedQuantity}">1</td>
+                            <!-- Đã giao = issuedByPid[productId] -->
+                            <td class="px-3 py-2 text-center"
+                                th:text="${issuedByPid[d.product.id] != null ? issuedByPid[d.product.id] : 0}">0</td>
+                            <!-- Còn lại = ordered - issued -->
+                            <td class="px-3 py-2 text-center"
+                                th:text="${(d.orderedQuantity != null ? d.orderedQuantity : 0) - (issuedByPid[d.product.id] != null ? issuedByPid[d.product.id] : 0)}">0</td>
+                            <td class="px-3 py-2 text-center"
+                                th:text="${#numbers.formatDecimal(d.price, 0, 'COMMA', 0, 'POINT')}">0</td>
+                            <td class="px-3 py-2 text-right"
+                                th:text="${#numbers.formatDecimal(d.price * d.orderedQuantity, 0, 'COMMA', 0, 'POINT')}">0</td>
+                        </tr>
+                        </tbody>
+                        <tfoot class="bg-white">
+                        <tr>
+                            <!-- Tổng tiền: dồn 5 cột trái để căn phải đẹp -->
+                            <td colspan="5" class="px-3 py-3 text-right font-semibold text-gray-700">Tổng tiền:</td>
+                            <td class="px-3 py-3 text-right font-extrabold text-gray-900"
+                                th:text="${#numbers.formatDecimal(saleOrder.totalAmount, 0, 'COMMA', 0, 'POINT')}">0</td>
+                        </tr>
+                        </tfoot>
+                    </table>
+                </div>
             </div>
         </div>
     </main>
 </div>
-
-<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
 </body>
 </html>
