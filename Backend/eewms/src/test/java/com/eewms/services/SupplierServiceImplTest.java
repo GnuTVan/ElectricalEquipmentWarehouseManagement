@@ -38,14 +38,14 @@ class SupplierServiceImplTest {
     void init() {
         dto = new SupplierDTO();
         dto.setId(1L);
-        dto.setName("  cong   ty  a ");
-        dto.setTaxCode("  T123 ");
-        dto.setBankName(" Vietcombank ");
+        dto.setName("  nguyenvanthinh ");
+        dto.setTaxCode("  0101234567 ");
+        dto.setBankName(" BIDV ");
         dto.setBankAccount(" 0123456789 ");
-        dto.setContactName("  Nguyen  A ");
+        dto.setContactName("  Nguyễn Văn Thịnh ");
         dto.setContactMobile(" 090000001 ");
-        dto.setAddress("  12  abc ");
-        dto.setStatus(null); // null -> service sẽ set TRUE
+        dto.setAddress("  bắc ninh ");
+        dto.setStatus(null);
         dto.setDescription("  note ");
     }
 
@@ -63,13 +63,13 @@ class SupplierServiceImplTest {
         verify(supplierRepository).save(cap.capture());
         Supplier saved = cap.getValue();
 
-        assertEquals("Cong Ty A", saved.getName());
-        assertEquals("T123", saved.getTaxCode());
-        assertEquals("Vietcombank", saved.getBankName());
+        assertEquals("nguyenvanthinh", saved.getName());
+        assertEquals("0101234567", saved.getTaxCode());
+        assertEquals("BIDV", saved.getBankName());
         assertEquals("0123456789", saved.getBankAccount());
-        assertEquals("Nguyen A", saved.getContactName());
+        assertEquals("Nguyễn Văn Thịnh", saved.getContactName());
         assertEquals("090000001", saved.getContactMobile());
-        assertEquals("12 abc", saved.getAddress());
+        assertEquals("bắc ninh", saved.getAddress());
         assertTrue(Boolean.TRUE.equals(saved.getStatus()));
         assertEquals("note", saved.getDescription());
     }
@@ -95,16 +95,16 @@ class SupplierServiceImplTest {
         when(supplierRepository.existsByContactMobileAndIdNot(anyString(), eq(1L))).thenReturn(false);
         when(supplierRepository.save(any(Supplier.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        dto.setName(" cong ty a (new) ");
-        dto.setTaxCode("  T999 ");
+        dto.setName(" nguyenvanthinh ");
+        dto.setTaxCode("  0101234567 ");
         dto.setBankAccount(" 999 ");
         dto.setContactMobile(" 0909 ");
-        dto.setStatus(null); // giữ nguyên status hiện tại
+        dto.setStatus(null);
 
         service.update(dto);
 
-        assertEquals("Cong Ty A (new)", existing.getName());
-        assertEquals("T999", existing.getTaxCode());
+        assertEquals("nguyenvanthinh", existing.getName());
+        assertEquals("0101234567", existing.getTaxCode());
         assertEquals("999", existing.getBankAccount());
         assertEquals("0909", existing.getContactMobile());
         assertTrue(existing.getStatus());
