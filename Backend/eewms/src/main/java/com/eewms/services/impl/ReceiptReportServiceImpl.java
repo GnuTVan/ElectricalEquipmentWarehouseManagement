@@ -26,6 +26,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
+// ★ CHANGED: import enum để nhận diện hàng hoàn
+import com.eewms.constant.ProductCondition;  // ★ CHANGED
+
 @Service
 @RequiredArgsConstructor
 public class ReceiptReportServiceImpl implements IReceiptReportService {
@@ -61,7 +64,7 @@ public class ReceiptReportServiceImpl implements IReceiptReportService {
                         || (r.getWarehouse() != null && Objects.equals(r.getWarehouse().getId(), f.getWarehouseId())))
                 .filter(r -> f.getSupplierId() == null
                         || (getSupplier(r) != null && Objects.equals(getSupplier(r).getId(), f.getSupplierId())))
-                // BỎ lọc userId vì entity chỉ có createdBy (String). Khi có User liên kết thì thêm lại.
+                // BỎ lọc userId vì entity chỉ có createdBy (String)
                 .filter(r -> f.getReceiptCode() == null
                         || (r.getCode() != null && r.getCode().toLowerCase().contains(f.getReceiptCode().toLowerCase())))
                 .filter(r -> f.getPoCode() == null
@@ -81,16 +84,24 @@ public class ReceiptReportServiceImpl implements IReceiptReportService {
         List<ReceiptReportRowDTO> rows = filtered.stream()
                 .map(r -> {
                     List<WarehouseReceiptItem> items = itemRepo.findByWarehouseReceipt(r);
+
+                    // ★ CHANGED: nhận diện phiếu hàng hoàn dựa trên condition
+                    boolean isReturn = items.stream()
+                            .anyMatch(it -> it.getCondition() == ProductCondition.RETURNED); // ★ CHANGED
+
                     int totalQty = items.stream()
                             .mapToInt(it -> it.getActualQuantity() != null ? it.getActualQuantity() : 0)
                             .sum();
-                    BigDecimal totalAmt = items.stream()
-                            .map(it -> {
-                                BigDecimal price = it.getPrice() != null ? it.getPrice() : BigDecimal.ZERO;
-                                int qty = it.getActualQuantity() != null ? it.getActualQuantity() : 0;
-                                return price.multiply(BigDecimal.valueOf(qty));
-                            })
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                    // ★ CHANGED: nếu hàng hoàn -> tổng tiền = 0
+                    BigDecimal totalAmt = isReturn ? BigDecimal.ZERO :  // ★ CHANGED
+                            items.stream()
+                                    .map(it -> {
+                                        BigDecimal price = it.getPrice() != null ? it.getPrice() : BigDecimal.ZERO;
+                                        int qty = it.getActualQuantity() != null ? it.getActualQuantity() : 0;
+                                        return price.multiply(BigDecimal.valueOf(qty));
+                                    })
+                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                     Warehouse w = r.getWarehouse();
                     Supplier s = getSupplier(r);
@@ -104,7 +115,7 @@ public class ReceiptReportServiceImpl implements IReceiptReportService {
                             w != null ? w.getName() : null,
                             s != null ? s.getId() : null,
                             s != null ? s.getName() : null,
-                            r.getCreatedBy(), // entity là createdBy (String)
+                            r.getCreatedBy(),
                             totalQty,
                             totalAmt
                     );
@@ -147,16 +158,25 @@ public class ReceiptReportServiceImpl implements IReceiptReportService {
         BigDecimal totalAmt = BigDecimal.ZERO;
         for (WarehouseReceipt r : filtered) {
             List<WarehouseReceiptItem> items = itemRepo.findByWarehouseReceipt(r);
+
+            // ★ CHANGED: nhận diện hàng hoàn
+            boolean isReturn = items.stream()
+                    .anyMatch(it -> it.getCondition() == ProductCondition.RETURNED); // ★ CHANGED
+
             int qty = items.stream()
                     .mapToInt(it -> it.getActualQuantity() != null ? it.getActualQuantity() : 0)
                     .sum();
-            BigDecimal amt = items.stream()
-                    .map(it -> {
-                        BigDecimal price = it.getPrice() != null ? it.getPrice() : BigDecimal.ZERO;
-                        int q = it.getActualQuantity() != null ? it.getActualQuantity() : 0;
-                        return price.multiply(BigDecimal.valueOf(q));
-                    })
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            // ★ CHANGED: nếu hàng hoàn -> không cộng tiền vào tổng
+            BigDecimal amt = isReturn ? BigDecimal.ZERO : // ★ CHANGED
+                    items.stream()
+                            .map(it -> {
+                                BigDecimal price = it.getPrice() != null ? it.getPrice() : BigDecimal.ZERO;
+                                int q = it.getActualQuantity() != null ? it.getActualQuantity() : 0;
+                                return price.multiply(BigDecimal.valueOf(q));
+                            })
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
             totalQty += qty;
             totalAmt = totalAmt.add(amt);
         }
@@ -182,7 +202,6 @@ public class ReceiptReportServiceImpl implements IReceiptReportService {
     @Override
     @Transactional(readOnly = true)
     public List<ReceiptReportRowDTO> findAllForExport(ReceiptReportFilter f) {
-        // tái dùng logic của findReceiptHeaders nhưng KHÔNG phân trang
         return findReceiptHeaders(f, org.springframework.data.domain.PageRequest.of(0, Integer.MAX_VALUE))
                 .getContent();
     }
