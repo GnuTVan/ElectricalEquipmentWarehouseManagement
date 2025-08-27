@@ -72,8 +72,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/good-issue/**").hasAnyRole("ADMIN","MANAGER","STAFF")
                         .requestMatchers("/good-issue/**").hasRole("STAFF")
 
-                        .requestMatchers(HttpMethod.GET, "/customers/**").hasAnyRole("ADMIN","STAFF")
-                        .requestMatchers(HttpMethod.GET, "/customer-list/**").hasAnyRole("ADMIN","STAFF")
+                        .requestMatchers(HttpMethod.GET, "/customers/**").hasAnyRole("ADMIN","MANAGER","STAFF")
+                        .requestMatchers(HttpMethod.GET, "/customer-list/**").hasAnyRole("ADMIN","MANAGER","STAFF")
                         .requestMatchers("/customers/**").hasRole("STAFF")
                         .requestMatchers("/customer-list/**").hasRole("STAFF")
 

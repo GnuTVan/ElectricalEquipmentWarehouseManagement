@@ -49,10 +49,12 @@ public class Product {
     @Column(nullable = false)
     private ProductStatus status = ProductStatus.ACTIVE; // mặc định là hoạt động
 
+    @Getter
     public enum ProductStatus {
-        ACTIVE,     // Đang hoạt động
-        INACTIVE    // Ngưng hoạt động
-
+        ACTIVE("Đang hoạt động"),     // Đang hoạt động
+        INACTIVE("Ngưng hoạt động");    // Ngưng hoạt động
+    private final String label;
+        ProductStatus(String label) { this.label = label; }
     }
 
 
