@@ -16,86 +16,129 @@
         <div class="px-6" th:if="${message}">
             <div th:text="${message}" th:classappend="${messageType}=='success' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'" class="px-4 py-3 rounded mb-4"></div>
         </div>
-<div class="px-6 pb-6">
-        <div class="bg-white shadow-md rounded-lg overflow-x-auto">
-            <table id="Table" class="min-w-full table-auto text-sm text-left border border-gray-200">
-                <thead class="bg-gray-100 text-gray-700 font-semibold">
-                <tr>
-                    <th class="px-6 py-3 border border-gray-200 whitespace-nowrap">Mã phiếu</th>
-                    <th class="px-6 py-3 border border-gray-200 whitespace-nowrap">Đơn hàng</th>
-                    <th class="px-6 py-3 border border-gray-200 whitespace-nowrap">Người tạo</th>
-                    <th class="px-6 py-3 border border-gray-200 whitespace-nowrap">Thời gian</th>
-                    <th class="px-6 py-3 border border-gray-200 whitespace-nowrap">Công nợ</th>
-                    <th class="px-4 py-2 border border-gray-200 whitespace-nowrap text-center">Hành động</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="r : ${receipts}" class="border-t hover:bg-gray-50 transition">
-                    <td class="px-6 py-3 border border-gray-200 font-medium" th:text="${r.code}">RN001</td>
-                    <td class="px-6 py-3 border border-gray-200">
-                        <!-- Nếu có PO: hiện mã PO + link như cũ -->
-                        <span th:if="${r.purchaseOrder != null}">
-    <a th:href="@{'/admin/purchase-orders/' + ${r.purchaseOrder.id}}"
-       class="text-blue-700 hover:underline"
-       th:text="${r.purchaseOrder.code}">PO</a>
-  </span>
 
-                        <!-- Nếu KHÔNG có PO (GRN do hoàn hàng): hiện note, kèm link sang phiếu hoàn nếu bắt được requestId -->
-                        <span th:if="${r.purchaseOrder == null}">
-    <a th:if="${r.requestId != null and #strings.startsWith(r.requestId, 'SR-RECV-')}"
-       th:href="@{'/admin/sales-returns/' + ${#strings.substring(r.requestId, 8)}}"
-       class="text-blue-700 hover:underline"
-       th:text="${#strings.isEmpty(r.note) ? 'Hàng hoàn' : r.note}">Hàng hoàn</a>
-    <span th:unless="${r.requestId != null and #strings.startsWith(r.requestId, 'SR-RECV-')}"
-          th:text="${#strings.isEmpty(r.note) ? 'Hàng hoàn' : r.note}">Hàng hoàn</span>
-  </span>
-                    </td>
-                    <td class="px-6 py-3 border border-gray-200" th:text="${r.createdBy}">Admin</td>
-                    <td class="px-6 py-3 border border-gray-200 whitespace-nowrap" th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2025</td>
+        <div class="px-6 pb-6">
+            <div class="bg-white shadow-md rounded-lg overflow-x-auto">
+                <table id="Table" class="min-w-full table-auto text-sm text-left border border-gray-200">
+                    <thead class="bg-gray-100 text-gray-700 font-semibold">
+                    <tr>
+                        <th class="px-6 py-3 border border-gray-200 whitespace-nowrap">Mã phiếu</th>
+                        <th class="px-6 py-3 border border-gray-200 whitespace-nowrap">Đơn hàng</th>
+                        <th class="px-6 py-3 border border-gray-200 whitespace-nowrap">Người tạo</th>
+                        <th class="px-6 py-3 border border-gray-200 whitespace-nowrap">Thời gian</th>
+                        <th class="px-6 py-3 border border-gray-200 whitespace-nowrap">Công nợ</th>
+                        <th class="px-4 py-2 border border-gray-200 whitespace-nowrap text-center">Hành động</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- ⬇️ Thêm data-od (yyyyMMddHHmmss) + data-code để sort -->
+                    <tr th:each="r : ${receipts}"
+                        class="border-t hover:bg-gray-50 transition"
+                        th:attr="data-od=${r.createdAt != null} ? ${#temporals.format(r.createdAt, 'yyyyMMddHHmmss')} : '00000000000000',
+                                 data-code=${r.code}">
+                        <td class="px-6 py-3 border border-gray-200 font-medium" th:text="${r.code}">RN001</td>
+                        <td class="px-6 py-3 border border-gray-200">
+                            <!-- Nếu có PO: hiện mã PO + link như cũ -->
+                            <span th:if="${r.purchaseOrder != null}">
+                                <a th:href="@{'/admin/purchase-orders/' + ${r.purchaseOrder.id}}"
+                                   class="text-blue-700 hover:underline"
+                                   th:text="${r.purchaseOrder.code}">PO</a>
+                            </span>
 
-                    <td class="px-6 py-3 border border-gray-200 w-50"
-                        th:with="isReturn=${r.requestId != null and #strings.startsWith(r.requestId, 'SR-RECV-')},canConfirm=${#authorization.expression('hasRole(''MANAGER'')')}">
+                            <!-- Nếu KHÔNG có PO (GRN do hoàn hàng): hiện note -->
+                            <span th:if="${r.purchaseOrder == null}">
+                                <a th:if="${r.requestId != null and #strings.startsWith(r.requestId, 'SR-RECV-')}"
+                                   th:href="@{'/admin/sales-returns/' + ${#strings.substring(r.requestId, 8)}}"
+                                   class="text-blue-700 hover:underline"
+                                   th:text="${#strings.isEmpty(r.note) ? 'Hàng hoàn' : r.note}">Hàng hoàn</a>
+                                <span th:unless="${r.requestId != null and #strings.startsWith(r.requestId, 'SR-RECV-')}"
+                                      th:text="${#strings.isEmpty(r.note) ? 'Hàng hoàn' : r.note}">Hàng hoàn</span>
+                            </span>
+                        </td>
+                        <td class="px-6 py-3 border border-gray-200" th:text="${r.createdBy}">Admin</td>
+                        <td class="px-6 py-3 border border-gray-200 whitespace-nowrap"
+                            th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2025</td>
 
-                        <!-- ĐÃ có công nợ (mọi loại) -->
-                        <span th:if="${hasDebt[r.id]}"
-                              class="inline-block px-2 py-1 rounded bg-emerald-100 text-emerald-700">Đã tạo</span>
-                        <!-- HÀNG HOÀN: không tạo công nợ -->
-                        <span th:if="${!hasDebt[r.id] and isReturn}"
-                              class="inline-block px-2 py-1 rounded bg-slate-100 text-slate-700">Hàng hoàn</span>
+                        <td class="px-6 py-3 border border-gray-200 w-50"
+                            th:with="isReturn=${r.requestId != null and #strings.startsWith(r.requestId, 'SR-RECV-')},
+                                     canConfirm=${#authorization.expression('hasRole(''MANAGER'')')}">
 
-                        <!-- GRN từ PO: MANAGER được tạo công nợ -->
-                        <form th:if="${!hasDebt[r.id] and !isReturn and canConfirm}"
-                              th:action="@{'/admin/warehouse-receipts/' + ${r.id} + '/confirm'}"
-                              method="post" class="flex items-center gap-2">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                            <select name="termDays" class="border rounded px-2 py-1">
-                                <option value="0">Thanh toán ngay</option>
-                                <option value="7" selected>7 ngày</option>
-                                <option value="10">10 ngày</option>
-                            </select>
-                            <button type="submit" class="px-3 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700 whitespace-nowrap shadow">
-                                Tạo công nợ
-                            </button>
-                        </form>
+                            <!-- ĐÃ có công nợ -->
+                            <span th:if="${hasDebt[r.id]}"
+                                  class="inline-block px-2 py-1 rounded bg-emerald-100 text-emerald-700">Đã tạo</span>
 
-                        <!-- GRN từ PO: người KHÔNG phải MANAGER (ví dụ ADMIN) chỉ nhìn -->
-                        <span th:if="${!hasDebt[r.id] and !isReturn and !canConfirm}"
-                              class="inline-block px-2 py-1 rounded bg-red-100 text-red-700">Chưa có công nợ</span>
-                    </td>
+                            <!-- HÀNG HOÀN -->
+                            <span th:if="${!hasDebt[r.id] and isReturn}"
+                                  class="inline-block px-2 py-1 rounded bg-slate-100 text-slate-700">Hàng hoàn</span>
 
-                    <td class="px-4 py-2 border border-gray-200 text-center w-1">
-                        <a th:href="@{'/admin/warehouse-receipts/view/' + ${r.id}}"
-                           class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 whitespace-nowrap shadow">
-                            <i class="ri-eye-line text-sm"></i> Chi tiết
-                        </a>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+                            <!-- GRN từ PO: MANAGER được tạo công nợ -->
+                            <form th:if="${!hasDebt[r.id] and !isReturn and canConfirm}"
+                                  th:action="@{'/admin/warehouse-receipts/' + ${r.id} + '/confirm'}"
+                                  method="post" class="flex items-center gap-2">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <select name="termDays" class="border rounded px-2 py-1">
+                                    <option value="0">Thanh toán ngay</option>
+                                    <option value="7" selected>7 ngày</option>
+                                    <option value="10">10 ngày</option>
+                                </select>
+                                <button type="submit" class="px-3 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700 whitespace-nowrap shadow">
+                                    Tạo công nợ
+                                </button>
+                            </form>
+
+                            <!-- GRN từ PO: không phải MANAGER -->
+                            <span th:if="${!hasDebt[r.id] and !isReturn and !canConfirm}"
+                                  class="inline-block px-2 py-1 rounded bg-red-100 text-red-700">Chưa có công nợ</span>
+                        </td>
+
+                        <td class="px-4 py-2 border border-gray-200 text-center w-1">
+                            <a th:href="@{'/admin/warehouse-receipts/view/' + ${r.id}}"
+                               class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 whitespace-nowrap shadow">
+                                <i class="ri-eye-line text-sm"></i> Chi tiết
+                            </a>
+                        </td>
+                    </tr>
+
+                    <!-- Empty state (nếu cần) -->
+                    <tr th:if="${#lists.isEmpty(receipts)}">
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500 italic">Không có dữ liệu</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
         </div>
-        <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
-</div></main>
+    </main>
 </div>
+
 <div th:replace="~{fragments/footer :: footer}"></div>
+
+<!-- 🔽 Sort mới → cũ (giống SO) -->
+<script>
+    (function () {
+        const tbody = document.querySelector('#Table tbody');
+        if (!tbody) return;
+
+        const rows = Array.from(tbody.querySelectorAll('tr[data-od]'));
+        if (!rows.length) return;
+
+        // rút số từ mã (RN0001 -> 1) để tie-break
+        const codeNum = (el) => {
+            const raw = (el.dataset.code || '').toString();
+            const n = parseInt(raw.replace(/\D/g, ''), 10);
+            return isNaN(n) ? 0 : n;
+        };
+
+        rows.sort((a, b) => {
+            const ao = a.dataset.od || '0';
+            const bo = b.dataset.od || '0';
+            if (ao !== bo) return bo.localeCompare(ao);  // desc theo thời gian
+            return codeNum(b) - codeNum(a);              // tie-break desc theo số trong mã
+        });
+
+        rows.forEach(r => tbody.appendChild(r));
+    })();
+</script>
 </body>
 </html>
