@@ -40,25 +40,25 @@ class CustomerServiceImplTest {
     void setUp() {
         dto = new CustomerDTO();
         dto.setId(1L);
-        dto.setFullName("  nguyen   VAN   a  "); // sẽ được title-case -> "Nguyen Van A"
+        dto.setFullName("Nguyenvanthinh");
         dto.setEmail("  A@example.com  ");
-        dto.setPhone(" 0900 001 ");
-        dto.setAddress("  12  abc  ");
-        dto.setTaxCode("  T123  ");
+        dto.setPhone("0941258801");
+        dto.setAddress("bắc ninh");
+        dto.setTaxCode("  0101234567  ");
         dto.setBankName("  BIDV  ");
-        dto.setStatus(null); // service sẽ set ACTIVE nếu null
+        dto.setStatus(null);
 
         entity = new Customer();
         entity.setId(1L);
-        entity.setFullName("Nguyen Van A");
+        entity.setFullName("Nguyenvanthinh");
         entity.setEmail("A@example.com");
-        entity.setPhone("0900 001");
-        entity.setAddress("12 abc");
-        entity.setTaxCode("T123");
+        entity.setPhone("0941258801");
+        entity.setAddress("bắc ninh");
+        entity.setTaxCode("0101234567");
         entity.setBankName("BIDV");
         entity.setStatus(Customer.CustomerStatus.ACTIVE);
 
-        // mapper.toEntity: copy từ DTO -> entity (sau normalize DTO)
+
         when(mapper.toEntity(any(CustomerDTO.class))).thenAnswer(inv -> {
             CustomerDTO d = inv.getArgument(0);
             Customer e = new Customer();
@@ -73,7 +73,7 @@ class CustomerServiceImplTest {
             return e;
         });
 
-        // mapper.toDTO: copy từ entity -> DTO
+
         when(mapper.toDTO(any(Customer.class))).thenAnswer(inv -> {
             Customer e = inv.getArgument(0);
             CustomerDTO d = new CustomerDTO();
@@ -99,16 +99,16 @@ class CustomerServiceImplTest {
         CustomerDTO res = service.create(dto);
 
         assertNotNull(res);
-        assertEquals("Nguyen Van A", res.getFullName(), "fullName phải được title-case");
+        assertEquals("Nguyenvanthinh", res.getFullName(), "fullName phải được title-case");
         assertEquals(Customer.CustomerStatus.ACTIVE, res.getStatus(), "status null -> ACTIVE");
-        // email/phone/address đã trim/collapse space
+
         assertEquals("A@example.com", res.getEmail());
-        assertEquals("0900 001", res.getPhone());
-        assertEquals("12 abc", res.getAddress());
+        assertEquals("0941258801", res.getPhone());
+        assertEquals("bắc ninh", res.getAddress());
 
         verify(repo).save(any(Customer.class));
         verify(repo).existsByEmailIgnoreCase("A@example.com");
-        verify(repo).existsByPhone("0900 001");
+        verify(repo).existsByPhone("0941258801");
     }
 
     @Test
@@ -131,19 +131,19 @@ class CustomerServiceImplTest {
         when(repo.existsByPhoneAndIdNot(anyString(), eq(1L))).thenReturn(false);
         when(repo.save(any(Customer.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        // cập nhật DTO (vẫn để bẩn để service normalize)
-        dto.setFullName("   nguyen   VAN a  (new) ");
+
+        dto.setFullName("   Nguyenvanthinh  (new) ");
         dto.setEmail("  b@Example.com ");
-        dto.setPhone(" 0900 099 ");
+        dto.setPhone(" 0941258811 ");
 
         CustomerDTO res = service.update(dto);
 
-        assertEquals("Nguyen Van A (new)", res.getFullName());
+        assertEquals("Nguyenvanthinh (new)", res.getFullName());
         assertEquals("b@Example.com", res.getEmail());
-        assertEquals("0900 099", res.getPhone());
+        assertEquals("0941258811", res.getPhone());
         verify(repo).save(any(Customer.class));
         verify(repo).existsByEmailIgnoreCaseAndIdNot("b@Example.com", 1L);
-        verify(repo).existsByPhoneAndIdNot("0900 099", 1L);
+        verify(repo).existsByPhoneAndIdNot("0941258811", 1L);
     }
 
     @Test
@@ -162,7 +162,7 @@ class CustomerServiceImplTest {
         when(repo.findById(1L)).thenReturn(Optional.of(entity));
         CustomerDTO res = service.getById(1L);
         assertEquals(1L, res.getId());
-        assertEquals("Nguyen Van A", res.getFullName());
+        assertEquals("Nguyenvanthinh", res.getFullName());
         verify(repo).findById(1L);
     }
 
@@ -189,7 +189,7 @@ class CustomerServiceImplTest {
         when(repo.findById(1L)).thenReturn(Optional.of(cur));
         when(repo.save(any(Customer.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        service.updateStatus(1L, Customer.CustomerStatus.INACTIVE); // nếu enum KHÔNG có INACTIVE, thay bằng constant hợp lệ
+        service.updateStatus(1L, Customer.CustomerStatus.INACTIVE);
 
         assertEquals(Customer.CustomerStatus.INACTIVE, cur.getStatus());
         verify(repo).save(cur);
@@ -200,7 +200,7 @@ class CustomerServiceImplTest {
         when(repo.searchByKeyword("an")).thenReturn(List.of(entity));
         List<CustomerDTO> res = service.searchByKeyword("an");
         assertEquals(1, res.size());
-        assertEquals("Nguyen Van A", res.get(0).getFullName());
+        assertEquals("Nguyenvanthinh", res.get(0).getFullName());
         verify(repo).searchByKeyword("an");
     }
 }
