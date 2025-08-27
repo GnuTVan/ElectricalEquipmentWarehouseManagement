@@ -455,6 +455,156 @@
                 </div>
             </div>
         </div>
+        <!-- Modal Thêm sản phẩm -->
+        <div id="productModal"
+             class="fixed inset-0 z-50"
+             th:classappend="${hasFormError} ? '' : ' hidden'">
+            <!-- Backdrop -->
+            <div class="absolute inset-0 bg-black/40"></div>
+
+            <!-- Panel -->
+            <div class="relative mx-auto my-10 w-full max-w-4xl">
+                <div class="bg-white rounded-xl shadow-xl overflow-hidden">
+                    <!-- Header -->
+                    <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+                        <h2 class="text-lg font-semibold">Thêm sản phẩm mới</h2>
+                        <button onclick="closeAddModal()" class="p-2 rounded hover:bg-gray-100" aria-label="Đóng">
+                            <i class="ri-close-line text-2xl"></i>
+                        </button>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="px-6 py-5 max-h-[70vh] overflow-auto">
+                        <form id="addProductForm" th:action="@{/products}" th:object="${productDTO}" method="post"
+                              enctype="multipart/form-data">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-sm text-gray-700">Mã SP
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" th:field="*{code}" class="w-full border rounded px-3 py-2"/>
+                                    <p th:if="${#fields.hasErrors('code')}" th:errors="*{code}"
+                                       class="text-xs text-red-500 mt-1"></p>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-gray-700">Tên
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" th:field="*{name}" class="w-full border rounded px-3 py-2"/>
+                                    <p th:if="${#fields.hasErrors('name')}" th:errors="*{name}"
+                                       class="text-xs text-red-500 mt-1"></p>
+                                </div>
+
+                                <div class="col-span-2">
+                                    <label class="text-sm text-gray-700">Ảnh sản phẩm</label>
+                                    <input type="file" name="images" accept="image/*"
+                                           class="w-full border rounded px-3 py-2"/>
+                                </div>
+
+                                <div>
+                                    <label class="text-sm text-gray-700">Giá gốc
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="number" th:field="*{originPrice}"
+                                           class="w-full border rounded px-3 py-2"/>
+                                    <p th:if="${#fields.hasErrors('originPrice')}" th:errors="*{originPrice}"
+                                       class="text-xs text-red-500 mt-1"></p>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-gray-700">Giá niêm yết
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="number" th:field="*{listingPrice}"
+                                           class="w-full border rounded px-3 py-2"/>
+                                    <p th:if="${#fields.hasErrors('listingPrice')}" th:errors="*{listingPrice}"
+                                       class="text-xs text-red-500 mt-1"></p>
+                                </div>
+
+                                <input type="hidden" name="status" value="ACTIVE"/>
+
+                                <div>
+                                    <label class="text-sm text-gray-700">Số lượng
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="number" th:field="*{quantity}"
+                                           class="w-full border rounded px-3 py-2"/>
+                                    <p th:if="${#fields.hasErrors('quantity')}" th:errors="*{quantity}"
+                                       class="text-xs text-red-500 mt-1"></p>
+                                </div>
+
+                                <div>
+                                    <label class="text-sm text-gray-700">Đơn vị</label>
+                                    <select th:field="*{unitId}" class="w-full border rounded px-3 py-2"
+                                            th:disabled="${#lists.isEmpty(units)}">
+                                        <option th:if="${#lists.isEmpty(units)}" value=""></option>
+                                        <option th:each="u : ${units}" th:value="${u.id}" th:text="${u.name}"></option>
+                                    </select>
+                                    <p th:if="${#lists.isEmpty(units)}" class="text-xs text-red-500 mt-1">Không có đơn
+                                        vị nào đang hoạt động</p>
+                                </div>
+
+                                <div>
+                                    <label class="text-sm text-gray-700">Thương hiệu</label>
+                                    <select th:field="*{brandId}" class="w-full border rounded px-3 py-2"
+                                            th:disabled="${#lists.isEmpty(brands)}">
+                                        <option th:if="${#lists.isEmpty(brands)}" value=""></option>
+                                        <option th:each="b : ${brands}" th:value="${b.id}" th:text="${b.name}"></option>
+                                    </select>
+                                    <p th:if="${#lists.isEmpty(brands)}" class="text-xs text-red-500 mt-1">Không có
+                                        thương hiệu nào đang hoạt động</p>
+                                </div>
+
+                                <div>
+                                    <label class="text-sm text-gray-700">Danh mục</label>
+                                    <select th:field="*{categoryId}" class="w-full border rounded px-3 py-2"
+                                            th:disabled="${#lists.isEmpty(categories)}">
+                                        <option th:if="${#lists.isEmpty(categories)}" value=""></option>
+                                        <option th:each="c : ${categories}" th:value="${c.id}"
+                                                th:text="${c.name}"></option>
+                                    </select>
+                                    <p th:if="${#lists.isEmpty(categories)}" class="text-xs text-red-500 mt-1">Không có
+                                        danh mục nào đang hoạt động</p>
+                                </div>
+
+                                <div class="col-span-2">
+                                    <label class="text-sm text-gray-700">Nhà cung cấp
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <select id="addSupplierIds" multiple th:field="*{supplierIds}" class="w-full">
+                                        <option th:each="s : ${suppliers}" th:value="${s.id}"
+                                                th:text="${s.name}"></option>
+                                    </select>
+                                    <p th:if="${#fields.hasErrors('supplierIds')}" th:errors="*{supplierIds}"
+                                       class="text-xs text-red-500 mt-1"></p>
+                                    <p th:if="${#lists.isEmpty(suppliers)}" class="text-xs text-red-500 mt-1">Không có
+                                        nhà cung cấp nào đang hoạt động</p>
+                                </div>
+
+                                <div class="col-span-2">
+                                    <label class="text-sm text-gray-700">Mô tả</label>
+                                    <textarea th:field="*{description}" class="w-full border rounded px-3 py-2"
+                                              rows="3"></textarea>
+                                    <p th:if="${#fields.hasErrors('description')}" th:errors="*{description}"
+                                       class="text-xs text-red-500 mt-1"></p>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-end gap-2">
+                        <button type="button" onclick="closeAddModal()"
+                                class="px-4 py-2 rounded border hover:bg-gray-50">Hủy
+                        </button>
+                        <button type="submit" form="addProductForm"
+                                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Lưu
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 </div>
 <!-- Footer -->

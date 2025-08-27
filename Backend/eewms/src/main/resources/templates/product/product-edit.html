@@ -170,7 +170,7 @@
                     <button onclick="closeEditModal()"><i class="ri-close-line text-2xl"></i></button>
                 </div>
                 <form id="editProductForm"
-                      th:action="@{/products/update/__${productDTO.id}__}"
+                      th:action="@{/products/update/{id}(id=${productDTO.id})}"
                       th:object="${productDTO}"
                       method="post"
                       enctype="multipart/form-data">
