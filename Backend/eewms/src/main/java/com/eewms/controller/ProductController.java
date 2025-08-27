@@ -47,53 +47,86 @@ public class ProductController {
 
 
     @GetMapping
-    public String list(@RequestParam(value="keyword", required=false) String keyword, Model model) {
+    public String list(
+            @RequestParam(value="keyword", required=false) String keyword,
+            @RequestParam(value="supplierId", required=false) Long supplierId,          // <- Long
+            @RequestParam(value="categoryId", required=false) Integer categoryId,
+            @RequestParam(value="brandId", required=false) Integer brandId,
+            @RequestParam(value="status", required=false) Product.ProductStatus status,
+            Model model) {
 
-        // 1) Lấy danh sách sản phẩm (DTO)
+        // 1) Lấy danh sách sản phẩm (DTO) ban đầu
         List<ProductDetailsDTO> products = (keyword != null && !keyword.isBlank())
                 ? productService.searchByKeyword(keyword)
                 : productService.getAll();
+
+        // 1.1) Áp dụng filter theo cấu trúc DTO (SettingDTO + List<Long>)
+        if (supplierId != null) {
+            products = products.stream()
+                    .filter(p -> p.getSupplierIds() != null && p.getSupplierIds().contains(supplierId))
+                    .toList();
+        }
+        if (categoryId != null) {
+            products = products.stream()
+                    .filter(p -> p.getCategory() != null && categoryId.equals(p.getCategory().getId()))
+                    .toList();
+        }
+        if (brandId != null) {
+            products = products.stream()
+                    .filter(p -> p.getBrand() != null && brandId.equals(p.getBrand().getId()))
+                    .toList();
+        }
+        if (status != null) {
+            products = products.stream()
+                    .filter(p -> p.getStatus() != null && status.equals(p.getStatus()))
+                    .toList();
+        }
+
         model.addAttribute("products", products);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("supplierId", supplierId);
+        model.addAttribute("categoryId", categoryId);
+        model.addAttribute("brandId", brandId);
+        model.addAttribute("status", status);
 
-        // 2) Tổng nhập HOÀN (RETURNED) theo product
-        Map<Integer, Long> inReturned =
-                toMap(warehouseReceiptItemRepository.sumReturnedByProduct());
+        // 2) Tổng nhập HOÀN (RETURNED)
+        Map<Integer, Long> inReturned = toMap(warehouseReceiptItemRepository.sumReturnedByProduct());
 
-        // 3) Tồn hiện tại lấy từ DTO (quantity trong bảng product)
+        // 3) Tồn hiện tại từ DTO
         Map<Integer, Long> onHand = products.stream()
                 .collect(java.util.stream.Collectors.toMap(
-                        p -> p.getId(),                                        // <-- id từ DTO
-                        p -> p.getQuantity() == null ? 0L                      // <-- quantity từ DTO
-                                : ((Number) p.getQuantity()).longValue()
+                        ProductDetailsDTO::getId,
+                        p -> p.getQuantity() == null ? 0L : ((Number) p.getQuantity()).longValue(),
+                        (a, b) -> a
                 ));
 
-        // 4) Suy ra “Hoàn” và “Mới” theo tồn thực tế (không để âm, không vượt tổng)
-        java.util.Map<Integer, Long> returnedQtyMap = new java.util.HashMap<>();
-        java.util.Map<Integer, Long> newQtyMap      = new java.util.HashMap<>();
-
+        // 4) Suy ra “Hoàn” và “Mới”
+        Map<Integer, Long> returnedQtyMap = new java.util.HashMap<>();
+        Map<Integer, Long> newQtyMap = new java.util.HashMap<>();
         for (ProductDetailsDTO p : products) {
-            int  pid     = p.getId();
-            long total   = onHand.getOrDefault(pid, 0L);
-            long retIn   = inReturned.getOrDefault(pid, 0L);
+            int pid = p.getId();
+            long total = onHand.getOrDefault(pid, 0L);
+            long retIn = inReturned.getOrDefault(pid, 0L);
             long returned = Math.min(retIn, total);
-            long fresh    = Math.max(0L, total - returned);
+            long fresh = Math.max(0L, total - returned);
             returnedQtyMap.put(pid, returned);
             newQtyMap.put(pid, fresh);
         }
-
         model.addAttribute("newQtyMap", newQtyMap);
         model.addAttribute("returnedQtyMap", returnedQtyMap);
 
-        // 5) master data
+        // 5) master data cho filter + form
         model.addAttribute("productDTO", new ProductFormDTO());
         model.addAttribute("units", settingService.findByTypeAndActive(SettingType.UNIT));
         model.addAttribute("brands", settingService.findByTypeAndActive(SettingType.BRAND));
         model.addAttribute("categories", settingService.findByTypeAndActive(SettingType.CATEGORY));
         model.addAttribute("suppliers", supplierService.findAll());
+        model.addAttribute("productStatuses", Product.ProductStatus.values()); // cần cho select trạng thái
 
         return "product/product-list";
     }
+
+
 
     /** rows: [productId, sumQty] */
     private static java.util.Map<Integer, Long> toMap(java.util.List<Object[]> rows) {
