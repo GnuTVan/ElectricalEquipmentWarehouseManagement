@@ -225,7 +225,7 @@
                                       th:classappend="${product.status.name() == 'ACTIVE'} ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
                                       th:text="${product.status.name() == 'ACTIVE'} ? 'Đang hoạt động' : 'Ngưng hoạt động'">
 </span>
-                                <label sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                                <label sec:authorize="hasAnyRole('MANAGER')"
                                        class="inline-flex relative items-center cursor-pointer">
                                     <input type="checkbox"
                                            th:checked="${product.status.name() == 'ACTIVE'}"
@@ -245,7 +245,7 @@
                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 whitespace-nowrap shadow">
                                     <i class="ri-eye-line text-sm"></i> Chi tiết
                                 </a>
-                                <a sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                                <a sec:authorize="hasAnyRole('MANAGER')"
                                    href="#" onclick="openEditModal(this)"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded shadow">
                                     <i class="ri-pencil-line text-sm"></i> Sửa
@@ -330,7 +330,7 @@
                     <div class="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-end gap-2">
                         <button onclick="closeDetailModal()" class="px-4 py-2 rounded border hover:bg-gray-50">Đóng
                         </button>
-                        <button sec:authorize="hasAnyRole('MANAGER','STAFF')"
+                        <button sec:authorize="hasAnyRole('MANAGER')"
                                 onclick="openEditFromDetail()"
                                 class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Chỉnh sửa
                         </button>
