@@ -23,13 +23,11 @@
                 <!-- Đổi kho -->
                 <div class="flex items-center gap-2">
                     <label for="warehouseSelect" class="text-sm text-gray-600">Đổi kho:</label>
-                    <select id="warehouseSelect"
-                            class="border px-3 py-2 rounded bg-white min-w-64">
+                    <select id="warehouseSelect" class="border px-3 py-2 rounded bg-white min-w-64">
                         <option th:each="w : ${warehouses}"
-                                th:value="${w.id}"
-                                th:selected="${w.id} == ${warehouse.id}"
-                                th:text="${w.name} + (${w.id} != null ? ' (' + ${w.id} + ')' : '')">
-                            Kho
+                                th:value="@{|/inventory/warehouses/${w.id}/stock|}"
+                        th:selected="${w.id} == ${warehouse.id}"
+                        th:text="${w.name} + ' (' + ${w.id} + ')'">
                         </option>
                     </select>
                 </div>
@@ -37,7 +35,7 @@
 
             <!-- Bộ lọc -->
             <form id="filterForm" method="get"
-                  th:action="@{|/admin/inventory/warehouses/${warehouse.id}/stock|}"
+                  th:action="@{|/inventory/warehouses/${warehouse.id}/stock|}"
                   class="mb-6 flex flex-wrap items-center gap-3">
                 <input type="text" name="keyword" placeholder="Tìm theo mã hoặc tên sản phẩm"
                        th:value="${keyword}" class="border px-3 py-2 rounded w-72"/>
@@ -79,7 +77,7 @@
                             <td class="px-4 py-2 border border-gray-200" th:text="${row.productName}">Tên sản phẩm</td>
                             <td class="px-4 py-2 border border-gray-200 text-right" th:text="${row.quantity}">0</td>
                             <td class="px-4 py-2 border border-gray-200 text-center w-1">
-                                <a th:href="@{|/admin/inventory/products/${row.productId}/stock|}"
+                                <a th:href="@{|/inventory/products/${row.productId}/stock|}"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 whitespace-nowrap shadow">
                                     <i class="ri-eye-line text-sm"></i> Chi tiết
                                 </a>
@@ -115,51 +113,17 @@
 <div th:replace="~{fragments/footer :: footer}"></div>
 
 <script>
-    // Đổi kho → điều hướng, giữ keyword, reset về page=0
     (function () {
         var select = document.getElementById('warehouseSelect');
         if (!select) return;
         select.addEventListener('change', function () {
-            var base = '/admin/inventory/warehouses/' + this.value + '/stock';
+            var base = this.value;                        // đã là /inventory/warehouses/{id}/stock
             var params = new URLSearchParams(window.location.search);
             var keyword = params.get('keyword');
             var size = params.get('size') || '20';
             var url = base + '?page=0&size=' + encodeURIComponent(size);
             if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
-            window.location.href = url;
-        });
-    })();
-
-    // Lọc lần 2 = reset (theo pattern bạn dùng)
-    (function () {
-        var form = document.getElementById('filterForm');
-        if (!form) return;
-
-        var KEY = 'inventory:warehouseStock:lastQuery';
-
-        function normalized() {
-            var fd = new FormData(form);
-            var params = new URLSearchParams();
-            var v = (fd.get('keyword') || '').toString().trim();
-            if (v) params.set('keyword', v);
-            return params.toString();
-        }
-
-        form.addEventListener('submit', function (e) {
-            var cur = normalized();
-            var last = sessionStorage.getItem(KEY);
-            if (last && last === cur) {
-                e.preventDefault();
-                var input = form.querySelector('[name="keyword"]');
-                if (input) input.value = '';
-                sessionStorage.removeItem(KEY);
-                form.querySelectorAll('input').forEach(function (el) {
-                    if (!el.value) el.disabled = true;
-                });
-                form.submit();
-            } else {
-                sessionStorage.setItem(KEY, cur);
-            }
+            window.location.href = url;                   // điều hướng thực sự
         });
     })();
 </script>

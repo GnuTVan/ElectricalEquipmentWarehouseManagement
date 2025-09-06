@@ -64,7 +64,7 @@
                             <td class="px-4 py-2 border border-gray-200 text-right" th:text="${d.quantity}">0</td>
                             <td class="px-4 py-2 border border-gray-200 text-center w-1">
                                 <a class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 whitespace-nowrap shadow"
-                                   th:href="@{|/admin/inventory/warehouses/${d.warehouseId}/stock?keyword=${product.code}|}">
+                                   th:href="@{|/inventory/warehouses/${d.warehouseId}/stock?keyword=${product.code}|}">
                                     <i class="ri-eye-line text-sm"></i> Xem kho
                                 </a>
                             </td>
