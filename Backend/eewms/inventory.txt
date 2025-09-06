@@ -1,0 +1,34 @@
+START TRANSACTION;
+
+-- 1) Tạo kho 1 & 2 nếu chưa có (status: 1 = TRUE)
+INSERT INTO warehouses (id, name, status)
+SELECT 1, 'Kho số 1', 1
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM warehouses WHERE id = 1);
+
+INSERT INTO warehouses (id, name, status)
+SELECT 2, 'Kho số 2', 1
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM warehouses WHERE id = 2);
+
+-- 2) RANDOM 5 sản phẩm cho KHO 1 (mỗi sản phẩm 1–100), tránh trùng
+INSERT INTO product_warehouse_stock (product_id, warehouse_id, quantity)
+SELECT p.id, 1, FLOOR(RAND() * 100) + 1
+FROM products p
+LEFT JOIN product_warehouse_stock x
+  ON x.product_id = p.id AND x.warehouse_id = 1
+WHERE x.product_id IS NULL
+ORDER BY RAND()
+LIMIT 5;
+
+-- 3) RANDOM 10 sản phẩm cho KHO 2 (mỗi sản phẩm 1–100), tránh trùng
+INSERT INTO product_warehouse_stock (product_id, warehouse_id, quantity)
+SELECT p.id, 2, FLOOR(RAND() * 100) + 1
+FROM products p
+LEFT JOIN product_warehouse_stock x
+  ON x.product_id = p.id AND x.warehouse_id = 2
+WHERE x.product_id IS NULL
+ORDER BY RAND()
+LIMIT 10;
+
+COMMIT;
