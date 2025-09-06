@@ -75,7 +75,7 @@
                             <a th:href="@{/settings/CATEGORY}"
                                class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Danh mục</a>
                         </li>
-                        <li class="hidden">
+                        <li>
                             <a th:href="@{/admin/warehouses}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">
                                 Kho
                             </a>
@@ -215,6 +215,34 @@
                     <i class="ri-building-4-line w-6 text-lg"></i>
                     <span>Combo</span>
                 </a>
+            </li>
+            <!-- Tồn kho (dropdown) -->
+            <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
+                <div class="flex flex-col">
+                    <button type="button"
+                            data-submenu-id="stock-submenu"
+                            class="flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700 w-full"
+                            onclick="toggleSubmenu(this)">
+                        <div class="flex items-center">
+                            <i class="ri-warehouse-line w-6 text-lg"></i>
+                            <span>Tồn kho</span>
+                        </div>
+                        <i class="ri-arrow-down-s-line transform transition-transform duration-300 ease-in-out origin-center"></i>
+                    </button>
+                    <ul id="stock-submenu"
+                        class="ml-8 mt-1 space-y-1 overflow-hidden transition-all duration-300 max-h-0">
+                        <li>
+                            <a th:href="@{/admin/warehouses}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">
+                                Tồn theo kho
+                            </a>
+                        </li>
+                        <li>
+                            <a th:href="@{/products}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">
+                                Tồn theo sản phẩm
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </li>
             <!-- Báo cáo -->
             <li sec:authorize="hasAnyRole('ADMIN','MANAGER')">

@@ -58,6 +58,10 @@
                                 Sửa
                             </button>
                         </div>
+                        <a th:href="@{|/inventory/warehouses/${w.id}/stock|}"
+                           class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 shadow">
+                            <i class="ri-eye-line"></i> Xem tồn
+                        </a>
                     </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(warehouses)}">

@@ -16,7 +16,7 @@ public class ReceiptReportRowDTO {
     private String receiptCode;
     private LocalDate receiptDate;
     private LocalDateTime receiptDateTime;
-    private Long warehouseId;
+    private Integer warehouseId;
     private String warehouseName;
     private Long supplierId;
     private String supplierName;

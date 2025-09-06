@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{fragments/common-head :: commonHead('Tồn kho theo kho')}"></head>
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <section class="p-6">
+            <!-- Header + đổi kho -->
+            <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h1 class="text-2xl font-bold">Tồn kho theo kho</h1>
+                    <p class="text-sm text-gray-600" th:if="${warehouse != null}">
+                        <span th:text="'Kho: ' + ${warehouse.name}"></span>
+                    </p>
+                </div>
+
+                <!-- Đổi kho -->
+                <div class="flex items-center gap-2">
+                    <label for="warehouseSelect" class="text-sm text-gray-600">Đổi kho:</label>
+                    <select id="warehouseSelect"
+                            class="border px-3 py-2 rounded bg-white min-w-64">
+                        <option th:each="w : ${warehouses}"
+                                th:value="${w.id}"
+                                th:selected="${w.id} == ${warehouse.id}"
+                                th:text="${w.name} + (${w.id} != null ? ' (' + ${w.id} + ')' : '')">
+                            Kho
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Bộ lọc -->
+            <form id="filterForm" method="get"
+                  th:action="@{|/admin/inventory/warehouses/${warehouse.id}/stock|}"
+                  class="mb-6 flex flex-wrap items-center gap-3">
+                <input type="text" name="keyword" placeholder="Tìm theo mã hoặc tên sản phẩm"
+                       th:value="${keyword}" class="border px-3 py-2 rounded w-72"/>
+                <input type="hidden" name="page" th:value="${page.number}"/>
+                <input type="hidden" name="size" th:value="${page.size}"/>
+
+                <button type="submit" id="btnFilter"
+                        class="bg-blue-600 text-white px-4 py-2 rounded"
+                        title="Nhấn lại lần nữa với bộ lọc y hệt để xóa lọc">
+                    Lọc
+                </button>
+            </form>
+
+            <!-- Thông báo -->
+            <div th:if="${message}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4">
+                <i class="ri-check-line mr-1"></i><span th:text="${message}"></span>
+            </div>
+            <div th:if="${error}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
+                <i class="ri-error-warning-line mr-1"></i><span th:text="${error}"></span>
+            </div>
+
+            <!-- Danh sách -->
+            <div th:if="${page.totalElements == 0}" class="text-gray-500 italic">Không có dữ liệu tồn trong kho này.</div>
+
+            <div th:if="${page.totalElements > 0}">
+                <div class="overflow-x-auto bg-white rounded-lg shadow">
+                    <table id="Table" class="min-w-full table-auto text-sm border border-gray-200">
+                        <thead class="bg-gray-100 text-left">
+                        <tr>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap">Mã SP</th>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap">Tên SP</th>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap text-right">Số lượng</th>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap text-center">Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="row : ${page.content}" class="border-t hover:bg-gray-50">
+                            <td class="px-4 py-2 border border-gray-200" th:text="${row.productCode}">SP-001</td>
+                            <td class="px-4 py-2 border border-gray-200" th:text="${row.productName}">Tên sản phẩm</td>
+                            <td class="px-4 py-2 border border-gray-200 text-right" th:text="${row.quantity}">0</td>
+                            <td class="px-4 py-2 border border-gray-200 text-center w-1">
+                                <a th:href="@{|/admin/inventory/products/${row.productId}/stock|}"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 whitespace-nowrap shadow">
+                                    <i class="ri-eye-line text-sm"></i> Chi tiết
+                                </a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Phân trang (server-side) -->
+                <div class="mt-4 flex items-center justify-between text-sm">
+                    <div>
+                        <span th:text="'Trang ' + (${page.number} + 1) + ' / ' + ${page.totalPages}">Trang 1/1</span>
+                        <span class="ml-2 text-gray-500" th:text="'• Tổng: ' + ${page.totalElements}"></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a class="px-3 py-1 rounded border"
+                           th:classappend="${page.first} ? ' opacity-40 pointer-events-none' : ''"
+                           th:href="@{|/admin/inventory/warehouses/${warehouse.id}/stock?page=${page.number - 1}&size=${page.size}&keyword=${keyword}|}">
+                            Trước
+                        </a>
+                        <a class="px-3 py-1 rounded border"
+                           th:classappend="${page.last} ? ' opacity-40 pointer-events-none' : ''"
+                           th:href="@{|/admin/inventory/warehouses/${warehouse.id}/stock?page=${page.number + 1}&size=${page.size}&keyword=${keyword}|}">
+                            Sau
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script>
+    // Đổi kho → điều hướng, giữ keyword, reset về page=0
+    (function () {
+        var select = document.getElementById('warehouseSelect');
+        if (!select) return;
+        select.addEventListener('change', function () {
+            var base = '/admin/inventory/warehouses/' + this.value + '/stock';
+            var params = new URLSearchParams(window.location.search);
+            var keyword = params.get('keyword');
+            var size = params.get('size') || '20';
+            var url = base + '?page=0&size=' + encodeURIComponent(size);
+            if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
+            window.location.href = url;
+        });
+    })();
+
+    // Lọc lần 2 = reset (theo pattern bạn dùng)
+    (function () {
+        var form = document.getElementById('filterForm');
+        if (!form) return;
+
+        var KEY = 'inventory:warehouseStock:lastQuery';
+
+        function normalized() {
+            var fd = new FormData(form);
+            var params = new URLSearchParams();
+            var v = (fd.get('keyword') || '').toString().trim();
+            if (v) params.set('keyword', v);
+            return params.toString();
+        }
+
+        form.addEventListener('submit', function (e) {
+            var cur = normalized();
+            var last = sessionStorage.getItem(KEY);
+            if (last && last === cur) {
+                e.preventDefault();
+                var input = form.querySelector('[name="keyword"]');
+                if (input) input.value = '';
+                sessionStorage.removeItem(KEY);
+                form.querySelectorAll('input').forEach(function (el) {
+                    if (!el.value) el.disabled = true;
+                });
+                form.submit();
+            } else {
+                sessionStorage.setItem(KEY, cur);
+            }
+        });
+    })();
+</script>
+</body>
+</html>

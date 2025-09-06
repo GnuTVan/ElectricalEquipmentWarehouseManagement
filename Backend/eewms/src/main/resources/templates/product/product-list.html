@@ -239,7 +239,7 @@
                         </td>
 
                         <!-- Hành động -->
-                        <td class="px-4 py-3 border border-gray-200 text-center">
+                        <td class="px-4 py-3 border border-gray-200 text-center whitespace-nowrap">
                             <div class="inline-flex items-center gap-2">
                                 <a href="#" onclick="openDetailModal(this)"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 whitespace-nowrap shadow">
@@ -249,6 +249,10 @@
                                    href="#" onclick="openEditModal(this)"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded shadow">
                                     <i class="ri-pencil-line text-sm"></i> Sửa
+                                </a>
+                                <a th:href="@{|/inventory/products/${product.id}/stock|}"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 shadow">
+                                    <i class="ri-warehouse-line text-sm"></i> Tồn theo kho
                                 </a>
                             </div>
                         </td>

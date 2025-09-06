@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{fragments/common-head :: commonHead('Tồn sản phẩm theo kho')}"></head>
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <section class="p-6">
+            <!-- Header -->
+            <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h1 class="text-2xl font-bold">Tồn sản phẩm theo kho</h1>
+                    <p class="text-sm text-gray-600" th:if="${product != null}">
+                        <span th:text="'Sản phẩm: ' + ${product.name}"></span>
+                        <span th:if="${product.code != null}" th:text="' (' + ${product.code} + ')'"></span>
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <span class="inline-flex items-center px-3 py-1.5 rounded bg-gray-100 border text-gray-800">
+                        Tổng on-hand:
+                        <strong class="ml-2" th:text="${totalOnHand}">0</strong>
+                    </span>
+                    <button type="button" onclick="window.history.back()"
+                            class="px-3 py-2 rounded border bg-white hover:bg-gray-50">
+                        Quay lại
+                    </button>
+                </div>
+            </div>
+
+            <!-- Thông báo -->
+            <div th:if="${message}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4">
+                <i class="ri-check-line mr-1"></i><span th:text="${message}"></span>
+            </div>
+            <div th:if="${error}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
+                <i class="ri-error-warning-line mr-1"></i><span th:text="${error}"></span>
+            </div>
+
+            <!-- Danh sách -->
+            <div th:if="${#lists.isEmpty(details)}" class="text-gray-500 italic">
+                Sản phẩm này chưa có tồn ở bất kỳ kho nào.
+            </div>
+
+            <div th:if="${!#lists.isEmpty(details)}">
+                <div class="overflow-x-auto bg-white rounded-lg shadow">
+                    <table class="min-w-full table-auto text-sm border border-gray-200">
+                        <thead class="bg-gray-100 text-left">
+                        <tr>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap">Kho</th>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap">Mã kho</th>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap text-right">Số lượng</th>
+                            <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap text-center">Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="d : ${details}" class="border-t hover:bg-gray-50">
+                            <td class="px-4 py-2 border border-gray-200" th:text="${d.warehouseName}">Kho HCM 01</td>
+                            <td class="px-4 py-2 border border-gray-200" th:text="${d.warehouseCode}">HCM-01</td>
+                            <td class="px-4 py-2 border border-gray-200 text-right" th:text="${d.quantity}">0</td>
+                            <td class="px-4 py-2 border border-gray-200 text-center w-1">
+                                <a class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 whitespace-nowrap shadow"
+                                   th:href="@{|/admin/inventory/warehouses/${d.warehouseId}/stock?keyword=${product.code}|}">
+                                    <i class="ri-eye-line text-sm"></i> Xem kho
+                                </a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

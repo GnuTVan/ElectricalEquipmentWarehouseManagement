@@ -7,7 +7,7 @@ import com.eewms.entities.*;
 import com.eewms.repository.ProductRepository;
 import com.eewms.repository.PurchaseOrderRepository;
 import com.eewms.repository.WarehouseRepository;
-import com.eewms.repository.warehouseReceipt.ProductWarehouseStockRepository;
+import com.eewms.repository.ProductWarehouseStockRepository;
 import com.eewms.repository.warehouseReceipt.WarehouseReceiptItemRepository;
 import com.eewms.repository.warehouseReceipt.WarehouseReceiptRepository;
 import com.eewms.services.impl.WarehouseReceiptServiceImpl;
@@ -50,7 +50,7 @@ class WarehouseReceiptServiceImplTest {
     void setUp() {
         admin = new User(); admin.setUsername("admin");
 
-        wh = new Warehouse(); wh.setId(1L); wh.setName("Main");
+        wh = new Warehouse(); wh.setId(1); wh.setName("Main");
 
         p1 = new Product(); p1.setId(1); p1.setName("A"); p1.setQuantity(0);
         p2 = new Product(); p2.setId(2); p2.setName("B"); p2.setQuantity(0);

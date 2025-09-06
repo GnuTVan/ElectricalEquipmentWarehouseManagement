@@ -96,6 +96,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/admin/purchase-orders/**")
                         .hasAnyRole("ADMIN","MANAGER","STAFF")
                         .requestMatchers("/admin/purchase-orders/**").hasAnyRole("MANAGER", "STAFF")
+                        .requestMatchers("/inventory/**").hasAnyRole("MANAGER","STAFF")
+
 
                         // ---------------------------------------------------------
                         // 5) ADMIN-only
