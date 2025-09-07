@@ -55,7 +55,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    @DisplayName("toggleEnabledStatus: đảo cờ enabled và lưu")
+    @DisplayName("toggleEnabledStatus: admin và lưu")
     void toggleEnabledStatus_TogglesAndSaves() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
@@ -94,10 +94,10 @@ class UserServiceImplTest {
     @DisplayName("updateUserProfile: đổi username sang trùng -> ném lỗi")
     void updateUserProfile_DuplicateUsername_Throws() {
         when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(user));
-        when(userRepository.existsByUsernameAndIdNot("newuser", 1L)).thenReturn(true);
+        when(userRepository.existsByUsernameAndIdNot("admin1", 1L)).thenReturn(true);
 
         UserProfileDTO dto = new UserProfileDTO();
-        dto.setUsername("newuser");
+        dto.setUsername("admin1");
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.updateUserProfile("admin1", dto));

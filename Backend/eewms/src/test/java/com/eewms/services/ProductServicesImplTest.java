@@ -1,178 +1,178 @@
 package com.eewms.services;
 
+import com.eewms.dto.ProductFormDTO;
+import com.eewms.dto.ProductDetailsDTO;
+import com.eewms.entities.Image;
+import com.eewms.entities.Product;
+import com.eewms.entities.Setting;
+import com.eewms.entities.Supplier;
+import com.eewms.exception.InventoryException;
+import com.eewms.repository.ImagesRepository;
 import com.eewms.repository.ProductRepository;
-import com.eewms.services.ImageUploadService;
+import com.eewms.repository.SettingRepository;
+import com.eewms.repository.SupplierRepository;
 import com.eewms.services.impl.ProductServicesImpl;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class ProductServicesImplTest {
+
+    @Mock private ProductRepository productRepo;
+    @Mock private SettingRepository settingRepo;
+    @Mock private ImagesRepository imageRepo;
+    @Mock private SupplierRepository supplierRepo;
+    @Mock private ImageUploadService imageUploadService;
 
     @InjectMocks
     private ProductServicesImpl service;
 
-    @Mock private ProductRepository productRepository;
-    @Mock private ImageUploadService imageUploadService;
+    private ProductFormDTO baseDto;
+    private Setting unit, category, brand;
+    private Supplier supplier;
 
-    // ---------------- HELPER ----------------
-
-    private Object newProductDTO(
-            Integer id,
-            String code,
-            String name,
-            String originalPrice,   // Giá gốc
-            String listedPrice,     // Giá niêm yết
-            Integer quantity,       // Số lượng
-            String unit,            // Đơn vị
-            String brand,           // Thương hiệu
-            String category         // Danh mục
-    ) throws Exception {
-        Class<?> dtoClz;
-        try { dtoClz = Class.forName("com.eewms.dto.ProductDTO"); }
-        catch (ClassNotFoundException e) { dtoClz = Class.forName("com.eewms.dto.product.ProductDTO"); }
-
-        Object dto = dtoClz.getDeclaredConstructor().newInstance();
-
-        // id
-        safeSet(dto, new String[]{"setId"}, (id == null ? null : id.longValue()),
-                new Class[]{Long.class, long.class});
-
-        // code
-        safeSet(dto, new String[]{"setCode","setProductCode","setSku"}, code, String.class);
-
-        // name
-        safeSet(dto, new String[]{"setName","setProductName","setTitle"}, name, String.class);
-
-        // original/base price
-        if (originalPrice != null) {
-            BigDecimal op = new BigDecimal(originalPrice);
-            safeSet(dto,
-                    new String[]{"setOriginalPrice","setOriginPrice","setBasePrice","setCostPrice"},
-                    op, new Class[]{BigDecimal.class, Double.class, double.class});
-        }
-
-        // listed/selling/unit price
-        if (listedPrice != null) {
-            BigDecimal lp = new BigDecimal(listedPrice);
-            safeSet(dto,
-                    new String[]{"setListedPrice","setSellingPrice","setPrice","setUnitPrice","setSlingPrice"},
-                    lp, new Class[]{BigDecimal.class, Double.class, double.class});
-        }
-
-        // quantity
-        if (quantity != null) {
-            safeSet(dto,
-                    new String[]{"setQuantity","setQty","setStock","setAmount"},
-                    quantity, new Class[]{Integer.class, int.class, Long.class, long.class});
-        }
-
-        // unit
-        safeSet(dto, new String[]{"setUnit","setMeasurementUnit","setUnitName"}, unit, String.class);
-
-        // brand
-        safeSet(dto, new String[]{"setBrand","setBrandName"}, brand, String.class);
-
-        // category
-        safeSet(dto, new String[]{"setCategory","setCategoryName"}, category, String.class);
-
-        return dto;
+    private Product.ProductStatus anyStatus() {
+        return Product.ProductStatus.values()[0];
     }
-
-    private void safeSet(Object target, String[] methodNames, Object arg, Class<?>... types) {
-        if (arg == null) return;
-        for (String name : methodNames) {
-            for (Class<?> t : types) {
-                try {
-                    Method m = target.getClass().getMethod(name, t);
-                    m.invoke(target, coerce(arg, t));
-                    return; // set được rồi thì thoát
-                } catch (NoSuchMethodException ignore) {
-                } catch (Exception ignore) {
-                }
-            }
-        }
-    }
-
-    private Object coerce(Object v, Class<?> t) {
-        if (v == null) return null;
-        if (t.isInstance(v)) return v;
-        if (t == int.class || t == Integer.class) return Integer.parseInt(v.toString());
-        if (t == long.class || t == Long.class) return Long.parseLong(v.toString());
-        if (t == double.class || t == Double.class) return Double.parseDouble(v.toString());
-        if (t == BigDecimal.class) return new BigDecimal(v.toString());
-        if (t == String.class) return v.toString();
-        return v;
-    }
-
-    private Object callCreate(Object dto) throws Exception {
-        Method m = null;
-        for (Method candidate : ProductServicesImpl.class.getMethods()) {
-            if (candidate.getName().equals("create") && candidate.getParameterCount() == 1) { m = candidate; break; }
-        }
-        assertNotNull(m, "Không tìm thấy method create(..) trên ProductServicesImpl");
-        return m.invoke(service, dto);
-    }
-
-    // -------------- SETUP --------------
 
     @BeforeEach
-    void setup() {
-        when(imageUploadService.uploadImage(any())).thenReturn("https://cdn/img.png");
-    }
+    void setUp() {
+        unit = Setting.builder().id(Integer.valueOf(1)).name("Unit").build();
+        category = Setting.builder().id(2).name("Category").build();
+        brand = Setting.builder().id(Integer.valueOf(3)).name("Brand").build();
+        supplier = Supplier.builder().id(Long.valueOf(Integer.valueOf(10))).name("Supplier").build();
 
-    // -------------- TESTS --------------
-
-    @Test
-    void create_Happy_SavesAndReturns_NotNull() throws Exception {
-        // DỮ LIỆU GIỐNG ẢNH (hàng Confirm hợp lệ)
-        Object dto = newProductDTO(
-                null,
-                "QD",                 // Mã sản phẩm
-                "quat dien cay",      // Tên
-                "100000",             // Giá gốc
-                "110000",             // Giá niêm yết
-                50,                   // Số lượng
-                "cái",                // Đơn vị
-                "PANASONIC",
-                "bóng"
-        );
-
-        when(productRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        Object result = callCreate(dto);
-
-        assertNotNull(result);
-        verify(productRepository, atLeastOnce()).save(any());
+        baseDto = new ProductFormDTO();
+        baseDto.setCode("P01");
+        baseDto.setName("Quat dien");
+        baseDto.setOriginPrice(new BigDecimal("100"));
+        baseDto.setListingPrice(new BigDecimal("120"));
+        baseDto.setStatus(anyStatus());              // enum, không phải boolean
+        baseDto.setQuantity(10);
+        baseDto.setUnitId(Integer.valueOf(1));       // Integer, không phải long
+        baseDto.setCategoryId(Integer.valueOf(2));
+        baseDto.setBrandId(Integer.valueOf(3));
+        baseDto.setSupplierIds(List.of()); // List<Integer>
     }
 
     @Test
-    void create_DuplicateCode_Throws_NoSave() throws Exception {
-        // Trùng với sheet: mã "QD" đã tồn tại
-        when(productRepository.existsByCode("QD")).thenReturn(true);
+    @DisplayName("Thêm sản phẩm mới hợp lệ -> save thành công, trả về DTO")
+    void createProduct_Success() {
+        when(productRepo.existsByCode("P01")).thenReturn(false);
+        when(settingRepo.findById(Integer.valueOf(1))).thenReturn(Optional.of(unit));
+        when(settingRepo.findById(Integer.valueOf(2))).thenReturn(Optional.of(category));
+        when(settingRepo.findById(Integer.valueOf(3))).thenReturn(Optional.of(brand));
+        when(supplierRepo.findAllById(List.of())).thenReturn(List.of(supplier));
+        when(productRepo.save(any(Product.class))).thenAnswer(inv -> {
+            Product p = inv.getArgument(0);
+            p.setId(Integer.valueOf(99));
+            return p;
+        });
 
-        Object dto = newProductDTO(
-                null, "QD", "quat dien cay",
-                "100000", "110000", 50, "cái", "PANASONIC", "bóng"
-        );
+        ProductDetailsDTO result = invokeSaveOrUpdate(null, baseDto);
 
-        Exception ex = assertThrows(Exception.class, () -> callCreate(dto));
-        String msg = ex.getMessage() == null ? "" : ex.getMessage().toLowerCase();
-        assertTrue(msg.contains("mã") || msg.contains("code") || msg.contains("đã tồn tại"));
-        verify(productRepository, never()).save(any());
+        assertEquals("P01", result.getCode());
+        assertEquals("Quat dien", result.getName());
+        assertEquals(new BigDecimal("120"), result.getListingPrice());
+        verify(productRepo).save(any());
+    }
+
+    @Test
+    @DisplayName("Thêm sản phẩm trùng mã -> InventoryException")
+    void createProduct_DuplicateCode_Throws() {
+        when(productRepo.existsByCode("P01")).thenReturn(true);
+
+        assertThrows(InventoryException.class,
+                () -> invokeSaveOrUpdate(null, baseDto));
+        verify(productRepo, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Cập nhật với mã trùng (khác id) -> InventoryException")
+    void updateProduct_DuplicateCodeOtherId_Throws() {
+        Product other = new Product();
+        other.setId(Integer.valueOf(200));
+        other.setCode("P01");
+
+        when(productRepo.findById(Integer.valueOf(100))).thenReturn(Optional.of(new Product()));
+        when(productRepo.findByCode("P01")).thenReturn(Optional.of(other));
+
+        assertThrows(InventoryException.class,
+                () -> invokeSaveOrUpdate(Integer.valueOf(100), baseDto));
+    }
+
+    @Test
+    @DisplayName("Thiếu unit/category/brand -> InventoryException")
+    void missingSetting_Throws() {
+        when(productRepo.existsByCode("P01")).thenReturn(false);
+        when(settingRepo.findById(Integer.valueOf(1))).thenReturn(Optional.empty()); // thiếu unit
+
+        assertThrows(InventoryException.class,
+                () -> invokeSaveOrUpdate(null, baseDto));
+    }
+
+    @Test
+    @DisplayName("Supplier không tồn tại -> InventoryException")
+    void missingSupplier_Throws() {
+        when(productRepo.existsByCode("P01")).thenReturn(false);
+        // Cho mọi id setting đều có để đi qua tới supplier
+        when(settingRepo.findById(anyInt())).thenReturn(Optional.of(unit));
+        when(supplierRepo.findAllById(List.of())).thenReturn(List.of()); // empty list
+
+        assertThrows(InventoryException.class,
+                () -> invokeSaveOrUpdate(null, baseDto));
+    }
+
+    @Test
+    @DisplayName("Cập nhật có ảnh mới -> xóa ảnh cũ (gọi deleteImageByUrl) và lưu ảnh mới")
+    void updateProduct_WithNewImages_DeleteOldImages() {
+        Product existing = new Product();
+        existing.setId(Integer.valueOf(50));
+
+        when(productRepo.findById(Integer.valueOf(50))).thenReturn(Optional.of(existing));
+        when(settingRepo.findById(anyInt())).thenReturn(Optional.of(unit));
+        when(supplierRepo.findAllById(any())).thenReturn(List.of(supplier));
+        when(productRepo.save(any(Product.class))).thenReturn(existing);
+
+        // Ảnh cũ của sản phẩm
+        Image old = Image.builder().id(Integer.valueOf(1)).imageUrl("old.png").build();
+        when(imageRepo.findByProductId(Integer.valueOf(50))).thenReturn(List.of(old));
+
+        // Ảnh mới người dùng up (đuôi |thumbnail theo đúng xử lý trong service)
+        baseDto.setUploadedImageUrls(List.of("new.png|thumbnail"));
+
+        ProductDetailsDTO dto = invokeSaveOrUpdate(Integer.valueOf(50), baseDto);
+
+        assertEquals(Integer.valueOf(50), dto.getId());
+        verify(imageUploadService).deleteImageByUrl("old.png");
+        verify(imageRepo).deleteAll(any());
+        verify(imageRepo).saveAll(any());
+    }
+
+    // ===== Helper: gọi method private saveOrUpdate(...) và nhận về ProductDetailsDTO
+    private ProductDetailsDTO invokeSaveOrUpdate(Integer id, ProductFormDTO dto) {
+        try {
+            var m = ProductServicesImpl.class.getDeclaredMethod(
+                    "saveOrUpdate", Integer.class, ProductFormDTO.class);
+            m.setAccessible(true);
+            Object ret = m.invoke(service, id, dto);
+            return (ProductDetailsDTO) ret;
+        } catch (Exception e) {
+            if (e.getCause() instanceof RuntimeException re) throw re;
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -285,7 +285,6 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         }
 
         order.setTotalAmount(sum);
-        // >>> SỬA: Chỉ set mô tả theo form, KHÔNG auto-append “Thiếu hàng: …”
         order.setDescription(Optional.ofNullable(form.getDescription()).orElse(""));
         orderRepo.save(order);
     }
@@ -311,14 +310,13 @@ public class SaleOrderServiceImpl implements ISaleOrderService {
         // Dùng paging + EntityGraph (customer, createdByUser) để tránh LAZY ngoài TX.
         Pageable pageable = PageRequest.of(0, 200, Sort.by(Sort.Direction.DESC, "soId"));
         return orderRepo.findAllByOrderBySoIdDesc(pageable)
-                .map(SaleOrderMapper::toOrderListDTO) // LITE: không truy cập details
+                .map(SaleOrderMapper::toOrderListDTO)
                 .getContent();
     }
 
     @Override
     @Transactional(readOnly = true)
     public SaleOrderResponseDTO getById(Integer orderId) {
-        // Fetch-join details + product để mapper chi tiết không bị LAZY
         SaleOrder saleOrder = orderRepo.findByIdWithDetails(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
