@@ -4,6 +4,8 @@ import com.eewms.constant.PurchaseOrderStatus;
 import com.eewms.dto.purchase.PurchaseOrderDTO;
 import com.eewms.dto.purchase.PurchaseOrderItemDTO;
 import com.eewms.dto.purchase.PurchaseOrderMapper;
+import com.eewms.dto.warehouseReceipt.WarehouseReceiptDTO;
+import com.eewms.dto.warehouseReceipt.WarehouseReceiptItemDTO;
 import com.eewms.entities.*;
 import com.eewms.exception.InventoryException;
 import com.eewms.repository.*;
@@ -34,7 +36,8 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService {
     private final SupplierRepository supplierRepo;
     private final ProductRepository productRepo;
     private final ImageUploadService uploadService;
-
+    private final WarehouseRepository warehouseRepository;
+    private final ProductWarehouseStockRepository stockRepo;
     // Repos thêm cho nghiệp vụ đợt nhập (GRN)
     private final WarehouseReceiptRepository warehouseReceiptRepository;
     private final WarehouseReceiptItemRepository warehouseReceiptItemRepository;
@@ -314,93 +317,6 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService {
         long count = warehouseReceiptRepository.count() + 1;
         return String.format("RN%05d", count);
     }
-    @Override
-    @Transactional
-    public PurchaseOrder fastComplete(Long poId, String actorName, String requestId) {
-        if (requestId == null || requestId.isBlank()) {
-            throw new InventoryException("Thiếu requestId để chống tạo trùng phiếu nhập");
-        }
-        // nếu requestId đã dùng -> bỏ qua (idempotent)
-        if (warehouseReceiptRepository.findByRequestId(requestId).isPresent()) {
-            return orderRepo.findById(poId).orElseThrow(() -> new InventoryException("Không tìm thấy đơn hàng"));
-        }
-
-        PurchaseOrder po = orderRepo.findById(poId)
-                .orElseThrow(() -> new InventoryException("Không tìm thấy đơn hàng"));
-
-        // không cho chạy nếu chưa duyệt / đã hủy / đã hoàn thành
-        if (po.getStatus() == PurchaseOrderStatus.CHO_DUYET) {
-            throw new InventoryException("Đơn hàng chưa được duyệt");
-        }
-        if (po.getStatus() == PurchaseOrderStatus.HUY) {
-            throw new InventoryException("Đơn hàng đã bị huỷ");
-        }
-        if (po.getStatus() == PurchaseOrderStatus.HOAN_THANH) {
-            throw new InventoryException("Đơn hàng đã hoàn thành");
-        }
-
-        // Tính phần còn lại cho từng dòng (dựa trên actualQuantity đã được maintain)
-        Map<PurchaseOrderItem, Integer> remainByItem = new LinkedHashMap<>();
-        for (PurchaseOrderItem it : po.getItems()) {
-            int contract = it.getContractQuantity() == null ? 0 : it.getContractQuantity();
-            int actual   = it.getActualQuantity()   == null ? 0 : it.getActualQuantity();
-            int remain   = contract - actual;
-            if (remain > 0) remainByItem.put(it, remain);
-        }
-        if (remainByItem.isEmpty()) {
-            throw new InventoryException("Tất cả sản phẩm đã đủ theo hợp đồng, không còn gì để nhập.");
-        }
-
-        // Tạo 1 GRN cho phần còn lại
-        WarehouseReceipt grn = WarehouseReceipt.builder()
-                .code(generateGrnCode())
-                .purchaseOrder(po)
-                .createdAt(LocalDateTime.now())
-                .createdBy(actorName != null ? actorName : "SYSTEM")
-                .note("Nhập đủ phần còn lại từ PO " + po.getCode())
-                .requestId(requestId)
-                .build();
-        warehouseReceiptRepository.save(grn);
-
-        // Lưu item, cộng tồn, cập nhật actual
-        for (Map.Entry<PurchaseOrderItem, Integer> e : remainByItem.entrySet()) {
-            PurchaseOrderItem poItem = e.getKey();
-            int deliver = e.getValue();
-            if (deliver <= 0) continue;
-
-            Product product = poItem.getProduct();
-
-            WarehouseReceiptItem gri = WarehouseReceiptItem.builder()
-                    .warehouseReceipt(grn)
-                    .product(product)
-                    .quantity(deliver)
-                    .actualQuantity(deliver)
-                    .price(poItem.getPrice())
-                    .condition(com.eewms.constant.ProductCondition.NEW)
-                    .build();
-            // lưu GRN item
-            warehouseReceiptItemRepository.save(gri);
-
-            // cộng tồn tổng
-            Integer curQty = product.getQuantity() == null ? 0 : product.getQuantity();
-            product.setQuantity(curQty + deliver);
-            productRepo.save(product);
-
-            // cập nhật actual lũy kế
-            int prevActual = poItem.getActualQuantity() == null ? 0 : poItem.getActualQuantity();
-            poItem.setActualQuantity(prevActual + deliver);
-            itemRepo.save(poItem);
-        }
-
-        // set trạng thái hoàn thành
-        po.setStatus(PurchaseOrderStatus.HOAN_THANH);
-
-        try {
-            return orderRepo.save(po);
-        } catch (OptimisticLockingFailureException ex) {
-            throw new InventoryException("Dữ liệu vừa được cập nhật bởi người khác, vui lòng tải lại.");
-        }
-    }
 
     @Override
     @Transactional
@@ -461,4 +377,107 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService {
         return orderRepo.findByIdForEdit(id)
                 .orElseThrow(() -> new InventoryException("Không tìm thấy đơn hàng: " + id));
     }
+    @Transactional
+    @Override
+    public WarehouseReceiptDTO prepareReceipt(Long poId,
+                                              List<PurchaseOrderItemDTO> deliveryLines,
+                                              String actorName,
+                                              String requestId) {
+        if (requestId == null || requestId.isBlank()) {
+            throw new InventoryException("Thiếu requestId để chống tạo trùng đợt nhập");
+        }
+
+        PurchaseOrder po = orderRepo.findWithDetailById(poId)
+                .orElseThrow(() -> new InventoryException("Không tìm thấy đơn hàng"));
+
+        if (po.getStatus() == PurchaseOrderStatus.HUY || po.getStatus() == PurchaseOrderStatus.HOAN_THANH) {
+            throw new InventoryException("Trạng thái đơn không cho phép nhận hàng");
+        }
+        if (po.getStatus() == PurchaseOrderStatus.CHO_DUYET) {
+            throw new InventoryException("Đơn hàng chưa được duyệt");
+        }
+
+        // map để check hợp đồng
+        Map<Integer, PurchaseOrderItem> poItemByProductId = po.getItems().stream()
+                .collect(Collectors.toMap(i -> i.getProduct().getId(), i -> i));
+
+        // validate không vượt hợp đồng
+        for (PurchaseOrderItemDTO line : deliveryLines) {
+            int qty = line.getDeliveryQuantity() != null ? line.getDeliveryQuantity() : 0;
+            if (qty <= 0) continue;
+
+            PurchaseOrderItem poItem = poItemByProductId.get(line.getProductId());
+            if (poItem == null) {
+                throw new InventoryException("Sản phẩm không thuộc đơn mua: productId=" + line.getProductId());
+            }
+            int contract = poItem.getContractQuantity();
+            Integer receivedBefore = warehouseReceiptItemRepository
+                    .sumReceivedByPoAndProduct(poId, line.getProductId());
+            if (receivedBefore == null) receivedBefore = 0;
+
+            if (receivedBefore + qty > contract) {
+                throw new InventoryException("Giao vượt số lượng hợp đồng cho sản phẩm ID=" + line.getProductId());
+            }
+        }
+
+        // build DTO để chuyển sang form nhập kho
+        return WarehouseReceiptDTO.builder()
+                .purchaseOrderId(po.getId())
+                .purchaseOrderCode(po.getCode())
+                .createdByName(actorName)
+                .requestId(requestId)
+                .note("Nhập đợt từ PO " + po.getCode())
+                .items(deliveryLines.stream()
+                        .map(line -> {
+                            PurchaseOrderItem poItem = poItemByProductId.get(line.getProductId());
+                            return WarehouseReceiptItemDTO.builder()
+                                    .productId(line.getProductId())
+                                    .productName(poItem.getProduct().getName())
+                                    .quantity(line.getDeliveryQuantity())
+                                    .actualQuantity(line.getDeliveryQuantity())
+                                    .price(poItem.getPrice())
+                                    .contractQuantity(poItem.getContractQuantity()) // 👈 thêm dòng này
+                                    .build();
+                        })
+                        .toList())
+                .build();
+    }
+    @Transactional
+    @Override
+    public WarehouseReceiptDTO prepareFastComplete(Long poId, String actorName, String requestId) {
+        PurchaseOrder po = orderRepo.findWithDetailById(poId)
+                .orElseThrow(() -> new InventoryException("Không tìm thấy đơn hàng"));
+
+        Map<Integer, PurchaseOrderItem> poItemByProductId = po.getItems().stream()
+                .collect(Collectors.toMap(i -> i.getProduct().getId(), i -> i));
+
+        // chỉ lấy phần còn thiếu
+        List<WarehouseReceiptItemDTO> items = po.getItems().stream()
+                .map(it -> {
+                    int contract = it.getContractQuantity() != null ? it.getContractQuantity() : 0;
+                    int actual = it.getActualQuantity() != null ? it.getActualQuantity() : 0;
+                    int remain = contract - actual;
+                    if (remain <= 0) return null;
+                    return WarehouseReceiptItemDTO.builder()
+                            .productId(it.getProduct().getId())
+                            .productName(it.getProduct().getName())
+                            .quantity(remain)
+                            .actualQuantity(remain)
+                            .price(it.getPrice())
+                            .contractQuantity(contract)
+                            .build();
+                })
+                .filter(Objects::nonNull)
+                .toList();
+
+        return WarehouseReceiptDTO.builder()
+                .purchaseOrderId(po.getId())
+                .purchaseOrderCode(po.getCode())
+                .createdByName(actorName)
+                .requestId(requestId)
+                .note("Nhập nhanh toàn bộ phần còn lại từ PO " + po.getCode())
+                .items(items)
+                .build();
+    }
+
 }

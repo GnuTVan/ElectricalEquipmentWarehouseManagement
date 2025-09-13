@@ -27,4 +27,5 @@ public class PurchaseOrderItemDTO {
     @NotNull(message = "Giá nhập không được để trống")
     private BigDecimal price;
     private Integer deliveryQuantity; // ✅ số lượng giao lần này (user nhập vào)
+    private String productName;
 }

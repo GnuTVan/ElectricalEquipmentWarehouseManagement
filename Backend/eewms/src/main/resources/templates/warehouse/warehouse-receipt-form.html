@@ -46,18 +46,38 @@
                         <th class="px-4 py-2">Tên sản phẩm</th>
                         <th class="px-4 py-2">Số lượng hợp đồng</th>
                         <th class="px-4 py-2">Đơn giá</th>
+                        <th class="px-4 py-2">Thực nhập</th>
+                        <th class="px-4 py-2">Kho đích</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr th:each="item, iStat : ${orderItems}" class="border-t">
                         <td class="px-4 py-2" th:text="${iStat.index + 1}"></td>
-                        <td class="px-4 py-2" th:text="${item.product.name}"></td>
+                        <td class="px-4 py-2" th:text="${item.productName}"></td>
                         <td class="px-4 py-2" th:text="${item.contractQuantity}"></td>
                         <td class="px-4 py-2" th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
 
                         <!-- dữ liệu để service tạo GRN theo HĐ (nếu muốn nhập theo HĐ) -->
-                        <input type="hidden" th:name="'items[' + ${iStat.index} + '].productId'" th:value="${item.product.id}" />
+                        <input type="hidden" th:name="'items[' + ${iStat.index} + '].productId'" th:value="${item.productId}" />
                         <input type="hidden" th:name="'items[' + ${iStat.index} + '].quantity'" th:value="${item.contractQuantity}" />
+                        <!-- số lượng thực nhập -->
+                        <td class="px-4 py-2">
+                            <input type="number" min="0"
+                                   th:name="'items[' + ${iStat.index} + '].actualQuantity'"
+                                   th:value="${item.actualQuantity}"
+                                   class="w-24 px-2 py-1 border rounded" readonly />
+                        </td>
+
+                        <!-- chọn kho đích -->
+                        <td class="px-4 py-2">
+                            <select th:name="'items[' + ${iStat.index} + '].warehouseId'"
+                                    class="px-2 py-1 border rounded">
+                                <option th:each="wh : ${warehouses}"
+                                        th:value="${wh.id}"
+                                        th:text="${wh.name}">
+                                </option>
+                            </select>
+                        </td>
                     </tr>
                     </tbody>
                 </table>

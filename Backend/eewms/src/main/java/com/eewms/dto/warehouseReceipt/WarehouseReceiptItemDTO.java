@@ -15,4 +15,7 @@ public class WarehouseReceiptItemDTO {
     private String productName;
     private BigDecimal price;        // Giá nhập hàng thực tế
     private Integer actualQuantity;
+    private Long warehouseId;
+    private String warehouseName;
+    private Integer contractQuantity;
 }

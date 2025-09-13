@@ -29,4 +29,8 @@ public class WarehouseReceiptItem {
     @Enumerated(EnumType.STRING)
     @Column(name = "`condition`", length = 16)  // <-- THÊM backtick
     private ProductCondition condition;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "warehouse_id", nullable = false)
+    private Warehouse warehouse;
 }

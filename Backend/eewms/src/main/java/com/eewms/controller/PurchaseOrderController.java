@@ -5,21 +5,19 @@ import com.eewms.dto.purchase.PurchaseOrderDTO;
 import com.eewms.dto.purchase.PurchaseOrderItemDTO;
 import com.eewms.dto.purchase.PurchaseOrderMapper;
 import com.eewms.dto.purchase.PurchaseProductSelectDTO;
+import com.eewms.dto.warehouseReceipt.WarehouseReceiptDTO;
 import com.eewms.entities.PurchaseOrder;
-import com.eewms.entities.PurchaseOrderItem;
 import com.eewms.entities.User;
-import com.eewms.exception.InventoryException;
 import com.eewms.repository.ProductRepository;
-import com.eewms.repository.PurchaseOrderItemRepository;
-import com.eewms.repository.PurchaseOrderRepository;
 import com.eewms.repository.SupplierRepository;
 import com.eewms.repository.UserRepository;
+import com.eewms.repository.WarehouseRepository;
 import com.eewms.services.IPurchaseOrderService;
-import com.eewms.services.ImageUploadService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -27,7 +25,6 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -42,9 +39,7 @@ public class PurchaseOrderController {
     private final SupplierRepository supplierRepo;
     private final UserRepository userRepo;
     private final ProductRepository productRepository;
-    private final PurchaseOrderRepository orderRepo;
-    private final PurchaseOrderItemRepository poItemRepo;
-    private final ImageUploadService uploadService;
+    private final WarehouseRepository warehouseRepository;
 
     /* ====== LIST ====== */
     @GetMapping
@@ -74,7 +69,7 @@ public class PurchaseOrderController {
     @GetMapping("/create")
     public String showCreate(Model model, @AuthenticationPrincipal UserDetails ud) {
         PurchaseOrderDTO dto = new PurchaseOrderDTO();
-        if (ud != null) { // ← thêm null-check
+        if (ud != null) {
             userRepo.findByUsername(ud.getUsername())
                     .ifPresent(u -> dto.setCreatedByName(u.getFullName()));
         }
@@ -84,13 +79,13 @@ public class PurchaseOrderController {
         return "purchase-order-form";
     }
 
-    /* ====== CREATE (status set theo ROLE trong service) ====== */
+    /* ====== CREATE ====== */
     @PostMapping
     public String create(@ModelAttribute("orderDTO") @Valid PurchaseOrderDTO dto,
                          BindingResult result,
                          @AuthenticationPrincipal UserDetails userDetails,
-                         RedirectAttributes redirect,
-                         Model model) {
+                         Model model,
+                         RedirectAttributes redirect) {
         if (result.hasErrors()) {
             model.addAttribute("suppliers", supplierRepo.findAll());
             model.addAttribute("products", getPurchaseProductDTOs());
@@ -98,9 +93,9 @@ public class PurchaseOrderController {
         }
 
         try {
-            Optional<User> userOpt = userRepo.findByUsername(userDetails.getUsername());
-            if (userOpt.isEmpty()) throw new IllegalArgumentException("Không tìm thấy người dùng");
-            dto.setCreatedByName(userOpt.get().getFullName());
+            User user = userRepo.findByUsername(userDetails.getUsername())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
+            dto.setCreatedByName(user.getFullName());
 
             // lọc dòng trống
             if (dto.getItems() != null) {
@@ -192,7 +187,7 @@ public class PurchaseOrderController {
         model.addAttribute("orderDTO", dto);
         model.addAttribute("products", productDtos);
         model.addAttribute("productNameById", productNameById);
-        model.addAttribute("suppliers", supplierRepo.findAll()); // ← THÊM DÒNG NÀY
+        model.addAttribute("suppliers", supplierRepo.findAll());
         model.addAttribute("readOnly", readOnly);
 
         boolean isLockedByStatus = !(order.getStatus() == PurchaseOrderStatus.DA_GIAO_MOT_PHAN
@@ -207,11 +202,12 @@ public class PurchaseOrderController {
     public String receive(@PathVariable Long id,
                           @ModelAttribute("orderDTO") PurchaseOrderDTO dto,
                           @AuthenticationPrincipal UserDetails userDetails,
-                          RedirectAttributes ra) {
+                          RedirectAttributes ra,
+                          Model model) {
         try {
             String actor = userDetails != null ? userDetails.getUsername() : "SYSTEM";
+            String requestId = java.util.UUID.randomUUID().toString();
 
-            // chỉ lấy các dòng có deliveryQuantity > 0
             List<PurchaseOrderItemDTO> lines = Optional.ofNullable(dto.getItems()).orElse(List.of())
                     .stream()
                     .filter(i -> i != null && i.getProductId() != null
@@ -223,14 +219,23 @@ public class PurchaseOrderController {
                 return "redirect:/admin/purchase-orders/edit/" + id;
             }
 
-            String requestId = java.util.UUID.randomUUID().toString();
-            orderService.receiveDelivery(id, lines, actor, requestId);
+            WarehouseReceiptDTO receiptDTO = orderService.prepareReceipt(id, lines, actor, requestId);
 
-            ra.addFlashAttribute("message", "Đã ghi nhận đợt giao hàng & tạo phiếu nhập kho.");
+            // dữ liệu cho form chọn kho
+            PurchaseOrder order = orderService.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+            model.addAttribute("purchaseOrder", order);
+            model.addAttribute("orderItems", lines);
+            model.addAttribute("warehouses", warehouseRepository.findAll()); // cần inject WarehouseRepository
+            model.addAttribute("warehouseReceiptDTO", receiptDTO);
+            model.addAttribute("orderItems", receiptDTO.getItems());
+
+            // điều hướng sang form nhập kho
+            return "warehouse/warehouse-receipt-form";
         } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());
+            return "redirect:/admin/purchase-orders/edit/" + id;
         }
-        return "redirect:/admin/purchase-orders/edit/" + id;
     }
 
     /* ====== DETAIL ====== */
@@ -256,20 +261,33 @@ public class PurchaseOrderController {
                         .build())
                 .collect(Collectors.toList());
     }
-    //chuyen trang thai nhanh
+
+    // chuyển trạng thái nhanh
     @PostMapping("/{id}/fast-complete")
     public String fastComplete(@PathVariable Long id,
                                @AuthenticationPrincipal UserDetails userDetails,
+                               Model model,
                                RedirectAttributes ra) {
         try {
             String actor = userDetails != null ? userDetails.getUsername() : "SYSTEM";
             String requestId = java.util.UUID.randomUUID().toString();
-            orderService.fastComplete(id, actor, requestId);
-            ra.addFlashAttribute("message", "Đã nhập đủ phần còn lại và hoàn tất đơn hàng.");
+
+            // chuẩn bị danh sách sản phẩm còn thiếu
+            WarehouseReceiptDTO receiptDTO = orderService.prepareFastComplete(id, actor, requestId);
+
+            PurchaseOrder order = orderService.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+            model.addAttribute("purchaseOrder", order);
+            model.addAttribute("warehouses", warehouseRepository.findAll());
+            model.addAttribute("warehouseReceiptDTO", receiptDTO);
+            model.addAttribute("orderItems", receiptDTO.getItems());
+
+            // sang form chọn kho
+            return "warehouse/warehouse-receipt-form";
         } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());
+            return "redirect:/admin/purchase-orders/edit/" + id;
         }
-        return "redirect:/admin/purchase-orders/edit/" + id;
     }
 
     @PostMapping("/{id}/update-before-approve")
@@ -279,8 +297,7 @@ public class PurchaseOrderController {
                                       RedirectAttributes ra,
                                       Model model) {
         try {
-            dto.setId(id); // đảm bảo đúng id
-            // lọc dòng rỗng đề phòng
+            dto.setId(id);
             if (dto.getItems() != null) {
                 dto.setItems(dto.getItems().stream()
                         .filter(i -> i != null && i.getProductId() != null)

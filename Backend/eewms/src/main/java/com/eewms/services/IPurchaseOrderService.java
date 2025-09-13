@@ -2,6 +2,7 @@ package com.eewms.services;
 
 import com.eewms.dto.purchase.PurchaseOrderDTO;
 import com.eewms.dto.purchase.PurchaseOrderItemDTO;
+import com.eewms.dto.warehouseReceipt.WarehouseReceiptDTO;
 import com.eewms.entities.PurchaseOrder;
 import com.eewms.constant.PurchaseOrderStatus;
 import org.springframework.data.domain.Page;
@@ -41,11 +42,20 @@ public interface IPurchaseOrderService {
     PurchaseOrder receiveDelivery(Long poId, List<PurchaseOrderItemDTO> deliveryLines,
                                   String actorName, String requestId);
     //chuyen trang thai nhanh
-    PurchaseOrder fastComplete(Long poId, String actorName, String requestId);
+
 
     //edit truoc khi duyet
     PurchaseOrder updateBeforeApprove(PurchaseOrderDTO dto);
 
     @Transactional(readOnly = true)
     PurchaseOrder getForEdit(Long id);
+
+    @Transactional
+    WarehouseReceiptDTO prepareReceipt(Long poId,
+                                       List<PurchaseOrderItemDTO> deliveryLines,
+                                       String actorName,
+                                       String requestId);
+
+    @Transactional
+    WarehouseReceiptDTO prepareFastComplete(Long poId, String actorName, String requestId);
 }

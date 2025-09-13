@@ -33,11 +33,12 @@ public class WarehouseReceiptController {
     private final UserRepository userRepository;
     private final IWarehouseReceiptService warehouseReceiptService;
     private final WarehouseReceiptItemRepository warehouseReceiptItemRepository;
-
+    private final WarehouseRepository warehouseRepository;
     // Công nợ
     private final DebtRepository debtRepository;
     private final DebtPaymentRepository debtPaymentRepository;
     private final IDebtService debtService;
+
 
     /* ====== LIST ====== */
     @GetMapping
@@ -67,6 +68,7 @@ public class WarehouseReceiptController {
         model.addAttribute("purchaseOrder", order);
         model.addAttribute("orderItems", orderItems);
         model.addAttribute("warehouseReceiptDTO", new WarehouseReceiptDTO());
+        model.addAttribute("warehouses", warehouseRepository.findAll());
         return "warehouse/warehouse-receipt-form";
     }
 
