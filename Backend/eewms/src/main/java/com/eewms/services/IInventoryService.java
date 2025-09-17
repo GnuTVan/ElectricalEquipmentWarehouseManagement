@@ -17,7 +17,7 @@ public interface IInventoryService {
      * Danh sách tồn của từng sản phẩm trong một kho (phân trang).
      * Lọc keyword & sắp xếp thực hiện ở Repository.
      */
-    Page<WarehouseStockRowDTO> listStockByWarehouse(Long warehouseId, String keyword, Pageable pageable);
+    Page<WarehouseStockRowDTO> listStockByWarehouse(Integer warehouseId, String keyword, Pageable pageable);
 
     /**
      * Chi tiết "kho -> số lượng" cho một sản phẩm qua tất cả kho (list).
@@ -28,5 +28,5 @@ public interface IInventoryService {
     /**
      * Số lượng on-hand của một sản phẩm tại một kho (Optional).
      */
-    Optional<Integer> getOnHand(Long productId, Long warehouseId);
+    Optional<Integer> getOnHand(Long productId, Integer warehouseId);
 }

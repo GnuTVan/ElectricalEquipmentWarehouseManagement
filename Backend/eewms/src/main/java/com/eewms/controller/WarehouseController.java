@@ -9,6 +9,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/admin/warehouses")
@@ -79,8 +80,51 @@ public class WarehouseController {
 
     // Bật/Tắt kho
     @PostMapping("/toggle/{id}")
-    public String toggleStatus(@PathVariable Long id) {
+    public String toggleStatus(@PathVariable Integer id) {
         warehouseService.toggleStatus(id);
         return "redirect:/admin/warehouses";
     }
+
+    @GetMapping("/{id}/members")
+    public String members(@PathVariable Integer id, Model model) {
+        Warehouse wh = warehouseService.getById(id);
+        model.addAttribute("warehouse", wh);
+        model.addAttribute("supervisorId", warehouseService.getSupervisorId(id));
+        model.addAttribute("staffIds", warehouseService.listStaffIds(id));
+        return "warehouses/members";
+    }
+
+    @PostMapping("/{id}/members/supervisor")
+    public String assignSupervisor(@PathVariable Integer id,
+                                   @RequestParam(required = false) Long userId,
+                                   RedirectAttributes ra) {
+        if (userId == null) {
+            warehouseService.clearSupervisor(id);
+            ra.addFlashAttribute("message", "Đã bỏ quản lý kho.");
+            ra.addFlashAttribute("messageType", "success");
+        } else {
+            warehouseService.assignSupervisor(id, userId);
+            ra.addFlashAttribute("message", "Đã gán quản lý kho.");
+            ra.addFlashAttribute("messageType", "success");
+        }
+        return "redirect:/admin/warehouses/" + id + "/members";
+    }
+
+    @PostMapping("/{id}/members/staff/add")
+    public String addStaff(@PathVariable Integer id, @RequestParam Long userId, RedirectAttributes ra) {
+        warehouseService.addStaff(id, userId);
+        ra.addFlashAttribute("message", "Thêm nhân viên thành công.");
+        ra.addFlashAttribute("messageType", "success");
+        return "redirect:/admin/warehouses/" + id + "/members";
+    }
+
+    @PostMapping("/{id}/members/staff/remove")
+    public String removeStaff(@PathVariable Integer id, @RequestParam Long userId, RedirectAttributes ra) {
+        warehouseService.removeStaff(id, userId);
+        ra.addFlashAttribute("message", "Gỡ nhân viên thành công.");
+        ra.addFlashAttribute("messageType", "success");
+
+        return "redirect:/admin/warehouses/" + id + "/members";
+    }
+
 }

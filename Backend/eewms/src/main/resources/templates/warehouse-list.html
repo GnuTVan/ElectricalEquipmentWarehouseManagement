@@ -62,6 +62,10 @@
                            class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 shadow">
                             <i class="ri-eye-line"></i> Xem tồn
                         </a>
+                        <a th:href="@{|/admin/warehouses/${w.id}/members|}"
+                           class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 border rounded hover:bg-blue-100 shadow">
+                            <i class="ri-shield-user-line"></i> Thành viên
+                        </a>
                     </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(warehouses)}">

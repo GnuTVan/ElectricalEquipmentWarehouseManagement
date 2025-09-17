@@ -97,7 +97,7 @@ class WarehouseReceiptServiceImplTest {
     }
 
     private void commonStubs() {
-        when(warehouseRepository.findById(1L)).thenReturn(Optional.of(wh));
+        when(warehouseRepository.findById(1)).thenReturn(Optional.of(wh));
         when(productWarehouseStockRepository.findByProductAndWarehouse(p1, wh)).thenReturn(Optional.of(s1));
         when(productWarehouseStockRepository.findByProductAndWarehouse(p2, wh)).thenReturn(Optional.of(s2));
 

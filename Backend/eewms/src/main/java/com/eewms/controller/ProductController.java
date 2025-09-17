@@ -182,7 +182,7 @@ public class ProductController {
             productService.create(dto);
 
             ra.addFlashAttribute("message", "Thêm SP thành công, ID: " + dto.getId() + " - " + dto.getName());
-            ra.addFlashAttribute("messageType", "success");
+        ra.addFlashAttribute("messageType", "success");
             return "redirect:/products";
 
         } catch (InventoryException ex) {

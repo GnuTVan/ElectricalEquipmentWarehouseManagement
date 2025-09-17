@@ -6,7 +6,7 @@ import lombok.Getter; import lombok.Setter;
 
 @Getter @Setter
 public class WarehouseDTO {
-    private Long id;
+    private Integer id;
 
     @NotBlank(message = "Tên kho là bắt buộc")
     @Size(max = 100, message = "Tên kho tối đa 100 ký tự")

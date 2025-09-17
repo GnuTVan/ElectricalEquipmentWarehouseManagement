@@ -32,7 +32,7 @@ public class InventoryController {
      * Ví dụ: /admin/inventory/warehouses/1/stock?keyword=but&page=0&size=20
      */
     @GetMapping("/warehouses/{id}/stock")
-    public String warehouseStock(@PathVariable("id") Long warehouseId,
+    public String warehouseStock(@PathVariable("id") Integer warehouseId,
                                  @RequestParam(value = "keyword", required = false) String keyword,
                                  @RequestParam(value = "page", defaultValue = "0") int page,
                                  @RequestParam(value = "size", defaultValue = "20") int size,

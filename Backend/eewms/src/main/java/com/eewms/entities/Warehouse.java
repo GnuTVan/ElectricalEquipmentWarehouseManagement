@@ -28,6 +28,8 @@ public class Warehouse {
     @Column(nullable = false)
     private Boolean status = true;
 
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supervisor_id", referencedColumnName = "id")
+    private User supervisor;
 }
 

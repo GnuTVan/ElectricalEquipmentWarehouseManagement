@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{fragments/common-head :: commonHead('Thành viên kho')}"></head>
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <div class="flex justify-between items-center mb-6 p-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">Thành viên kho</h1>
+                <p class="text-sm text-gray-600">
+                    Kho: <span class="font-medium" th:text="${warehouse.name}">Kho</span>
+                    <span class="mx-2">•</span> ID: <span th:text="${warehouse.id}">1</span>
+                    <span class="mx-2">•</span> Trạng thái:
+                    <span th:text="${warehouse.status} ? 'Đang Hoạt động' : 'Ngưng hoạt động'">Hoạt động</span>
+                </p>
+            </div>
+            <a th:href="@{/admin/warehouses}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-100 shadow">
+                <i class="ri-arrow-left-line mr-2"></i> Quay lại
+            </a>
+        </div>
+
+        <!-- Supervisor -->
+        <section class="bg-white rounded shadow p-6 mx-6 mb-6">
+            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <i class="ri-shield-user-line"></i> Quản lý kho
+            </h2>
+
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="border rounded p-4">
+                    <p class="text-sm text-gray-500 mb-1">Hiện tại</p>
+                    <p class="font-medium" th:text="${supervisorId} != null ? ${supervisorId} : '—'">—</p>
+                </div>
+
+                <div class="border rounded p-4">
+                    <p class="text-sm text-gray-500 mb-2">Gán/đổi Quản lý kho</p>
+                    <form th:action="@{|/admin/warehouses/${warehouse.id}/members/supervisor|}" method="post" class="flex gap-2">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <input name="userId" type="number" min="1" class="w-full border rounded px-3 py-2" placeholder="User ID" required>
+                        <button class="px-4 py-2 bg-blue-600 text-white rounded">Gán</button>
+                    </form>
+
+                    <form th:action="@{|/admin/warehouses/${warehouse.id}/members/supervisor|}" method="post" class="mt-2">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button class="px-4 py-2 bg-gray-200 text-gray-800 rounded">Bỏ Quản lý kho</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Staff -->
+        <section class="bg-white rounded shadow p-6 mx-6">
+            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <i class="ri-team-line"></i> Danh sách nhân viên của kho
+            </h2>
+
+            <form th:action="@{|/admin/warehouses/${warehouse.id}/members/staff/add|}" method="post" class="flex gap-2 mb-4">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <input name="userId" type="number" min="1" class="w-60 border rounded px-3 py-2" placeholder="User ID" required>
+                <button class="px-4 py-2 bg-green-600 text-white rounded">Thêm nhân viên</button>
+            </form>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full table-auto text-sm border rounded">
+                    <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left">STT</th>
+                        <th class="px-4 py-3 text-left">ID</th>
+                        <th class="px-4 py-3 text-right">Hành động</th>
+                    </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                    <tr th:each="uid,iter : ${staffIds}">
+                        <td class="px-4 py-3" th:text="${iter.index + 1}">1</td>
+                        <td class="px-4 py-3 font-medium" th:text="${uid}">1001</td>
+                        <td class="px-4 py-3 text-right">
+                            <form th:action="@{|/admin/warehouses/${warehouse.id}/members/staff/remove|}" method="post" class="inline">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <input type="hidden" name="userId" th:value="${uid}"/>
+                                <button class="px-3 py-1.5 bg-red-50 text-red-700 rounded border hover:bg-red-100">
+                                    Gỡ
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(staffIds)}">
+                        <td colspan="3" class="px-4 py-6 text-center text-gray-500">Không có nhân viên.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </main>
+</div>
+</body>
+</html>

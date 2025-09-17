@@ -1,13 +1,18 @@
 package com.eewms.services.impl;
 
 import com.eewms.dto.WarehouseDTO;
+import com.eewms.entities.User;
 import com.eewms.entities.Warehouse;
+import com.eewms.entities.WarehouseStaff;
+import com.eewms.repository.UserRepository;
 import com.eewms.repository.WarehouseRepository;
+import com.eewms.repository.WarehouseStaffRepository;
 import com.eewms.services.IWarehouseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -16,6 +21,8 @@ import java.util.List;
 public class WarehouseServiceImpl implements IWarehouseService {
 
     private final WarehouseRepository warehouseRepository;
+    private final WarehouseStaffRepository warehouseStaffRepository;
+    private final UserRepository userRepository;
 
     @Override
     public List<Warehouse> getAll() {
@@ -23,7 +30,7 @@ public class WarehouseServiceImpl implements IWarehouseService {
     }
 
     @Override
-    public Warehouse getById(Long id) {
+    public Warehouse getById(Integer id) {
         return warehouseRepository.findById(id).orElseThrow();
     }
 
@@ -62,9 +69,74 @@ public class WarehouseServiceImpl implements IWarehouseService {
     }
 
     @Override
-    public void toggleStatus(Long id) {
+    public void toggleStatus(Integer id) {
         Warehouse warehouse = getById(id);
         warehouse.setStatus(!Boolean.TRUE.equals(warehouse.getStatus()));
         warehouseRepository.save(warehouse);
     }
+
+    // ---------- Supervisor ----------
+    @Override
+    public void assignSupervisor(Integer warehouseId, Long userId) {
+        Warehouse wh = getById(warehouseId);
+        User user = userRepository.findById(userId).orElseThrow();
+        wh.setSupervisor(user);
+        warehouseRepository.save(wh);
+    }
+
+    @Override
+    public void clearSupervisor(Integer warehouseId) {
+        Warehouse wh = getById(warehouseId);
+        wh.setSupervisor(null);
+        warehouseRepository.save(wh);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Long getSupervisorId(Integer warehouseId) {
+        Warehouse wh = findWarehouseOrThrow(warehouseId);
+        User sup = wh.getSupervisor();
+        return (sup != null) ? sup.getId() : null;
+    }
+
+    // ---------- Staff membership ----------
+    @Override
+    public List<Integer> listStaffIds(Integer warehouseId) {
+        return warehouseStaffRepository.findByWarehouse_Id(warehouseId)
+                .stream().map(ws -> Math.toIntExact(ws.getUser().getId())).toList();
+    }
+
+    @Override
+    public void addStaff(Integer warehouseId, Long userId) {
+        if (warehouseStaffRepository.existsByWarehouse_IdAndUser_Id(warehouseId, userId)) return;
+
+        Warehouse wh = getById(warehouseId);
+        User user = userRepository.findById(userId).orElseThrow();
+
+        WarehouseStaff ws = WarehouseStaff.builder()
+                .warehouse(wh)
+                .user(user)
+                .assignedAt(LocalDateTime.now())
+                .build();
+
+        warehouseStaffRepository.save(ws);
+    }
+
+    @Override
+    public void removeStaff(Integer warehouseId, Long userId) {
+        warehouseStaffRepository.deleteByWarehouse_IdAndUser_Id(warehouseId, userId);
+    }
+
+    // Tìm kho theo id, không có thì throw
+    private Warehouse findWarehouseOrThrow(Integer id) {
+        return warehouseRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy kho id=" + id));
+    }
+
+    // Tìm user theo id (Long), không có thì throw
+    private User findUserOrThrow(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user id=" + id));
+    }
+
 }

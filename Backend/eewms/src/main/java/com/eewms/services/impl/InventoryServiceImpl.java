@@ -36,7 +36,7 @@ public class InventoryServiceImpl implements IInventoryService {
      * Lọc theo keyword (mã/tên SP) và ORDER BY đã xử lý ở Repository.
      */
     @Override
-    public Page<WarehouseStockRowDTO> listStockByWarehouse(Long warehouseId, String keyword, Pageable pageable) {
+    public Page<WarehouseStockRowDTO> listStockByWarehouse(Integer warehouseId, String keyword, Pageable pageable) {
         Warehouse warehouse = warehouseRepo.findById(warehouseId)
                 .orElseThrow(() -> new NoSuchElementException("Warehouse not found: " + warehouseId));
 
@@ -72,7 +72,7 @@ public class InventoryServiceImpl implements IInventoryService {
      * Tồn on-hand của 1 sản phẩm tại 1 kho (Optional).
      */
     @Override
-    public Optional<Integer> getOnHand(Long productId, Long warehouseId) {
+    public Optional<Integer> getOnHand(Long productId, Integer warehouseId) {
         Product product = productRepo.findById(Math.toIntExact(productId))
                 .orElseThrow(() -> new NoSuchElementException("Product not found: " + productId));
         Warehouse warehouse = warehouseRepo.findById(warehouseId)
