@@ -40,15 +40,8 @@ public class InventoryServiceImpl implements IInventoryService {
         Warehouse warehouse = warehouseRepo.findById(warehouseId)
                 .orElseThrow(() -> new NoSuchElementException("Warehouse not found: " + warehouseId));
 
-        Page<ProductWarehouseStock> page =
-                pwsRepo.searchByWarehouseAndKeyword(warehouse.getId(), keyword, pageable);
+        return pwsRepo.pageCatalogWithStockAtWarehouse(warehouseId, keyword, pageable);
 
-        List<WarehouseStockRowDTO> rows = page.getContent()
-                .stream()
-                .map(this::toRowDTO)
-                .toList();
-
-        return new PageImpl<>(rows, pageable, page.getTotalElements());
     }
 
     /**

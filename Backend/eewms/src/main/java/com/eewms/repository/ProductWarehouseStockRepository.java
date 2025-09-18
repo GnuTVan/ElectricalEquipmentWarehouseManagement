@@ -48,4 +48,34 @@ public interface ProductWarehouseStockRepository extends JpaRepository<ProductWa
 
     @EntityGraph(attributePaths = {"product", "warehouse"})
     Optional<ProductWarehouseStock> findByProductAndWarehouse(Product product, Warehouse warehouse);
+
+    @Query(
+            value = """
+        select new com.eewms.dto.inventory.WarehouseStockRowDTO(
+            p.id, p.code, p.name,
+            coalesce(pws.quantity, 0)
+        )
+        from Product p
+        left join ProductWarehouseStock pws
+          on pws.product.id = p.id
+         and pws.warehouse.id = :warehouseId
+        where (:keyword is null or :keyword = ''
+               or lower(p.code) like lower(concat('%', :keyword, '%'))
+               or lower(p.name) like lower(concat('%', :keyword, '%')))
+        order by p.code asc, p.name asc
+        """,
+            countQuery = """
+        select count(p)
+        from Product p
+        where (:keyword is null or :keyword = ''
+               or lower(p.code) like lower(concat('%', :keyword, '%'))
+               or lower(p.name) like lower(concat('%', :keyword, '%')))
+        """
+    )
+    Page<com.eewms.dto.inventory.WarehouseStockRowDTO> pageCatalogWithStockAtWarehouse(
+            @Param("warehouseId") Integer warehouseId,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
+
 }
