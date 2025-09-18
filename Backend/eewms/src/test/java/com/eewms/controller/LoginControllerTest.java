@@ -37,7 +37,7 @@ public class LoginControllerTest {
     void testLoginFailure() throws Exception {
         mockMvc.perform(formLogin("/login")
                         .user("admin")
-                        .password("sai"))
+                        .password("1"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login?error"));
     }
