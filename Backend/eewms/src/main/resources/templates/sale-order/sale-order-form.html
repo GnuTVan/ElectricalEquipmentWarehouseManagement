@@ -30,7 +30,8 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Khách hàng</label>
-                        <select id="customerSelect" th:field="*{customerId}" class="w-full border rounded px-3 py-2" required>
+                        <select id="customerSelect" th:field="*{customerId}" class="w-full border rounded px-3 py-2"
+                                required>
                             <option value="">-- Chọn khách hàng --</option>
                             <option th:each="c : ${customers}" th:value="${c.id}"
                                     th:text="${c.fullName}"
@@ -38,7 +39,8 @@
                         </select>
                     </div>
                     <div>
-                        <label for="customerPhone" class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại khách hàng</label>
+                        <label for="customerPhone" class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại
+                            khách hàng</label>
                         <input id="customerPhone" name="customerPhone" class="w-full border rounded px-3 py-2"
                                list="phoneList" placeholder="Nhập số điện thoại khách hàng" autocomplete="off" required>
                         <datalist id="phoneList">
@@ -48,17 +50,29 @@
                     </div>
                 </div>
 
-                <!-- HÀNG 2: Mã đơn hàng (badge) + Trạng thái -->
+                <!-- HÀNG 2: Mã đơn hàng (badge) + Kho + Trạng thái -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <!-- Mã đơn hàng -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Mã đơn hàng</label>
-                        <input type="hidden" id="soCode" th:field="*{soCode}">
-                        <div class="flex items-center gap-2">
-                            <span id="soCodeBadge" class="badge-code">[[*{soCode}]]</span>
+                    <div class="space-y-3">
+                        <!-- Mã đơn hàng -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Mã đơn hàng</label>
+                            <input type="hidden" id="soCode" th:field="*{soCode}">
+                            <div class="flex items-center gap-2">
+                                <span id="soCodeBadge" class="badge-code">[[*{soCode}]]</span>
+                            </div>
+                        </div>
+
+                        <!-- Kho: hiển thị tên kho lấy hàng -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Kho</label>
+                            <input type="hidden" name="warehouseId" th:value="${warehouseId}">
+                            <div class="flex items-center gap-2">
+                                <span class="badge-code">
+                                    <span th:text="${warehouseName != null} ? ${warehouseName} : 'Chưa gán kho'">Chưa gán kho</span>
+                               </span>
+                            </div>
                         </div>
                     </div>
-
                     <!-- Trạng thái: CHỈ hiển thị mặc định "Chờ lấy hàng" -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
@@ -146,8 +160,8 @@
 <!-- CSRF + dữ liệu sản phẩm cho fetch (nếu dùng) -->
 <script th:inline="javascript">
     const csrfHeader = /*[[${_csrf.headerName}]]*/ 'X-CSRF-TOKEN';
-    const csrfToken  = /*[[${_csrf.token}]]*/ '';
-    const products   = /*[[${products}]]*/ [];
+    const csrfToken = /*[[${_csrf.token}]]*/ '';
+    const products = /*[[${products}]]*/ [];
 </script>
 
 <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
@@ -155,71 +169,115 @@
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
 <style>
-    .choices__list--multiple .choices__item.combo-dup { display: none !important; }
-    #comboSummary { display: none; }
+    .choices__list--multiple .choices__item.combo-dup {
+        display: none !important;
+    }
 
-    .badge-code{
-        display:inline-flex;align-items:center;gap:.5rem;
-        padding:.375rem .625rem;border:1px solid #cbd5e1;border-radius:.5rem;
-        background:#f8fafc;font-weight:600;color:#0f172a;
+    #comboSummary {
+        display: none;
+    }
+
+    .badge-code {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .375rem .625rem;
+        border: 1px solid #cbd5e1;
+        border-radius: .5rem;
+        background: #f8fafc;
+        font-weight: 600;
+        color: #0f172a;
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     }
-    .status-chip{
-        display:inline-flex;align-items:center;gap:.375rem;
-        padding:.375rem .75rem;border:1px solid #cbd5e1;border-radius:9999px;
-        background:#f8fafc;color:#334155;font-weight:500;cursor:pointer;user-select:none
+
+    .status-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .375rem;
+        padding: .375rem .75rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 9999px;
+        background: #f8fafc;
+        color: #334155;
+        font-weight: 500;
+        cursor: pointer;
+        user-select: none
     }
-    .status-chip[aria-pressed="true"]{border-color:#6366f1;background:#eef2ff;color:#3730a3;box-shadow:inset 0 1px 1px rgba(99,102,241,.15)}
-    .status-chip[data-value="COMPLETED"][aria-pressed="true"]{border-color:#34d399;background:#ecfdf5;color:#065f46}
-    .status-chip[data-value="DELIVERIED"][aria-pressed="true"]{border-color:#f59e0b;background:#fffbeb;color:#92400e}
-    .status-chip[data-value="CANCELLED"][aria-pressed="true"]{border-color:#f43f5e;background:#fff1f2;color:#9f1239}
+
+    .status-chip[aria-pressed="true"] {
+        border-color: #6366f1;
+        background: #eef2ff;
+        color: #3730a3;
+        box-shadow: inset 0 1px 1px rgba(99, 102, 241, .15)
+    }
+
+    .status-chip[data-value="COMPLETED"][aria-pressed="true"] {
+        border-color: #34d399;
+        background: #ecfdf5;
+        color: #065f46
+    }
+
+    .status-chip[data-value="DELIVERIED"][aria-pressed="true"] {
+        border-color: #f59e0b;
+        background: #fffbeb;
+        color: #92400e
+    }
+
+    .status-chip[data-value="CANCELLED"][aria-pressed="true"] {
+        border-color: #f43f5e;
+        background: #fff1f2;
+        color: #9f1239
+    }
 </style>
 
 <script>
     /* ===== Prefill MÃ ĐƠN khi mở trang (và gắn lên badge) ===== */
-    async function prefillSoCode(){
+    async function prefillSoCode() {
         const hidden = document.getElementById('soCode');
-        const badge  = document.getElementById('soCodeBadge');
-        if(!hidden) return;
+        const badge = document.getElementById('soCodeBadge');
+        if (!hidden) return;
 
         const setBoth = (val) => {
             hidden.value = val;
             if (badge && !badge.textContent.trim()) badge.textContent = val;
         };
 
-        if (hidden.value && hidden.value.trim() !== '') { setBoth(hidden.value.trim()); return; }
+        if (hidden.value && hidden.value.trim() !== '') {
+            setBoth(hidden.value.trim());
+            return;
+        }
 
         const fallback = () => {
-            const d=new Date();
-            const y=String(d.getFullYear()).slice(-2);
-            const m=String(d.getMonth()+1).padStart(2,'0');
-            const day=String(d.getDate()).padStart(2,'0');
-            const rnd=Math.floor(Math.random()*9000)+1000;
+            const d = new Date();
+            const y = String(d.getFullYear()).slice(-2);
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const rnd = Math.floor(Math.random() * 9000) + 1000;
             return `ORD${y}${m}${day}-${rnd}`;
         };
 
-        try{
-            const res = await fetch('/sale-orders/next-code', { headers: { [csrfHeader]: csrfToken } });
-            if(!res.ok) throw new Error('bad response');
+        try {
+            const res = await fetch('/sale-orders/next-code', {headers: {[csrfHeader]: csrfToken}});
+            if (!res.ok) throw new Error('bad response');
             let text = await res.text();
-            if(text && text.trim().startsWith('{')){
+            if (text && text.trim().startsWith('{')) {
                 const json = JSON.parse(text);
                 text = json.code || json.soCode || '';
             }
             setBoth(text && text.trim() ? text.trim() : fallback());
-        }catch(e){
+        } catch (e) {
             setBoth(fallback());
         }
     }
 
     /* ===== Khách hàng: đồng bộ tên <-> số điện thoại ===== */
     const customerSelect = document.getElementById('customerSelect');
-    const customerPhone  = document.getElementById('customerPhone');
+    const customerPhone = document.getElementById('customerPhone');
     const phoneToOption = (() => {
         const map = new Map();
         Array.from(customerSelect.options).forEach(opt => {
             const phone = (opt.getAttribute('data-phone') || '').trim();
-            const id    = opt.value;
+            const id = opt.value;
             if (id && phone) map.set(phone, opt);
         });
         return map;
@@ -229,46 +287,91 @@
         const phone = opt ? (opt.getAttribute('data-phone') || '') : '';
         customerPhone.value = phone;
     });
+
     function trySelectByPhone(phone) {
         const opt = phoneToOption.get((phone || '').trim());
-        if (opt) { customerSelect.value = opt.value; return true; }
+        if (opt) {
+            customerSelect.value = opt.value;
+            return true;
+        }
         return false;
     }
-    customerPhone.addEventListener('change', () => { trySelectByPhone(customerPhone.value); });
-    customerPhone.addEventListener('input',  () => {
+
+    customerPhone.addEventListener('change', () => {
+        trySelectByPhone(customerPhone.value);
+    });
+    customerPhone.addEventListener('input', () => {
         if (phoneToOption.has(customerPhone.value.trim())) trySelectByPhone(customerPhone.value);
     });
 
     /* =================== Utils chung =================== */
-    const tableBody  = document.getElementById('itemTableBody');
+    const tableBody = document.getElementById('itemTableBody');
     const productMap = new Map(products.map(p => [String(p.id), p]));
-    function fmt(n){ return (Number(n)||0).toLocaleString('vi-VN'); }
-    function debounce(fn,t=160){ let id; return (...a)=>{ clearTimeout(id); id=setTimeout(()=>fn(...a),t);} }
-    function recalcRowTotal(tr){ const q=+tr.querySelector('.quantity')?.value||0; const p=+tr.querySelector('.price')?.value||0; tr.querySelector('.lineTotal').textContent=fmt(q*p); }
-    function recalcGrand(){ let t=0; tableBody.querySelectorAll('tr[data-product-id]').forEach(tr=>{ const q=+tr.querySelector('.quantity')?.value||0; const p=+tr.querySelector('.price')?.value||0; t+=q*p; }); document.getElementById('grandTotal').textContent=fmt(t); }
-    function reindexAllRows(){ tableBody.querySelectorAll('tr[data-product-id]').forEach((tr,i)=>{ tr.querySelectorAll('input,select').forEach(el=>{ if(el.name) el.name=el.name.replace(/\[\d+]/,`[${i}]`); }); }); }
 
-    /* =================== Manual rows =================== */
-    function getUsedManualIds(){
-        return Array.from(tableBody.querySelectorAll('tr[data-source="manual"]'))
-            .map(tr=>tr.dataset.productId).filter(Boolean);
+    function fmt(n) {
+        return (Number(n) || 0).toLocaleString('vi-VN');
     }
-    function buildManualOptions(currentPid){
-        const used=new Set(getUsedManualIds().filter(id=>id!==String(currentPid)));
-        return products.filter(p=>!used.has(String(p.id)))
-            .map(p=>`<option value="${p.id}" data-price="${p.listingPrice}" data-stock="${p.quantity}">${p.name}</option>`).join('');
+
+    function debounce(fn, t = 160) {
+        let id;
+        return (...a) => {
+            clearTimeout(id);
+            id = setTimeout(() => fn(...a), t);
+        }
     }
-    function refreshAllManualSelects(){
-        tableBody.querySelectorAll('tr[data-source="manual"]').forEach(tr=>{
-            const sel=tr.querySelector('.product-select'); if(!sel) return;
-            const cur=sel.value; sel.innerHTML=buildManualOptions(cur); sel.value=cur;
+
+    function recalcRowTotal(tr) {
+        const q = +tr.querySelector('.quantity')?.value || 0;
+        const p = +tr.querySelector('.price')?.value || 0;
+        tr.querySelector('.lineTotal').textContent = fmt(q * p);
+    }
+
+    function recalcGrand() {
+        let t = 0;
+        tableBody.querySelectorAll('tr[data-product-id]').forEach(tr => {
+            const q = +tr.querySelector('.quantity')?.value || 0;
+            const p = +tr.querySelector('.price')?.value || 0;
+            t += q * p;
+        });
+        document.getElementById('grandTotal').textContent = fmt(t);
+    }
+
+    function reindexAllRows() {
+        tableBody.querySelectorAll('tr[data-product-id]').forEach((tr, i) => {
+            tr.querySelectorAll('input,select').forEach(el => {
+                if (el.name) el.name = el.name.replace(/\[\d+]/, `[${i}]`);
+            });
         });
     }
-    function createManualRow({pid,price,stock,qty}){
-        const index=tableBody.querySelectorAll('tr[data-product-id]').length;
-        const tr=document.createElement('tr');
-        tr.dataset.productId=String(pid); tr.dataset.source='manual';
-        tr.innerHTML=`
+
+    /* =================== Manual rows =================== */
+    function getUsedManualIds() {
+        return Array.from(tableBody.querySelectorAll('tr[data-source="manual"]'))
+            .map(tr => tr.dataset.productId).filter(Boolean);
+    }
+
+    function buildManualOptions(currentPid) {
+        const used = new Set(getUsedManualIds().filter(id => id !== String(currentPid)));
+        return products.filter(p => !used.has(String(p.id)))
+            .map(p => `<option value="${p.id}" data-price="${p.listingPrice}" data-stock="${p.quantity}">${p.name}</option>`).join('');
+    }
+
+    function refreshAllManualSelects() {
+        tableBody.querySelectorAll('tr[data-source="manual"]').forEach(tr => {
+            const sel = tr.querySelector('.product-select');
+            if (!sel) return;
+            const cur = sel.value;
+            sel.innerHTML = buildManualOptions(cur);
+            sel.value = cur;
+        });
+    }
+
+    function createManualRow({pid, price, stock, qty}) {
+        const index = tableBody.querySelectorAll('tr[data-product-id]').length;
+        const tr = document.createElement('tr');
+        tr.dataset.productId = String(pid);
+        tr.dataset.source = 'manual';
+        tr.innerHTML = `
     <td class="px-3 py-2">
       <select name="details[${index}].productId" class="w-full border rounded px-2 py-1 product-select"></select>
       <input type="hidden" name="details[${index}].source" value="MANUAL">
@@ -289,50 +392,76 @@
       <button type="button" class="text-red-600 text-lg btn-remove" title="Xoá dòng"><i class="ri-close-line"></i></button>
     </td>`;
         tableBody.appendChild(tr);
-        const sel=tr.querySelector('.product-select');
-        sel.innerHTML=buildManualOptions(pid); sel.value=String(pid);
-        attachManualListeners(tr); recalcRowTotal(tr); return tr;
+        const sel = tr.querySelector('.product-select');
+        sel.innerHTML = buildManualOptions(pid);
+        sel.value = String(pid);
+        attachManualListeners(tr);
+        recalcRowTotal(tr);
+        return tr;
     }
-    function attachManualListeners(tr){
-        const sel=tr.querySelector('.product-select');
-        const qtyInput=tr.querySelector('.quantity');
-        const priceInput=tr.querySelector('.price');
-        sel.addEventListener('change',()=>{
-            const pid=sel.value; tr.dataset.productId=pid;
-            const p=productMap.get(String(pid))||{};
-            priceInput.value=Number(p.listingPrice||0);
-            tr.querySelector('.stock-display').textContent=p.quantity ?? '-';
-            refreshAllManualSelects(); recalcRowTotal(tr); recalcGrand();
+
+    function attachManualListeners(tr) {
+        const sel = tr.querySelector('.product-select');
+        const qtyInput = tr.querySelector('.quantity');
+        const priceInput = tr.querySelector('.price');
+        sel.addEventListener('change', () => {
+            const pid = sel.value;
+            tr.dataset.productId = pid;
+            const p = productMap.get(String(pid)) || {};
+            priceInput.value = Number(p.listingPrice || 0);
+            tr.querySelector('.stock-display').textContent = p.quantity ?? '-';
+            refreshAllManualSelects();
+            recalcRowTotal(tr);
+            recalcGrand();
         });
-        qtyInput.addEventListener('input',()=>{
-            const v=Number(qtyInput.value||0); qtyInput.value=isNaN(v)||v<1?1:v;
-            recalcRowTotal(tr); recalcGrand();
+        qtyInput.addEventListener('input', () => {
+            const v = Number(qtyInput.value || 0);
+            qtyInput.value = isNaN(v) || v < 1 ? 1 : v;
+            recalcRowTotal(tr);
+            recalcGrand();
         });
-        tr.querySelector('.btn-remove').addEventListener('click',()=>{
-            tr.remove(); refreshAllManualSelects(); reindexAllRows(); recalcGrand();
+        tr.querySelector('.btn-remove').addEventListener('click', () => {
+            tr.remove();
+            refreshAllManualSelects();
+            reindexAllRows();
+            recalcGrand();
         });
     }
-    document.getElementById('btnAddRow').addEventListener('click',()=>{
-        const used=new Set(getUsedManualIds());
-        const candidate=products.find(p=>!used.has(String(p.id)));
-        const msg=document.getElementById('productLimitMsg');
-        if(!candidate){ msg.classList.remove('hidden'); return; }
+
+    document.getElementById('btnAddRow').addEventListener('click', () => {
+        const used = new Set(getUsedManualIds());
+        const candidate = products.find(p => !used.has(String(p.id)));
+        const msg = document.getElementById('productLimitMsg');
+        if (!candidate) {
+            msg.classList.remove('hidden');
+            return;
+        }
         msg.classList.add('hidden');
-        createManualRow({ pid:candidate.id, price:candidate.listingPrice||0, stock:candidate.quantity??'-', qty:1 });
-        reindexAllRows(); refreshAllManualSelects(); recalcGrand();
+        createManualRow({
+            pid: candidate.id,
+            price: candidate.listingPrice || 0,
+            stock: candidate.quantity ?? '-',
+            qty: 1
+        });
+        reindexAllRows();
+        refreshAllManualSelects();
+        recalcGrand();
     });
 
     /* =================== Combo rows =================== */
-    function createComboRow(it,{mount=true}={}){
-        const pid=String(it.productId);
-        const qty=Number(it.quantity||0);
+    function createComboRow(it, {mount = true} = {}) {
+        const pid = String(it.productId);
+        const qty = Number(it.quantity || 0);
         const thePrice = (productMap.get(pid)?.listingPrice ?? 0);
-        const price=Number(it.price ?? thePrice);
-        const stock=(it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(pid)?.quantity ?? '-');
-        const index=tableBody.querySelectorAll('tr[data-product-id]').length;
-        const tr=document.createElement('tr');
-        tr.dataset.productId=pid; tr.dataset.source='combo'; tr.dataset.key=pid; tr.classList.add('bg-amber-50');
-        tr.innerHTML=`
+        const price = Number(it.price ?? thePrice);
+        const stock = (it.availableQuantity != null) ? Number(it.availableQuantity) : (productMap.get(pid)?.quantity ?? '-');
+        const index = tableBody.querySelectorAll('tr[data-product-id]').length;
+        const tr = document.createElement('tr');
+        tr.dataset.productId = pid;
+        tr.dataset.source = 'combo';
+        tr.dataset.key = pid;
+        tr.classList.add('bg-amber-50');
+        tr.innerHTML = `
 <td class="px-3 py-2">
   <div class="flex items-center gap-2">
     <span class="inline-flex text-[11px] px-2 py-0.5 rounded-full border border-amber-400 bg-amber-100 text-amber-800">Từ combo</span>
@@ -340,7 +469,7 @@
     <input type="hidden" name="details[${index}].fromCombo" value="true">
     <input type="hidden" name="details[${index}].comboId" value="">
     <input type="hidden" name="details[${index}].comboName" value="">
-    <span class="font-medium">${it.productName || (productMap.get(pid)?.name)||'(Sản phẩm)'}</span>
+    <span class="font-medium">${it.productName || (productMap.get(pid)?.name) || '(Sản phẩm)'}</span>
   </div>
 </td>
 <td class="px-3 py-2 text-center align-middle"><span class="stock-display">${stock}</span></td>
@@ -348,95 +477,121 @@
 <td class="px-3 py-2 text-center"><input type="number" name="details[${index}].price" class="border px-2 py-1 w-full price" value="${price}" readonly></td>
 <td class="px-3 py-2 text-right"><span class="lineTotal">0</span></td>
 <td class="px-3 py-2 text-center"><button type="button" class="text-gray-300 cursor-not-allowed" title="Thuộc combo, không xoá được"><i class="ri-lock-2-line"></i></button></td>`;
-        recalcRowTotal(tr); if(mount) tableBody.appendChild(tr); return tr;
+        recalcRowTotal(tr);
+        if (mount) tableBody.appendChild(tr);
+        return tr;
     }
-    function patchComboRow(tr,it){
-        const qty=Number(it.quantity||0);
-        const price=Number(it.price ?? (productMap.get(String(it.productId))?.listingPrice ?? 0));
-        const stock=(it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(String(it.productId))?.quantity ?? '-');
-        tr.querySelector('.stock-display').textContent=stock;
-        tr.querySelector('.quantity').value=String(qty);
-        tr.querySelector('.price').value=String(price);
+
+    function patchComboRow(tr, it) {
+        const qty = Number(it.quantity || 0);
+        const price = Number(it.price ?? (productMap.get(String(it.productId))?.listingPrice ?? 0));
+        const stock = (it.availableQuantity != null) ? Number(it.availableQuantity) : (productMap.get(String(it.productId))?.quantity ?? '-');
+        tr.querySelector('.stock-display').textContent = stock;
+        tr.querySelector('.quantity').value = String(qty);
+        tr.querySelector('.price').value = String(price);
         recalcRowTotal(tr);
     }
 
     /* =================== Chip ×N & helpers =================== */
-    function getSelectedComboIdsExpanded(choicesInstance){
-        const values=choicesInstance.getValue(true)||[]; return values.map(v=>Number(v));
+    function getSelectedComboIdsExpanded(choicesInstance) {
+        const values = choicesInstance.getValue(true) || [];
+        return values.map(v => Number(v));
     }
-    function updateComboSummary(choicesInstance){
-        const summaryDiv=document.getElementById('comboSummary');
-        const allOpts=Array.from(document.querySelectorAll('#comboSelect option'));
-        const byId=new Map(); const values=choicesInstance.getValue(true)||[];
-        for(const v of values){
-            const id=String(v); const opt=allOpts.find(o=>o.value===id);
-            const label=opt?opt.textContent.trim():`Combo ${id}`;
-            const cur=byId.get(id)||{count:0,label}; cur.count+=1; byId.set(id,cur);
+
+    function updateComboSummary(choicesInstance) {
+        const summaryDiv = document.getElementById('comboSummary');
+        const allOpts = Array.from(document.querySelectorAll('#comboSelect option'));
+        const byId = new Map();
+        const values = choicesInstance.getValue(true) || [];
+        for (const v of values) {
+            const id = String(v);
+            const opt = allOpts.find(o => o.value === id);
+            const label = opt ? opt.textContent.trim() : `Combo ${id}`;
+            const cur = byId.get(id) || {count: 0, label};
+            cur.count += 1;
+            byId.set(id, cur);
         }
-        summaryDiv.textContent=Array.from(byId.values()).map(x=>`${x.label} × ${x.count}`).join(', ');
+        summaryDiv.textContent = Array.from(byId.values()).map(x => `${x.label} × ${x.count}`).join(', ');
     }
-    function applyComboChipCounts(choicesInstance){
-        const values=choicesInstance.getValue(true)||[]; const counts=new Map();
-        for(const v of values) counts.set(v,(counts.get(v)||0)+1);
-        const optionLabel=(id)=>{
-            const opt=document.querySelector(`#comboSelect option[value="${CSS.escape(String(id))}"]`);
-            return (opt?opt.textContent.trim():`Combo ${id}`);
+
+    function applyComboChipCounts(choicesInstance) {
+        const values = choicesInstance.getValue(true) || [];
+        const counts = new Map();
+        for (const v of values) counts.set(v, (counts.get(v) || 0) + 1);
+        const optionLabel = (id) => {
+            const opt = document.querySelector(`#comboSelect option[value="${CSS.escape(String(id))}"]`);
+            return (opt ? opt.textContent.trim() : `Combo ${id}`);
         };
-        document.querySelectorAll('.choices__list--multiple .choices__item').forEach(chip=>chip.classList.remove('combo-dup'));
-        counts.forEach((cnt,id)=>{
-            const chips=Array.from(document.querySelectorAll(`.choices__list--multiple .choices__item[data-value="${CSS.escape(String(id))}"]`));
-            if(chips.length===0) return;
-            const base=optionLabel(id);
-            chips.forEach((chip,idx)=>{
-                chip.childNodes.forEach(n=>{ if(n.nodeType===Node.TEXT_NODE) n.nodeValue=''; });
-                const text=`${base} × ${cnt}`;
-                if(chip.firstChild) chip.firstChild.textContent=text; else chip.insertAdjacentText('afterbegin',text);
-                if(idx>0) chip.classList.add('combo-dup');
+        document.querySelectorAll('.choices__list--multiple .choices__item').forEach(chip => chip.classList.remove('combo-dup'));
+        counts.forEach((cnt, id) => {
+            const chips = Array.from(document.querySelectorAll(`.choices__list--multiple .choices__item[data-value="${CSS.escape(String(id))}"]`));
+            if (chips.length === 0) return;
+            const base = optionLabel(id);
+            chips.forEach((chip, idx) => {
+                chip.childNodes.forEach(n => {
+                    if (n.nodeType === Node.TEXT_NODE) n.nodeValue = '';
+                });
+                const text = `${base} × ${cnt}`;
+                if (chip.firstChild) chip.firstChild.textContent = text; else chip.insertAdjacentText('afterbegin', text);
+                if (idx > 0) chip.classList.add('combo-dup');
             });
         });
     }
 
     /* =================== Rebuild combo table =================== */
-    const rebuildComboRows = debounce(async function(expandedIds){
-        tableBody.style.visibility='hidden';
-        try{
-            const curRows=Array.from(tableBody.querySelectorAll('tr[data-source="combo"]'));
-            const rowByPid=new Map(curRows.map(tr=>[tr.dataset.productId,tr]));
-            if(!expandedIds || expandedIds.length===0){
-                curRows.forEach(tr=>tr.remove()); reindexAllRows(); recalcGrand(); return;
+    const rebuildComboRows = debounce(async function (expandedIds) {
+        tableBody.style.visibility = 'hidden';
+        try {
+            const curRows = Array.from(tableBody.querySelectorAll('tr[data-source="combo"]'));
+            const rowByPid = new Map(curRows.map(tr => [tr.dataset.productId, tr]));
+            if (!expandedIds || expandedIds.length === 0) {
+                curRows.forEach(tr => tr.remove());
+                reindexAllRows();
+                recalcGrand();
+                return;
             }
-            const res=await fetch('/combos/expand',{
-                method:'POST',
-                headers:{'Content-Type':'application/json',[csrfHeader]:csrfToken},
-                body:JSON.stringify(expandedIds)
+            const res = await fetch('/combos/expand', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', [csrfHeader]: csrfToken},
+                body: JSON.stringify(expandedIds)
             });
-            const itemsRaw=await res.json();
-            const items=(itemsRaw||[]).map(it=>({
-                productId:String(it.productId),
-                productName:it.productName || (productMap.get(String(it.productId))?.name)||'',
-                quantity:Number(it.quantity||0),
-                price:Number(it.price ?? (productMap.get(String(it.productId))?.listingPrice ?? 0)),
-                availableQuantity:(it.availableQuantity!=null)?Number(it.availableQuantity):(productMap.get(String(it.productId))?.quantity ?? '-')
+            const itemsRaw = await res.json();
+            const items = (itemsRaw || []).map(it => ({
+                productId: String(it.productId),
+                productName: it.productName || (productMap.get(String(it.productId))?.name) || '',
+                quantity: Number(it.quantity || 0),
+                price: Number(it.price ?? (productMap.get(String(it.productId))?.listingPrice ?? 0)),
+                availableQuantity: (it.availableQuantity != null) ? Number(it.availableQuantity) : (productMap.get(String(it.productId))?.quantity ?? '-')
             }));
-            const nextPids=new Set(items.map(it=>it.productId));
-            const frag=document.createDocumentFragment();
-            for(const it of items){
-                const existed=rowByPid.get(it.productId);
-                if(existed){ patchComboRow(existed,it); existed.dataset._kept='1'; }
-                else{ const tr=createComboRow(it,{mount:false}); frag.appendChild(tr); }
+            const nextPids = new Set(items.map(it => it.productId));
+            const frag = document.createDocumentFragment();
+            for (const it of items) {
+                const existed = rowByPid.get(it.productId);
+                if (existed) {
+                    patchComboRow(existed, it);
+                    existed.dataset._kept = '1';
+                } else {
+                    const tr = createComboRow(it, {mount: false});
+                    frag.appendChild(tr);
+                }
             }
-            for(const tr of curRows){ if(!nextPids.has(tr.dataset.productId)) tr.remove(); }
-            if(frag.childNodes.length){
-                const firstManual=tableBody.querySelector('tr[data-source="manual"]');
-                if(firstManual) tableBody.insertBefore(frag,firstManual); else tableBody.appendChild(frag);
+            for (const tr of curRows) {
+                if (!nextPids.has(tr.dataset.productId)) tr.remove();
             }
-            reindexAllRows(); recalcGrand();
-        }catch(e){
+            if (frag.childNodes.length) {
+                const firstManual = tableBody.querySelector('tr[data-source="manual"]');
+                if (firstManual) tableBody.insertBefore(frag, firstManual); else tableBody.appendChild(frag);
+            }
+            reindexAllRows();
+            recalcGrand();
+        } catch (e) {
             console.error(e);
-        }finally{
-            requestAnimationFrame(()=>{ tableBody.style.visibility=''; });
+        } finally {
+            requestAnimationFrame(() => {
+                tableBody.style.visibility = '';
+            });
         }
-    },160);
+    }, 160);
 
     /* =================== Bootstrap =================== */
     document.addEventListener('DOMContentLoaded', async () => {
@@ -448,37 +603,68 @@
         statusField.value = statusField.value || 'PENDING';
 
         // Choices (combo)
-        const choices=new Choices('#comboSelect',{
-            removeItemButton:true, shouldSort:false, placeholder:true,
-            placeholderValue:'Chọn combo', duplicateItemsAllowed:true
+        const choices = new Choices('#comboSelect', {
+            removeItemButton: true, shouldSort: false, placeholder: true,
+            placeholderValue: 'Chọn combo', duplicateItemsAllowed: true
         });
-        const el=choices.passedElement.element;
-        const MASTER_CHOICES=Array.from(el.querySelectorAll('option')).map(o=>({value:o.value,label:o.textContent.trim()}));
-        function refreshDropdown(){ choices.clearChoices(); choices.setChoices(MASTER_CHOICES,'value','label',true); }
-        function syncChipsAndTable(){
-            applyComboChipCounts(choices); updateComboSummary(choices);
-            const expandedIds=getSelectedComboIdsExpanded(choices); rebuildComboRows(expandedIds);
+        const el = choices.passedElement.element;
+        const MASTER_CHOICES = Array.from(el.querySelectorAll('option')).map(o => ({
+            value: o.value,
+            label: o.textContent.trim()
+        }));
+
+        function refreshDropdown() {
+            choices.clearChoices();
+            choices.setChoices(MASTER_CHOICES, 'value', 'label', true);
         }
-        el.addEventListener('addItem',(e)=>{ const value=e.detail?.value; if(value==null) return;
-            const opt=el.querySelector(`option[value="${CSS.escape(String(value))}"]`); if(opt) opt.selected=false;
-            refreshDropdown(); requestAnimationFrame(syncChipsAndTable);
+
+        function syncChipsAndTable() {
+            applyComboChipCounts(choices);
+            updateComboSummary(choices);
+            const expandedIds = getSelectedComboIdsExpanded(choices);
+            rebuildComboRows(expandedIds);
+        }
+
+        el.addEventListener('addItem', (e) => {
+            const value = e.detail?.value;
+            if (value == null) return;
+            const opt = el.querySelector(`option[value="${CSS.escape(String(value))}"]`);
+            if (opt) opt.selected = false;
+            refreshDropdown();
+            requestAnimationFrame(syncChipsAndTable);
         });
-        let suppressRemoveHandler=false;
-        el.addEventListener('removeItem',(e)=>{
-            if(suppressRemoveHandler) return; const value=e.detail?.value; if(value==null) return;
-            suppressRemoveHandler=true; try{ choices.removeActiveItemsByValue(String(value)); }
-            finally{ suppressRemoveHandler=false; refreshDropdown(); requestAnimationFrame(syncChipsAndTable); }
+        let suppressRemoveHandler = false;
+        el.addEventListener('removeItem', (e) => {
+            if (suppressRemoveHandler) return;
+            const value = e.detail?.value;
+            if (value == null) return;
+            suppressRemoveHandler = true;
+            try {
+                choices.removeActiveItemsByValue(String(value));
+            } finally {
+                suppressRemoveHandler = false;
+                refreshDropdown();
+                requestAnimationFrame(syncChipsAndTable);
+            }
         });
-        el.addEventListener('change',()=>{ syncChipsAndTable(); });
+        el.addEventListener('change', () => {
+            syncChipsAndTable();
+        });
 
         // Submit: build hidden comboIds (có lặp)
-        const form=document.getElementById('saleOrderForm');
-        form.addEventListener('submit',()=>{
+        const form = document.getElementById('saleOrderForm');
+        form.addEventListener('submit', () => {
             reindexAllRows();
-            const container=document.getElementById('comboHiddenContainer'); container.innerHTML='';
-            const originalName=el.getAttribute('name'); el.removeAttribute('name');
-            (choices.getValue(true)||[]).forEach(v=>{
-                const inp=document.createElement('input'); inp.type='hidden'; inp.name=originalName; inp.value=v; container.appendChild(inp);
+            const container = document.getElementById('comboHiddenContainer');
+            container.innerHTML = '';
+            const originalName = el.getAttribute('name');
+            el.removeAttribute('name');
+            (choices.getValue(true) || []).forEach(v => {
+                const inp = document.createElement('input');
+                inp.type = 'hidden';
+                inp.name = originalName;
+                inp.value = v;
+                container.appendChild(inp);
             });
         });
     });

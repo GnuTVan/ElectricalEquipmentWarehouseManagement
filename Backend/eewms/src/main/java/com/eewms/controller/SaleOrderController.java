@@ -9,11 +9,7 @@ import com.eewms.repository.ComboRepository;
 import com.eewms.repository.GoodIssueNoteRepository;
 import com.eewms.repository.SaleOrderComboRepository;
 import com.eewms.repository.purchaseRequest.PurchaseRequestRepository;
-import com.eewms.services.IComboService;
-import com.eewms.services.ICustomerService;
-import com.eewms.services.IGoodIssueService;
-import com.eewms.services.IProductServices;
-import com.eewms.services.ISaleOrderService;
+import com.eewms.services.*;
 import com.eewms.utils.ComboJsonHelper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +42,7 @@ public class SaleOrderController {
     private final SaleOrderComboRepository saleOrderComboRepository;
     private final PurchaseRequestRepository prRepo;
     private final ComboRepository cbRepo;
+    private final IStockLookupService stockLookupService;
 
     // ========== LIST ==========
 
@@ -93,12 +90,16 @@ public class SaleOrderController {
                 .soCode(saleOrderService.generateNextCode())
                 .status(SaleOrder.SaleOrderStatus.PENDING)
                 .build();
+        Integer whId = stockLookupService.resolveWarehouseIdForCurrentUser();
+        String whName = stockLookupService.resolveWarehouseNameForCurrentUser();
 
         model.addAttribute("saleOrderForm", form);
         model.addAttribute("customers", customerService.findAll());
-        model.addAttribute("products", productService.getAllActiveProducts());
+        model.addAttribute("products", stockLookupService.buildProductListWithStock(whId));
         model.addAttribute("combos", comboService.getAllActive());
         model.addAttribute("orderStatuses", SaleOrder.SaleOrderStatus.values());
+        model.addAttribute("warehouseName", whName);
+        model.addAttribute("warehouseId", whId);
 
         return "sale-order/sale-order-form";
     }
@@ -130,11 +131,15 @@ public class SaleOrderController {
         }
 
         if (result.hasErrors()) {
+            Integer whId = stockLookupService.resolveWarehouseIdForCurrentUser();
+            String whName = stockLookupService.resolveWarehouseNameForCurrentUser();
             model.addAttribute("saleOrderForm", dto);
             model.addAttribute("customers", customerService.findAll());
-            model.addAttribute("products", productService.getAllActiveProducts());
+            model.addAttribute("products", stockLookupService.buildProductListWithStock(whId)); // tồn theo kho
             model.addAttribute("combos", comboService.getAllActive());
             model.addAttribute("orderStatuses", SaleOrder.SaleOrderStatus.values());
+            model.addAttribute("warehouseName", whName);
+            model.addAttribute("warehouseId", whId);
             return "sale-order/sale-order-form";
         }
 
@@ -204,36 +209,35 @@ public class SaleOrderController {
         Map<Long, Integer> comboCounts = new LinkedHashMap<>();
         for (Long cid : expandedComboIds) comboCounts.merge(cid, 1, Integer::sum);
 
-        // 4) Build form bind ra view
+        // 4) Xác định tồn theo kho & gán availableQuantity cho từng dòng manual
+        Integer whId = stockLookupService.resolveWarehouseIdForCurrentUser();
+        var stockByPid = stockLookupService.getStockByProductAtWarehouse(whId);
+        manualDetails.forEach(md -> {
+            md.setAvailableQuantity(stockByPid.getOrDefault(md.getProductId(), 0));
+        });
+
+        // 5) Chuẩn bị mảng products “nhẹ” theo tồn kho user (đưa ra view cho JS)
+        var productsLite = stockLookupService.buildProductListWithStock(whId);
+
+        // 6) Build form bind ra view (sau khi manualDetails đã có availableQuantity)
         var form = SaleOrderRequestDTO.builder()
                 .customerId(orderEntity.getCustomer() != null ? orderEntity.getCustomer().getId() : null)
                 .description(cleanedDescription)
-                .details(manualDetails)
+                .details(manualDetails) // đã có availableQuantity
                 .comboCounts(comboCounts)
                 .build();
 
-        // 5) Chuẩn bị mảng products “nhẹ” để Thymeleaf serialize ra JSON chắc chắn
-        var productsLite = new java.util.ArrayList<Map<String, Object>>();
-        for (var p : productService.getAllActiveProducts()) {
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("id", p.getId());
-            m.put("name", p.getName());
-            m.put("listingPrice", p.getListingPrice());
-            m.put("quantity", p.getQuantity());
-            productsLite.add(m);
-        }
-
-        // 6) Đổ dữ liệu cho view
+        // 7) Đổ dữ liệu cho view
         model.addAttribute("saleOrder", dto);
         model.addAttribute("saleOrderForm", form);
         model.addAttribute("customers", customerService.findAll());
         model.addAttribute("combos", cbRepo.findAll());
         model.addAttribute("prExists", prRepo.existsBySaleOrder_SoId(id));
 
-        // ✅ dùng mảng “nhẹ” cho JS trang sửa
+        // dùng mảng “nhẹ” cho JS trang sửa
         model.addAttribute("productsLite", productsLite);
 
-        // ✅ id để form action submit chính xác
+        // id để form action submit chính xác
         model.addAttribute("saleOrderId", id);
 
         return "sale-order/sale-order-edit";
@@ -249,9 +253,15 @@ public class SaleOrderController {
 
             // Lấy mã đơn để hiển thị toast
             String code = null;
-            try { code = saleOrderService.getOrderEntityById(id).getSoCode(); } catch (Exception ignore) {}
+            try {
+                code = saleOrderService.getOrderEntityById(id).getSoCode();
+            } catch (Exception ignore) {
+            }
             if (code == null) {
-                try { code = saleOrderService.getById(id).getOrderCode(); } catch (Exception ignore) {}
+                try {
+                    code = saleOrderService.getById(id).getOrderCode();
+                } catch (Exception ignore) {
+                }
             }
             if (code == null) code = "ORD#" + id;
 
@@ -298,8 +308,8 @@ public class SaleOrderController {
             Integer pid = d.getProduct() != null ? d.getProduct().getId() : null;
             if (pid == null) continue;
             int ordered = d.getOrderedQuantity() != null ? d.getOrderedQuantity() : 0;
-            int issued  = issuedByPid.getOrDefault(pid, 0);
-            int remain  = Math.max(0, ordered - issued);
+            int issued = issuedByPid.getOrDefault(pid, 0);
+            int remain = Math.max(0, ordered - issued);
             remainingByPid.put(pid, remain);
         }
 
