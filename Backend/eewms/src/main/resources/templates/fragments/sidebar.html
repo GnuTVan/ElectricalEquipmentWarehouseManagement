@@ -205,6 +205,13 @@
                             <a th:href="@{/good-issue}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Xuất
                                 kho</a>
                         </li>
+                        <!-- ✅ Chuyển kho (mục mới) -->
+                        <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
+                            <a th:href="@{/transfers}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">
+                                <i class="ri-arrow-left-right-line mr-2 text-base"></i>
+                                Chuyển kho
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </li>
