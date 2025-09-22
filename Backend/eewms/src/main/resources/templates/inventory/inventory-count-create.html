@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/common-head :: commonHead('Tạo phiếu kiểm kê')}"></head>
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <!-- Main -->
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <!-- Header -->
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <section class="p-6">
+            <!-- Title -->
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold">Tạo phiếu kiểm kê</h1>
+                <p class="text-gray-500 text-sm">Quản lý kiểm kê – phân công cho 1 nhân viên thực hiện</p>
+            </div>
+
+            <!-- Thông báo -->
+            <div th:if="${message}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4">
+                <i class="ri-check-line mr-1"></i><span th:text="${message}"></span>
+            </div>
+            <div th:if="${error}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
+                <i class="ri-error-warning-line mr-1"></i><span th:text="${error}"></span>
+            </div>
+
+            <!-- Form Wrapper -->
+            <div class="bg-white rounded-lg shadow p-6 space-y-6 max-w-3xl mx-auto">
+                <form action="#" method="post" class="space-y-6">
+                    <!-- Kho -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Kho</label>
+                        <select name="warehouseId" class="w-full border px-3 py-2 rounded">
+                            <option value="">-- Chọn kho --</option>
+                            <option value="1">Kho A</option>
+                            <option value="2">Kho B</option>
+                            <option value="3">Kho C</option>
+                        </select>
+                    </div>
+
+                    <!-- Nhân viên -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nhân viên thực hiện</label>
+                        <select name="staffId" class="w-full border px-3 py-2 rounded">
+                            <option value="">-- Chọn nhân viên --</option>
+                            <option value="1">Nguyễn Văn A</option>
+                            <option value="2">Trần Thị B</option>
+                            <option value="3">Lê Văn C</option>
+                        </select>
+                    </div>
+
+                    <!-- Ghi chú -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
+                        <textarea name="note" rows="3" class="w-full border px-3 py-2 rounded"></textarea>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex justify-end gap-3">
+                        <a th:href="@{/inventory/count}"
+                           class="px-4 py-2 rounded border border-gray-300 text-gray-600 hover:bg-gray-50">
+                            Hủy
+                        </a>
+                        <button type="submit"
+                                class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+                            <i class="ri-check-line mr-1"></i>Lưu phiếu
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </main>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof toastr !== 'undefined') {
+            setTimeout(() => toastr.info('Trang tạo phiếu kiểm kê (dummy)'), 300);
+        }
+    });
+</script>
+</body>
+</html>
