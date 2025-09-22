@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi" xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/common-head :: commonHead('Danh sách phiếu kiểm kê')}"></head>
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <!-- Main -->
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <!-- Header -->
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <section class="p-6">
+            <!-- Title & Actions -->
+            <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h1 class="text-2xl font-bold">Danh sách phiếu kiểm kê</h1>
+                    <p class="text-gray-500 text-sm">Quản lý kiểm kê – 1 staff/phiếu</p>
+                </div>
+                <div class="flex gap-2">
+                    <a class="px-4 py-2 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50"
+                       th:href="@{/inventory/count/create}">
+                        <i class="ri-add-line mr-1"></i>Tạo phiếu kiểm kê
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <form id="filterForm" method="get" class="mb-6 flex flex-wrap items-center gap-3">
+                <select name="warehouseId" class="border px-3 py-2 rounded w-56">
+                    <option value="">Tất cả kho</option>
+                    <option value="1">Kho A</option>
+                    <option value="2">Kho B</option>
+                    <option value="3">Kho C</option>
+                </select>
+
+                <select name="status" class="border px-3 py-2 rounded w-48">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="DRAFT">Mới tạo</option>
+                    <option value="IN_PROGRESS">Đang kiểm</option>
+                    <option value="REVIEW">Chờ duyệt</option>
+                    <option value="APPROVED">Đã duyệt</option>
+                    <option value="CLOSED">Đã đóng</option>
+                </select>
+
+                <select name="staffId" class="border px-3 py-2 rounded w-56">
+                    <option value="">Tất cả nhân viên</option>
+                    <option value="1">Nguyễn Văn A</option>
+                    <option value="2">Trần Thị B</option>
+                    <option value="3">Lê Văn C</option>
+                </select>
+
+                <input type="text" name="keyword" placeholder="Tìm theo mã phiếu / ghi chú" th:value="${keyword}"
+                       class="border px-3 py-2 rounded w-72"/>
+
+                <button type="submit" id="btnFilter" class="bg-blue-600 text-white px-4 py-2 rounded"
+                        title="Nhấn lại lần nữa với bộ lọc y hệt để xóa lọc">Lọc
+                </button>
+            </form>
+
+
+            <!-- Legend -->
+            <div class="flex items-center gap-2 text-xs mb-4">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">Mới tạo</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Đang kiểm</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Chờ duyệt</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Đã duyệt</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">Đã đóng</span>
+            </div>
+
+            <!-- Table -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <table id="Table" class="min-w-full table-auto text-sm border border-gray-200">
+                    <thead class="bg-gray-100 text-left">
+                    <tr>
+                        <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap">Mã phiếu</th>
+                        <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap">Kho</th>
+                        <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap">Nhân viên</th>
+                        <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap text-right">Số SP
+                        </th>
+                        <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap text-center">Trạng
+                            thái
+                        </th>
+                        <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap">Ngày tạo</th>
+                        <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap">Cập nhật</th>
+                        <th class="px-4 py-3 border border-gray-200 font-semibold whitespace-nowrap text-center">Thao
+                            tác
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- Dummy Row 1 -->
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 rounded bg-gray-100 font-mono text-xs">INV-202509-0001</span>
+                            <div class="text-xs text-gray-500">Tạo: 2025-09-20 10:15</div>
+                        </td>
+                        <td class="px-4 py-3">Kho A</td>
+                        <td class="px-4 py-3 flex items-center gap-2">
+                            <i class="ri-user-3-line text-gray-500"></i> Nguyễn Văn A
+                        </td>
+                        <td class="px-4 py-3">120</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Đang kiểm</span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-500">2025-09-21 09:18</td>
+                        <td class="px-4 py-3 text-gray-500">2025-09-21 14:02</td>
+                        <td class="px-4 py-3">
+                            <div class="flex justify-end gap-2">
+                                <a th:href="@{/inventory/count/1}" href="#"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200">
+                                    <i class="ri-eye-line"></i>Chi tiết
+                                </a>
+                                <a th:href="@{/inventory/count/1/continue}" href="#"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-blue-600 text-blue-600">
+                                    <i class="ri-play-line"></i>Tiếp tục đếm
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Dummy Row 2 -->
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 rounded bg-gray-100 font-mono text-xs">INV-202509-0002</span>
+                            <div class="text-xs text-gray-500">Tạo: 2025-09-20 11:30</div>
+                        </td>
+                        <td class="px-4 py-3">Kho B</td>
+                        <td class="px-4 py-3 flex items-center gap-2">
+                            <i class="ri-user-3-line text-gray-500"></i> Trần Thị B
+                        </td>
+                        <td class="px-4 py-3">75</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Chờ duyệt</span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-500">2025-09-21 09:18</td>
+                        <td class="px-4 py-3 text-gray-500">2025-09-21 09:18</td>
+                        <td class="px-4 py-3">
+                            <div class="flex justify-end gap-2">
+                                <a th:href="@{/inventory/count/2}" href="#"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200">
+                                    <i class="ri-eye-line"></i>Chi tiết
+                                </a>
+                                <a th:href="@{/inventory/count/2/review}" href="#"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-amber-600 text-amber-700">
+                                    <i class="ri-clipboard-check-line"></i>Review
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Dummy Row 3 -->
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 rounded bg-gray-100 font-mono text-xs">INV-202509-0003</span>
+                            <div class="text-xs text-gray-500">Tạo: 2025-09-19 16:41</div>
+                        </td>
+                        <td class="px-4 py-3">Kho A</td>
+                        <td class="px-4 py-3 flex items-center gap-2">
+                            <i class="ri-user-3-line text-gray-500"></i> Nguyễn Văn A
+                        </td>
+                        <td class="px-4 py-3">200</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Đã duyệt</span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-500">2025-09-20 08:05</td>
+                        <td class="px-4 py-3 text-gray-500">2025-09-20 08:05</td>
+                        <td class="px-4 py-3">
+                            <div class="flex justify-end gap-2">
+                                <a th:href="@{/inventory/count/3/report}" href="#"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200">
+                                    <i class="ri-file-list-3-line"></i>Biên bản
+                                </a>
+                                <a th:href="@{/inventory/count/3/export}" href="#"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200">
+                                    <i class="ri-download-2-line"></i>Export
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Dummy Row 4 -->
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 rounded bg-gray-100 font-mono text-xs">INV-202509-0004</span>
+                            <div class="text-xs text-gray-500">Tạo: 2025-09-18 09:00</div>
+                        </td>
+                        <td class="px-4 py-3">Kho C</td>
+                        <td class="px-4 py-3 flex items-center gap-2">
+                            <i class="ri-user-3-line text-gray-500"></i> Lê Văn C
+                        </td>
+                        <td class="px-4 py-3">98</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">Đã đóng</span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-500">2025-09-18 17:22</td>
+                        <td class="px-4 py-3 text-gray-500">2025-09-18 17:22</td>
+                        <td class="px-4 py-3">
+                            <div class="flex justify-end gap-2">
+                                <a th:href="@{/inventory/count/4}" href="#"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200">
+                                    <i class="ri-eye-line"></i>Chi tiết
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <!-- Pagination (dummy) -->
+                <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
+            </div>
+        </section>
+
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </main>
+</div>
+<script>
+    // Sắp xếp: mới → cũ theo data-od (nếu sau này render từ server)
+    (function () {
+        var tbody = document.querySelector('#Table tbody');
+        if (!tbody) return;
+        var rows = Array.from(tbody.querySelectorAll('tr[data-od]'));
+        if (!rows.length) return;
+        rows.sort(function (a, b) {
+            var ao = a.dataset.od || '0', bo = b.dataset.od || '0';
+            if (ao !== bo) return bo.localeCompare(ao);
+            var ai = parseInt(a.dataset.id || '0', 10), bi = parseInt(b.dataset.id || '0', 10);
+            if (!isNaN(ai) && !isNaN(bi)) return bi - ai;
+            return (b.dataset.id || '').localeCompare(a.dataset.id || '');
+        });
+        rows.forEach(function (r) {
+            tbody.appendChild(r);
+        });
+    })();
+
+    // Lọc lần 2 = reset
+    (function () {
+        var form = document.getElementById('filterForm');
+        if (!form) return;
+        var KEY = 'inventoryCounts:lastQuery';
+
+        function buildQuery() {
+            var fd = new FormData(form), q = new URLSearchParams();
+            ['warehouseId', 'status', 'staffId', 'keyword'].forEach(function (n) {
+                var v = (fd.get(n) || '').toString().trim();
+                if (v) q.set(n, v);
+            });
+            return q.toString();
+        }
+
+        form.addEventListener('submit', function (e) {
+            var cur = buildQuery(), last = sessionStorage.getItem(KEY);
+            if (last && last === cur) {
+                e.preventDefault();
+                ['warehouseId', 'status', 'staffId', 'keyword'].forEach(function (n) {
+                    var el = form.querySelector('[name="' + n + '"]');
+                    if (el) el.value = '';
+                });
+                sessionStorage.removeItem(KEY);
+                form.querySelectorAll('input,select').forEach(function (el) {
+                    if (!el.value) el.disabled = true;
+                });
+                form.submit();
+            } else {
+                sessionStorage.setItem(KEY, cur);
+            }
+        });
+    })();
+</script>
+
+<script>
+    // Demo toast (using project Toastr which is loaded via common-head)
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof toastr !== 'undefined') {
+            setTimeout(() => toastr.info('Danh sách phiếu kiểm kê (dummy)'), 300);
+        }
+    });
+</script>
+</body>
+</html>
