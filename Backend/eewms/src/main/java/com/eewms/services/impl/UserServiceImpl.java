@@ -213,4 +213,9 @@
         public boolean hasRole(String role) {
             return SecurityUtils.hasRole(role);
         }
+
+        @Override
+        public boolean existsByEmailIgnoreCaseAndIdNot(String newEmail, Long id) {
+            return userRepository.existsByEmailIgnoreCaseAndIdNot(newEmail, id);
+        }
     }

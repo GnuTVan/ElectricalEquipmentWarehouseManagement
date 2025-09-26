@@ -103,4 +103,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
         ORDER BY u.fullName ASC
     """)
     List<User> findStaffByWarehouseId(@Param("warehouseId") Integer warehouseId);
+
+    // Kiểm tra email trùng khi cập nhật (bỏ qua chính user đó)
+    boolean existsByEmailIgnoreCaseAndIdNot(String email, Long id);
 }

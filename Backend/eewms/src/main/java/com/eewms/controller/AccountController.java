@@ -112,8 +112,14 @@ public class AccountController {
             userService.updateUserProfile(currentUsername, profileDTO);
 
             if (usernameChanged) {
-                try { request.logout(); } catch (Exception ignored) {}
-                try { session.invalidate(); } catch (IllegalStateException ignored) {}
+                try {
+                    request.logout();
+                } catch (Exception ignored) {
+                }
+                try {
+                    session.invalidate();
+                } catch (IllegalStateException ignored) {
+                }
                 redirect.addFlashAttribute("message", "Đã đổi tên đăng nhập. Vui lòng đăng nhập lại.");
                 return "redirect:/login";
             }
@@ -147,10 +153,13 @@ public class AccountController {
         User current = userService.findByUsername(currentUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
 
+        String newEmail = profileDTO.getEmail();
+        boolean emailChanged = newEmail != null && !newEmail.isBlank()
+                && !newEmail.equalsIgnoreCase(current.getEmail());
+
         // Chỉ kiểm tra trùng khi có nhập
-        if (hasText(profileDTO.getEmail())) {
-            Optional<User> byEmail = userService.findByEmail(profileDTO.getEmail());
-            if (byEmail.isPresent() && !byEmail.get().getUsername().equals(currentUsername)) {
+        if (emailChanged) {
+            if (userService.existsByEmailIgnoreCaseAndIdNot(newEmail, current.getId())) {
                 result.rejectValue("email", "error.profileDTO", "Email đã được sử dụng bởi người khác");
             }
         }
@@ -190,8 +199,14 @@ public class AccountController {
             }
 
             if (usernameChanged) {
-                try { request.logout(); } catch (Exception ignored) {}
-                try { session.invalidate(); } catch (IllegalStateException ignored) {}
+                try {
+                    request.logout();
+                } catch (Exception ignored) {
+                }
+                try {
+                    session.invalidate();
+                } catch (IllegalStateException ignored) {
+                }
                 return ResponseEntity.ok(Map.of(
                         "ok", true,
                         "requireLogin", true,

@@ -72,4 +72,6 @@ public interface IUserService {
 
     //Kiểm tra role của user hiện tại ('STAFF', 'MANAGER', 'ADMIN'...)
     boolean hasRole(String role);
+
+    boolean existsByEmailIgnoreCaseAndIdNot(String newEmail, Long id);
 }

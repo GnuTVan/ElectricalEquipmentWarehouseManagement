@@ -1,5 +1,6 @@
 package com.eewms.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -22,10 +23,7 @@ public class UserProfileDTO {
     private String username;
 
     // Cho phép để trống; nếu nhập thì phải là gmail.com và tối đa 100 ký tự
-    @Pattern(
-            regexp = "^$|^[\\w.%+-]+@gmail\\.com$",
-            message = "Email phải có đuôi @gmail.com"
-    )
+    @Email(message = "Email không hợp lệ")
     @Size(max = 100, message = "Email tối đa 100 ký tự")
     private String email;
 
