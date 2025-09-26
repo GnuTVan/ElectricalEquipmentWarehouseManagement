@@ -54,26 +54,35 @@ public class SalesReturnController {
     @GetMapping("/create")
     public String createForm(@RequestParam(name = "saleOrderId", required = false) Integer saleOrderId, Model model) {
         SaleOrder so = null;
+        //returnedMap là map rỗng mặc định, chứa key = productId, value = tổng số lượng đã trả (return)
         java.util.Map<Integer, Long> returnedMap = java.util.Collections.emptyMap();
-
+        //neu co saleOrderId
         if (saleOrderId != null) {
+            //goi repo tim don hang ban kem chi tiet san pham. neu khong thi = null
             so = saleOrderRepository.findByIdWithDetails(saleOrderId).orElse(null);
+            //neu co don ban
             if (so != null) {
                 var statuses = java.util.List.of(
+                        //Xác định các trạng thái hoàn trả cần tính đến
                         com.eewms.constant.ReturnStatus.CHO_DUYET,
                         com.eewms.constant.ReturnStatus.DA_DUYET,
                         com.eewms.constant.ReturnStatus.DA_NHAP_KHO,
                         com.eewms.constant.ReturnStatus.HOAN_TAT
                 );
                 returnedMap = new java.util.HashMap<>();
+                //lap qua tung chi tiet san pham cua so
                 for (var d : so.getDetails()) {
+                    //voi moi sp thi` goi repo de tinh tong so luong da tra theo status
                     Long ret = salesReturnItemRepository.sumReturnedBySoAndProduct(so.getSoId(), d.getProduct().getId(), statuses);
+                    //luu ket qua vao map. neu ko co thi set = 0L
                     returnedMap.put(d.getProduct().getId(), ret == null ? 0L : ret);
                 }
             }
         }
+        //dua du lieu sang view
         model.addAttribute("saleOrder", so);
         model.addAttribute("returnedMap", returnedMap);
+        //render ra return-form
         return "returns/return-form";
     }
 
@@ -205,28 +214,6 @@ public class SalesReturnController {
     }
 
 
-    @PostMapping("/{id}/replacement-request")
-    public String createReplacementRequestPost(@PathVariable Long id, RedirectAttributes ra) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        try {
-            salesReturnService.createReplacementRequest(id, username);
-            ra.addFlashAttribute("success", "Đã tạo yêu cầu đổi hàng (đã sinh phiếu xuất nháp).");
-        } catch (Exception e) {
-            ra.addFlashAttribute("error", e.getMessage());
-        }
-        return "redirect:/admin/sales-returns/" + id;
-    }
 
-    @GetMapping("/{id}/replacement-request")
-    public String createReplacementRequestGet(@PathVariable Long id, RedirectAttributes ra) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        try {
-            salesReturnService.createReplacementRequest(id, username);
-            ra.addFlashAttribute("success", "Đã tạo yêu cầu đổi hàng (đã sinh phiếu xuất nháp).");
-        } catch (Exception e) {
-            ra.addFlashAttribute("error", e.getMessage());
-        }
-        return "redirect:/admin/sales-returns/" + id;
-    }
 
 }

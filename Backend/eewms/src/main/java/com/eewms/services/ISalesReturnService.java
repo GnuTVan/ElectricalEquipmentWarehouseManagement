@@ -18,6 +18,6 @@ public interface ISalesReturnService {
                  Long warehouseId);
 
     SalesReturnDTO getById(Long id);
-    void createReplacementRequest(Long id, String username);
+
 
 }
