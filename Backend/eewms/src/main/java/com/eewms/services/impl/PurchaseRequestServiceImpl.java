@@ -74,16 +74,9 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
         return prRepo.save(request);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Page<PurchaseRequestDTO> findAll(Pageable pageable) {
-        return prRepo.findAll(pageable).map(PurchaseRequestMapper::toDTO);
-    }
 
-    @Override
-    public Optional<PurchaseRequest> findById(Long id) {
-        return prRepo.findById(id);
-    }
+
+
 
     @Override
     @Transactional(readOnly = true)
@@ -237,61 +230,7 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
         return prRepo.filter(creator, startDate, endDate, pageable).map(PurchaseRequestMapper::toDTO);
     }
 
-    // ==== B5: tự động gom thiếu của TẤT CẢ đơn PENDING/PARTLY_DELIVERED của 1 khách ====
-    @Override
-    @Transactional
-    public PurchaseRequest generateForCustomer(Long customerId, String createdByName) {
-        var customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new InventoryException("Không tìm thấy khách hàng"));
 
-        List<SaleOrder> orders = saleOrderRepository.findByCustomerIdAndStatusIn(
-                customerId, List.of(SaleOrder.SaleOrderStatus.PENDING, SaleOrder.SaleOrderStatus.PARTLY_DELIVERED)
-        );
-
-        Map<Integer, Integer> shortageByProduct = new LinkedHashMap<>();
-        for (SaleOrder so : orders) {
-            for (var d : so.getDetails()) {
-                Integer issued = goodIssueNoteRepository
-                        .sumIssuedQtyBySaleOrderAndProduct(so.getSoId(), d.getProduct().getId());
-                int shortage = d.getOrderedQuantity() - (issued == null ? 0 : issued);
-                if (shortage > 0) {
-                    shortageByProduct.merge(d.getProduct().getId(), shortage, Integer::sum);
-                }
-            }
-        }
-        if (shortageByProduct.isEmpty()) {
-            throw new InventoryException("Không có sản phẩm thiếu để tạo yêu cầu mua.");
-        }
-
-        PurchaseRequest pr = prRepo.findFirstByCustomer_IdAndStatusInOrderByIdDesc(
-                customerId, List.of(PRStatus.MOI_TAO)).orElse(null);
-
-        if (pr == null) {
-            pr = PurchaseRequest.builder()
-                    .code(generateCode())
-                    .createdByName(createdByName)
-                    .status(PRStatus.MOI_TAO) // chờ duyệt
-                    .customer(customer)
-                    .build();
-            pr.setItems(new ArrayList<>());
-        } else {
-            pr.getItems().clear();
-        }
-
-        List<Product> products = productRepo.findAllById(shortageByProduct.keySet());
-        Map<Integer, Product> byId = products.stream().collect(Collectors.toMap(Product::getId, p -> p));
-
-        for (var e : shortageByProduct.entrySet()) {
-            Product p = byId.get(e.getKey());
-            pr.getItems().add(PurchaseRequestItem.builder()
-                    .purchaseRequest(pr)
-                    .product(p)
-                    .quantityNeeded(e.getValue())
-                    .build());
-        }
-
-        return prRepo.save(pr);
-    }
 
     @Override
     @Transactional
@@ -310,56 +249,6 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
         pr.setCanceledByName(auth != null ? auth.getName() : "system");
         pr.setCanceledAt(LocalDateTime.now());
         prRepo.save(pr);
-    }
-    @Override
-    @Transactional
-    public PurchaseRequest generateForAllOpen(String createdByName) {
-
-        // Lấy tất cả SO đang mở
-        List<SaleOrder> orders = saleOrderRepository.findByStatusIn(
-                List.of(SaleOrder.SaleOrderStatus.PENDING, SaleOrder.SaleOrderStatus.PARTLY_DELIVERED)
-        );
-
-        // Gom thiếu theo product trên toàn hệ thống
-        Map<Integer, Integer> shortageByProduct = new LinkedHashMap<>();
-        for (SaleOrder so : orders) {
-            for (SaleOrderDetail d : so.getDetails()) {
-                Integer issued = goodIssueNoteRepository
-                        .sumIssuedQtyBySaleOrderAndProduct(so.getSoId(), d.getProduct().getId());
-                int remaining = d.getOrderedQuantity() - (issued == null ? 0 : issued);
-                if (remaining > 0) {
-                    shortageByProduct.merge(d.getProduct().getId(), remaining, Integer::sum);
-                }
-            }
-        }
-
-        if (shortageByProduct.isEmpty()) {
-            throw new InventoryException("Không có sản phẩm thiếu để tạo yêu cầu mua tổng hợp.");
-        }
-
-        // Tạo PR mới (GLOBAL): không gán customer/saleOrder
-        PurchaseRequest pr = PurchaseRequest.builder()
-                .code(generateCode())
-                .createdByName(createdByName)
-                .status(PRStatus.MOI_TAO)
-                .build();
-        pr.setItems(new ArrayList<>());
-
-        List<Product> products = productRepo.findAllById(shortageByProduct.keySet());
-        Map<Integer, Product> byId = products.stream()
-                .collect(java.util.stream.Collectors.toMap(Product::getId, p -> p));
-
-        for (var e : shortageByProduct.entrySet()) {
-            Product p = byId.get(e.getKey());
-            if (p == null) continue;
-            pr.getItems().add(PurchaseRequestItem.builder()
-                    .purchaseRequest(pr)
-                    .product(p)
-                    .quantityNeeded(e.getValue())
-                    .build());
-        }
-
-        return prRepo.save(pr);
     }
 
     @Override
@@ -411,7 +300,6 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
                 })
                 .toList();
     }
-
 
     @Override
     @Transactional

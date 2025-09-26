@@ -146,7 +146,7 @@ public class WarehouseReceiptServiceImpl implements IWarehouseReceiptService {
                             .warehouse(warehouse)
                             .quantity(BigDecimal.valueOf(0))
                             .build());
-            stock.setQuantity(BigDecimal.valueOf(Integer.parseInt(String.valueOf(stock.getQuantity())) + deliver));
+            stock.setQuantity(stock.getQuantity().add(BigDecimal.valueOf(deliver)));
             stockRepo.save(stock);
 
             // cập nhật actual lũy kế trên POItem

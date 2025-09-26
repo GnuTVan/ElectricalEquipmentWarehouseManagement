@@ -47,8 +47,6 @@ public class PurchaseRequestController {
     private final ProductRepository productRepository;
     private final PurchaseRequestRepository prRepo;
     private final GoodIssueNoteRepository goodIssueNoteRepository;
-
-    // >>> NEW
     private final ICustomerService customerService;
 
     private Map<Long, List<Supplier>> buildAllowedSuppliersMap(List<PurchaseRequestItemDTO> items) {
@@ -90,69 +88,6 @@ public class PurchaseRequestController {
     }
 
     // === Tạo PR từ một SO (giữ để dùng khi cần) – tính thiếu theo "đã xuất", không dựa tồn ===
-    @GetMapping("/create-from-sale-order/{saleOrderId}")
-    public String createFromSaleOrder(@PathVariable Integer saleOrderId, Model model, RedirectAttributes redirect) {
-        if (prRepo.existsBySaleOrder_SoId(saleOrderId)) {
-            redirect.addFlashAttribute("error", "Đơn bán đã có yêu cầu mua.");
-            return "redirect:/sale-orders/" + saleOrderId + "/edit";
-        }
-        SaleOrder order = saleOrderService.getOrderEntityById(saleOrderId);
-
-        List<PurchaseRequestItemDTO> items = order.getDetails().stream()
-                .map(d -> {
-                    Integer issued = goodIssueNoteRepository
-                            .sumIssuedQtyBySaleOrderAndProduct(order.getSoId(), d.getProduct().getId());
-                    int shortage = d.getOrderedQuantity() - (issued == null ? 0 : issued);
-                    if (shortage <= 0) return null;
-                    return PurchaseRequestItemDTO.builder()
-                            .productId(Long.valueOf(d.getProduct().getId()))
-                            .productName(d.getProduct().getName())
-                            .quantityNeeded(shortage)
-                            .build();
-                })
-                .filter(Objects::nonNull)
-                .toList();
-
-        if (items.isEmpty()) {
-            redirect.addFlashAttribute("error", "Không có sản phẩm nào thiếu trong đơn hàng.");
-            return "redirect:/sale-orders/" + saleOrderId;
-        }
-
-        PurchaseRequestDTO dto = PurchaseRequestDTO.builder()
-                .createdByName(order.getCreatedByUser().getFullName())
-                .saleOrderId(order.getSoId())
-                .items(items)
-                .build();
-
-        model.addAttribute("requestDTO", dto);
-        model.addAttribute("allowedSuppliers", buildAllowedSuppliersMap(items));
-        return "purchase-request-form";
-    }
-
-    @PostMapping
-    public String create(@Valid @ModelAttribute("requestDTO") PurchaseRequestDTO dto,
-                         BindingResult result,
-                         RedirectAttributes redirect,
-                         Model model) {
-        if (result.hasErrors()) {
-            model.addAttribute("allowedSuppliers", buildAllowedSuppliersMap(dto.getItems()));
-            return "purchase-request-form";
-        }
-
-        if (dto.getSaleOrderId() == null) {
-            redirect.addFlashAttribute("error", "Thiếu thông tin đơn bán. Vui lòng tạo yêu cầu từ màn hình đơn bán.");
-            return "redirect:/sale-orders";
-        }
-
-        var saved = prService.create(dto);
-        if (!hasAnyRole("ADMIN", "MANAGER")) {
-            redirect.addFlashAttribute("message", "Đã gửi yêu cầu mua. Vui lòng chờ phê duyệt.");
-            return "redirect:/sale-orders/" + dto.getSaleOrderId() + "/edit";
-        }
-        return "redirect:/admin/purchase-requests/" + saved.getId();
-    }
-
-
     @GetMapping("/{id}")
     public String viewDetail(@PathVariable Long id, Model model, RedirectAttributes redirect) {
         var opt = prService.findDtoById(id);

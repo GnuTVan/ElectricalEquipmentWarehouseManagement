@@ -13,20 +13,13 @@ import java.util.Optional;
 
 public interface IPurchaseRequestService {
     PurchaseRequest create(PurchaseRequestDTO dto);
-    Page<PurchaseRequestDTO> findAll(Pageable pageable);
-    Optional<PurchaseRequest> findById(Long id);
     Optional<PurchaseRequestDTO> findDtoById(Long id);
     void updateStatus(Long id, PRStatus status);
     void approve(Long id);
     void updateItems(Long id, List<PurchaseRequestItemDTO> items);
     void generatePurchaseOrdersFromRequest(Long prId) throws Exception;
     Page<PurchaseRequestDTO> filter(String creator, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
-
-    // ==== NEW ====
-    PurchaseRequest generateForCustomer(Long customerId, String createdByName);
     void cancel(Long id, String reason);
-    PurchaseRequest generateForAllOpen(String createdByName);
-
     List<PurchaseRequestItemDTO> collectShortagesForAllOpen(LocalDateTime start, LocalDateTime end);
     PurchaseRequestDTO createFromCollected(List<PurchaseRequestItemDTO> items, String createdBy);
 }
