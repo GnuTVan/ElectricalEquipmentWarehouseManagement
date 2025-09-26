@@ -94,10 +94,16 @@ public class WarehouseController {
         model.addAttribute("staffList", warehouseService.listStaffLite(id));
 
         // Danh sách nhân viên chưa thuộc kho này
-        model.addAttribute("managerCandidates", warehouseService.findAllManagersLite());
-        model.addAttribute("staffCandidates", warehouseService.findUnassignedStaffLite());
+        var managerCandidates = warehouseService.findAllManagersLite();
+        var staffCandidates = warehouseService.findUnassignedStaffLite();
+
+        model.addAttribute("managerCandidates", managerCandidates);
+        model.addAttribute("staffCandidates", staffCandidates);
+        model.addAttribute("canAddStaff", !staffCandidates.isEmpty());
+
         return "warehouses/members";
     }
+
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}/members/supervisor")
