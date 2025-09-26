@@ -1,5 +1,6 @@
 package com.eewms.controller;
 
+import com.eewms.constant.InventoryCountStatus;
 import com.eewms.dto.inventory.InventoryCountDTO;
 import com.eewms.entities.User;
 import com.eewms.entities.Warehouse;
@@ -8,12 +9,14 @@ import com.eewms.repository.UserRepository;
 import com.eewms.repository.WarehouseRepository;
 import com.eewms.services.IInventoryCountService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Controller
@@ -32,33 +35,72 @@ public class InventoryCountController {
                        @RequestParam(required = false) String status,
                        @RequestParam(required = false) Integer staffId,
                        @RequestParam(required = false) String keyword,
+                       @RequestParam(required = false)
+                       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdAtFrom,
+                       @RequestParam(required = false)
+                       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdAtTo,
                        Authentication authentication) {
 
-        // Lấy role
+        // Xác định role
         boolean isManager = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER"));
 
-        // Lấy user hiện tại
-        String username = authentication.getName();
-        User currentUser = userRepository.findByUsername(username).orElseThrow();
+        // User hiện tại
+        User currentUser = userRepository.findByUsername(authentication.getName())
+                .orElseThrow();
 
-        List<InventoryCountDTO> counts;
-        if (isManager) {
-            counts = inventoryCountService.getAll();
-
-            // Tìm kho mà manager này quản lý
-            List<Warehouse> warehouses = warehouseRepository.findBySupervisor_Id(currentUser.getId());
-            Warehouse wh = warehouses.isEmpty() ? null : warehouses.get(0);
-            if (wh != null) {
-                model.addAttribute("warehouseId", wh.getId());
+        // Parse status (tránh NPE khi null/empty)
+        InventoryCountStatus statusEnum = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                statusEnum = InventoryCountStatus.valueOf(status);
+            } catch (IllegalArgumentException e) {
+                // Nếu status không hợp lệ thì bỏ qua filter này
+                statusEnum = null;
             }
-        } else {
-            counts = inventoryCountService.getByStaffId(currentUser.getId());
         }
 
+        List<InventoryCountDTO> counts;
+
+        if (isManager) {
+            counts = inventoryCountService.filterForManager(
+                    warehouseId, statusEnum, staffId, keyword, createdAtFrom, createdAtTo
+            );
+
+            // danh sách kho mà manager quản lý
+            List<Warehouse> warehouses = warehouseRepository.findBySupervisor_Id(currentUser.getId());
+            model.addAttribute("warehouses", warehouses);
+
+            // nếu có chọn warehouse thì load staff của kho đó
+            if (warehouseId != null) {
+                model.addAttribute("staffs", userRepository.findStaffByWarehouseId(warehouseId));
+            } else if (!warehouses.isEmpty()) {
+                // mặc định lấy staff của kho đầu tiên
+                model.addAttribute("staffs", userRepository.findStaffByWarehouseId(warehouses.get(0).getId()));
+            } else {
+                model.addAttribute("staffs", List.of());
+            }
+
+        } else {
+            counts = inventoryCountService.filterForStaff(
+                    currentUser.getId(), warehouseId, statusEnum, keyword, createdAtFrom, createdAtTo
+            );
+        }
+
+        // Giữ filter lại trên form
+        model.addAttribute("warehouseId", warehouseId);
+        model.addAttribute("status", status);
+        model.addAttribute("staffId", staffId);
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("createdAtFrom", createdAtFrom);
+        model.addAttribute("createdAtTo", createdAtTo);
+
         model.addAttribute("counts", counts);
+
         return "inventory/inventory-order-list";
     }
+
+
 
 
     @GetMapping("/{id}")

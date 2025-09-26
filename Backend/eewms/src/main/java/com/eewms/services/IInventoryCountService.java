@@ -1,8 +1,10 @@
 package com.eewms.services;
 
+import com.eewms.constant.InventoryCountStatus;
 import com.eewms.dto.inventory.InventoryCountDTO;
 import com.eewms.entities.User;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface IInventoryCountService {
@@ -29,6 +31,14 @@ public interface IInventoryCountService {
 
     // Xóa phiếu kiểm kê
     void delete(Integer id);
+
+    // Lấy tất cả phiếu (manager filter)
+    List<InventoryCountDTO> filterForManager(Integer warehouseId, InventoryCountStatus status, Integer staffId,
+                                             String keyword, LocalDate createdAtFrom, LocalDate createdAtTo);
+
+    List<InventoryCountDTO> filterForStaff(Long staffId, Integer warehouseId, InventoryCountStatus status,
+                                           String keyword, LocalDate createdAtFrom, LocalDate createdAtTo);
+
 
     // Lấy tt của Staff
     List<InventoryCountDTO> getByStaffId(Long staffId);
