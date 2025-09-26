@@ -9,6 +9,8 @@ import com.eewms.services.IDebtService;
 import com.eewms.services.IWarehouseReceiptService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
@@ -58,19 +60,26 @@ public class WarehouseReceiptController {
     @GetMapping("/form")
     public String showForm(@RequestParam("purchaseOrderId") Long purchaseOrderId,
                            Model model,
+                           @AuthenticationPrincipal UserDetails userDetails,
                            RedirectAttributes ra) {
         PurchaseOrder order = purchaseOrderRepository.findById(purchaseOrderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-        // ⚠️ Cho phép N GRN/PO: không chặn nữa
         List<PurchaseOrderItem> orderItems = purchaseOrderItemRepository.findByPurchaseOrderId(purchaseOrderId);
+
+        // lấy user hiện tại
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
+        List<Warehouse> warehouses = warehouseRepository.findAccessibleByUserId(user.getId());
 
         model.addAttribute("purchaseOrder", order);
         model.addAttribute("orderItems", orderItems);
         model.addAttribute("warehouseReceiptDTO", new WarehouseReceiptDTO());
-        model.addAttribute("warehouses", warehouseRepository.findAll());
+        model.addAttribute("warehouses", warehouses);
+
         return "warehouse/warehouse-receipt-form";
     }
+
 
     /* ====== SAVE GRN (bỏ kho đích, idempotent theo requestId nếu có) ====== */
     @PostMapping("/save")
