@@ -71,8 +71,10 @@ public class InventoryCountController {
             List<Warehouse> warehouses = warehouseRepository.findBySupervisor_Id(currentUser.getId());
             model.addAttribute("warehouses", warehouses);
 
-            if (whId == null && !warehouses.isEmpty()) {
-                whId = warehouses.get(0).getId();
+            if (whId == null) {
+                if (warehouses.size() == 1) {
+                    whId = warehouses.get(0).getId();
+                }
             }
             if (whId != null) {
                 model.addAttribute("staffs", userRepository.findStaffByWarehouseId(whId));

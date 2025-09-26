@@ -79,7 +79,8 @@
             </h2>
 
             <!-- Form thêm nhân viên -->
-            <form th:action="@{|/admin/warehouses/${warehouse.id}/members/staff/add|}"
+            <form th:if="${canAddStaff}"
+                  th:action="@{|/admin/warehouses/${warehouse.id}/members/staff/add|}"
                   method="post"
                   class="relative flex gap-2 items-start mb-4"
                   sec:authorize="hasRole('MANAGER')">
@@ -95,7 +96,9 @@
                 </div>
                 <button class="px-4 py-2 bg-green-600 text-white rounded shrink-0">Thêm nhân viên</button>
             </form>
-
+            <div th:if="${!canAddStaff}" class="mb-4 text-gray-500 italic">
+                Tất cả nhân viên đã được gán vào kho.
+            </div>
             <!-- Bảng nhân viên -->
             <div class="overflow-x-auto">
                 <table class="min-w-full table-auto text-sm border rounded">
