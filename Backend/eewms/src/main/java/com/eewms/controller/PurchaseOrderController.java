@@ -8,6 +8,7 @@ import com.eewms.dto.purchase.PurchaseProductSelectDTO;
 import com.eewms.dto.warehouseReceipt.WarehouseReceiptDTO;
 import com.eewms.entities.PurchaseOrder;
 import com.eewms.entities.User;
+import com.eewms.entities.Warehouse;
 import com.eewms.repository.ProductRepository;
 import com.eewms.repository.SupplierRepository;
 import com.eewms.repository.UserRepository;
@@ -221,16 +222,20 @@ public class PurchaseOrderController {
 
             WarehouseReceiptDTO receiptDTO = orderService.prepareReceipt(id, lines, actor, requestId);
 
-            // dữ liệu cho form chọn kho
             PurchaseOrder order = orderService.findById(id)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+            // lấy user hiện tại
+            User user = userRepo.findByUsername(userDetails.getUsername())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
+            List<Warehouse> warehouses = warehouseRepository.findAccessibleByUserId(user.getId());
+
             model.addAttribute("purchaseOrder", order);
             model.addAttribute("orderItems", lines);
-            model.addAttribute("warehouses", warehouseRepository.findAll()); // cần inject WarehouseRepository
+            model.addAttribute("warehouses", warehouses);
             model.addAttribute("warehouseReceiptDTO", receiptDTO);
             model.addAttribute("orderItems", receiptDTO.getItems());
 
-            // điều hướng sang form nhập kho
             return "warehouse/warehouse-receipt-form";
         } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());
@@ -272,17 +277,21 @@ public class PurchaseOrderController {
             String actor = userDetails != null ? userDetails.getUsername() : "SYSTEM";
             String requestId = java.util.UUID.randomUUID().toString();
 
-            // chuẩn bị danh sách sản phẩm còn thiếu
             WarehouseReceiptDTO receiptDTO = orderService.prepareFastComplete(id, actor, requestId);
 
             PurchaseOrder order = orderService.findById(id)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+            // lấy user hiện tại
+            User user = userRepo.findByUsername(userDetails.getUsername())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
+            List<Warehouse> warehouses = warehouseRepository.findAccessibleByUserId(user.getId());
+
             model.addAttribute("purchaseOrder", order);
-            model.addAttribute("warehouses", warehouseRepository.findAll());
+            model.addAttribute("warehouses", warehouses);
             model.addAttribute("warehouseReceiptDTO", receiptDTO);
             model.addAttribute("orderItems", receiptDTO.getItems());
 
-            // sang form chọn kho
             return "warehouse/warehouse-receipt-form";
         } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());

@@ -5,6 +5,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,4 +22,11 @@ public interface WarehouseRepository extends JpaRepository<Warehouse, Integer> {
     Page<Warehouse> findAllBy(Pageable pageable);
 
     List<Warehouse> findBySupervisor_Id(Long supervisorId);
+
+    @Query("""
+SELECT DISTINCT w FROM Warehouse w
+LEFT JOIN WarehouseStaff ws ON ws.warehouse.id = w.id
+WHERE w.supervisor.id = :userId OR ws.user.id = :userId
+""")
+    List<Warehouse> findAccessibleByUserId(@Param("userId") Long userId);
 }
