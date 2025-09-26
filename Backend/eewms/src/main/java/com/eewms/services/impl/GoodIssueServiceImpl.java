@@ -4,16 +4,21 @@ import com.eewms.dto.GoodIssueDetailDTO;
 import com.eewms.dto.GoodIssueMapper;
 import com.eewms.dto.GoodIssueNoteDTO;
 import com.eewms.entities.*;
+import com.eewms.exception.NoIssueableStockException;
 import com.eewms.repository.DebtRepository;
 import com.eewms.repository.GoodIssueNoteRepository;
 import com.eewms.repository.ProductRepository;
 import com.eewms.repository.SaleOrderRepository;
 import com.eewms.repository.UserRepository;
+// ⬇️ NEW: dùng tồn kho theo kho & tra cứu kho
+import com.eewms.repository.ProductWarehouseStockRepository;
 import com.eewms.services.IGoodIssueService;
+import com.eewms.services.IStockLookupService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.eewms.exception.NoIssueableStockException;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -28,6 +33,9 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
     private final SaleOrderRepository saleOrderRepository;
     private final DebtRepository debtRepository; // tra công nợ
 
+    // ⬇️ NEW: inject thêm để trừ tồn theo kho
+    private final ProductWarehouseStockRepository pwsRepository;
+    private final IStockLookupService stockLookupService;
 
     @Override
     public GoodIssueNote createFromOrder(SaleOrder order, String username) {
@@ -154,7 +162,7 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
                                     if (remain.signum() < 0) remain = BigDecimal.ZERO;
                                     dto.setDebtId(debt.getId());
                                     dto.setRemainingAmount(remain);
-                                    dto.setHasDebt(remain.signum() > 0);
+                                    dto.setHasDebt(false); // show theo SO nếu muốn
                                 }, () -> {
                                     dto.setDebtId(null);
                                     dto.setRemainingAmount(gin.getTotalAmount()!=null? gin.getTotalAmount(): BigDecimal.ZERO);
@@ -177,6 +185,12 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
 
         if (form.getSaleOrderId() == null) {
             throw new RuntimeException("Thiếu saleOrderId");
+        }
+
+        // ⬇️ NEW: xác định kho của user (supervisor ưu tiên, sau đó staff)
+        Integer warehouseId = stockLookupService.resolveWarehouseIdForUser(current.getId());
+        if (warehouseId == null) {
+            throw new RuntimeException("Không xác định được kho của người dùng hiện tại.");
         }
 
         SaleOrder order = saleOrderRepository.findById(form.getSaleOrderId().intValue())
@@ -204,11 +218,14 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
 
         BigDecimal total = BigDecimal.ZERO;
         List<GoodIssueDetail> details = new ArrayList<>();
+        // ⬇️ NEW: tập sản phẩm đã thực sự xuất để đồng bộ tồn tổng sau vòng lặp
+        Set<Integer> affectedProductIds = new HashSet<>();
 
-        // Xuất tối đa theo: MIN(requested, remaining, onHand).
+        // Xuất tối đa theo: MIN(requested, remaining, onHand tại kho của user).
         if (form.getDetails() != null) {
             for (GoodIssueDetailDTO line : form.getDetails()) {
                 if (line == null || line.getProductId() == null) continue;
+
                 Product p = productRepository.findById(line.getProductId())
                         .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm ID=" + line.getProductId()));
 
@@ -219,12 +236,24 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
                 int req = Optional.ofNullable(line.getQuantity()).orElse(0);
                 if (req <= 0) continue;
 
-                int onHand = Optional.ofNullable(p.getQuantity()).orElse(0);
+                // ⬇️ NEW: tồn kho theo kho của user (dùng lock ghi để tránh race condition)
+                var pwsOpt = pwsRepository.findForUpdate(p.getId(), warehouseId);
+                BigDecimal onHandBD = pwsOpt.map(ProductWarehouseStock::getQuantity).orElse(BigDecimal.ZERO);
+                int onHand = (onHandBD == null) ? 0 : onHandBD.intValue();
+
                 int canIssue = Math.min(Math.min(req, remaining), onHand);
                 if (canIssue <= 0) continue;
 
-                p.setQuantity(onHand - canIssue);
-                productRepository.save(p);
+                // ⬇️ NEW: trừ tồn vào ProductWarehouseStock (KHÔNG trừ Product.quantity ở đây)
+                ProductWarehouseStock pws = pwsOpt.orElse(null);
+                if (pws == null) {
+                    // Không có bản ghi tồn theo kho -> coi như 0, về lý thuyết không thể canIssue > 0
+                    continue;
+                }
+                BigDecimal newQty = onHandBD.subtract(BigDecimal.valueOf(canIssue));
+                if (newQty.signum() < 0) newQty = BigDecimal.ZERO;
+                pws.setQuantity(newQty);
+                pwsRepository.save(pws);
 
                 BigDecimal price = Optional.ofNullable(line.getPrice())
                         .orElse(Optional.ofNullable(p.getListingPrice()).orElse(BigDecimal.ZERO));
@@ -238,13 +267,27 @@ public class GoodIssueServiceImpl implements IGoodIssueService {
 
                 details.add(det);
                 total = total.add(price.multiply(BigDecimal.valueOf(canIssue)));
+
+                // ⬇️ Ghi nhận sản phẩm đã xuất để đồng bộ tổng tồn sau vòng lặp
+                affectedProductIds.add(p.getId());
             }
         }
 
-        // ✅ NEW: nếu KHÔNG có dòng nào có thể xuất → KHÔNG lưu phiếu, ném exception
+        // ✅ Nếu KHÔNG có dòng nào có thể xuất → KHÔNG lưu phiếu, ném exception
         if (details.isEmpty()) {
             // Không đổi tồn kho, không đổi trạng thái đơn.
             throw new NoIssueableStockException("Kho hết sạch cho tất cả mặt hàng trong đơn. Không thể tạo phiếu xuất.");
+        }
+
+        // ⬇️ NEW: Đồng bộ Product.quantity = SUM tồn tất cả kho cho từng sản phẩm đã xuất
+        // Lưu ý: cần có method pwsRepository.sumQuantityByProductId(pid) (sẽ thêm ở repository).
+        for (Integer pid : affectedProductIds) {
+            BigDecimal sumQty = pwsRepository.sumQuantityByProductId(pid); // <= sẽ được bổ sung
+            int totalQty = (sumQty == null) ? 0 : sumQty.intValue();
+            productRepository.findById(pid).ifPresent(prod -> {
+                prod.setQuantity(totalQty);
+                productRepository.save(prod);
+            });
         }
 
         // === giữ nguyên luồng cũ bên dưới ===
