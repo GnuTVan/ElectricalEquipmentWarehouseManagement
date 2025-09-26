@@ -4,7 +4,6 @@ import com.eewms.constant.InventoryCountStatus;
 import com.eewms.dto.inventory.InventoryCountDTO;
 import com.eewms.entities.User;
 import com.eewms.entities.Warehouse;
-import com.eewms.entities.WarehouseStaff;
 import com.eewms.repository.UserRepository;
 import com.eewms.repository.WarehouseRepository;
 import com.eewms.services.IInventoryCountService;
@@ -16,7 +15,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Controller
@@ -31,15 +30,18 @@ public class InventoryCountController {
     // LIST: danh sách phiếu
     @GetMapping
     public String list(Model model,
-                       @RequestParam(required = false) Integer warehouseId,
+                       @RequestParam(required = false) String warehouseId,   // đổi sang String
                        @RequestParam(required = false) String status,
                        @RequestParam(required = false) Integer staffId,
                        @RequestParam(required = false) String keyword,
                        @RequestParam(required = false)
-                       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdAtFrom,
+                       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtFrom,
                        @RequestParam(required = false)
-                       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdAtTo,
+                       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtTo,
                        Authentication authentication) {
+
+        // parse warehouseId về Integer
+        Integer whId = (warehouseId != null && !warehouseId.isBlank()) ? Integer.valueOf(warehouseId) : null;
 
         // Xác định role
         boolean isManager = authentication.getAuthorities().stream()
@@ -49,13 +51,12 @@ public class InventoryCountController {
         User currentUser = userRepository.findByUsername(authentication.getName())
                 .orElseThrow();
 
-        // Parse status (tránh NPE khi null/empty)
+        // Parse status
         InventoryCountStatus statusEnum = null;
         if (status != null && !status.isBlank()) {
             try {
                 statusEnum = InventoryCountStatus.valueOf(status);
             } catch (IllegalArgumentException e) {
-                // Nếu status không hợp lệ thì bỏ qua filter này
                 statusEnum = null;
             }
         }
@@ -64,18 +65,18 @@ public class InventoryCountController {
 
         if (isManager) {
             counts = inventoryCountService.filterForManager(
-                    warehouseId, statusEnum, staffId, keyword, createdAtFrom, createdAtTo
+                    whId, statusEnum, staffId, keyword, createdAtFrom, createdAtTo
             );
 
-            // danh sách kho mà manager quản lý
             List<Warehouse> warehouses = warehouseRepository.findBySupervisor_Id(currentUser.getId());
             model.addAttribute("warehouses", warehouses);
 
-            // nếu có chọn warehouse thì load staff của kho đó
-            if (warehouseId != null) {
-                model.addAttribute("staffs", userRepository.findStaffByWarehouseId(warehouseId));
+            if (whId == null && !warehouses.isEmpty()) {
+                whId = warehouses.get(0).getId();
+            }
+            if (whId != null) {
+                model.addAttribute("staffs", userRepository.findStaffByWarehouseId(whId));
             } else if (!warehouses.isEmpty()) {
-                // mặc định lấy staff của kho đầu tiên
                 model.addAttribute("staffs", userRepository.findStaffByWarehouseId(warehouses.get(0).getId()));
             } else {
                 model.addAttribute("staffs", List.of());
@@ -83,12 +84,12 @@ public class InventoryCountController {
 
         } else {
             counts = inventoryCountService.filterForStaff(
-                    currentUser.getId(), warehouseId, statusEnum, keyword, createdAtFrom, createdAtTo
+                    currentUser.getId(), whId, statusEnum, keyword, createdAtFrom, createdAtTo
             );
         }
 
-        // Giữ filter lại trên form
-        model.addAttribute("warehouseId", warehouseId);
+        // giữ filter lại
+        model.addAttribute("warehouseId", whId);
         model.addAttribute("status", status);
         model.addAttribute("staffId", staffId);
         model.addAttribute("keyword", keyword);
@@ -137,13 +138,16 @@ public class InventoryCountController {
 
     // CREATE form
     @GetMapping("/create")
-    public String createForm(@RequestParam("warehouseId") Integer warehouseId,
+    public String createForm(@RequestParam(value = "warehouseId", required = false) Integer warehouseId,
                              Model model,
                              Authentication auth) {
-        // Lấy user hiện tại
         User current = userRepository.findByUsername(auth.getName()).orElseThrow();
+        List<Warehouse> warehouses = warehouseRepository.findBySupervisor_Id(current.getId());
 
-        // Lọc staff theo warehouseId
+        if (warehouseId == null && !warehouses.isEmpty()) {
+            warehouseId = warehouses.get(0).getId();
+        }
+
         List<User> staffList = userRepository.findStaffByWarehouseId(warehouseId);
 
         model.addAttribute("warehouseId", warehouseId);
