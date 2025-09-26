@@ -71,7 +71,7 @@ class ProductServicesImplTest {
     @Test
     @DisplayName("Thêm sản phẩm mới hợp lệ -> save thành công, trả về DTO")
     void createProduct_Success() {
-        when(productRepo.existsByCode("P01")).thenReturn(false);
+        when(productRepo.existsByCode("P02")).thenReturn(false);
         when(settingRepo.findById(Integer.valueOf(1))).thenReturn(Optional.of(unit));
         when(settingRepo.findById(Integer.valueOf(2))).thenReturn(Optional.of(category));
         when(settingRepo.findById(Integer.valueOf(3))).thenReturn(Optional.of(brand));
@@ -84,9 +84,9 @@ class ProductServicesImplTest {
 
         ProductDetailsDTO result = invokeSaveOrUpdate(null, baseDto);
 
-        assertEquals("P01", result.getCode());
-        assertEquals("Quat dien", result.getName());
-        assertEquals(new BigDecimal("120"), result.getListingPrice());
+        assertEquals("P02", result.getCode());
+        assertEquals("Quat dien1", result.getName());
+        assertEquals(new BigDecimal("130"), result.getListingPrice());
         verify(productRepo).save(any());
     }
 

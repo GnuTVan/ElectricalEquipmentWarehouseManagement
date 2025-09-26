@@ -1,158 +1,178 @@
-//package com.eewms.services;
-//
-//import com.eewms.dto.SaleOrderDetailDTO;
-//import com.eewms.dto.SaleOrderRequestDTO;
-//import com.eewms.dto.SaleOrderResponseDTO;
-//import com.eewms.entities.*;
-//import com.eewms.repository.*;
-//import com.eewms.services.impl.SaleOrderServiceImpl;
-//import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.api.extension.ExtendWith;
-//import org.mockito.InjectMocks;
-//import org.mockito.Mock;
-//import org.mockito.junit.jupiter.MockitoExtension;
-//
-//import java.math.BigDecimal;
-//import java.util.List;
-//import java.util.Optional;
-//
-//import static org.junit.jupiter.api.Assertions.*;
-//import static org.mockito.ArgumentMatchers.*;
-//import static org.mockito.Mockito.*;
-//
-//@ExtendWith(MockitoExtension.class)
-//class SaleOrderServiceImplTest {
-//
-//    @InjectMocks
-//    private SaleOrderServiceImpl service;
-//
-//    @Mock private SaleOrderRepository orderRepo;
-//    @Mock private ProductRepository productRepo;
-//    @Mock private CustomerRepository customerRepo;
-//    @Mock private UserRepository userRepo;
-//    @Mock private GoodIssueNoteRepository goodIssueRepository;
-//    @Mock private ComboRepository comboRepository;
-//
-//    private Customer customer;
-//    private User user;
-//    private Product pEnough, pLack;
-//    private Combo comboA, comboB;
-//
-//    @BeforeEach
-//    void init() {
-//        customer = new Customer();
-//        // Nếu Customer có setId thì giữ lại, còn không thì bỏ hẳn dòng này:
-//        // customer.setId(1L);
-//
-//        user = new User();
-//        user.setUsername("admin"); // KHÔNG gọi setUserId (không cần)
-//
-//        pEnough = new Product(); pEnough.setId(10); pEnough.setName("P-OK");   pEnough.setQuantity(5);
-//        pLack   = new Product(); pLack.setId(11);   pLack.setName("P-LACK"); pLack.setQuantity(1);
-//
-//        comboA = new Combo(); comboA.setName("Combo A");
-//        comboB = new Combo(); comboB.setName("Combo B");
-//    }
-//
-//
-//    @Test
-//    void createOrder_HasInsufficientStock_AppendsWarningAndComboAndSaves() {
-//        // Given DTO with 2 lines (1 thiếu hàng)
-//        SaleOrderRequestDTO req = SaleOrderRequestDTO.builder()
-//                .customerId(1L)
-//                .description("Giao trong ngày")
-//                .details(List.of(
-//                        SaleOrderDetailDTO.builder().productId(10).price(new BigDecimal("2.5")).orderedQuantity(3).build(),
-//                        SaleOrderDetailDTO.builder().productId(11).price(new BigDecimal("4.0")).orderedQuantity(2).build() // thiếu
-//                ))
-//                .comboIds(List.of(1L, 2L))
-//                .build();
-//
-//        when(customerRepo.findById(1L)).thenReturn(Optional.of(customer));
-//        when(userRepo.findByUsername("admin")).thenReturn(Optional.of(user));
-//        when(productRepo.findById(10)).thenReturn(Optional.of(pEnough));
-//        when(productRepo.findById(11)).thenReturn(Optional.of(pLack));
-//        when(orderRepo.count()).thenReturn(0L);
-//        when(comboRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(comboA, comboB));
-//        when(orderRepo.save(any(SaleOrder.class))).thenAnswer(inv -> inv.getArgument(0));
-//
-//        // When
-//        SaleOrderResponseDTO res = service.createOrder(req, "admin");
-//
-//        // Then
-//        assertNotNull(res.getOrderCode(), "Phải sinh mã đơn hàng");
-//        assertTrue(res.getDescription().contains("thiếu hàng"), "Mô tả phải có cảnh báo thiếu hàng");
-//        assertTrue(res.getDescription().contains("Đơn có combo: Combo A, Combo B"),
-//                "Mô tả phải nối nhãn combo");
-//        // Tổng tiền = 3*2.5 + 2*4.0 = 7.5 + 8 = 15.5
-//        assertEquals(new BigDecimal("15.5"), res.getTotalAmount());
-//        verify(orderRepo, atLeastOnce()).save(any(SaleOrder.class));
-//    }
-//
-//    @Test
-//    void getById_AlreadyExported_FlagsSet() {
-//        SaleOrder order = new SaleOrder();
-//        order.setSoId(99);
-//        order.setStatus(SaleOrder.SaleOrderStatus.PENDING);
-//        // 1 dòng chi tiết đủ hàng
-//        Product p = new Product(); p.setQuantity(10);
-//        SaleOrderDetail d = new SaleOrderDetail(); d.setProduct(p); d.setOrderedQuantity(2);
-//        order.setDetails(List.of(d));
-//
-//        when(orderRepo.findById(99)).thenReturn(Optional.of(order));
-//        when(goodIssueRepository.existsBySaleOrder_SoId(99)).thenReturn(true);
-//
-//        SaleOrderResponseDTO dto = service.getById(99);
-//        assertTrue(dto.isAlreadyExported(), "Đã xuất kho phải là true");
-//        assertFalse(dto.isHasInsufficientStock(), "Đã xuất kho thì không xét thiếu hàng");
-//    }
-//
-//    @Test
-//    void getById_NotExported_ButStillMissingStock_FlagTrue() {
-//        SaleOrder order = new SaleOrder();
-//        order.setSoId(100);
-//        Product p = new Product(); p.setQuantity(1);
-//        SaleOrderDetail d = new SaleOrderDetail(); d.setProduct(p); d.setOrderedQuantity(3);
-//        order.setDetails(List.of(d));
-//
-//        when(orderRepo.findById(100)).thenReturn(Optional.of(order));
-//        when(goodIssueRepository.existsBySaleOrder_SoId(100)).thenReturn(false);
-//
-//        SaleOrderResponseDTO dto = service.getById(100);
-//        assertTrue(dto.isHasInsufficientStock(), "Chưa xuất kho và thiếu hàng -> true");
-//    }
-//
-//    @Test
-//    void updateOrderStatus_PendingToDeliveried_ThenDeliveriedToCompleted() {
-//        SaleOrder order = new SaleOrder();
-//        order.setSoId(1);
-//        order.setStatus(SaleOrder.SaleOrderStatus.PENDING);
-//        when(orderRepo.findById(1)).thenReturn(Optional.of(order));
-//
-//        // Pending -> Deliveried
-//        service.updateOrderStatus(1, SaleOrder.SaleOrderStatus.DELIVERIED);
-//        assertEquals(SaleOrder.SaleOrderStatus.DELIVERIED, order.getStatus());
-//        verify(orderRepo, times(1)).save(order);
-//
-//        // Deliveried -> Completed
-//        order.setStatus(SaleOrder.SaleOrderStatus.DELIVERIED);
-//        when(orderRepo.findById(1)).thenReturn(Optional.of(order));
-//        service.updateOrderStatus(1, SaleOrder.SaleOrderStatus.COMPLETED);
-//        assertEquals(SaleOrder.SaleOrderStatus.COMPLETED, order.getStatus());
-//        verify(orderRepo, times(2)).save(order);
-//    }
-//
-//    @Test
-//    void updateOrderStatus_InvalidTransition_Throws() {
-//        SaleOrder order = new SaleOrder();
-//        order.setSoId(2);
-//        order.setStatus(SaleOrder.SaleOrderStatus.PENDING);
-//        when(orderRepo.findById(2)).thenReturn(Optional.of(order));
-//
-//        RuntimeException ex = assertThrows(RuntimeException.class,
-//                () -> service.updateOrderStatus(2, SaleOrder.SaleOrderStatus.COMPLETED));
-//        assertTrue(ex.getMessage().contains("Không thể cập nhật"));
-//        verify(orderRepo, never()).save(any());
-//    }
-//}
+package com.eewms.services;
+
+import com.eewms.dto.SaleOrderDetailDTO;
+import com.eewms.dto.SaleOrderRequestDTO;
+import com.eewms.dto.SaleOrderResponseDTO;
+import com.eewms.entities.*;
+import com.eewms.repository.*;
+import com.eewms.services.impl.SaleOrderServiceImpl;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.*;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class SaleOrderServiceImplTest {
+
+    @Mock private SaleOrderDetailRepository saleOrderDetailRepository;
+    @Mock private ProductRepository productRepo;
+    @Mock private SaleOrderRepository orderRepo;
+    @Mock private CustomerRepository customerRepo;
+    @Mock private UserRepository userRepo;
+    @Mock private GoodIssueNoteRepository goodIssueRepository;
+    @Mock private ComboRepository comboRepository;
+    @Mock private SaleOrderComboRepository saleOrderComboRepository;
+
+    @InjectMocks
+    private SaleOrderServiceImpl service;
+
+    @Test
+    @DisplayName("createOrder: 1 manual detail, status mặc định PENDING, tính đúng tổng tiền")
+    void createOrder_success_manualDetail() {
+        Customer customer = new Customer();
+        customer.setId(1L); // Integer
+        when(customerRepo.findById(1L)).thenReturn(Optional.of(customer));
+
+        User creator = new User();
+        creator.setId(2L); // Integer
+        creator.setUsername("admin");
+        when(userRepo.findByUsername("admin")).thenReturn(Optional.of(creator));
+
+        Product p1 = new Product();
+        p1.setId(10);
+        p1.setListingPrice(new BigDecimal("100000"));
+        when(productRepo.getReferenceById(10)).thenReturn(p1);
+
+        ArgumentCaptor<SaleOrder> orderCap = ArgumentCaptor.forClass(SaleOrder.class);
+        when(orderRepo.save(any(SaleOrder.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        SaleOrderDetailDTO d1 = new SaleOrderDetailDTO();
+        d1.setProductId(10);
+        d1.setOrderedQuantity(2);
+        d1.setPrice(new BigDecimal("120000"));
+
+        SaleOrderRequestDTO req = new SaleOrderRequestDTO();
+        req.setCustomerId(1L);  // Integer
+        req.setDetails(List.of(d1));
+        req.setComboIds(Collections.emptyList());
+
+        SaleOrderResponseDTO resp = service.createOrder(req, "admin");
+
+        verify(customerRepo).findById(1L);
+        verify(userRepo).findByUsername("admin");
+        verify(productRepo).getReferenceById(10);
+        verify(orderRepo, atLeastOnce()).save(orderCap.capture());
+
+        SaleOrder saved = orderCap.getValue();
+        assertThat(saved.getCustomer()).isSameAs(customer);
+        assertThat(saved.getStatus()).isEqualTo(SaleOrder.SaleOrderStatus.PENDING);
+        assertThat(saved.getDetails()).hasSize(1);
+        assertThat(saved.getTotalAmount()).isEqualByComparingTo(new BigDecimal("240000"));
+
+        assertNotNull(resp);
+    }
+
+    @Test
+    @DisplayName("createOrder: Customer không tồn tại")
+    void createOrder_customerNotFound() {
+        when(customerRepo.findById(1L)).thenReturn(Optional.empty());
+
+        SaleOrderRequestDTO req = new SaleOrderRequestDTO();
+        req.setCustomerId(1L);
+        req.setDetails(Collections.emptyList());
+        req.setComboIds(Collections.emptyList());
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> service.createOrder(req, "admin"));
+        assertTrue(ex.getMessage().toLowerCase().contains("customer not found"));
+    }
+
+    @Test
+    @DisplayName("createOrder: detail + combo đều trống")
+    void createOrder_emptyDetailsAndCombos() {
+        when(customerRepo.findById(1L)).thenReturn(Optional.of(new Customer()));
+        when(userRepo.findByUsername("admin")).thenReturn(Optional.of(new User()));
+
+        SaleOrderRequestDTO req = new SaleOrderRequestDTO();
+        req.setCustomerId(1L);
+        req.setDetails(Collections.emptyList());
+        req.setComboIds(Collections.emptyList());
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> service.createOrder(req, "admin"));
+        assertTrue(ex.getMessage().contains("Chi tiết đơn hàng trống"));
+    }
+
+    @Test
+    @DisplayName("updateOrderStatus: PENDING → DELIVERIED hợp lệ")
+    void updateOrderStatus_pendingToDelivered_ok() {
+        SaleOrder so = new SaleOrder();
+        so.setStatus(SaleOrder.SaleOrderStatus.PENDING);
+        when(orderRepo.findById(3)).thenReturn(Optional.of(so));
+
+        service.updateOrderStatus(3, SaleOrder.SaleOrderStatus.DELIVERIED);
+
+        assertThat(so.getStatus()).isEqualTo(SaleOrder.SaleOrderStatus.DELIVERIED);
+        verify(orderRepo).save(so);
+    }
+
+    @Test
+    @DisplayName("updateOrderStatus: chuyển trái rule → RuntimeException")
+    void updateOrderStatus_invalidTransition_throws() {
+        SaleOrder so = new SaleOrder();
+        so.setStatus(SaleOrder.SaleOrderStatus.DELIVERIED);
+        when(orderRepo.findById(4)).thenReturn(Optional.of(so));
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> service.updateOrderStatus(4, SaleOrder.SaleOrderStatus.PENDING));
+        assertTrue(ex.getMessage().contains("Không thể cập nhật"));
+    }
+
+    @Test
+    @DisplayName("updateOrderItems: chỉ cho phép khi status = PENDING")
+    void updateOrderItems_onlyPending() {
+        SaleOrder so = new SaleOrder();
+        so.setStatus(SaleOrder.SaleOrderStatus.DELIVERIED);
+        when(orderRepo.findById(12)).thenReturn(Optional.of(so));
+
+        SaleOrderRequestDTO form = new SaleOrderRequestDTO();
+        form.setComboCounts(new LinkedHashMap<>());
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.updateOrderItems(12, form));
+        assertTrue(ex.getMessage().toLowerCase().contains("only pending"));
+    }
+
+    @Test
+    @DisplayName("searchWithFilters: ủy quyền đúng cho repository (tham số cuối là Pageable)")
+    void searchWithFilters_delegatesRepo() {
+        SaleOrder so = new SaleOrder();
+        so.setStatus(SaleOrder.SaleOrderStatus.PENDING);
+
+        Page<SaleOrder> page = new PageImpl<>(List.of(so), PageRequest.of(0, 10), 1);
+        when(orderRepo.searchWithFilters(any(), any(), any(), any(), any(Pageable.class)))
+                .thenReturn(page);
+
+        Page<SaleOrder> res = service.searchWithFilters(
+                "abc", SaleOrder.SaleOrderStatus.PENDING,
+                LocalDateTime.now().minusDays(1), LocalDateTime.now(),
+                0, 10
+        );
+
+        assertThat(res.getTotalElements()).isEqualTo(1);
+        verify(orderRepo).searchWithFilters(any(), any(), any(), any(), any(Pageable.class));
+    }
+}
