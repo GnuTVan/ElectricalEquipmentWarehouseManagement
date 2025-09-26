@@ -1,11 +1,13 @@
 package com.eewms.controller;
 
 import com.eewms.constant.ReturnReason;
+import com.eewms.constant.ReturnSettlementOption;
 import com.eewms.dto.returning.SalesReturnDTO;
 import com.eewms.dto.returning.SalesReturnItemDTO;
 import com.eewms.entities.SaleOrder;
 import com.eewms.entities.SalesReturn;
 import com.eewms.repository.SaleOrderRepository;
+import com.eewms.repository.WarehouseRepository;
 import com.eewms.repository.returning.SalesReturnRepository;
 import com.eewms.services.ISalesReturnService;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ public class SalesReturnController {
     private final SaleOrderRepository saleOrderRepository;
     private final ISalesReturnService salesReturnService;
     private final com.eewms.repository.returning.SalesReturnItemRepository salesReturnItemRepository;
+    private final WarehouseRepository warehouseRepository;
 
     /* ============== LIST ============== */
     @GetMapping
@@ -43,6 +46,7 @@ public class SalesReturnController {
     public String detail(@PathVariable Long id, Model model) {
         SalesReturnDTO dto = salesReturnService.getById(id);
         model.addAttribute("dto", dto);
+        model.addAttribute("warehouses", warehouseRepository.findAll());
         return "returns/return-detail";
     }
 
@@ -176,13 +180,13 @@ public class SalesReturnController {
 
     @PostMapping("/{id}/receive")
     public String receive(@PathVariable Long id,
-                          @RequestParam("settlementOption") // <- required=true mặc định
-                          com.eewms.constant.ReturnSettlementOption settlementOption,
+                          @RequestParam("settlementOption") ReturnSettlementOption settlementOption,
+                          @RequestParam("warehouseId") Long warehouseId,
                           RedirectAttributes ra) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         try {
-            salesReturnService.receive(id, username, settlementOption);
-            ra.addFlashAttribute("success", "Đã nhập hàng hoàn.");
+            salesReturnService.receive(id, username, settlementOption, warehouseId);
+            ra.addFlashAttribute("success", "Đã nhập hàng hoàn vào kho.");
         } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());
         }

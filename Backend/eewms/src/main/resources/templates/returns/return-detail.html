@@ -21,7 +21,9 @@
                     <i class="ri-arrow-left-line mr-2"></i> Quay lại
                 </a>
             </div>
+
             <div class="bg-white rounded-xl shadow p-4 space-y-3">
+                <!-- Thông tin chung -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-md">
                     <div><span class="text-gray-500">Đơn bán:</span>
                         <span class="font-semibold" th:text="${dto.saleOrderCode}"></span></div>
@@ -32,12 +34,14 @@
                     <div><span class="text-gray-500">Lý do:</span>
                         <span class="px-2 py-1 rounded bg-gray-100"
                               th:text="${dto.reason.label}"></span></div>
-                    <div th:if="${dto.status.name() != 'MOI_TAO' && dto.status.name() != 'CHO_DUYET'}"><span
-                            class="text-gray-500">Tổng tiền:</span>
-                        <span th:text="${#numbers.formatDecimal(dto.totalAmount, 0, 'COMMA', 0, 'POINT')}"></span></div>
+                    <div th:if="${dto.status.name() != 'MOI_TAO' && dto.status.name() != 'CHO_DUYET'}">
+                        <span class="text-gray-500">Tổng tiền:</span>
+                        <span th:text="${#numbers.formatDecimal(dto.totalAmount, 0, 'COMMA', 0, 'POINT')}"></span>
+                    </div>
                 </div>
 
-                <table class="min-w-full table-auto text-lg border border-gray-200">
+                <!-- Bảng chi tiết sản phẩm -->
+                <table class="min-w-full table-auto text-lg border border-gray-200 mt-3">
                     <thead class="bg-gray-100 text-left">
                     <tr>
                         <th class="px-4 py-3 font-semibold whitespace-nowrap border border-gray-200">Sản phẩm</th>
@@ -60,7 +64,7 @@
                     </tbody>
                 </table>
 
-                <!-- Actions by status -->
+                <!-- Các action -->
                 <div class="flex items-center gap-3 pt-3 justify-end">
                     <!-- Submit -->
                     <form th:if="${dto.status.name() == 'MOI_TAO'}"
@@ -70,36 +74,32 @@
                         <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Gửi duyệt</button>
                     </form>
 
+                    <!-- Approve & Reject -->
                     <div sec:authorize="hasRole('MANAGER')"
                          th:if="${dto.status.name() == 'CHO_DUYET'}" class="flex flex-col gap-2 items-start">
-                        <!-- Approve -->
-                        <form th:if="${dto.status.name() == 'CHO_DUYET'}"
-                              th:action="@{|/admin/sales-returns/${dto.id}/approve|}" method="post"
+                        <form th:action="@{|/admin/sales-returns/${dto.id}/approve|}" method="post"
                               class="flex items-center gap-2">
                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                             <input type="text" name="managerNote" placeholder="Ghi chú duyệt"
                                    class="border rounded px-2 py-1 w-64">
-                            <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded w-24">Duyệt
-                            </button>
+                            <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded w-24">Duyệt</button>
                         </form>
-
-                        <!-- Reject -->
-                        <form th:if="${dto.status.name() == 'CHO_DUYET'}"
-                              th:action="@{|/admin/sales-returns/${dto.id}/reject|}" method="post"
+                        <form th:action="@{|/admin/sales-returns/${dto.id}/reject|}" method="post"
                               class="flex items-center gap-2">
                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                             <input type="text" name="reason" placeholder="Lý do từ chối"
                                    class="border rounded px-2 py-1 w-64">
-                            <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded w-24">Từ chối
-                            </button>
+                            <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded w-24">Từ chối</button>
                         </form>
                     </div>
 
-                    <!-- Chỉ hiển thị khi đang chờ nhận hàng (ĐÃ DUYỆT) -->
+                    <!-- Nhận hàng (ĐÃ DUYỆT) -->
                     <form th:if="${dto.status.name() == 'DA_DUYET'}"
                           th:action="@{|/admin/sales-returns/${dto.id}/receive|}"
                           method="post" class="flex items-center gap-4">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                        <!-- Settlement option -->
                         <label class="inline-flex items-center gap-2">
                             <input type="radio" name="settlementOption" value="OFFSET_THEN_REPLACE">
                             <span>Hoàn tiền</span>
@@ -108,16 +108,28 @@
                             <input type="radio" name="settlementOption" value="REPLACE_ONLY" checked>
                             <span>Đổi hàng</span>
                         </label>
+
+                        <!-- Warehouse select -->
+                        <label class="inline-flex items-center gap-2">
+                            <span>Kho nhập:</span>
+                            <select name="warehouseId" class="border rounded px-2 py-1" required>
+                                <option th:each="wh : ${warehouses}"
+                                        th:value="${wh.id}"
+                                        th:text="${wh.name}"></option>
+                            </select>
+                        </label>
+
                         <button class="bg-indigo-600 text-white px-4 py-2 rounded">Xác nhận</button>
                     </form>
 
-                    <!-- Complete -->
+                    <!-- Hoàn tất -->
                     <form th:if="${dto.status.name() == 'DA_NHAP_KHO'}"
                           th:action="@{|/admin/sales-returns/${dto.id}/complete|}" method="post">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                         <button class="bg-gray-700 text-white px-4 py-2 rounded">Hoàn tất</button>
                     </form>
-                    <!-- outbound again -->
+
+                    <!-- Tạo yêu cầu đổi hàng -->
                     <form th:if="${dto.status.name() == 'DA_NHAP_KHO' and dto.needsReplacement}"
                           th:action="@{|/admin/sales-returns/${dto.id}/replacement-request|}"
                           method="post" class="inline">
