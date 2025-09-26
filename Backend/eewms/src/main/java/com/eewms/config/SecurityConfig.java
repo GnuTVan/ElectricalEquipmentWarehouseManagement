@@ -88,7 +88,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/admin/warehouse-receipts/save")
                         .hasAnyRole("MANAGER","STAFF")
                         .requestMatchers(HttpMethod.GET, "/admin/warehouse-receipts/**")
-                        .hasAnyRole("ADMIN","MANAGER")
+                        .hasAnyRole("ADMIN","MANAGER","STAFF")
                         .requestMatchers("/admin/warehouse-receipts/**").hasRole("MANAGER")
 
                         // ---------------------------------------------------------
