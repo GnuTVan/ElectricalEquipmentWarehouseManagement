@@ -5,6 +5,7 @@ import com.eewms.entities.Warehouse;
 import com.eewms.services.IWarehouseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -89,11 +90,16 @@ public class WarehouseController {
     public String members(@PathVariable Integer id, Model model) {
         Warehouse wh = warehouseService.getById(id);
         model.addAttribute("warehouse", wh);
-        model.addAttribute("supervisorId", warehouseService.getSupervisorId(id));
-        model.addAttribute("staffIds", warehouseService.listStaffIds(id));
+        model.addAttribute("supervisorName", warehouseService.getSupervisorName(id));
+        model.addAttribute("staffList", warehouseService.listStaffLite(id));
+
+        // Danh sách nhân viên chưa thuộc kho này
+        model.addAttribute("managerCandidates", warehouseService.findAllManagersLite());
+        model.addAttribute("staffCandidates", warehouseService.findUnassignedStaffLite());
         return "warehouses/members";
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}/members/supervisor")
     public String assignSupervisor(@PathVariable Integer id,
                                    @RequestParam(required = false) Long userId,
@@ -110,6 +116,8 @@ public class WarehouseController {
         return "redirect:/admin/warehouses/" + id + "/members";
     }
 
+    // Chỉ MANAGER của chính kho đó được thêm STAFF
+    @PreAuthorize("hasRole('MANAGER') and @warehousePermission.isManagerOf(#id)")
     @PostMapping("/{id}/members/staff/add")
     public String addStaff(@PathVariable Integer id, @RequestParam Long userId, RedirectAttributes ra) {
         warehouseService.addStaff(id, userId);
@@ -118,6 +126,7 @@ public class WarehouseController {
         return "redirect:/admin/warehouses/" + id + "/members";
     }
 
+    @PreAuthorize("hasRole('MANAGER') and @warehousePermission.isManagerOf(#id)")
     @PostMapping("/{id}/members/staff/remove")
     public String removeStaff(@PathVariable Integer id, @RequestParam Long userId, RedirectAttributes ra) {
         warehouseService.removeStaff(id, userId);

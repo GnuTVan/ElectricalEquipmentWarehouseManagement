@@ -1,13 +1,18 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security"
+      lang="vi">
 <head th:replace="~{fragments/common-head :: commonHead('Thành viên kho')}"></head>
 <body class="bg-gray-100 font-sans">
-<div class="flex h-screen">
+<div class="flex min-h-screen">
+    <!-- Sidebar -->
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
     <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <!-- Header -->
         <div th:replace="~{fragments/header :: header}"></div>
 
+        <!-- Title -->
         <div class="flex justify-between items-center mb-6 p-6">
             <div>
                 <h1 class="text-2xl font-bold text-gray-800">Thành viên kho</h1>
@@ -15,35 +20,51 @@
                     Kho: <span class="font-medium" th:text="${warehouse.name}">Kho</span>
                     <span class="mx-2">•</span> ID: <span th:text="${warehouse.id}">1</span>
                     <span class="mx-2">•</span> Trạng thái:
-                    <span th:text="${warehouse.status} ? 'Đang Hoạt động' : 'Ngưng hoạt động'">Hoạt động</span>
+                    <span th:text="${warehouse.status} ? 'Đang hoạt động' : 'Ngưng hoạt động'">Đang hoạt động</span>
                 </p>
             </div>
-            <a th:href="@{/admin/warehouses}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-100 shadow">
+            <a th:href="@{/admin/warehouses}"
+               class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-100 shadow">
                 <i class="ri-arrow-left-line mr-2"></i> Quay lại
             </a>
         </div>
 
-        <!-- Supervisor -->
+        <!-- SUPERVISOR (ADMIN only) -->
         <section class="bg-white rounded shadow p-6 mx-6 mb-6">
             <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
                 <i class="ri-shield-user-line"></i> Quản lý kho
             </h2>
 
             <div class="grid md:grid-cols-2 gap-4">
+                <!-- Hiển thị tên quản lý hiện tại -->
                 <div class="border rounded p-4">
                     <p class="text-sm text-gray-500 mb-1">Hiện tại</p>
-                    <p class="font-medium" th:text="${supervisorId} != null ? ${supervisorId} : '—'">—</p>
+                    <p class="font-medium" th:text="${supervisorName} != null ? ${supervisorName} : '—'">—</p>
                 </div>
 
-                <div class="border rounded p-4">
+                <!-- Form gán/bỏ quản lý kho: chỉ ADMIN thấy -->
+                <div class="border rounded p-4" sec:authorize="hasRole('ADMIN')">
                     <p class="text-sm text-gray-500 mb-2">Gán/đổi Quản lý kho</p>
-                    <form th:action="@{|/admin/warehouses/${warehouse.id}/members/supervisor|}" method="post" class="flex gap-2">
+
+                    <!-- Gán -->
+                    <form th:action="@{|/admin/warehouses/${warehouse.id}/members/supervisor|}"
+                          method="post" class="relative flex gap-2 items-start">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                        <input name="userId" type="number" min="1" class="w-full border rounded px-3 py-2" placeholder="User ID" required>
-                        <button class="px-4 py-2 bg-blue-600 text-white rounded">Gán</button>
+                        <input type="hidden" name="userId" id="managerUserId">
+                        <div class="w-full relative">
+                            <input id="managerSearch"
+                                   class="w-full border rounded px-3 py-2"
+                                   placeholder="Tìm kiếm bằng tên hoặc SĐT(nếu có)"
+                                   autocomplete="off">
+                            <div id="managerDropdown"
+                                 class="absolute z-20 mt-1 w-full bg-white border rounded shadow max-h-60 overflow-auto hidden"></div>
+                        </div>
+                        <button class="px-4 py-2 bg-blue-600 text-white rounded shrink-0">Gán</button>
                     </form>
 
-                    <form th:action="@{|/admin/warehouses/${warehouse.id}/members/supervisor|}" method="post" class="mt-2">
+                    <!-- Bỏ quản lý -->
+                    <form th:action="@{|/admin/warehouses/${warehouse.id}/members/supervisor|}"
+                          method="post" class="mt-2">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                         <button class="px-4 py-2 bg-gray-200 text-gray-800 rounded">Bỏ Quản lý kho</button>
                     </form>
@@ -51,43 +72,59 @@
             </div>
         </section>
 
-        <!-- Staff -->
+        <!-- STAFF (MANAGER only) -->
         <section class="bg-white rounded shadow p-6 mx-6">
             <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
                 <i class="ri-team-line"></i> Danh sách nhân viên của kho
             </h2>
 
-            <form th:action="@{|/admin/warehouses/${warehouse.id}/members/staff/add|}" method="post" class="flex gap-2 mb-4">
+            <!-- Form thêm nhân viên -->
+            <form th:action="@{|/admin/warehouses/${warehouse.id}/members/staff/add|}"
+                  method="post"
+                  class="relative flex gap-2 items-start mb-4"
+                  sec:authorize="hasRole('MANAGER')">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                <input name="userId" type="number" min="1" class="w-60 border rounded px-3 py-2" placeholder="User ID" required>
-                <button class="px-4 py-2 bg-green-600 text-white rounded">Thêm nhân viên</button>
+                <input type="hidden" name="userId" id="staffUserId">
+                <div class="w-80 relative">
+                    <input id="staffSearch"
+                           class="w-full border rounded px-3 py-2"
+                           placeholder="Tìm nhân viên: Tên hoặc SĐT"
+                           autocomplete="off">
+                    <div id="staffDropdown"
+                         class="absolute z-20 mt-1 w-full bg-white border rounded shadow max-h-60 overflow-auto hidden"></div>
+                </div>
+                <button class="px-4 py-2 bg-green-600 text-white rounded shrink-0">Thêm nhân viên</button>
             </form>
 
+            <!-- Bảng nhân viên -->
             <div class="overflow-x-auto">
                 <table class="min-w-full table-auto text-sm border rounded">
                     <thead class="bg-gray-50">
                     <tr>
                         <th class="px-4 py-3 text-left">STT</th>
                         <th class="px-4 py-3 text-left">ID</th>
+                        <th class="px-4 py-3 text-left">Tên</th>
                         <th class="px-4 py-3 text-right">Hành động</th>
                     </tr>
                     </thead>
                     <tbody class="divide-y">
-                    <tr th:each="uid,iter : ${staffIds}">
+                    <tr th:each="u,iter : ${staffList}">
                         <td class="px-4 py-3" th:text="${iter.index + 1}">1</td>
-                        <td class="px-4 py-3 font-medium" th:text="${uid}">1001</td>
+                        <td class="px-4 py-3 font-medium" th:text="${u.id}">1001</td>
+                        <td class="px-4 py-3" th:text="${u.fullName}">Nguyễn Văn A</td>
                         <td class="px-4 py-3 text-right">
-                            <form th:action="@{|/admin/warehouses/${warehouse.id}/members/staff/remove|}" method="post" class="inline">
+                            <form th:action="@{|/admin/warehouses/${warehouse.id}/members/staff/remove|}"
+                                  method="post" class="inline"
+                                  sec:authorize="hasRole('MANAGER')">
                                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                                <input type="hidden" name="userId" th:value="${uid}"/>
-                                <button class="px-3 py-1.5 bg-red-50 text-red-700 rounded border hover:bg-red-100">
-                                    Gỡ
+                                <input type="hidden" name="userId" th:value="${u.id}"/>
+                                <button class="px-3 py-1.5 bg-red-50 text-red-700 rounded border hover:bg-red-100">Gỡ
                                 </button>
                             </form>
                         </td>
                     </tr>
-                    <tr th:if="${#lists.isEmpty(staffIds)}">
-                        <td colspan="3" class="px-4 py-6 text-center text-gray-500">Không có nhân viên.</td>
+                    <tr th:if="${#lists.isEmpty(staffList)}">
+                        <td colspan="4" class="px-4 py-6 text-center text-gray-500">Không có nhân viên.</td>
                     </tr>
                     </tbody>
                 </table>
@@ -97,5 +134,121 @@
         <div th:replace="~{fragments/footer :: footer}"></div>
     </main>
 </div>
+
+<!-- JS: Autocomplete cho Manager & Staff -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    // Data từ controller (mảng object {id, fullName, phone})
+    const MANAGER_CANDIDATES = /*[[${managerCandidates}]]*/ [];
+    const STAFF_CANDIDATES = /*[[${staffCandidates}]]*/ [];
+
+    // Chuẩn hoá tiếng Việt: lowerCase + bỏ dấu để tìm kiếm thoải mái
+    function toAscii(str) {
+        return (str || '')
+            .toString()
+            .normalize('NFD')
+            .replace(/\p{Diacritic}/gu, '')
+            .toLowerCase();
+    }
+
+    // Nhãn hiển thị trong dropdown
+    function userLabel(u) {
+        return u.fullName + (u.phone ? ' - ' + u.phone : '');
+    }
+
+    // Lọc theo tên/SĐT, hỗ trợ bỏ dấu. Nếu keyword rỗng => trả về top 20 (để khi focus hiện danh sách)
+    function filterUsers(arr, keyword) {
+        const q = toAscii(keyword).trim();
+        if (!q) return arr.slice(0, 20);
+        return arr.filter(u => {
+            const name = toAscii(u.fullName);
+            const phone = toAscii(u.phone || '');
+            return name.includes(q) || phone.includes(q);
+        }).slice(0, 20);
+    }
+
+    // Render dropdown đơn giản
+    function renderDropdown(dropEl, items, onPick) {
+        dropEl.innerHTML = '';
+        if (!items.length) {
+            dropEl.classList.add('hidden');
+            return;
+        }
+        items.forEach(u => {
+            const row = document.createElement('button');
+            row.type = 'button';
+            row.className = 'w-full text-left px-3 py-2 hover:bg-gray-100';
+            row.textContent = userLabel(u);                // hiển thị "Tên - SĐT"
+            row.addEventListener('click', () => onPick(u)); // chọn -> set input= Tên, hidden= id
+            dropEl.appendChild(row);
+        });
+        dropEl.classList.remove('hidden');
+    }
+
+    // Debounce nhỏ để mượt hơn
+    function debounce(fn, ms) {
+        let t;
+        return (...args) => {
+            clearTimeout(t);
+            t = setTimeout(() => fn(...args), ms);
+        };
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // MANAGER picker (ADMIN)
+        const mgrInput = document.getElementById('managerSearch');
+        const mgrHidden = document.getElementById('managerUserId');
+        const mgrDD = document.getElementById('managerDropdown');
+
+        if (mgrInput && mgrHidden && mgrDD) {
+            const onMgrRefresh = () => {
+                const list = filterUsers(MANAGER_CANDIDATES, mgrInput.value);
+                renderDropdown(mgrDD, list, (u) => {
+                    mgrInput.value = u.fullName;
+                    mgrHidden.value = u.id;
+                    mgrDD.classList.add('hidden');
+                });
+            };
+            const onMgrInput = debounce(() => {
+                mgrHidden.value = '';
+                onMgrRefresh();
+            }, 120);
+            mgrInput.addEventListener('focus', onMgrRefresh);
+            mgrInput.addEventListener('click', onMgrRefresh);
+            mgrInput.addEventListener('input', onMgrInput);
+        }
+
+        // STAFF picker (MANAGER) — có thể không render khi bạn là ADMIN
+        const staffInput = document.getElementById('staffSearch');
+        const staffHidden = document.getElementById('staffUserId');
+        const staffDD = document.getElementById('staffDropdown');
+
+        if (staffInput && staffHidden && staffDD) {
+            const onStaffRefresh = () => {
+                const list = filterUsers(STAFF_CANDIDATES, staffInput.value);
+                renderDropdown(staffDD, list, (u) => {
+                    staffInput.value = u.fullName;
+                    staffHidden.value = u.id;
+                    staffDD.classList.add('hidden');
+                });
+            };
+            const onStaffInput = debounce(() => {
+                staffHidden.value = '';
+                onStaffRefresh();
+            }, 120);
+            staffInput.addEventListener('focus', onStaffRefresh);
+            staffInput.addEventListener('click', onStaffRefresh);
+            staffInput.addEventListener('input', onStaffInput);
+        }
+
+        // Ẩn dropdown khi click ngoài
+        document.addEventListener('click', (e) => {
+            if (mgrDD && !mgrDD.contains(e.target) && e.target !== mgrInput) mgrDD.classList.add('hidden');
+            if (staffDD && !staffDD.contains(e.target) && e.target !== staffInput) staffDD.classList.add('hidden');
+        });
+    });
+
+    /*]]>*/
+</script>
 </body>
 </html>

@@ -160,24 +160,44 @@ public class WarehouseServiceImpl implements IWarehouseService {
         return null;
     }
 
+    /**
+     * Lấy tên supervisor (manager) của kho.
+     * Nếu kho chưa có supervisor thì trả về null.
+     */
     @Override
-    public Warehouse findWarehouseByUser(Long userId) {
-        if (userId == null) return null;
-
-        // Ưu tiên: staff membership
-        for (Warehouse w : getAll()) {
-            var staffIds = listStaffIds(w.getId());
-            if (staffIds != null && staffIds.contains(userId.intValue())) {
-                return w;
-            }
-        }
-        // Fallback: supervisor
-        for (Warehouse w : getAll()) {
-            Long supId = getSupervisorId(w.getId());
-            if (supId != null && supId.equals(userId)) {
-                return w;
-            }
-        }
-        return null;
+    @Transactional(readOnly = true)
+    public String getSupervisorName(Integer warehouseId) {
+        return warehouseRepository.findSupervisorNameById(warehouseId);
     }
+
+    /**
+     * Danh sách staff của kho, dạng lite (id, fullName, phone).
+     * Dùng cho bảng hiển thị STT | ID | Tên | Hành động.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserRepository.UserLiteView> listStaffLite(Integer warehouseId) {
+        return userRepository.findStaffByWarehouseLite(warehouseId);
+    }
+
+    /**
+     * Danh sách tất cả manager (id, fullName, phone).
+     * Dùng cho select assign supervisor (ADMIN).
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserRepository.UserLiteView> findAllManagersLite() {
+        return userRepository.findAllManagersLite();
+    }
+
+    /**
+     * Danh sách tất cả staff chưa gán vào kho nào (id, fullName, phone).
+     * Dùng cho select assign staff (MANAGER).
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserRepository.UserLiteView> findUnassignedStaffLite() {
+        return userRepository.findUnassignedStaffLite();
+    }
+
 }

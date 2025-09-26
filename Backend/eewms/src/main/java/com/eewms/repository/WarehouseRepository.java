@@ -13,6 +13,7 @@ import java.util.Optional;
 
 public interface WarehouseRepository extends JpaRepository<Warehouse, Integer> {
     boolean existsByNameIgnoreCase(String name);
+
     boolean existsByNameIgnoreCaseAndIdNot(String name, Integer id);
 
     @EntityGraph(attributePaths = "supervisor")
@@ -24,9 +25,21 @@ public interface WarehouseRepository extends JpaRepository<Warehouse, Integer> {
     List<Warehouse> findBySupervisor_Id(Long supervisorId);
 
     @Query("""
-SELECT DISTINCT w FROM Warehouse w
-LEFT JOIN WarehouseStaff ws ON ws.warehouse.id = w.id
-WHERE w.supervisor.id = :userId OR ws.user.id = :userId
-""")
+            SELECT DISTINCT w FROM Warehouse w
+            LEFT JOIN WarehouseStaff ws ON ws.warehouse.id = w.id
+            WHERE w.supervisor.id = :userId OR ws.user.id = :userId
+            """)
     List<Warehouse> findAccessibleByUserId(@Param("userId") Long userId);
+
+    /**
+     * Lấy tên supervisor (manager) của kho.
+     * Giả định: bảng warehouses có cột supervisor_id -> users.id
+     * bảng users có cột full_name
+     */
+    @Query("""
+                select w.supervisor.fullName
+                from Warehouse w
+                where w.id = :warehouseId
+            """)
+    String findSupervisorNameById(Integer warehouseId);
 }
