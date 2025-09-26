@@ -45,7 +45,9 @@ public class SaleOrderController {
     private final IStockLookupService stockLookupService;
 
     // ========== LIST ==========
-
+//Map URL /sale-orders (GET) → method này.
+//
+//Nhận các tham số lọc (keyword,status,from,to) + phân trang (page,size), và Model để nhét dữ liệu ra view.
     @GetMapping
     public String listOrders(
             @RequestParam(value = "keyword", required = false) String keyword,
@@ -58,25 +60,35 @@ public class SaleOrderController {
             @RequestParam(value = "size", defaultValue = "100") int size,
             Model model
     ) {
+        //Khi quay lại từ redirect (flash attr) thì model có thể đã có form;
+        // nếu chưa có thì gắn form trống để tránh lỗi th:object.
         if (!model.containsAttribute("saleOrderForm")) {
             model.addAttribute("saleOrderForm", new SaleOrderRequestDTO());
         }
-
+//gọi saleOrderService.searchWithFilters
+        //Chuẩn hóa keyword rỗng thành null.
+        //
+        //Gọi service để tìm kiếm theo filter, trả về Page<SaleOrder> (có cả content + info trang).
         Page<SaleOrder> result = saleOrderService.searchWithFilters(
                 (keyword != null && !keyword.isBlank()) ? keyword : null,
                 status, from, to, page, size
         );
+        //Đưa danh sách trạng thái cho <select>.
+        //
+        //Đưa danh sách order (sale_orders) và object page để view vẽ trang.
         model.addAttribute("orderStatuses", SaleOrder.SaleOrderStatus.values());
         model.addAttribute("sale_orders", result.getContent()); // nếu view đang duyệt "sale_orders"
         model.addAttribute("page", result);
         model.addAttribute("size", size);
 
-        // giữ lại filter để bind lại UI
+        // Lưu lại filter hiện tại để view bind giá trị lên input.
         model.addAttribute("keyword", keyword);
         model.addAttribute("status", status);
         model.addAttribute("from", from);
         model.addAttribute("to", to);
-
+       // Đưa thêm dữ liệu tham chiếu (nếu view cần).
+        //
+        //Trả tên view thymeleaf.
         model.addAttribute("customers", customerService.findAll());
         model.addAttribute("products", productService.getAll()); // dùng cho list
 
@@ -86,13 +98,16 @@ public class SaleOrderController {
     // ========== CREATE ==========
     @GetMapping("/create")
     public String showCreateForm(Model model) {
+        //Tạo form mặc định: mã đơn sinh sẵn; trạng thái khởi tạo PENDING.
         SaleOrderRequestDTO form = SaleOrderRequestDTO.builder()
                 .soCode(saleOrderService.generateNextCode())
                 .status(SaleOrder.SaleOrderStatus.PENDING)
                 .build();
+//Xác định kho làm việc theo user đăng nhập để tra tồn cho đúng kho.
         Integer whId = stockLookupService.resolveWarehouseIdForCurrentUser();
         String whName = stockLookupService.resolveWarehouseNameForCurrentUser();
-
+//Nhét tất cả dữ liệu cần cho form tạo đơn (khách, sp có tồn, combo, trạng thái, kho).
+//Trả về view của form.
         model.addAttribute("saleOrderForm", form);
         model.addAttribute("customers", customerService.findAll());
         model.addAttribute("products", stockLookupService.buildProductListWithStock(whId));
@@ -105,6 +120,8 @@ public class SaleOrderController {
     }
 
     // API tiện ích: lấy mã tiếp theo cho UI
+    //Endpoint JSON để UI gọi AJAX lấy mã đơn tiếp theo.
+    //Trả về {"code":"ORD00001"} dạng Map.
     @GetMapping("/next-code")
     @ResponseBody
     public Map<String, String> nextCode() {
@@ -117,19 +134,23 @@ public class SaleOrderController {
      * - Nếu action=SAVE → quay về danh sách đơn.
      */
     @PostMapping("/create")
+    //Bind form vào dto, bật validation (Jakarta).
+    //Lấy action để quyết định flow: SAVE (về list) hay SELL (sang trang xuất kho).
+    //Dùng RedirectAttributes để set flash messages.
     public String createOrder(@Valid @ModelAttribute("saleOrderForm") SaleOrderRequestDTO dto,
                               BindingResult result,
                               @RequestParam(name = "action", defaultValue = "SAVE") String action,
                               Model model,
                               RedirectAttributes ra) {
 
+//Bảo đảm dữ liệu tối thiểu nếu UI thiếu.
         if (dto.getSoCode() == null || dto.getSoCode().isBlank()) {
             dto.setSoCode(saleOrderService.generateNextCode());
         }
         if (dto.getStatus() == null) {
             dto.setStatus(SaleOrder.SaleOrderStatus.PENDING);
         }
-
+//Nếu validation lỗi: render lại form + dữ liệu phụ trợ; không redirect để giữ lỗi hiển thị.
         if (result.hasErrors()) {
             Integer whId = stockLookupService.resolveWarehouseIdForCurrentUser();
             String whName = stockLookupService.resolveWarehouseNameForCurrentUser();
@@ -142,14 +163,16 @@ public class SaleOrderController {
             model.addAttribute("warehouseId", whId);
             return "sale-order/sale-order-form";
         }
-
+//Lấy username từ SecurityContext.
+//Gọi service tạo đơn (trong transaction), trả về DTO kết quả.
         try {
             final String currentUsername =
                     SecurityContextHolder.getContext().getAuthentication().getName();
 
             // Tạo đơn
             SaleOrderResponseDTO created = saleOrderService.createOrder(dto, currentUsername);
-
+//Nhánh SELL: cần soId để chuyển sang trang “tạo phiếu xuất từ đơn”.
+//Nếu mapper quên map soId → cảnh báo và quay list.
             if ("SELL".equalsIgnoreCase(action)) {
                 Integer soId = created.getSoId(); // yêu cầu mapper map đúng soId
                 if (soId == null) {
@@ -158,14 +181,16 @@ public class SaleOrderController {
                                     "Vui lòng kiểm tra SaleOrderMapper.toOrderResponseDTO có map trường soId.");
                     return "redirect:/sale-orders";
                 }
+
                 ra.addFlashAttribute("success", "Đã tạo đơn. Vui lòng kiểm tra và Lưu phiếu xuất.");
                 return "redirect:/good-issue/create-from-order/" + soId;
             }
-
+            //Nhánh SAVE: toast thành công, quay về list.
             ra.addFlashAttribute("success", "Tạo đơn hàng thành công. Mã: " + created.getOrderCode());
             return "redirect:/sale-orders";
 
         } catch (Exception ex) {
+            //Bắt lỗi chung → hiển thị flash error → quay list.
             ra.addFlashAttribute("error",
                     "Lỗi khi tạo đơn hàng: " + (ex.getMessage() == null ? "Xem log server" : ex.getMessage()));
             return "redirect:/sale-orders";
@@ -182,7 +207,7 @@ public class SaleOrderController {
             return "redirect:/sale-orders";
         }
 
-        // Nếu không còn trạng thái PENDING thì hiển thị trang chi tiết readonly
+        // .Chỉ cho sửa khi PENDING.Nếu không còn trạng thái PENDING thì hiển thị trang chi tiết readonly
         if (dto.getStatus() != SaleOrder.SaleOrderStatus.PENDING) {
             SaleOrder orderEntityReadonly = saleOrderService.getOrderEntityById(id);
             model.addAttribute("saleOrder", orderEntityReadonly);
@@ -249,9 +274,10 @@ public class SaleOrderController {
                                    @ModelAttribute("saleOrderForm") SaleOrderRequestDTO form,
                                    RedirectAttributes ra) {
         try {
+            //Đẩy toàn bộ logic cập nhật chi tiết sang service (atomic).
             saleOrderService.updateOrderItems(id, form);
 
-            // Lấy mã đơn để hiển thị toast
+            //  lấy mã đơn cho toast (fallback 3 tầng, tránh crash vì lazy).
             String code = null;
             try {
                 code = saleOrderService.getOrderEntityById(id).getSoCode();
@@ -268,9 +294,9 @@ public class SaleOrderController {
             // Gửi flash attribute cho trang danh sách
             ra.addFlashAttribute("toastSuccess", "Đơn " + code + " đã được lưu thành công.");
 
-            // Quay về danh sách
+            // Thành công → toast + quay list (PRG pattern).
             return "redirect:/sale-orders";
-
+            //Lỗi → flash error → quay lại trang edit.
         } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());
             return "redirect:/sale-orders/" + id + "/edit";
@@ -279,6 +305,7 @@ public class SaleOrderController {
 
 
     @GetMapping("/{id}/view")
+    //Nếu vẫn PENDING → chuyển về edit, vì view detail là readonly.
     public String viewOrderDetails(@PathVariable Integer id, Model model) {
         SaleOrder saleOrder = saleOrderService.getOrderEntityById(id);
 
@@ -290,7 +317,7 @@ public class SaleOrderController {
         model.addAttribute("saleOrder", saleOrder);
 
         // === NEW: tính ĐÃ GIAO / CÒN LẠI cho từng product ===
-        // 1 query group-by để lấy tổng đã xuất theo product
+        // Query group-by để lấy tong đã xuất theo product id → map {pid -> issuedQuantity}.
         List<Object[]> rows = goodIssueRepository
                 .sumIssuedBySaleOrderGroupByProduct(saleOrder.getSoId());
 
@@ -302,14 +329,37 @@ public class SaleOrderController {
             issuedByPid.put(pid, sum == null ? 0 : sum.intValue());
         }
 
-        // Map<productId, remainingQty> = ordered - issued (>=0)
+        // Tính còn lại = ordered – issued (không âm).//Đưa 2 map ra view để hiển thị tiến độ giao.
+
+        //Tạo một Map mới tên remainingByPid
+        //(key: productId kiểu Integer, value: số lượng còn lại phải giao kiểu Integer).
+        //Dùng new java.util.HashMap<>() đầy đủ tên gói để tránh nhầm lẫn import
+        // (hoặc do file không có import Map, HashMap).
         java.util.Map<Integer, Integer> remainingByPid = new java.util.HashMap<>();
+
+        //Lặp qua tất cả dòng chi tiết (SaleOrderDetail) của đơn hàng saleOrder.
+        //var d để Java tự suy luận kiểu (ở đây là SaleOrderDetail).
         for (var d : saleOrder.getDetails()) {
+            //Lấy productId (pid) của dòng:
+            //Nếu d.getProduct() khác null ⇒ lấy id.
+            //Nếu d.getProduct() là null ⇒ pid = null.
+            //Lý do phòng thủ: tránh NullPointerException nếu vì lý do nào đó dòng chưa gắn product.
             Integer pid = d.getProduct() != null ? d.getProduct().getId() : null;
+            //Nếu không xác định được productId thì bỏ qua dòng này (không thể tính issued/remaining theo pid).
             if (pid == null) continue;
+            //Lấy số lượng đã đặt (ordered) cho dòng:
+            //Nếu orderedQuantity có giá trị ⇒ dùng nó.
+            //Nếu null ⇒ mặc định 0 (an toàn tính toán).
             int ordered = d.getOrderedQuantity() != null ? d.getOrderedQuantity() : 0;
+            //Lấy tổng số lượng đã xuất (issued) cho sản phẩm này từ map issuedByPid
+            // (đã tính trước bằng query group-by).
+            //Nếu map không có key pid ⇒ coi như đã xuất 0.
             int issued = issuedByPid.getOrDefault(pid, 0);
+            //Tính số còn lại phải giao = ordered - issued, nhưng không cho âm.
+            //Dùng Math.max(0, …) để:
+            //Nếu lỡ dữ liệu issued > ordered (do ghép đơn, điều chỉnh…) thì vẫn chặn âm về 0 cho UI.
             int remain = Math.max(0, ordered - issued);
+            //Ghi kết quả vào map remainingByPid theo productId.
             remainingByPid.put(pid, remain);
         }
 
@@ -319,23 +369,6 @@ public class SaleOrderController {
         return "sale-order/sale-order-detail";
     }
 
-    @PostMapping("/{id}/actions/mark-unpaid")
-    public String markUnpaid(@PathVariable Integer id, RedirectAttributes ra) {
-        SaleOrder so = saleOrderService.getOrderEntityById(id);
-        if (so == null) {
-            ra.addFlashAttribute("error", "Không tìm thấy đơn hàng.");
-            return "redirect:/sale-orders";
-        }
-
-        if (so.getPaymentStatus() == SaleOrder.PaymentStatus.PAID) {
-            ra.addFlashAttribute("warning", "Đơn đã thanh toán, không thể chuyển sang công nợ.");
-            return "redirect:/sale-orders/" + id + "/edit";
-        }
-
-        saleOrderService.updatePaymentStatus(id, SaleOrder.PaymentStatus.UNPAID);
-        ra.addFlashAttribute("success", "Đơn đã chuyển sang UNPAID (bán công nợ).");
-        return "redirect:/sale-orders/" + id + "/edit";
-    }
 
     // ====== DELETE (chỉ cho PENDING) ======
     @PostMapping("/{id}/delete")
