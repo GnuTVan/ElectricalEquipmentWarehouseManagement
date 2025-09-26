@@ -13,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.Lock;
 import jakarta.persistence.LockModeType;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -81,7 +82,7 @@ public interface ProductWarehouseStockRepository extends JpaRepository<ProductWa
             Pageable pageable
     );
 
-    //Lock tồn kho để tránh race condition khi 2 staff cùng thao tác xuất nhập kho
+    // Lock tồn kho để tránh race condition khi 2 staff cùng thao tác xuất nhập kho
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
               select pws from ProductWarehouseStock pws
@@ -90,7 +91,7 @@ public interface ProductWarehouseStockRepository extends JpaRepository<ProductWa
     Optional<com.eewms.entities.ProductWarehouseStock>
     findForUpdate(Integer productId, Integer warehouseId);
 
-    //query để map StockFlatDTO
+    // query để map StockFlatDTO
     @Query("""
     select new com.eewms.dto.inventory.StockFlatDTO(
         pws.warehouse.id,
@@ -101,4 +102,11 @@ public interface ProductWarehouseStockRepository extends JpaRepository<ProductWa
 """)
     List<StockFlatDTO> findAllFlat();
 
+    // ⬇️ NEW: Tổng tồn theo product trên tất cả kho (dùng để đồng bộ Product.quantity)
+    @Query("""
+           select coalesce(sum(pws.quantity), 0)
+           from ProductWarehouseStock pws
+           where pws.product.id = :productId
+           """)
+    BigDecimal sumQuantityByProductId(@Param("productId") Integer productId);
 }
