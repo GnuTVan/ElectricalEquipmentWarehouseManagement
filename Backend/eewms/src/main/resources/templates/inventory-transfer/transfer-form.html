@@ -38,6 +38,7 @@
                                 class="w-full border rounded px-3 py-2 text-sm" required>
                             <option value="">-- Chọn kho nguồn --</option>
                             <option th:each="wh : ${fromWarehouses}"
+                                    th:if="${toWarehouseFixed == null or wh.id != toWarehouseFixed.id}"
                                     th:value="${wh.id}"
                                     th:text="${wh.name}">
                             </option>
@@ -207,7 +208,7 @@
 
     function clampQuantityInput(qtyEl, maxStock) {
         let val = Number(qtyEl.value || 0);
-        if (isNaN(val) || val <= 0) val = 0.01;
+        if (isNaN(val) || val <= 0) val = 0;
         if (Number.isFinite(maxStock) && maxStock > 0 && val > maxStock) {
             val = maxStock;
         }
