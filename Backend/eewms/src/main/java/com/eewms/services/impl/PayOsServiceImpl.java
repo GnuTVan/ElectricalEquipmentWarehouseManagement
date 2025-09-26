@@ -1,5 +1,6 @@
 package com.eewms.services.impl;
 
+import com.eewms.dto.payOS.PayOsOrderRequest;
 import com.eewms.dto.payOS.PayOsOrderResponse;
 import com.eewms.exception.InventoryException;
 import com.eewms.services.IPayOsService;
@@ -14,9 +15,6 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
 import reactor.netty.http.client.HttpClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import java.net.UnknownHostException;
 import java.time.Duration;
@@ -96,35 +94,38 @@ public class PayOsServiceImpl implements IPayOsService {
             throw new InventoryException("INVALID_REQUEST", "orderCode phải là số");
         }
 
-// Tạo chuỗi ký chữ ký theo thứ tự alphabet của key
+        // Tạo chuỗi ký chữ ký theo thứ tự alphabet của key
         String dataToSign = "amount=" + amount
                 + "&cancelUrl=" + cancelUrl
                 + "&description=" + safeDesc
                 + "&orderCode=" + orderCodeNum
                 + "&returnUrl=" + returnUrl;
 
-// Tạo signature HMAC-SHA256
+        if (webhookUrl != null && !webhookUrl.isBlank()) {
+            dataToSign += "&webhookUrl=" + webhookUrl;
+        }
+
+        // Tạo signature HMAC-SHA256
         String signature = hmacSha256(dataToSign, checksumKey);
         log.info("[PayOS][createOrder][sign] data={} signature={}", dataToSign, signature);
 
         try {
-            // Body gửi lên theo yêu cầu PayOS
-            Map<String, Object> body = new HashMap<>();
-            body.put("orderCode", orderCodeNum);     // gửi số, không gửi "ORD..."
-            body.put("amount", amount);
-            body.put("description", safeDesc);
-            body.put("returnUrl", returnUrl);
-            body.put("cancelUrl", cancelUrl);
-            body.put("signature", signature);        // << THÊM
-            if (webhookUrl != null && !webhookUrl.isBlank()) {
-                body.put("webhookUrl", webhookUrl);
-            }
+            // Body gửi lên theo yêu cầu PayOS (DÙNG DTO)
+            PayOsOrderRequest req = PayOsOrderRequest.builder()
+                    .orderCode(orderCodeNum)             // gửi số, không gửi "ORD..."
+                    .amount(amount)
+                    .description(safeDesc)
+                    .returnUrl(returnUrl)
+                    .cancelUrl(cancelUrl)
+                    .webhookUrl((webhookUrl == null || webhookUrl.isBlank()) ? null : webhookUrl)
+                    .signature(signature)                 // ký HMAC-SHA256
+                    .build();
 
             // Lấy raw + log + kiểm tra HTTP code
             String raw = client.post()
                     .uri("/v2/payment-requests")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(body)
+                    .bodyValue(req)
                     .exchangeToMono(r -> r.bodyToMono(String.class).map(b -> {
                         log.info("[PayOS][createOrder][http] status={} raw={}", r.statusCode(), b);
                         if (r.statusCode().isError()) {
@@ -148,18 +149,16 @@ public class PayOsServiceImpl implements IPayOsService {
             String dsc = null, linkId = null, link = null;
 
             if (data != null && data.isObject()) {
-                if (data.hasNonNull("orderCode"))     oc = data.get("orderCode").asLong();
-                if (data.hasNonNull("amount"))        amt = data.get("amount").asLong();
-                if (data.hasNonNull("description"))   dsc = data.get("description").asText();
+                if (data.hasNonNull("orderCode")) oc = data.get("orderCode").asLong();
+                if (data.hasNonNull("amount")) amt = data.get("amount").asLong();
+                if (data.hasNonNull("description")) dsc = data.get("description").asText();
                 if (data.hasNonNull("paymentLinkId")) linkId = data.get("paymentLinkId").asText();
 
-                // NEW: ưu tiên checkoutUrl (schema mới), fallback paymentLink (cũ)
+                // ưu tiên checkoutUrl (schema mới), fallback paymentLink (cũ)
                 String checkoutUrl = data.hasNonNull("checkoutUrl") ? data.get("checkoutUrl").asText() : null;
                 String paymentLink = data.hasNonNull("paymentLink") ? data.get("paymentLink").asText() : null;
                 link = (checkoutUrl != null && !checkoutUrl.isBlank()) ? checkoutUrl : paymentLink;
 
-                // Nếu muốn hỗ trợ QR sau này:
-                // String qr = data.hasNonNull("qrCode") ? data.get("qrCode").asText() : null;
             }
 
             // Thành công khi code == "00"
@@ -231,13 +230,10 @@ public class PayOsServiceImpl implements IPayOsService {
                 if (data.hasNonNull("description")) dsc = data.get("description").asText();
                 if (data.hasNonNull("paymentLinkId")) linkId = data.get("paymentLinkId").asText();
 
-                // PayOS trả checkoutUrl (mới) + qrCode; vẫn fallback sang paymentLink (cũ) nếu có
+                // PayOS trả checkoutUrl (mới); vẫn fallback sang paymentLink (cũ) nếu có
                 String checkoutUrl = data.hasNonNull("checkoutUrl") ? data.get("checkoutUrl").asText() : null;
                 String paymentLink = data.hasNonNull("paymentLink") ? data.get("paymentLink").asText() : null;
                 link = (checkoutUrl != null && !checkoutUrl.isBlank()) ? checkoutUrl : paymentLink;
-
-                // Optional: nếu PayOsOrderResponse có trường qrCode thì set thêm ở đây
-                // String qr = data.hasNonNull("qrCode") ? data.get("qrCode").asText() : null;
             }
 
 // Thành công khi code == "00"

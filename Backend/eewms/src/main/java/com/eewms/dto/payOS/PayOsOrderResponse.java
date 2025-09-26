@@ -27,7 +27,6 @@ public class PayOsOrderResponse {
     @JsonProperty("signature")
     private String signature;
 
-    // THAY phần constructor rỗng hiện tại bằng đoạn này
     public PayOsOrderResponse(
             boolean success,
             String code,
