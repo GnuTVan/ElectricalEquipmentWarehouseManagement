@@ -34,6 +34,7 @@
                     <!-- Staff -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nhân viên thực hiện</label>
+                        <input type="hidden" name="warehouseId" th:value="${warehouseId}"/>
                         <select name="staffId" class="w-full border px-3 py-2 rounded" required>
                             <option value="">-- Chọn nhân viên --</option>
                             <option th:each="staff : ${staffList}"
@@ -41,12 +42,6 @@
                                     th:text="${staff.fullName}">
                             </option>
                         </select>
-                    </div>
-
-                    <!-- Ghi chú -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
-                        <textarea name="note" rows="3" class="w-full border px-3 py-2 rounded"></textarea>
                     </div>
 
                     <!-- Actions -->

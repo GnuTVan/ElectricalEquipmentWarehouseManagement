@@ -69,21 +69,17 @@
             </div>
 
             <!-- Summary cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div class="rounded-2xl border border-gray-100 bg-white p-4">
-                    <div class="text-gray-500 text-sm">Tổng dòng</div>
+                    <div class="text-gray-500 text-sm">Tổng dòng sản phẩm</div>
                     <div id="sumLines" class="text-2xl font-semibold">0</div>
-                </div>
-                <div class="rounded-2xl border border-gray-100 bg-white p-4">
-                    <div class="text-gray-500 text-sm">Đã có kết quả</div>
-                    <div id="sumFilled" class="text-2xl font-semibold">0</div>
                 </div>
                 <div class="rounded-2xl border border-gray-100 bg-white p-4">
                     <div class="text-gray-500 text-sm">Tổng chênh lệch</div>
                     <div id="sumDelta" class="text-2xl font-semibold">0</div>
                 </div>
                 <div class="rounded-2xl border border-gray-100 bg-white p-4">
-                    <div class="text-gray-500 text-sm">Số dòng vượt ngưỡng</div>
+                    <div class="text-gray-500 text-sm">Số dòng sản phẩm vượt ngưỡng</div>
                     <div id="sumOver" class="text-2xl font-semibold">0</div>
                 </div>
             </div>
@@ -91,19 +87,6 @@
             <!-- Threshold & actions -->
             <div class="rounded-2xl border border-gray-100 bg-white p-4">
                 <div class="flex flex-wrap items-center gap-3">
-<!--                    <div class="flex items-center gap-2">-->
-<!--                        <label class="text-sm text-gray-600">Ngưỡng cảnh báo (đơn vị):</label>-->
-<!--                        <input id="threshold" type="number" step="1" min="0" class="w-24 rounded-lg border-gray-300 px-2 py-1" value="2">-->
-<!--                    </div>-->
-<!--                    <div class="flex items-center gap-2">-->
-<!--                        <label class="text-sm text-gray-600">Ngưỡng % (trên tồn hệ thống):</label>-->
-<!--                        <input id="thresholdPct" type="number" step="1" min="0" class="w-24 rounded-lg border-gray-300 px-2 py-1" value="5">-->
-<!--                        <span class="text-sm text-gray-400">(Áp dụng max(|delta|, %))</span>-->
-<!--                    </div>-->
-<!--                    <button id="btnRecalc" type="button"-->
-<!--                            class="px-3 py-2 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50">-->
-<!--                        <i class="ri-restart-line mr-1"></i>Tính lại-->
-<!--                    </button>-->
                     <div class="ml-auto text-sm text-gray-500">
                         <span class="inline-block px-2 py-0.5 rounded bg-red-100 text-red-700">Thiếu</span>
                         <span class="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 ml-1">Thừa</span>
@@ -146,15 +129,6 @@
 
                 <!-- Footer bar -->
                 <div class="flex items-center justify-between px-4 py-3 bg-gray-50">
-                    <div class="text-sm text-gray-600">
-                        <span>Tổng dòng: <strong id="ftLines">0</strong></span>
-                        <span class="mx-2">•</span>
-                        <span>Đã có kết quả: <strong id="ftFilled">0</strong></span>
-                        <span class="mx-2">•</span>
-                        <span>Chênh lệch tổng: <strong id="ftDelta">0</strong></span>
-                        <span class="mx-2">•</span>
-                        <span>Dòng vượt ngưỡng: <strong id="ftOver">0</strong></span>
-                    </div>
                     <div class="flex items-center gap-2">
                         <label class="text-sm text-gray-600"></label>
                         <input id="approveNote" type="hidden" class="w-64 rounded-lg border-gray-300 px-2 py-1" placeholder="Ví dụ: Duyệt tạo điều chỉnh">
@@ -170,83 +144,69 @@
 <script>
     (function () {
         const body = document.getElementById('reviewBody');
-        const lines = () => Array.from(body.querySelectorAll('tr'));
+        if (!body) return; // an toàn nếu template khác tái dùng script
 
         const $ = sel => document.querySelector(sel);
         const getInt = (el) => {
-            const v = parseInt((el?.textContent || '0').trim(), 10);
+            if (!el) return 0;
+            const v = parseInt((el.textContent || '').trim(), 10);
             return Number.isNaN(v) ? 0 : v;
         };
 
         function isOverThreshold(expected, delta, thrAbs, thrPct) {
             const abs = Math.abs(delta);
-            const pct = expected > 0 ? Math.abs(delta) / expected * 100 : (abs > 0 ? 100 : 0);
+            const pct = expected > 0 ? abs / expected * 100 : (abs > 0 ? 100 : 0);
             return abs >= thrAbs || pct >= thrPct;
         }
 
         function recalc() {
-            const thrAbs = parseInt($('#threshold').value || '0', 10) || 0;
-            const thrPct = parseInt($('#thresholdPct').value || '0', 10) || 0;
+            // Ngưỡng mặc định
+            const thrAbs = 2;
+            const thrPct = 5;
 
-            let totalLines = 0, filled = 0, totalDelta = 0, over = 0;
+            let totalLines = 0, totalDelta = 0, over = 0;
 
-            lines().forEach(tr => {
+            body.querySelectorAll('tr').forEach(tr => {
                 totalLines++;
+
                 const expected = getInt(tr.querySelector('.expected'));
                 const counted  = getInt(tr.querySelector('.counted'));
                 const delta    = getInt(tr.querySelector('.delta'));
 
-                // color rows
+                // tô màu thiếu/thừa
                 tr.classList.toggle('bg-red-50', delta < 0);
                 tr.classList.toggle('bg-emerald-50', delta > 0);
 
+                // đánh dấu vượt ngưỡng
                 const overFlag = isOverThreshold(expected, delta, thrAbs, thrPct);
                 tr.dataset.over = overFlag ? '1' : '0';
-                const deltaCell = tr.querySelector('.delta').parentElement;
-                deltaCell.classList.toggle('bg-amber-100', overFlag);
+                const deltaCell = tr.querySelector('.delta')?.parentElement;
+                if (deltaCell) deltaCell.classList.toggle('bg-amber-100', overFlag);
                 if (overFlag) over++;
 
-                if (!Number.isNaN(counted)) { filled++; totalDelta += delta; }
+                if (!Number.isNaN(delta)) totalDelta += delta;
             });
 
-            // Summary
-            $('#sumLines').textContent = totalLines;
-            $('#sumFilled').textContent = filled;
-            $('#sumDelta').textContent = totalDelta;
-            $('#sumOver').textContent  = over;
-
-            $('#ftLines').textContent = totalLines;
-            $('#ftFilled').textContent = filled;
-            $('#ftDelta').textContent = totalDelta;
-            $('#ftOver').textContent  = over;
+            // cập nhật các card tổng
+            const sumLines = $('#sumLines');
+            if (sumLines) sumLines.textContent = String(totalLines);
+            const sumDelta = $('#sumDelta');
+            if (sumDelta) sumDelta.textContent = String(totalDelta);
+            const sumOver  = $('#sumOver');
+            if (sumOver)  sumOver.textContent  = String(over);
         }
 
-        // bind
-        $('#btnRecalc').addEventListener('click', recalc);
-        $('#threshold').addEventListener('input', recalc);
-        $('#thresholdPct').addEventListener('input', recalc);
-
-        body.addEventListener('click', function (e) {
-            const btn = e.target.closest('.btnRecount');
-            if (!btn) return;
-            const tr = e.target.closest('tr');
-            const code = tr?.dataset?.code || 'UNKNOWN';
-            if (typeof toastr !== 'undefined') toastr.info('Đã yêu cầu đếm lại: ' + code + ' (dummy)');
-        });
-
-        $('#btnApprove').addEventListener('click', function () {
-            const over = lines().filter(tr => tr.dataset.over === '1').length;
-            if (over > 0) {
-                if (typeof toastr !== 'undefined') toastr.warning('Còn ' + over + ' dòng vượt ngưỡng – cân nhắc đếm lại trước khi duyệt.');
-            } else {
-                if (typeof toastr !== 'undefined') toastr.success('Đã duyệt & tạo điều chỉnh (dummy).');
-            }
-        });
-
-        $('#btnExport').addEventListener('click', function () {
-            if (typeof toastr !== 'undefined') toastr.info('Xuất báo cáo (dummy).');
-        });
-
+        // Chỉ giữ listener thực sự tồn tại (không có thì bỏ qua)
+        const approveBtn = $('#btnApprove');
+        if (approveBtn) {
+            approveBtn.addEventListener('click', function () {
+                const overCnt = Array.from(body.querySelectorAll('tr'))
+                    .filter(tr => tr.dataset.over === '1').length;
+                if (overCnt > 0 && typeof toastr !== 'undefined') {
+                    toastr.warning('Còn ' + overCnt + ' dòng vượt ngưỡng – cân nhắc đếm lại trước khi duyệt.');
+                }
+            });
+        }
         // init
         recalc();
     })();

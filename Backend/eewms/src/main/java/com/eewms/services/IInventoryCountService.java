@@ -1,13 +1,14 @@
 package com.eewms.services;
 
 import com.eewms.dto.inventory.InventoryCountDTO;
+import com.eewms.entities.User;
 
 import java.util.List;
 
 public interface IInventoryCountService {
 
     // Tạo phiếu kiểm kê mới
-    InventoryCountDTO create(Integer staffId, String note);
+    InventoryCountDTO create(Integer warehouseId, Integer staffId, String note, User currentManager);
 
     // Lấy phiếu kiểm kê theo ID
     InventoryCountDTO getById(Integer id);

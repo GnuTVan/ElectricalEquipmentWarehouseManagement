@@ -2,7 +2,10 @@ package com.eewms.controller;
 
 import com.eewms.dto.inventory.InventoryCountDTO;
 import com.eewms.entities.User;
+import com.eewms.entities.Warehouse;
+import com.eewms.entities.WarehouseStaff;
 import com.eewms.repository.UserRepository;
+import com.eewms.repository.WarehouseRepository;
 import com.eewms.services.IInventoryCountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -20,6 +23,7 @@ public class InventoryCountController {
 
     private final IInventoryCountService inventoryCountService;
     private final UserRepository userRepository;
+    private final WarehouseRepository warehouseRepository;
 
     // LIST: danh sách phiếu
     @GetMapping
@@ -34,13 +38,20 @@ public class InventoryCountController {
         boolean isManager = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER"));
 
-        // Lấy userId từ DB theo username
+        // Lấy user hiện tại
         String username = authentication.getName();
         User currentUser = userRepository.findByUsername(username).orElseThrow();
 
         List<InventoryCountDTO> counts;
         if (isManager) {
             counts = inventoryCountService.getAll();
+
+            // Tìm kho mà manager này quản lý
+            List<Warehouse> warehouses = warehouseRepository.findBySupervisor_Id(currentUser.getId());
+            Warehouse wh = warehouses.isEmpty() ? null : warehouses.get(0);
+            if (wh != null) {
+                model.addAttribute("warehouseId", wh.getId());
+            }
         } else {
             counts = inventoryCountService.getByStaffId(currentUser.getId());
         }
@@ -48,6 +59,7 @@ public class InventoryCountController {
         model.addAttribute("counts", counts);
         return "inventory/inventory-order-list";
     }
+
 
     @GetMapping("/{id}")
     public String counting(@PathVariable("id") Integer id, Model model, Authentication authentication) {
@@ -83,26 +95,35 @@ public class InventoryCountController {
 
     // CREATE form
     @GetMapping("/create")
-    public String createForm(Model model) {
-        // Lấy toàn bộ staff trong hệ thống để chọn
-        List<User> staffList = userRepository.findAll();
+    public String createForm(@RequestParam("warehouseId") Integer warehouseId,
+                             Model model,
+                             Authentication auth) {
+        // Lấy user hiện tại
+        User current = userRepository.findByUsername(auth.getName()).orElseThrow();
+
+        // Lọc staff theo warehouseId
+        List<User> staffList = userRepository.findStaffByWarehouseId(warehouseId);
+
+        model.addAttribute("warehouseId", warehouseId);
         model.addAttribute("staffList", staffList);
         return "inventory/inventory-count-create";
     }
 
     // HANDLE CREATE (POST)
     @PostMapping("/create")
-    public String createSubmit(@RequestParam("staffId") Integer staffId,
-                               @RequestParam(value = "note", required = false) String note,
-                               RedirectAttributes redirectAttributes) {
+    public String createSubmit(@RequestParam("warehouseId") Integer warehouseId,
+                               @RequestParam("staffId") Integer staffId,
+                               @RequestParam(value="note", required=false) String note,
+                               Authentication auth,
+                               RedirectAttributes ra) {
         try {
-            InventoryCountDTO dto = inventoryCountService.create(staffId, note);
-            redirectAttributes.addFlashAttribute("message",
-                    "Tạo phiếu kiểm kê thành công: " + dto.getCode());
+            User current = userRepository.findByUsername(auth.getName()).orElseThrow();
+            InventoryCountDTO dto = inventoryCountService.create(warehouseId, staffId, note, current);
+            ra.addFlashAttribute("message","Tạo phiếu thành công: " + dto.getCode());
             return "redirect:/inventory/count";
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Lỗi: " + e.getMessage());
-            return "redirect:/inventory/count/create";
+            ra.addFlashAttribute("error","Lỗi: " + e.getMessage());
+            return "redirect:/inventory/count/create?warehouseId=" + warehouseId;
         }
     }
 

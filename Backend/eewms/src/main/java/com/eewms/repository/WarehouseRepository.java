@@ -42,4 +42,6 @@ public interface WarehouseRepository extends JpaRepository<Warehouse, Integer> {
                 where w.id = :warehouseId
             """)
     String findSupervisorNameById(Integer warehouseId);
+
+
 }
