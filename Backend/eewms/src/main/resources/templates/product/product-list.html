@@ -143,7 +143,7 @@
                         <th class="px-4 py-3 whitespace-nowrap border border-gray-200">Tên</th>
                         <th class="px-4 py-3 whitespace-nowrap border border-gray-200">Ảnh</th>
                         <th class="px-4 py-3 whitespace-nowrap border border-gray-200 text-right">Giá niêm yết</th>
-                        <th class="px-4 py-3 whitespace-nowrap">Số lượng</th>
+                        <th class="px-4 py-3 whitespace-nowrap hidden">Số lượng</th>
                         <th class="px-4 py-3 whitespace-nowrap border border-gray-200">Thương hiệu</th>
                         <th class="px-4 py-3 whitespace-nowrap border border-gray-200">Danh mục</th>
                         <th class="px-4 py-3 text-center whitespace-nowrap border border-gray-200">Nhà cung cấp</th>
@@ -200,7 +200,7 @@
                             th:text="${#numbers.formatDecimal(product.listingPrice, 0, 'DEFAULT', 0, 'DEFAULT')}+ ' đ'"></td>
 
                         <!-- Cột Số lượng -->
-                        <td class="px-4 py-3 border border-gray-200">
+                        <td class="hidden px-4 py-3 border border-gray-200">
                             <div class="font-medium" th:text="${product.quantity}">0</div>
                             <div class="text-xs text-gray-500">
                                 Mới:
@@ -212,7 +212,7 @@
                         </td>
 
                         <td class="px-4 py-3 border border-gray-200" th:text="${product.brand.name}"></td>
-                        <td class="px-4 py-3 border border-gray-200" th:text="${product.category.name}"></td>
+                        <td class="px-4 py-3 border border-gray-200 whitespace-nowrap" th:text="${product.category.name}"></td>
                         <td class="px-4 py-3 border border-gray-200"
                             th:text="${#lists.isEmpty(product.supplierNames) ? '—' : #strings.arrayJoin(product.supplierNames, ', ')}">
                         </td>

@@ -43,29 +43,39 @@
                     </td>
                     <td class="px-4 py-3 text-center">
                         <div class="flex justify-center items-center gap-2">
+                            <!-- Toggle -->
                             <form th:action="@{/admin/warehouses/toggle/{id}(id=${w.id})}" method="post"
                                   onsubmit="return confirm('Bạn chắc muốn thay đổi trạng thái kho này?')">
                                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                                 <button type="submit"
-                                        class="px-3 py-1 text-xs rounded text-white"
-                                        th:classappend="${w.status} ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'">
+                                        class="inline-flex items-center gap-1 px-3 py-1.5 border rounded shadow text-xs"
+                                        th:classappend="${w.status} ?
+                        'bg-red-50 text-red-700 hover:bg-red-100 border-red-300' :
+                        'bg-green-50 text-green-700 hover:bg-green-100 border-green-300'">
+                                    <i class="ri-power-line"></i>
                                     <span th:text="${w.status} ? 'Tắt' : 'Bật'"></span>
                                 </button>
                             </form>
-                            <button type="button"
-                                    class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded"
-                                    th:onclick="|showWarehouseEditModal(${w.id}, '__${#strings.escapeJavaScript(w.name)}__', '__${#strings.escapeJavaScript(w.description)}__')|">
-                                Sửa
-                            </button>
+
+                            <!-- Edit -->
+                            <a href="javascript:void(0)"
+                               class="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-50 text-yellow-700 border rounded hover:bg-yellow-100 shadow"
+                               th:onclick="|showWarehouseEditModal(${w.id}, '__${#strings.escapeJavaScript(w.name)}__', '__${#strings.escapeJavaScript(w.description)}__')|">
+                                <i class="ri-edit-2-line"></i> Sửa
+                            </a>
+
+                            <!-- View Stock -->
+                            <a th:href="@{|/inventory/warehouses/${w.id}/stock|}"
+                               class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 shadow">
+                                <i class="ri-eye-line"></i> Xem tồn
+                            </a>
+
+                            <!-- Members -->
+                            <a th:href="@{|/admin/warehouses/${w.id}/members|}"
+                               class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 border rounded hover:bg-blue-100 shadow">
+                                <i class="ri-shield-user-line"></i> Thành viên
+                            </a>
                         </div>
-                        <a th:href="@{|/inventory/warehouses/${w.id}/stock|}"
-                           class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 shadow">
-                            <i class="ri-eye-line"></i> Xem tồn
-                        </a>
-                        <a th:href="@{|/admin/warehouses/${w.id}/members|}"
-                           class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 border rounded hover:bg-blue-100 shadow">
-                            <i class="ri-shield-user-line"></i> Thành viên
-                        </a>
                     </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(warehouses)}">
