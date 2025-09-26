@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common-head :: commonHead('405')}"></head>
+
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <!-- Main Content -->
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <!-- Header -->
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <!-- Nội dung căn giữa -->
+        <div class="px-6 py-6">
+            <div class="flex items-center justify-center min-h-[calc(100vh-160px)]">
+                <div class="bg-white rounded-lg shadow p-10 text-center max-w-xl w-full">
+                    <div class="flex items-center justify-center">
+                        <i class="ri-hand-stop-line text-6xl text-yellow-500"></i>
+                    </div>
+                    <h2 class="text-xl font-semibold mt-4">405 - Phương thức HTTP không được phép</h2>
+                    <p class="text-gray-600 mt-2">
+                        Phương thức bạn dùng cho đường dẫn này không hợp lệ.
+                    </p>
+
+                    <div class="mt-6 flex items-center justify-center gap-3">
+                        <a href="javascript:history.back()"
+                           class="px-4 py-2 rounded border border-gray-300 hover:bg-gray-50">Quay lại</a>
+                        <a th:href="@{/dashboard}"
+                           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Quay về Trang chủ</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

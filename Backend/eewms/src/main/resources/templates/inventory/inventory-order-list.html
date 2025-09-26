@@ -55,15 +55,15 @@
 
 
                 <input type="text" name="keyword"
-                        placeholder="Tìm theo mã phiếu / ghi chú"
-                        th:value="${keyword}"
-                        class="border px-3 py-2 rounded w-72"/>
+                       placeholder="Tìm theo mã phiếu / ghi chú"
+                       th:value="${keyword}"
+                       class="border px-3 py-2 rounded w-72"/>
 
-                <input type="date" name="createdAtFrom"
+                <input type="datetime-local" name="createdAtFrom"
                        th:value="${createdAtFrom}"
                        class="border px-3 py-2 rounded"/>
 
-                <input type="date" name="createdAtTo"
+                <input type="datetime-local" name="createdAtTo"
                        th:value="${createdAtTo}"
                        class="border px-3 py-2 rounded"/>
 
@@ -166,10 +166,9 @@
                     </tr>
                     </tbody>
                 </table>
-
-                <!-- Pagination (dummy) -->
-                <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
             </div>
+            <!-- Pagination -->
+            <div th:replace="~{fragments/pagination :: clientPager('Table', 10)}"></div>
         </section>
 
         <div th:replace="~{fragments/footer :: footer}"></div>

@@ -80,7 +80,13 @@
                             <td class="px-3 py-2" th:text="${it.product != null ? it.product.code : ''}">P001</td>
                             <td class="px-3 py-2" th:text="${it.product != null ? it.product.name : ''}">Tên</td>
                             <td class="px-3 py-2" th:text="${it.unitName}">cái</td>
-                            <td class="px-3 py-2" th:text="${it.quantity}">1.00</td>
+                            <td class="px-3 py-2"
+                                th:text="${it.quantity != null ?
+                                  (it.quantity.stripTrailingZeros().scale() <= 0 ?
+                                     it.quantity.intValue() :
+                                     it.quantity.stripTrailingZeros().toPlainString())
+                                  : ''}">1
+                            </td>
                         </tr>
                         <tr th:if="${t.items == null or #lists.isEmpty(t.items)}">
                             <td colspan="4" class="px-3 py-6 text-center text-gray-500 italic">Không có dữ liệu.</td>

@@ -79,7 +79,8 @@
             </h2>
 
             <!-- Form thêm nhân viên -->
-            <form th:action="@{|/admin/warehouses/${warehouse.id}/members/staff/add|}"
+            <form th:if="${canAddStaff}"
+                  th:action="@{|/admin/warehouses/${warehouse.id}/members/staff/add|}"
                   method="post"
                   class="relative flex gap-2 items-start mb-4"
                   sec:authorize="hasRole('MANAGER')">
@@ -88,14 +89,16 @@
                 <div class="w-80 relative">
                     <input id="staffSearch"
                            class="w-full border rounded px-3 py-2"
-                           placeholder="Tìm nhân viên: Tên hoặc SĐT"
+                           placeholder="Ấn để chọn nhân viên"
                            autocomplete="off">
                     <div id="staffDropdown"
                          class="absolute z-20 mt-1 w-full bg-white border rounded shadow max-h-60 overflow-auto hidden"></div>
                 </div>
                 <button class="px-4 py-2 bg-green-600 text-white rounded shrink-0">Thêm nhân viên</button>
             </form>
-
+            <div th:if="${!canAddStaff}" class="mb-4 text-gray-500 italic">
+                Tất cả nhân viên đã được gán vào kho.
+            </div>
             <!-- Bảng nhân viên -->
             <div class="overflow-x-auto">
                 <table class="min-w-full table-auto text-sm border rounded">

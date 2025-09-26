@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,8 +43,8 @@ public interface InventoryCountRepository extends JpaRepository<InventoryCount, 
             @Param("status") InventoryCountStatus status,   // 👈 Đổi String → Enum
             @Param("staffId") Integer staffId,
             @Param("keyword") String keyword,
-            @Param("createdAtFrom") LocalDate createdAtFrom,
-            @Param("createdAtTo") LocalDate createdAtTo
+            @Param("createdAtFrom") LocalDateTime createdAtFrom,
+            @Param("createdAtTo") LocalDateTime createdAtTo
     );
     @EntityGraph(attributePaths = {"warehouse", "assignedStaff", "items", "items.product"})
     @Query("""
@@ -60,7 +61,7 @@ public interface InventoryCountRepository extends JpaRepository<InventoryCount, 
                                         @Param("warehouseId") Integer warehouseId,
                                         @Param("status") InventoryCountStatus status,
                                         @Param("keyword") String keyword,
-                                        @Param("createdAtFrom") LocalDate createdAtFrom,
-                                        @Param("createdAtTo") LocalDate createdAtTo);
+                                        @Param("createdAtFrom") LocalDateTime createdAtFrom,
+                                        @Param("createdAtTo") LocalDateTime createdAtTo);
 
 }

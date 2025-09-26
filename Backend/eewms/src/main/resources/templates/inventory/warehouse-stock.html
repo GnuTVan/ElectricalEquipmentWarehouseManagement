@@ -75,7 +75,14 @@
                         <tr th:each="row : ${page.content}" class="border-t hover:bg-gray-50">
                             <td class="px-4 py-2 border border-gray-200" th:text="${row.productCode}">SP-001</td>
                             <td class="px-4 py-2 border border-gray-200" th:text="${row.productName}">Tên sản phẩm</td>
-                            <td class="px-4 py-2 border border-gray-200 text-right" th:text="${row.quantity}">0</td>
+                            <td class="px-4 py-2 border border-gray-200 text-right"
+                                th:text="${row.quantity != null ?
+                                     (row.quantity.stripTrailingZeros().scale() <= 0
+                                         ? row.quantity.intValue()
+                                         : row.quantity.stripTrailingZeros().toPlainString())
+                                     : ''}">
+                                0
+                            </td>
                             <td class="px-4 py-2 border border-gray-200 text-center w-1">
                                 <a th:href="@{|/inventory/products/${row.productId}/stock|}"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-800 border rounded hover:bg-gray-200 whitespace-nowrap shadow">
