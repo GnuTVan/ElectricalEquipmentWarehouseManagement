@@ -254,31 +254,61 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
     @Override
     @Transactional(readOnly = true)
     public List<PurchaseRequestItemDTO> collectShortagesForAllOpen() {
-        // Lấy tất cả SO đang mở
+        // 1. Lấy tất cả SO đang mở
         List<SaleOrder> orders = saleOrderRepository.findAllOpenOrders();
 
-        Map<Integer, Integer> shortageByProduct = new LinkedHashMap<>();
+        // Gom nhu cầu đặt hàng và đã giao theo productId
+        Map<Integer, Integer> demandByProduct = new HashMap<>();
+        Map<Integer, Integer> issuedByProduct = new HashMap<>();
 
         for (SaleOrder so : orders) {
             for (SaleOrderDetail d : so.getDetails()) {
                 int pid = d.getProduct().getId();
-                int ordered = d.getOrderedQuantity();
 
+                // Tổng số lượng khách đặt
+                demandByProduct.merge(pid, d.getOrderedQuantity(), Integer::sum);
+
+                // Tổng số lượng đã xuất kho
                 Integer issued = goodIssueNoteRepository
                         .sumIssuedQtyBySaleOrderAndProduct(so.getSoId(), pid);
                 int issuedQty = (issued == null ? 0 : issued);
-
-                // Luôn trừ đi PR mở (không còn check start/end)
-                Integer requestedOpen = prRepo.sumRequestedQtyOpenPRByProduct(pid);
-                int requestedQty = (requestedOpen == null ? 0 : requestedOpen);
-
-                int remaining = ordered - issuedQty - requestedQty;
-                if (remaining > 0) {
-                    shortageByProduct.merge(pid, remaining, Integer::sum);
-                }
+                issuedByProduct.merge(pid, issuedQty, Integer::sum);
             }
         }
 
+        // 2. Lấy số lượng từ PR mở (chỉ MOI_TAO)
+        Map<Integer, Integer> requestedByProduct = new HashMap<>();
+        for (Integer pid : demandByProduct.keySet()) {
+            Integer requested = prRepo.sumRequestedQtyOpenPRByProduct(pid);
+            if (requested != null && requested > 0) {
+                requestedByProduct.put(pid, requested);
+            }
+        }
+
+        // 3. Lấy số lượng từ PO chưa nhập (CHO_DUYET, CHO_GIAO_HANG, DA_GIAO_MOT_PHAN)
+        Map<Integer, Integer> poByProduct = new HashMap<>();
+        for (Integer pid : demandByProduct.keySet()) {
+            Integer qtyInPO = purchaseOrderRepository.sumQtyInOpenPOByProduct(pid);
+            if (qtyInPO != null && qtyInPO > 0) {
+                poByProduct.put(pid, qtyInPO);
+            }
+        }
+
+        // 4. Tính shortage cuối cùng
+        Map<Integer, Integer> shortageByProduct = new LinkedHashMap<>();
+        for (Integer pid : demandByProduct.keySet()) {
+            int orderedTotal = demandByProduct.getOrDefault(pid, 0);
+            int issuedTotal = issuedByProduct.getOrDefault(pid, 0);
+            int requestedQty = requestedByProduct.getOrDefault(pid, 0);
+            int poQty = poByProduct.getOrDefault(pid, 0);
+
+            int shortage = (orderedTotal - issuedTotal) - requestedQty - poQty;
+            if (shortage > 0) {
+                shortageByProduct.put(pid, shortage);
+            }
+        }
+
+        // 5. Convert sang DTO để hiển thị
         if (shortageByProduct.isEmpty()) return List.of();
 
         List<Product> products = productRepo.findAllById(shortageByProduct.keySet());
@@ -296,6 +326,7 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
                 })
                 .toList();
     }
+
 
     @Override
     @Transactional

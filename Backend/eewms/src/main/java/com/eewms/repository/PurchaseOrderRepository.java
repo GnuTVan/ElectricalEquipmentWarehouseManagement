@@ -57,4 +57,26 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Lo
     @EntityGraph(attributePaths = {"supplier", "items", "items.product"})
     @Query("SELECT po FROM PurchaseOrder po WHERE po.id = :id")
     Optional<PurchaseOrder> findWithDetailById(@Param("id") Long id);
+
+    @Query("""
+    SELECT SUM(i.quantityNeeded)
+    FROM PurchaseRequestItem i
+    JOIN i.purchaseRequest pr
+    WHERE i.product.id = :pid
+      AND pr.status = 'MOI_TAO'
+""")
+    Integer sumRequestedQtyOpenPRByProduct(@Param("pid") Integer productId);
+
+    @Query("""
+    SELECT SUM(i.contractQuantity)
+    FROM PurchaseOrder po
+    JOIN po.items i
+    WHERE i.product.id = :pid
+      AND po.status IN (
+          com.eewms.constant.PurchaseOrderStatus.CHO_DUYET,
+          com.eewms.constant.PurchaseOrderStatus.CHO_GIAO_HANG,
+          com.eewms.constant.PurchaseOrderStatus.DA_GIAO_MOT_PHAN
+      )
+""")
+    Integer sumQtyInOpenPOByProduct(@Param("pid") Integer productId);
 }
