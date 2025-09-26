@@ -29,12 +29,12 @@ public class InventoryTransfer {
 
     @Getter
     public enum Status {
-        DRAFT("Nháp"),
+        DRAFT("Chờ duyệt"),
         FROM_APPROVED("Kho nguồn đã duyệt"),
         TO_APPROVED("Kho đích đã duyệt"),
-        EXPORTED("Đã xuất kho nguồn"),
-        IMPORTED("Đã nhập kho đích"),
-        CANCELED("Đã hủy");
+        EXPORTED("Đã xuất kho"),
+        IMPORTED("Hoàn thành"),
+        CANCELED("Hủy");
 
         private final String label;
 

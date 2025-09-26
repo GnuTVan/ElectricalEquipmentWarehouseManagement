@@ -13,23 +13,6 @@
         <!-- Header -->
         <div th:replace="~{fragments/header :: header}"></div>
 
-        <!-- Flash/Toast zone -->
-        <div class="flex justify-between items-center mb-4 px-4 py-4">
-            <div th:if="${success}" id="alertSuccess" class="mb-4 bg-green-100 text-green-800 px-4 py-2 rounded">
-                <p th:text="${success}"></p>
-            </div>
-            <div th:if="${error}" class="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">
-                <i class="ri-error-warning-line mr-1"></i> <span th:text="${error}"></span>
-            </div>
-            <div th:if="${warning}" id="alertWarning"
-                 class="bg-yellow-100 text-yellow-800 px-4 py-2 rounded mb-4 border-l-4 border-yellow-500 shadow">
-                <i class="ri-alert-line mr-1"></i> <span th:text="${warning}"></span>
-            </div>
-            <div th:if="${info}" class="bg-blue-100 text-blue-800 p-3 rounded mb-3">
-                <i class="ri-information-line mr-1"></i> <span th:text="${info}"></span>
-            </div>
-        </div>
-
         <!-- Page Title + Button -->
         <div class="px-6 py-6">
             <div class="flex justify-between items-center mb-4">
