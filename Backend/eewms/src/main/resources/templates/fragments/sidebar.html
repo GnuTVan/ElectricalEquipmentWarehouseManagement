@@ -200,11 +200,11 @@
                     </button>
                     <ul id="inventory-submenu"
                         class="ml-8 mt-1 space-y-1 overflow-hidden transition-all duration-300 max-h-0">
-                        <li sec:authorize="hasAnyRole('ADMIN','MANAGER')">
+                        <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
                             <a th:href="@{/admin/warehouse-receipts}"
                                class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Nhập kho</a>
                         </li>
-                        <li sec:authorize="hasAnyRole('ADMIN','STAFF')">
+                        <li sec:authorize="hasAnyRole('ADMIN','STAFF','MANAGER')">
                             <a th:href="@{/good-issue}" class="block px-2 py-1 text-sm rounded hover:bg-gray-700">Xuất
                                 kho</a>
                         </li>
