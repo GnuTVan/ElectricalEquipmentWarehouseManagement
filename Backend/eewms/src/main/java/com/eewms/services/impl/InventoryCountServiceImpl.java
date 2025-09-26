@@ -10,6 +10,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -175,6 +177,23 @@ public  class InventoryCountServiceImpl implements IInventoryCountService {
     public List<InventoryCountDTO> getByStaffId(Long staffId) {
         return countRepo.findByAssignedStaff_Id(staffId).stream()
                 .map(InventoryCountMapper::toDTO)
+                .toList();
+    }
+    @Override
+    public List<InventoryCountDTO> filterForManager(Integer warehouseId, InventoryCountStatus status, Integer staffId,
+                                                    String keyword, LocalDate createdAtFrom, LocalDate createdAtTo) {
+        return countRepo.filter(warehouseId, status, staffId, keyword, createdAtFrom, createdAtTo).stream()
+                .map(InventoryCountMapper::toDTO)
+                .sorted(Comparator.comparing(InventoryCountDTO::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+    }
+
+    @Override
+    public List<InventoryCountDTO> filterForStaff(Long staffId, Integer warehouseId, InventoryCountStatus status,
+                                                  String keyword, LocalDate createdAtFrom, LocalDate createdAtTo) {
+        return countRepo.filterForStaff(staffId, warehouseId, status, keyword, createdAtFrom, createdAtTo).stream()
+                .map(InventoryCountMapper::toDTO)
+                .sorted(Comparator.comparing(InventoryCountDTO::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
     }
 

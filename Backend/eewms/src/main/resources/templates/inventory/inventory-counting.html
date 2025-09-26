@@ -69,10 +69,11 @@
                                     <span class="expected" th:text="${item.expectedQty}">0</span>
                                 </td>
                                 <td class="px-4 py-2 text-right">
-                                    <input type="number" min="0" step="1"
+                                    <input type="number" min="0" max="999" step="1"
                                            th:value="${item.countedQty}"
                                            name="countedQtys"
-                                           class="counted w-24 text-right rounded-lg border-gray-300 px-2 py-1">
+                                           class="counted w-24 text-right rounded-lg border-gray-300 px-2 py-1"
+                                           pattern="^[0-9]+$">
                                 </td>
                                 <td class="px-4 py-2 text-right">
                                     <span class="delta"
@@ -82,7 +83,8 @@
                                     <input type="text" name="notes"
                                            th:value="${item.note}"
                                            class="note w-full rounded-lg border-gray-300 px-2 py-1"
-                                           placeholder="Ghi chú…">
+                                           placeholder="Ghi chú…"
+                                           pattern="^[\p{L}\p{N}\s.,-]*$">
                                 </td>
                             </tr>
                             </tbody>
@@ -149,7 +151,17 @@
         }
 
         body.addEventListener('input', function (e) {
-            if (e.target.classList.contains('counted')) recalc();
+            if (e.target.classList.contains('counted')) {
+                if (parseInt(e.target.value, 10) > 999) {
+                    e.target.value = 999; // tự động giới hạn
+                }
+                recalc();
+            }
+
+            if (e.target.classList.contains('note')) {
+                // chỉ chữ, số, khoảng trắng, dấu tiếng Việt, dấu chấm phẩy cơ bản
+                e.target.value = e.target.value.replace(/[^\p{L}\p{N}\s.,-]/gu, '');
+            }
         });
 
         recalc();

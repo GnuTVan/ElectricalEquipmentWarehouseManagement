@@ -30,33 +30,47 @@
             <form id="filterForm" method="get" class="mb-6 flex flex-wrap items-center gap-3">
                 <select name="warehouseId" class="border px-3 py-2 rounded w-56">
                     <option value="">Tất cả kho</option>
-                    <option value="1">Kho A</option>
-                    <option value="2">Kho B</option>
-                    <option value="3">Kho C</option>
+                    <option th:each="wh : ${warehouses}"
+                            th:value="${wh.id}"
+                            th:selected="${warehouseId == wh.id}"
+                            th:text="${wh.name}">
+                    </option>
                 </select>
 
                 <select name="status" class="border px-3 py-2 rounded w-48">
                     <option value="">Tất cả trạng thái</option>
-                    <option value="DRAFT">Mới tạo</option>
-                    <option value="IN_PROGRESS">Đang kiểm</option>
-                    <option value="REVIEW">Chờ duyệt</option>
-                    <option value="APPROVED">Đã duyệt</option>
-                    <option value="CLOSED">Đã đóng</option>
+                    <option value="IN_PROGRESS" th:selected="${status == 'IN_PROGRESS'}">Đang kiểm</option>
+                    <option value="SUBMITTED" th:selected="${status == 'SUBMITTED'}">Chờ duyệt</option>
+                    <option value="APPROVED" th:selected="${status == 'APPROVED'}">Đã duyệt</option>
                 </select>
 
                 <select name="staffId" class="border px-3 py-2 rounded w-56">
                     <option value="">Tất cả nhân viên</option>
-                    <option value="1">Nguyễn Văn A</option>
-                    <option value="2">Trần Thị B</option>
-                    <option value="3">Lê Văn C</option>
+                    <option th:each="st : ${staffs}"
+                            th:value="${st.id}"
+                            th:selected="${staffId == st.id}"
+                            th:text="${st.fullName}">
+                    </option>
                 </select>
 
-                <input type="text" name="keyword" placeholder="Tìm theo mã phiếu / ghi chú" th:value="${keyword}"
-                       class="border px-3 py-2 rounded w-72"/>
+
+                <input type="text" name="keyword"
+                        placeholder="Tìm theo mã phiếu / ghi chú"
+                        th:value="${keyword}"
+                        class="border px-3 py-2 rounded w-72"/>
+
+                <input type="date" name="createdAtFrom"
+                       th:value="${createdAtFrom}"
+                       class="border px-3 py-2 rounded"/>
+
+                <input type="date" name="createdAtTo"
+                       th:value="${createdAtTo}"
+                       class="border px-3 py-2 rounded"/>
 
                 <button type="submit" id="btnFilter" class="bg-blue-600 text-white px-4 py-2 rounded"
                         title="Nhấn lại lần nữa với bộ lọc y hệt để xóa lọc">Lọc
                 </button>
+
             </form>
 
 
@@ -142,8 +156,8 @@
 
                                 <!-- Staff: nếu SUBMITTED thì chỉ xem chi tiết -->
                                 <a sec:authorize="hasRole('STAFF')"
-                                   th:if="${count.status.name() == 'SUBMITTED'}"
-                                   th:href="@{'/inventory/count/' + ${count.id}}"
+                                   th:if="${count.status.name() == 'SUBMITTED' or count.status.name() == 'APPROVED'}"
+                                   th:href="@{'/inventory/count/' + ${count.id} + '/review'}"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200">
                                     <i class="ri-eye-line"></i>Chi tiết
                                 </a>
@@ -188,7 +202,7 @@
 
         function buildQuery() {
             var fd = new FormData(form), q = new URLSearchParams();
-            ['warehouseId', 'status', 'staffId', 'keyword'].forEach(function (n) {
+            ['warehouseId', 'status', 'staffId', 'keyword', 'createdAtFrom', 'createdAtTo'].forEach(function (n) {
                 var v = (fd.get(n) || '').toString().trim();
                 if (v) q.set(n, v);
             });
