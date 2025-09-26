@@ -109,4 +109,5 @@ public interface ProductWarehouseStockRepository extends JpaRepository<ProductWa
            where pws.product.id = :productId
            """)
     BigDecimal sumQuantityByProductId(@Param("productId") Integer productId);
+    List<ProductWarehouseStock> findByWarehouse(Warehouse warehouse);
 }

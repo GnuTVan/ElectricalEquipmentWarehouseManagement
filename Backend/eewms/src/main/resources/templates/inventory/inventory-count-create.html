@@ -29,26 +29,17 @@
 
             <!-- Form Wrapper -->
             <div class="bg-white rounded-lg shadow p-6 space-y-6 max-w-3xl mx-auto">
-                <form action="#" method="post" class="space-y-6">
-                    <!-- Kho -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Kho</label>
-                        <select name="warehouseId" class="w-full border px-3 py-2 rounded">
-                            <option value="">-- Chọn kho --</option>
-                            <option value="1">Kho A</option>
-                            <option value="2">Kho B</option>
-                            <option value="3">Kho C</option>
-                        </select>
-                    </div>
+                <form th:action="@{/inventory/count/create}" method="post" class="space-y-6">
 
-                    <!-- Nhân viên -->
+                    <!-- Staff -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nhân viên thực hiện</label>
-                        <select name="staffId" class="w-full border px-3 py-2 rounded">
+                        <select name="staffId" class="w-full border px-3 py-2 rounded" required>
                             <option value="">-- Chọn nhân viên --</option>
-                            <option value="1">Nguyễn Văn A</option>
-                            <option value="2">Trần Thị B</option>
-                            <option value="3">Lê Văn C</option>
+                            <option th:each="staff : ${staffList}"
+                                    th:value="${staff.id}"
+                                    th:text="${staff.fullName}">
+                            </option>
                         </select>
                     </div>
 
@@ -78,11 +69,6 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        if (typeof toastr !== 'undefined') {
-            setTimeout(() => toastr.info('Trang tạo phiếu kiểm kê (dummy)'), 300);
-        }
-    });
 </script>
 </body>
 </html>

@@ -18,7 +18,7 @@
                     <h1 class="text-2xl font-bold">Danh sách phiếu kiểm kê</h1>
                     <p class="text-gray-500 text-sm">Quản lý kiểm kê – 1 staff/phiếu</p>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex gap-2" sec:authorize="hasRole('MANAGER')">
                     <a class="px-4 py-2 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50"
                        th:href="@{/inventory/count/create}">
                         <i class="ri-add-line mr-1"></i>Tạo phiếu kiểm kê
@@ -62,11 +62,9 @@
 
             <!-- Legend -->
             <div class="flex items-center gap-2 text-xs mb-4">
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">Mới tạo</span>
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Đang kiểm</span>
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Chờ duyệt</span>
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Đã duyệt</span>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">Đã đóng</span>
             </div>
 
             <!-- Table -->
@@ -90,115 +88,67 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <!-- Dummy Row 1 -->
-                    <tr class="hover:bg-gray-50">
+                    <tr th:each="count : ${counts}" class="hover:bg-gray-50" th:data-id="${count.id}">
                         <td class="px-4 py-3">
-                            <span class="px-2 py-0.5 rounded bg-gray-100 font-mono text-xs">INV-202509-0001</span>
-                            <div class="text-xs text-gray-500">Tạo: 2025-09-20 10:15</div>
-                        </td>
-                        <td class="px-4 py-3">Kho A</td>
-                        <td class="px-4 py-3 flex items-center gap-2">
-                            <i class="ri-user-3-line text-gray-500"></i> Nguyễn Văn A
-                        </td>
-                        <td class="px-4 py-3">120</td>
-                        <td class="px-4 py-3">
-                            <span class="inline-flex px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Đang kiểm</span>
-                        </td>
-                        <td class="px-4 py-3 text-gray-500">2025-09-21 09:18</td>
-                        <td class="px-4 py-3 text-gray-500">2025-09-21 14:02</td>
-                        <td class="px-4 py-3">
-                            <div class="flex justify-end gap-2">
-                                <a th:href="@{/inventory/count/1}" href="#"
-                                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200">
-                                    <i class="ri-eye-line"></i>Chi tiết
-                                </a>
-                                <a th:href="@{/inventory/count/1/continue}" href="#"
-                                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-blue-600 text-blue-600">
-                                    <i class="ri-play-line"></i>Tiếp tục đếm
-                                </a>
+        <span class="px-2 py-0.5 rounded bg-gray-100 font-mono text-xs"
+              th:text="${count.code}"></span>
+                            <div class="text-xs text-gray-500">
+                                Tạo: <span th:text="${#temporals.format(count.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
                             </div>
                         </td>
-                    </tr>
-
-                    <!-- Dummy Row 2 -->
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-0.5 rounded bg-gray-100 font-mono text-xs">INV-202509-0002</span>
-                            <div class="text-xs text-gray-500">Tạo: 2025-09-20 11:30</div>
-                        </td>
-                        <td class="px-4 py-3">Kho B</td>
+                        <td class="px-4 py-3" th:text="${count.warehouseName}"></td>
                         <td class="px-4 py-3 flex items-center gap-2">
-                            <i class="ri-user-3-line text-gray-500"></i> Trần Thị B
+                            <i class="ri-user-3-line text-gray-500"></i>
+                            <span th:text="${count.staffName}"></span>
                         </td>
-                        <td class="px-4 py-3">75</td>
-                        <td class="px-4 py-3">
-                            <span class="inline-flex px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Chờ duyệt</span>
+                        <td class="px-4 py-3 text-right" th:text="${count.totalExpected}"></td>
+                        <td class="px-4 py-3 text-center">
+        <span class="inline-flex px-2 py-0.5 rounded-full"
+              th:text="${count.status.label}">
+
+        </span>
                         </td>
-                        <td class="px-4 py-3 text-gray-500">2025-09-21 09:18</td>
-                        <td class="px-4 py-3 text-gray-500">2025-09-21 09:18</td>
+                        <td class="px-4 py-3 text-gray-500"
+                            th:text="${#temporals.format(count.createdAt, 'yyyy-MM-dd HH:mm')}"></td>
+                        <td class="px-4 py-3 text-gray-500"
+                            th:text="${#temporals.format(count.updatedAt, 'yyyy-MM-dd HH:mm')}"></td>
                         <td class="px-4 py-3">
                             <div class="flex justify-end gap-2">
-                                <a th:href="@{/inventory/count/2}" href="#"
+                                <!-- Manager luôn có quyền -->
+                                <a sec:authorize="hasRole('MANAGER')"
+                                   th:href="@{'/inventory/count/' + ${count.id}}"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200">
                                     <i class="ri-eye-line"></i>Chi tiết
                                 </a>
-                                <a th:href="@{/inventory/count/2/review}" href="#"
+
+                                <!-- Manager: duyệt -->
+                                <a sec:authorize="hasRole('MANAGER')"
+                                   th:if="${count.status.name() == 'SUBMITTED'}"
+                                   th:href="@{'/inventory/count/' + ${count.id} + '/review'}"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-amber-600 text-amber-700">
-                                    <i class="ri-clipboard-check-line"></i>Review
+                                    <i class="ri-clipboard-check-line"></i>Duyệt
                                 </a>
-                            </div>
-                        </td>
-                    </tr>
 
-                    <!-- Dummy Row 3 -->
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-0.5 rounded bg-gray-100 font-mono text-xs">INV-202509-0003</span>
-                            <div class="text-xs text-gray-500">Tạo: 2025-09-19 16:41</div>
-                        </td>
-                        <td class="px-4 py-3">Kho A</td>
-                        <td class="px-4 py-3 flex items-center gap-2">
-                            <i class="ri-user-3-line text-gray-500"></i> Nguyễn Văn A
-                        </td>
-                        <td class="px-4 py-3">200</td>
-                        <td class="px-4 py-3">
-                            <span class="inline-flex px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Đã duyệt</span>
-                        </td>
-                        <td class="px-4 py-3 text-gray-500">2025-09-20 08:05</td>
-                        <td class="px-4 py-3 text-gray-500">2025-09-20 08:05</td>
-                        <td class="px-4 py-3">
-                            <div class="flex justify-end gap-2">
-                                <a th:href="@{/inventory/count/3/report}" href="#"
+                                <!-- Manager: biên bản -->
+                                <a sec:authorize="hasRole('MANAGER')"
+                                   th:if="${count.status.name() == 'APPROVED'}"
+                                   th:href="@{'/inventory/count/' + ${count.id} + '/report'}"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200">
                                     <i class="ri-file-list-3-line"></i>Biên bản
                                 </a>
-                                <a th:href="@{/inventory/count/3/export}" href="#"
-                                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200">
-                                    <i class="ri-download-2-line"></i>Export
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
 
-                    <!-- Dummy Row 4 -->
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-0.5 rounded bg-gray-100 font-mono text-xs">INV-202509-0004</span>
-                            <div class="text-xs text-gray-500">Tạo: 2025-09-18 09:00</div>
-                        </td>
-                        <td class="px-4 py-3">Kho C</td>
-                        <td class="px-4 py-3 flex items-center gap-2">
-                            <i class="ri-user-3-line text-gray-500"></i> Lê Văn C
-                        </td>
-                        <td class="px-4 py-3">98</td>
-                        <td class="px-4 py-3">
-                            <span class="inline-flex px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">Đã đóng</span>
-                        </td>
-                        <td class="px-4 py-3 text-gray-500">2025-09-18 17:22</td>
-                        <td class="px-4 py-3 text-gray-500">2025-09-18 17:22</td>
-                        <td class="px-4 py-3">
-                            <div class="flex justify-end gap-2">
-                                <a th:href="@{/inventory/count/4}" href="#"
+                                <!-- Staff: chỉ khi được assign và IN_PROGRESS -->
+                                <a sec:authorize="hasRole('STAFF')"
+                                   th:if="${count.status.name() == 'IN_PROGRESS'}"
+                                   th:href="@{'/inventory/count/' + ${count.id}}"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-blue-600 text-blue-600">
+                                    <i class="ri-edit-line"></i>Xử lý phiếu
+                                </a>
+
+                                <!-- Staff: nếu SUBMITTED thì chỉ xem chi tiết -->
+                                <a sec:authorize="hasRole('STAFF')"
+                                   th:if="${count.status.name() == 'SUBMITTED'}"
+                                   th:href="@{'/inventory/count/' + ${count.id}}"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200">
                                     <i class="ri-eye-line"></i>Chi tiết
                                 </a>
