@@ -86,15 +86,15 @@ public interface SaleOrderRepository extends JpaRepository<SaleOrder, Integer> {
     List<SaleOrder> findByStatusIn(Collection<SaleOrder.SaleOrderStatus> statuses);
 
     @Query("""
-      select distinct so from SaleOrder so
-      left join fetch so.details d
-      where so.status in (com.eewms.entities.SaleOrder.SaleOrderStatus.PENDING,
-                          com.eewms.entities.SaleOrder.SaleOrderStatus.PARTLY_DELIVERED)
-        and (:start is null or so.orderDate >= :start)
-        and (:end   is null or so.orderDate <= :end)
+    select distinct so from SaleOrder so
+    left join fetch so.details d
+    where so.status in (
+        com.eewms.entities.SaleOrder.SaleOrderStatus.PENDING,
+        com.eewms.entities.SaleOrder.SaleOrderStatus.PARTLY_DELIVERED
+    )
     """)
-    List<SaleOrder> findOpenOrdersInRange(@Param("start") LocalDateTime start,
-                                          @Param("end") LocalDateTime end);
+    List<SaleOrder> findAllOpenOrders();
+
 
     @EntityGraph(attributePaths = { "createdByUser","customer" })
     @Query("""
