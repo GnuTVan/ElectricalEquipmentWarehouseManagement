@@ -85,6 +85,8 @@ public class SecurityConfig {
                         // 3) MANAGER-only
                         // ---------------------------------------------------------
                         // (GET ADMIN)
+                        .requestMatchers(HttpMethod.POST, "/admin/warehouse-receipts/save")
+                        .hasAnyRole("MANAGER","STAFF")
                         .requestMatchers(HttpMethod.GET, "/admin/warehouse-receipts/**")
                         .hasAnyRole("ADMIN","MANAGER")
                         .requestMatchers("/admin/warehouse-receipts/**").hasRole("MANAGER")
