@@ -22,11 +22,13 @@
                         <span class="px-2 py-1 rounded text-xs font-medium bg-gray-100" th:text="${t.status.label}">Nháp</span>
                     </div>
                 </div>
-                <a th:href="@{/inventory-transfers}" class="text-sm text-gray-600 hover:text-gray-900">
+            </div>
+            <div class="mb-6">
+                <a th:href="@{/inventory-transfers}"
+                   class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-800 text-sm rounded hover:bg-gray-100 shadow">
                     <i class="ri-arrow-left-line mr-1"></i> Quay lại
                 </a>
             </div>
-
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="bg-white rounded border p-4">
                     <div class="font-semibold mb-2">Thông tin</div>
@@ -85,28 +87,33 @@
 
             <!-- Action buttons theo trạng thái -->
             <div class="flex justify-end gap-2 mt-4">
-                <form th:if="${t.status.name()=='DRAFT'}" th:action="@{|/inventory-transfers/${t.id}/approve-from|}" method="post">
+                <form th:if="${t.status.name()=='DRAFT'}" th:action="@{|/inventory-transfers/${t.id}/cancel|}" method="post">
+                    <button class="px-3 py-2 bg-red-600 hover:bg-red-700 shadow text-white rounded">Huỷ</button>
+                </form>
+                <form sec:authorize="hasRole('MANAGER')"
+                      th:if="${t.status.name()=='DRAFT'}"
+                      th:action="@{|/inventory-transfers/${t.id}/approve-from|}" method="post">
                     <input type="hidden" name="managerUserId" value="/* currentUserId */"/>
-                    <button class="px-3 py-2 bg-amber-600 text-white rounded">Duyệt kho nguồn</button>
+                    <button class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded shadow">Duyệt kho nguồn</button>
                 </form>
 
-                <form th:if="${t.status.name()=='FROM_APPROVED'}" th:action="@{|/inventory-transfers/${t.id}/approve-to|}" method="post">
+                <form sec:authorize="hasRole('MANAGER')"
+                      th:if="${t.status.name()=='FROM_APPROVED'}"
+                      th:action="@{|/inventory-transfers/${t.id}/approve-to|}" method="post">
                     <input type="hidden" name="managerUserId" value="/* currentUserId */"/>
-                    <button class="px-3 py-2 bg-amber-500 text-white rounded">Duyệt kho đích</button>
+                    <button class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded shadow">Duyệt kho đích</button>
                 </form>
 
-                <form th:if="${t.status.name()=='TO_APPROVED'}" th:action="@{|/inventory-transfers/${t.id}/export|}" method="post">
+                <form sec:authorize="hasRole('STAFF')"
+                      th:if="${t.status.name()=='TO_APPROVED'}" th:action="@{|/inventory-transfers/${t.id}/export|}" method="post">
                     <input type="hidden" name="staffUserId" value="/* currentUserId */"/>
                     <button class="px-3 py-2 bg-emerald-600 text-white rounded">Xuất kho nguồn</button>
                 </form>
 
-                <form th:if="${t.status.name()=='EXPORTED'}" th:action="@{|/inventory-transfers/${t.id}/import|}" method="post">
+                <form sec:authorize="hasRole('STAFF')"
+                      th:if="${t.status.name()=='EXPORTED'}" th:action="@{|/inventory-transfers/${t.id}/import|}" method="post">
                     <input type="hidden" name="staffUserId" value="/* currentUserId */"/>
                     <button class="px-3 py-2 bg-green-600 text-white rounded">Nhập kho đích</button>
-                </form>
-
-                <form th:if="${t.status.name()=='DRAFT'}" th:action="@{|/inventory-transfers/${t.id}/cancel|}" method="post">
-                    <button class="px-3 py-2 bg-red-600 text-white rounded">Huỷ</button>
                 </form>
             </div>
 

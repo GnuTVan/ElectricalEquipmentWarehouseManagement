@@ -117,12 +117,12 @@
                     <span>Mua hàng</span>
                 </a>
             </li>
-
-            <li>
-                <a th:href="@{/inventory/count}"
+            <!-- Yêu cầu mua hàng -->
+            <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
+                <a th:href="@{/admin/purchase-requests}"
                    class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <i class="ri-shopping-basket-line w-6 text-lg"></i>
-                    <span>Kiểm kê kho</span>
+                    <i class="ri-questionnaire-line w-6 text-lg"></i>
+                    <span>Yếu cầu mua hàng</span>
                 </a>
             </li>
             <!-- Bán hàng-->
@@ -133,6 +133,14 @@
                     <span>Bán hàng</span>
                 </a>
             </li>
+            <!-- Hoàn hàng -->
+            <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
+                <a th:href="@{/admin/sales-returns}"
+                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                    <i class="ri-exchange-line w-6 text-lg"></i>
+                    <span>Hoàn hàng</span>
+                </a>
+            </li>
             <!-- Chuyển kho -->
             <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
                 <a th:href="@{/inventory-transfers}"
@@ -141,7 +149,15 @@
                     Chuyển kho
                 </a>
             </li>
-            <!-- Công nợ (dropdown) — CHỈ PHẦN NÀY ĐƯỢC THAY ĐỔI -->
+            <!-- Kiểm kê kho -->
+            <li>
+                <a th:href="@{/inventory/count}"
+                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
+                    <i class="ri-bar-chart-box-line w-6 text-lg"></i>
+                    <span>Kiểm kê</span>
+                </a>
+            </li>
+            <!-- Công nợ (dropdown)-->
             <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
                 <div class="flex flex-col">
                     <button type="button"
@@ -149,7 +165,7 @@
                             class="flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700 w-full"
                             onclick="toggleSubmenu(this)">
                         <div class="flex items-center">
-                            <i class="ri-file-text-line w-6 text-lg"></i>
+                            <i class="ri-money-dollar-circle-line w-6 text-lg"></i>
                             <span>Công nợ</span>
                         </div>
                         <i class="ri-arrow-down-s-line transform transition-transform duration-300 ease-in-out origin-center"></i>
@@ -168,34 +184,6 @@
                         </li>
                     </ul>
                 </div>
-            </li>
-
-            <!-- Yêu cầu mua hàng -->
-            <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
-                <a th:href="@{/admin/purchase-requests}"
-                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <i class="ri-shopping-basket-line w-6 text-lg"></i>
-                    <span>Yếu cầu mua hàng</span>
-                </a>
-            </li>
-            <!-- Trả hàng?-->
-            <li>
-                <a href="#"
-                   class="hidden flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <i class="ri-shopping-cart-2-line w-6 text-lg"></i>
-                    <span>Trả hàng</span>
-                </a>
-            </li>
-            <!-- Phiếu kho?-->
-            <li>
-                <a href="#"
-                   class="hidden flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <div class="flex items-center">
-                        <i class="ri-file-list-3-line w-6 text-lg"></i>
-                        <span>Phiếu kho</span>
-                    </div>
-                    <i class="ri-arrow-up-s-line"></i>
-                </a>
             </li>
             <!-- Phiếu xuất nhập kho (dropdown) -->
             <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
@@ -239,7 +227,7 @@
                             class="flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700 w-full"
                             onclick="toggleSubmenu(this)">
                         <div class="flex items-center">
-                            <i class="ri-warehouse-line w-6 text-lg"></i>
+                            <i class="ri-home-gear-line w-6 text-lg"></i>
                             <span>Tồn kho</span>
                         </div>
                         <i class="ri-arrow-down-s-line transform transition-transform duration-300 ease-in-out origin-center"></i>
@@ -284,13 +272,6 @@
                         </li>
                     </ul>
                 </div>
-            </li>
-            <li sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')">
-                <a th:href="@{/admin/sales-returns}"
-                   class="flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-gray-700">
-                    <i class="ri-exchange-line w-6 text-lg"></i>
-                    <span>Hoàn hàng</span>
-                </a>
             </li>
         </ul>
     </nav>
