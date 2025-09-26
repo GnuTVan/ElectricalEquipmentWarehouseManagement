@@ -17,7 +17,7 @@
         <div class="px-6 py-6">
             <div class="flex justify-between items-center mb-4">
                 <h1 class="text-2xl font-bold text-gray-800">Chuyển kho</h1>
-                <a sec:authorize="hasAnyRole('ADMIN','MANAGER','STAFF')"
+                <a sec:authorize="hasAnyRole('STAFF')"
                    th:href="@{/inventory-transfers/new}"
                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center">
                     <i class="ri-add-line mr-1"></i> Tạo phiếu chuyển kho

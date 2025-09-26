@@ -73,9 +73,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/good-issue/**").hasAnyRole("ADMIN","MANAGER","STAFF")
                         .requestMatchers("/good-issue/**").hasRole("STAFF")
 
-                        // ====== ✅ Stock Transfers (mới) ======
-                        .requestMatchers(HttpMethod.GET, "/transfers/**").hasAnyRole("ADMIN","MANAGER","STAFF")
-                        .requestMatchers("/transfers/**").hasAnyRole("ADMIN","MANAGER","STAFF")
+                        // ====== Inventory Transfers ======
+                        .requestMatchers("/inventory-transfers/**").hasAnyRole("ADMIN","MANAGER","STAFF")
 
                         .requestMatchers(HttpMethod.GET, "/customers/**").hasAnyRole("ADMIN","MANAGER","STAFF")
                         .requestMatchers(HttpMethod.GET, "/customer-list/**").hasAnyRole("ADMIN","MANAGER","STAFF")

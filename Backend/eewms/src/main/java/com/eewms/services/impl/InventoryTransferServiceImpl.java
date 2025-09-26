@@ -76,43 +76,43 @@ public class InventoryTransferServiceImpl implements IInventoryTransferService {
     // ========= Approvals =========
 
     /**
-     * Duyệt phía KHO NGUỒN (FROM) — yêu cầu hiện tại: chỉ cho phép khi đang DRAFT
-     */
-    @Override
-    @Transactional
-    public InventoryTransfer approveFrom(Long id, Integer managerUserId) {
-        InventoryTransfer tr = findTransferOrThrow(id);
-        requireStatus(tr, InventoryTransfer.Status.DRAFT);
-        tr.setFromApprovedBy(findUserOrThrow(managerUserId));
-        tr.setFromApprovedAt(now());
-        tr.setStatus(InventoryTransfer.Status.FROM_APPROVED);
-        return tr;
-    }
-
-    /**
-     * Duyệt phía KHO ĐÍCH (TO) — chỉ cho phép khi đã FROM_APPROVED
+     * Duyệt phía KHO ĐÍCH (TO) — chỉ cho phép khi đã DRAFT
      */
     @Override
     @Transactional
     public InventoryTransfer approveTo(Long id, Integer managerUserId) {
         InventoryTransfer tr = findTransferOrThrow(id);
-        requireStatus(tr, InventoryTransfer.Status.FROM_APPROVED);
+        requireStatus(tr, InventoryTransfer.Status.DRAFT);
         tr.setToApprovedBy(findUserOrThrow(managerUserId));
         tr.setToApprovedAt(now());
         tr.setStatus(InventoryTransfer.Status.TO_APPROVED);
         return tr;
     }
 
+    /**
+     * Duyệt phía KHO NGUỒN (FROM) — chỉ cho phép khi đã TO_APPROVE
+     */
+    @Override
+    @Transactional
+    public InventoryTransfer approveFrom(Long id, Integer managerUserId) {
+        InventoryTransfer tr = findTransferOrThrow(id);
+        requireStatus(tr, InventoryTransfer.Status.TO_APPROVED);
+        tr.setFromApprovedBy(findUserOrThrow(managerUserId));
+        tr.setFromApprovedAt(now());
+        tr.setStatus(InventoryTransfer.Status.FROM_APPROVED);
+        return tr;
+    }
+
     // ========= Export / Import =========
 
     /**
-     * Xuất kho nguồn (trừ tồn) — chỉ khi đã TO_APPROVED
+     * Xuất kho nguồn (trừ tồn) — chỉ khi đã FROM_APPROVED
      */
     @Override
     @Transactional
     public InventoryTransfer export(Long id, Integer staffUserId) {
         InventoryTransfer tr = findTransferOrThrow(id);
-        requireStatus(tr, InventoryTransfer.Status.TO_APPROVED);
+        requireStatus(tr, InventoryTransfer.Status.FROM_APPROVED);
 
         Integer fromWhId = tr.getFromWarehouse().getId();
         // 1) Kiểm tra đủ tồn cho tất cả dòng (có lock)

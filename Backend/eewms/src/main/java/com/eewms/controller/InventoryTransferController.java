@@ -25,10 +25,18 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Controller quản lý phiếu chuyển kho.
+ *
+ * Quy tắc phân quyền (tham chiếu transferPermission):
+ * - STAFF kho NGUỒN   -> được EXPORT.
+ * - STAFF kho ĐÍCH   -> được IMPORT.
+ * - MANAGER kho NGUỒN -> được duyệt FROM (approve-from).
+ * - MANAGER kho ĐÍCH -> được duyệt TO (approve-to).
+ */
 @Controller
 @RequestMapping("/inventory-transfers")
 @RequiredArgsConstructor
@@ -38,24 +46,27 @@ public class InventoryTransferController {
     private final WarehouseRepository warehouseRepository;
     private final IUserService userService;
     private final IWarehouseService warehouseService;
-
     private final ProductRepository productRepository;
     private final ProductWarehouseStockRepository pwsRepository;
 
     // ------------------ Common dropdowns ------------------
+
+    /** Preload danh sách tất cả kho cho form/search */
     @ModelAttribute("allWarehouses")
     public List<Warehouse> allWarehouses() {
         return warehouseRepository.findAll();
     }
 
+    /** Preload enum status để render filter */
     @ModelAttribute("allStatuses")
     public InventoryTransfer.Status[] allStatuses() {
         return InventoryTransfer.Status.values();
     }
 
     // ------------------ List page ------------------
+
     @GetMapping
-    // @PreAuthorize("hasAnyRole('STAFF','MANAGER')")
+    @PreAuthorize("hasAnyRole('STAFF','MANAGER')")
     public String list(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) InventoryTransfer.Status status,
@@ -80,54 +91,51 @@ public class InventoryTransferController {
     }
 
     // ------------------ New form ------------------
+
     @GetMapping("/new")
-    // @PreAuthorize("hasAnyRole('STAFF','MANAGER')")
+    @PreAuthorize("hasAnyRole('STAFF','MANAGER')")
     public String createForm(Model model) {
-        //user hiện tại
         User currentUser = userService.getCurrentUser();
 
-        //kho đích (kho user này được assign vào)
+        // Gợi ý kho đích mặc định (kho mà user đang là staff/manager)
         Long wid = warehouseService.findPrimaryWarehouseIdByUser(currentUser.getId());
         Warehouse toWarehouse = (wid != null) ? warehouseService.getById(wid.intValue()) : null;
 
-        //phiếu chuyển kho
+        // Tạo phiếu nháp ban đầu
         InventoryTransfer form = InventoryTransfer.builder()
                 .status(InventoryTransfer.Status.DRAFT)
                 .createdBy(currentUser)
                 .toWarehouse(toWarehouse)
                 .build();
+        form.getItems().add(InventoryTransferItem.builder().build()); // add 1 dòng trắng
 
-        // tạo sẵn 1 dòng hàng cho UX
-        form.getItems().add(InventoryTransferItem.builder().build());
-
-        // preload danh mục SP nhẹ + tồn kho phẳng (cho datalist)
+        // preload danh mục SP & tồn kho
         List<ProductLiteDTO> productsLite = productRepository.findAllLite();
         List<StockFlatDTO> stocksFlat = pwsRepository.findAllFlat();
 
-        // data bind cho view
         model.addAttribute("transfer", form);
-        model.addAttribute("toWarehouseFixed", toWarehouse);                  // để hiển thị readonly
-        model.addAttribute("fromWarehouses", warehouseService.getAll());      // kho nguồn để chọn
-
-        model.addAttribute("productsLite", productsLite);                     // preload cho datalist
-        model.addAttribute("stocksFlat", stocksFlat);                           // preload tồn kho
+        model.addAttribute("toWarehouseFixed", toWarehouse);     // hiển thị readonly
+        model.addAttribute("fromWarehouses", warehouseService.getAll());
+        model.addAttribute("productsLite", productsLite);
+        model.addAttribute("stocksFlat", stocksFlat);
 
         return "inventory-transfer/transfer-form";
     }
 
     @PostMapping
-    // @PreAuthorize("hasAnyRole('STAFF','MANAGER')")
+    @PreAuthorize("hasAnyRole('STAFF','MANAGER')")
     public String saveDraft(@ModelAttribute("transfer") @Valid InventoryTransfer transfer,
                             BindingResult binding, Model model, RedirectAttributes ra) {
 
-        // 1) Người tạo + default status
         User currentUser = userService.getCurrentUser();
         transfer.setCreatedBy(currentUser);
+
+        // Nếu chưa set status -> mặc định nháp
         if (transfer.getStatus() == null) {
             transfer.setStatus(InventoryTransfer.Status.DRAFT);
         }
 
-        // 2) Làm sạch & vá đơn vị đo cho các dòng hàng
+        // Validate danh sách item: bỏ rỗng, load lại Product đầy đủ, vá đơn vị đo
         if (transfer.getItems() != null) {
             transfer.getItems().removeIf(it ->
                     it == null
@@ -136,22 +144,18 @@ public class InventoryTransferController {
                             || it.getQuantity() == null
                             || it.getQuantity().doubleValue() <= 0
             );
-
             for (InventoryTransferItem it : transfer.getItems()) {
-                // đảm bảo entity Product “đầy đủ” (tránh chỉ có id trần)
                 Integer pid = it.getProduct().getId().intValue();
                 var p = productRepository.findById(pid)
                         .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm id=" + pid));
                 it.setProduct(p);
-
-                // nếu đơn vị trống thì lấy theo sản phẩm
                 if (it.getUnitName() == null || it.getUnitName().isBlank()) {
-                    it.setUnitName(p.getUnit().getName()); // (field Product.unitName)
+                    it.setUnitName(p.getUnit().getName());
                 }
             }
         }
 
-        // 3) Nếu có lỗi bind form -> nạp lại preload rồi quay lại form
+        // Nếu bind lỗi -> quay lại form với preload
         if (binding.hasErrors()) {
             model.addAttribute("fromWarehouses", warehouseService.getAll());
             model.addAttribute("productsLite", productRepository.findAllLite());
@@ -163,18 +167,16 @@ public class InventoryTransferController {
             return "inventory-transfer/transfer-form";
         }
 
-        // 4) Lưu
+        // Lưu
         var saved = transferService.createDraft(transfer);
         ra.addFlashAttribute("toastr_success", "Đã lưu phiếu nháp: " + saved.getCode());
         return "redirect:/inventory-transfers/" + saved.getId();
     }
 
-
-
-
     // ------------------ Detail page ------------------
+
     @GetMapping("/{id}")
-    // @PreAuthorize("hasAnyRole('STAFF','MANAGER')")
+    @PreAuthorize("hasAnyRole('STAFF','MANAGER')")
     public String detail(@PathVariable Long id, Model model, RedirectAttributes ra) {
         try {
             InventoryTransfer tr = transferService.get(id);
@@ -186,9 +188,11 @@ public class InventoryTransferController {
         }
     }
 
-    // ------------------ Actions: approve/export/import/cancel ------------------
+    // ------------------ Actions ------------------
+
+    /** MANAGER của kho NGUỒN duyệt */
     @PostMapping("/{id}/approve-from")
-    // @PreAuthorize("@authz.canApproveFrom(#id)") // gợi ý rule
+    @PreAuthorize("@transferPermission.canApproveFrom(#id)")
     public String approveFrom(@PathVariable Long id, RedirectAttributes ra) {
         try {
             Integer uid = userService.getCurrentUser().getId().intValue();
@@ -200,8 +204,9 @@ public class InventoryTransferController {
         return "redirect:/inventory-transfers/" + id;
     }
 
+    /** MANAGER của kho ĐÍCH duyệt */
     @PostMapping("/{id}/approve-to")
-    // @PreAuthorize("@authz.canApproveTo(#id)")
+    @PreAuthorize("@transferPermission.canApproveTo(#id)")
     public String approveTo(@PathVariable Long id, RedirectAttributes ra) {
         try {
             Integer uid = userService.getCurrentUser().getId().intValue();
@@ -213,8 +218,9 @@ public class InventoryTransferController {
         return "redirect:/inventory-transfers/" + id;
     }
 
+    /** STAFF của kho NGUỒN được export */
     @PostMapping("/{id}/export")
-    // @PreAuthorize("@authz.canExport(#id)")
+    @PreAuthorize("@transferPermission.canExport(#id)")
     public String export(@PathVariable Long id, RedirectAttributes ra) {
         try {
             Integer uid = userService.getCurrentUser().getId().intValue();
@@ -226,8 +232,9 @@ public class InventoryTransferController {
         return "redirect:/inventory-transfers/" + id;
     }
 
+    /** STAFF của kho ĐÍCH được import */
     @PostMapping("/{id}/import")
-    // @PreAuthorize("@authz.canImport(#id)")
+    @PreAuthorize("@transferPermission.canImport(#id)")
     public String importTo(@PathVariable Long id, RedirectAttributes ra) {
         try {
             Integer uid = userService.getCurrentUser().getId().intValue();
@@ -239,8 +246,9 @@ public class InventoryTransferController {
         return "redirect:/inventory-transfers/" + id;
     }
 
+    /** Huỷ phiếu: mở tuỳ chính sách, tạm để MANAGER/STAFF nào cũng cancel */
     @PostMapping("/{id}/cancel")
-    // @PreAuthorize("@authz.canCancel(#id)")
+    @PreAuthorize("hasAnyRole('STAFF','MANAGER')")
     public String cancel(@PathVariable Long id, RedirectAttributes ra) {
         try {
             transferService.cancel(id, null);

@@ -19,7 +19,8 @@
                     <div class="text-gray-600 text-sm">
                         Tạo lúc <span th:text="${#temporals.format(t.createdAt,'dd/MM/yyyy HH:mm')}">--</span> •
                         Trạng thái:
-                        <span class="px-2 py-1 rounded text-xs font-medium bg-gray-100" th:text="${t.status.label}">Nháp</span>
+                        <span class="px-2 py-1 rounded text-xs font-medium bg-gray-100"
+                              th:text="${t.status.label}">Nháp</span>
                     </div>
                 </div>
             </div>
@@ -33,27 +34,31 @@
                 <div class="bg-white rounded border p-4">
                     <div class="font-semibold mb-2">Thông tin</div>
                     <div class="text-sm text-gray-700 space-y-1">
-                        <div>Kho nguồn: <b th:text="${t.fromWarehouse != null ? t.fromWarehouse.name : ''}">--</b></div>
                         <div>Kho đích: <b th:text="${t.toWarehouse != null ? t.toWarehouse.name : ''}">--</b></div>
+                        <div>Kho nguồn: <b th:text="${t.fromWarehouse != null ? t.fromWarehouse.name : ''}">--</b></div>
                         <div>Ghi chú: <span th:text="${t.note}">--</span></div>
                     </div>
                 </div>
                 <div class="bg-white rounded border p-4">
                     <div class="font-semibold mb-2">Duyệt</div>
                     <div class="text-sm text-gray-700 space-y-1">
-                        <div>Kho nguồn: <b th:text="${t.fromApprovedBy != null ? t.fromApprovedBy.fullName : '-'}"></b>
-                            <span th:text="${t.fromApprovedAt != null ? #temporals.format(t.fromApprovedAt,'dd/MM/yyyy HH:mm') : ''}"></span></div>
                         <div>Kho đích: <b th:text="${t.toApprovedBy != null ? t.toApprovedBy.fullName : '-'}"></b>
-                            <span th:text="${t.toApprovedAt != null ? #temporals.format(t.toApprovedAt,'dd/MM/yyyy HH:mm') : ''}"></span></div>
+                            <span th:text="${t.toApprovedAt != null ? #temporals.format(t.toApprovedAt,'dd/MM/yyyy HH:mm') : ''}"></span>
+                        </div>
+                        <div>Kho nguồn: <b th:text="${t.fromApprovedBy != null ? t.fromApprovedBy.fullName : '-'}"></b>
+                            <span th:text="${t.fromApprovedAt != null ? #temporals.format(t.fromApprovedAt,'dd/MM/yyyy HH:mm') : ''}"></span>
+                        </div>
                     </div>
                 </div>
                 <div class="bg-white rounded border p-4">
                     <div class="font-semibold mb-2">Xuất / Nhập</div>
                     <div class="text-sm text-gray-700 space-y-1">
                         <div>Xuất: <b th:text="${t.exportedBy != null ? t.exportedBy.fullName : '-'}"></b>
-                            <span th:text="${t.exportedAt != null ? #temporals.format(t.exportedAt,'dd/MM/yyyy HH:mm') : ''}"></span></div>
+                            <span th:text="${t.exportedAt != null ? #temporals.format(t.exportedAt,'dd/MM/yyyy HH:mm') : ''}"></span>
+                        </div>
                         <div>Nhập: <b th:text="${t.importedBy != null ? t.importedBy.fullName : '-'}"></b>
-                            <span th:text="${t.importedAt != null ? #temporals.format(t.importedAt,'dd/MM/yyyy HH:mm') : ''}"></span></div>
+                            <span th:text="${t.importedAt != null ? #temporals.format(t.importedAt,'dd/MM/yyyy HH:mm') : ''}"></span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -87,36 +92,42 @@
 
             <!-- Action buttons theo trạng thái -->
             <div class="flex justify-end gap-2 mt-4">
-                <form th:if="${t.status.name()=='DRAFT'}" th:action="@{|/inventory-transfers/${t.id}/cancel|}" method="post">
+                <form th:if="${t.status.name()=='DRAFT'}" th:action="@{|/inventory-transfers/${t.id}/cancel|}"
+                      method="post">
                     <button class="px-3 py-2 bg-red-600 hover:bg-red-700 shadow text-white rounded">Huỷ</button>
                 </form>
-                <form sec:authorize="hasRole('MANAGER')"
-                      th:if="${t.status.name()=='DRAFT'}"
-                      th:action="@{|/inventory-transfers/${t.id}/approve-from|}" method="post">
-                    <input type="hidden" name="managerUserId" value="/* currentUserId */"/>
-                    <button class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded shadow">Duyệt kho nguồn</button>
-                </form>
 
-                <form sec:authorize="hasRole('MANAGER')"
-                      th:if="${t.status.name()=='FROM_APPROVED'}"
+                <!-- Bước 1: Manager KHO ĐÍCH duyệt -> TO_APPROVE -->
+                <form th:if="${t.status.name()=='DRAFT' and @transferPermission.canApproveTo(t.id)}"
                       th:action="@{|/inventory-transfers/${t.id}/approve-to|}" method="post">
                     <input type="hidden" name="managerUserId" value="/* currentUserId */"/>
-                    <button class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded shadow">Duyệt kho đích</button>
+                    <button class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded shadow">Duyệt kho đích
+                    </button>
                 </form>
 
-                <form sec:authorize="hasRole('STAFF')"
-                      th:if="${t.status.name()=='TO_APPROVED'}" th:action="@{|/inventory-transfers/${t.id}/export|}" method="post">
+                <!-- Bước 2: Manager KHO NGUỒN duyệt -> FROM_APPROVE -->
+                <form th:if="${t.status.name()=='TO_APPROVED' and @transferPermission.canApproveFrom(t.id)}"
+                      th:action="@{|/inventory-transfers/${t.id}/approve-from|}" method="post">
+                    <input type="hidden" name="managerUserId" value="/* currentUserId */"/>
+                    <button class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded shadow">Duyệt kho nguồn
+                    </button>
+
+                </form>
+
+                <!-- Bước 3: Staff KHO NGUỒN xuất -> EXPORTED -->
+                <form th:if="${t.status.name()=='FROM_APPROVED' and @transferPermission.canExport(t.id)}"
+                      th:action="@{|/inventory-transfers/${t.id}/export|}" method="post">
                     <input type="hidden" name="staffUserId" value="/* currentUserId */"/>
                     <button class="px-3 py-2 bg-emerald-600 text-white rounded">Xuất kho nguồn</button>
                 </form>
 
-                <form sec:authorize="hasRole('STAFF')"
-                      th:if="${t.status.name()=='EXPORTED'}" th:action="@{|/inventory-transfers/${t.id}/import|}" method="post">
+                <!-- Bước 4: Staff KHO ĐÍCH nhập -> IMPORTED -->
+                <form th:if="${t.status.name()=='EXPORTED' and @transferPermission.canImport(t.id)}"
+                      th:action="@{|/inventory-transfers/${t.id}/import|}" method="post">
                     <input type="hidden" name="staffUserId" value="/* currentUserId */"/>
                     <button class="px-3 py-2 bg-green-600 text-white rounded">Nhập kho đích</button>
                 </form>
             </div>
-
         </div>
     </main>
 </div>
