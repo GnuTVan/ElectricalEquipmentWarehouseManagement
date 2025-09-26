@@ -1,5 +1,6 @@
 package com.eewms.repository;
 
+import com.eewms.dto.ProductLiteDTO;
 import com.eewms.entities.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -174,6 +175,32 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
           and coalesce(p.quantity,0) >= :qty
     """)
     int tryDecreaseOnHand(@Param("pid") Integer productId, @Param("qty") Integer qty);
+
+    // Tìm kiếm cho autocomplete của tạo phiếu chuyển kho(chỉ lấy ACTIVE, không phân trang, giới hạn số kết quả trả về)
+    @Query("""
+      select p from Product p
+      where p.status = com.eewms.entities.Product.ProductStatus.ACTIVE
+        and lower(p.name) like lower(concat('%', :q, '%'))
+      order by p.name asc
+      """)
+    List<Product> searchActiveByNameLike(@Param("q") String q, Pageable pageable);
+
+    //query để map ProductLiteDTO
+    @Query("""
+    select new com.eewms.dto.ProductLiteDTO(
+        p.id, p.code, p.name, u.name
+    )
+    from Product p
+    join p.unit u
+    where p.status = com.eewms.entities.Product.ProductStatus.ACTIVE
+    order by p.code asc
+""")
+    List<ProductLiteDTO> findAllLite();
+
+    // dùng để save phiếu chuyển kho
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.unit WHERE p.id = :id")
+    Optional<Product> findWithUnit(@Param("id") Integer id);
+
 }
 
 

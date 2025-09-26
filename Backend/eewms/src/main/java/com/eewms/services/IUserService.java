@@ -63,4 +63,13 @@ public interface IUserService {
      * Cập nhật mật khẩu mới cho user (BCrypt encode)
      */
     void updatePassword(Long userId, String rawPassword);
+
+    //Lấy entity User đang đăng nhập (null nếu chưa đăng nhập)
+    User getCurrentUser();
+
+    //Lấy ID user đang đăng nhập (null nếu chưa đăng nhập
+    Long getCurrentUserId();
+
+    //Kiểm tra role của user hiện tại ('STAFF', 'MANAGER', 'ADMIN'...)
+    boolean hasRole(String role);
 }

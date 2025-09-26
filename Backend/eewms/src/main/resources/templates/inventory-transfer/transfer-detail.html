@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/common-head :: commonHead('Chi tiết phiếu chuyển kho')}"></head>
+
+<body class="bg-gray-100 font-sans" th:with="t=${transfer}">
+<div class="flex min-h-screen">
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <main class="flex-1 ml-64">
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <div class="px-6 py-6">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">
+                        Phiếu chuyển <span class="text-blue-600" th:text="${t.code}">TRF-XX</span>
+                    </h1>
+                    <div class="text-gray-600 text-sm">
+                        Tạo lúc <span th:text="${#temporals.format(t.createdAt,'dd/MM/yyyy HH:mm')}">--</span> •
+                        Trạng thái:
+                        <span class="px-2 py-1 rounded text-xs font-medium bg-gray-100" th:text="${t.status.label}">Nháp</span>
+                    </div>
+                </div>
+                <a th:href="@{/inventory-transfers}" class="text-sm text-gray-600 hover:text-gray-900">
+                    <i class="ri-arrow-left-line mr-1"></i> Quay lại
+                </a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white rounded border p-4">
+                    <div class="font-semibold mb-2">Thông tin</div>
+                    <div class="text-sm text-gray-700 space-y-1">
+                        <div>Kho nguồn: <b th:text="${t.fromWarehouse != null ? t.fromWarehouse.name : ''}">--</b></div>
+                        <div>Kho đích: <b th:text="${t.toWarehouse != null ? t.toWarehouse.name : ''}">--</b></div>
+                        <div>Ghi chú: <span th:text="${t.note}">--</span></div>
+                    </div>
+                </div>
+                <div class="bg-white rounded border p-4">
+                    <div class="font-semibold mb-2">Duyệt</div>
+                    <div class="text-sm text-gray-700 space-y-1">
+                        <div>Kho nguồn: <b th:text="${t.fromApprovedBy != null ? t.fromApprovedBy.fullName : '-'}"></b>
+                            <span th:text="${t.fromApprovedAt != null ? #temporals.format(t.fromApprovedAt,'dd/MM/yyyy HH:mm') : ''}"></span></div>
+                        <div>Kho đích: <b th:text="${t.toApprovedBy != null ? t.toApprovedBy.fullName : '-'}"></b>
+                            <span th:text="${t.toApprovedAt != null ? #temporals.format(t.toApprovedAt,'dd/MM/yyyy HH:mm') : ''}"></span></div>
+                    </div>
+                </div>
+                <div class="bg-white rounded border p-4">
+                    <div class="font-semibold mb-2">Xuất / Nhập</div>
+                    <div class="text-sm text-gray-700 space-y-1">
+                        <div>Xuất: <b th:text="${t.exportedBy != null ? t.exportedBy.fullName : '-'}"></b>
+                            <span th:text="${t.exportedAt != null ? #temporals.format(t.exportedAt,'dd/MM/yyyy HH:mm') : ''}"></span></div>
+                        <div>Nhập: <b th:text="${t.importedBy != null ? t.importedBy.fullName : '-'}"></b>
+                            <span th:text="${t.importedAt != null ? #temporals.format(t.importedAt,'dd/MM/yyyy HH:mm') : ''}"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded border mt-4">
+                <div class="px-4 py-3 border-b font-medium">Hàng hoá</div>
+                <div class="p-4">
+                    <table class="w-full table-auto text-sm">
+                        <thead class="bg-gray-50">
+                        <tr class="text-left">
+                            <th class="px-3 py-2">Mã SP</th>
+                            <th class="px-3 py-2">Tên SP</th>
+                            <th class="px-3 py-2">Đơn vị</th>
+                            <th class="px-3 py-2">Số lượng</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="it : ${t.items}">
+                            <td class="px-3 py-2" th:text="${it.product != null ? it.product.code : ''}">P001</td>
+                            <td class="px-3 py-2" th:text="${it.product != null ? it.product.name : ''}">Tên</td>
+                            <td class="px-3 py-2" th:text="${it.unitName}">cái</td>
+                            <td class="px-3 py-2" th:text="${it.quantity}">1.00</td>
+                        </tr>
+                        <tr th:if="${t.items == null or #lists.isEmpty(t.items)}">
+                            <td colspan="4" class="px-3 py-6 text-center text-gray-500 italic">Không có dữ liệu.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Action buttons theo trạng thái -->
+            <div class="flex justify-end gap-2 mt-4">
+                <form th:if="${t.status.name()=='DRAFT'}" th:action="@{|/inventory-transfers/${t.id}/approve-from|}" method="post">
+                    <input type="hidden" name="managerUserId" value="/* currentUserId */"/>
+                    <button class="px-3 py-2 bg-amber-600 text-white rounded">Duyệt kho nguồn</button>
+                </form>
+
+                <form th:if="${t.status.name()=='FROM_APPROVED'}" th:action="@{|/inventory-transfers/${t.id}/approve-to|}" method="post">
+                    <input type="hidden" name="managerUserId" value="/* currentUserId */"/>
+                    <button class="px-3 py-2 bg-amber-500 text-white rounded">Duyệt kho đích</button>
+                </form>
+
+                <form th:if="${t.status.name()=='TO_APPROVED'}" th:action="@{|/inventory-transfers/${t.id}/export|}" method="post">
+                    <input type="hidden" name="staffUserId" value="/* currentUserId */"/>
+                    <button class="px-3 py-2 bg-emerald-600 text-white rounded">Xuất kho nguồn</button>
+                </form>
+
+                <form th:if="${t.status.name()=='EXPORTED'}" th:action="@{|/inventory-transfers/${t.id}/import|}" method="post">
+                    <input type="hidden" name="staffUserId" value="/* currentUserId */"/>
+                    <button class="px-3 py-2 bg-green-600 text-white rounded">Nhập kho đích</button>
+                </form>
+
+                <form th:if="${t.status.name()=='DRAFT'}" th:action="@{|/inventory-transfers/${t.id}/cancel|}" method="post">
+                    <button class="px-3 py-2 bg-red-600 text-white rounded">Huỷ</button>
+                </form>
+            </div>
+
+        </div>
+    </main>
+</div>
+</body>
+</html>

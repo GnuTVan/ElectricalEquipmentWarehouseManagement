@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 /**
  * Một dòng tồn của MỘT sản phẩm tại MỘT kho.
  * Dùng cho trang: /admin/inventory/warehouses/{id}/stock
@@ -15,5 +17,5 @@ public class WarehouseStockRowDTO {
     private Integer productId;
     private String productCode;
     private String productName;
-    private Integer quantity;
+    private BigDecimal quantity;
 }

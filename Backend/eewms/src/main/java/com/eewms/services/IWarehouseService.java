@@ -20,4 +20,10 @@ public interface IWarehouseService {
     List<Integer> listStaffIds(Integer warehouseId);
     void addStaff(Integer warehouseId, Long userId);
     void removeStaff(Integer warehouseId, Long userId);
+
+    //Trả về warehouseId chính của user (ưu tiên là staff, nếu không thì supervisor)
+    Long findPrimaryWarehouseIdByUser(Long userId);
+
+    // trả về Warehouse
+    Warehouse findWarehouseByUser(Long userId);
 }

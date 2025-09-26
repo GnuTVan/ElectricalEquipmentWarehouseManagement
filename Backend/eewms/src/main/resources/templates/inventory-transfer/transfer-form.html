@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/common-head :: commonHead('Tạo phiếu chuyển kho')}"></head>
+
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <!-- Main content -->
+    <main id="mainContent" class="flex-1 ml-64 transition-all duration-300 relative">
+        <!-- Header -->
+        <div th:replace="~{fragments/header :: header}"></div>
+
+        <div class="px-6 py-6" th:object="${transfer}">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-2xl font-bold text-gray-800">Tạo phiếu chuyển kho</h1>
+                <a th:href="@{/inventory-transfers}" class="text-sm text-gray-600 hover:text-gray-900">
+                    <i class="ri-arrow-left-line mr-1"></i> Quay lại danh sách
+                </a>
+            </div>
+
+            <!-- Card form -->
+            <form method="post" th:action="@{/inventory-transfers}"
+                  class="space-y-5 bg-white rounded-lg shadow p-6 border border-gray-200">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                <!-- 2 cột chọn kho -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="mb-1 block text-sm text-gray-700">Kho nguồn</label>
+                        <select id="fromWarehouseSelect"
+                                th:field="*{fromWarehouse.id}"
+                                class="w-full border rounded px-3 py-2 text-sm" required>
+                            <option value="">-- Chọn kho nguồn --</option>
+                            <option th:each="wh : ${fromWarehouses}"
+                                    th:value="${wh.id}"
+                                    th:text="${wh.name}">
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm text-gray-700">Kho đích</label>
+                        <input type="hidden" th:field="*{toWarehouse.id}"/>
+                        <input type="text" th:value="${toWarehouseFixed != null ? toWarehouseFixed.name : 'Chưa có'}"
+                               class="w-full border rounded px-3 py-2 text-sm bg-gray-100" readonly/>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="mb-1 block text-sm text-gray-700">Ghi chú</label>
+                    <textarea th:field="*{note}" rows="3" class="w-full border rounded px-3 py-2 text-sm"
+                              placeholder="Ghi chú nội bộ (không bắt buộc)"></textarea>
+                </div>
+
+                <!-- Bảng dòng hàng -->
+                <div class="rounded-lg border border-gray-200 bg-white">
+                    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+                        <div class="font-medium">Hàng hoá</div>
+                        <button type="button" id="btnAddRow"
+                                class="inline-flex items-center gap-1 px-3 py-2 border rounded bg-white hover:bg-gray-50 text-sm">
+                            <i class="ri-add-line"></i> Thêm dòng
+                        </button>
+                    </div>
+
+                    <div class="p-4">
+                        <!-- datalist preload sản phẩm -->
+                        <datalist id="productList">
+                            <option th:each="p : ${productsLite}"
+                                    th:value="${p.name}"
+                                    th:attr="data-id=${p.id}, data-code=${p.code}, data-unit=${p.unitName}"
+                                    th:text="${p.code + ' — ' + p.name + (p.unitName != null ? ' (' + p.unitName + ')' : '')}">
+                            </option>
+                        </datalist>
+
+                        <table class="w-full table-auto text-sm">
+                            <thead>
+                            <tr class="text-left bg-gray-50">
+                                <th class="px-3 py-2">Sản phẩm</th>
+                                <th class="px-3 py-2 text-center">Tồn (kho nguồn)</th>
+                                <th class="px-3 py-2 text-center">Số lượng</th>
+                                <th class="px-3 py-2">Đơn vị</th>
+                                <th class="px-3 py-2 w-12"></th>
+                            </tr>
+                            </thead>
+                            <tbody id="itemBody">
+                            <tr th:each="it, idx : *{items}">
+                                <td class="px-3 py-2">
+                                    <!-- name + hidden id -->
+                                    <input type="text" class="w-72 border rounded px-2 py-1 product-name"
+                                           list="productList" placeholder="Tìm kiếm sản phẩm"
+                                           th:value="${it.product != null ? it.product.name : ''}">
+                                    <input type="hidden" th:field="*{items[__${idx.index}__].product.id}"
+                                           class="product-id"/>
+                                </td>
+                                <td class="px-3 py-2 text-center">
+                                    <span class="inline-block min-w-[60px] px-2 py-1 rounded border bg-white stock-badge">-</span>
+                                </td>
+                                <td class="px-3 py-2 text-center">
+                                    <input type="number"
+                                           class="w-28 border rounded px-2 py-1 quantity"
+                                           th:field="*{items[__${idx.index}__].quantity}" placeholder="0">
+                                </td>
+                                <td class="px-3 py-2">
+                                    <input type="text" class="w-40 border rounded px-2 py-1 bg-gray-50 unit-name"
+                                           readonly
+                                           th:field="*{items[__${idx.index}__].unitName}"
+                                           placeholder="Tự set theo sản phẩm">
+                                </td>
+                                <td class="px-3 py-2 text-center">
+                                    <button type="button" class="px-2 py-1 border rounded hover:bg-gray-50 btn-remove">
+                                        X
+                                    </button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="flex items-center justify-end gap-3">
+                    <a th:href="@{/inventory-transfers}"
+                       class="inline-flex items-center gap-1 px-4 py-2 border rounded bg-white hover:bg-gray-50 text-sm">
+                        Hủy
+                    </a>
+                    <button type="submit"
+                            class="inline-flex items-center gap-1 px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white text-sm">
+                        Xác nhận
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+
+<!-- ===== Data preload & logic ===== -->
+<script th:inline="javascript">
+    // Preload từ model (controller đã đưa vào model: productsLite, stocksFlat)
+    const PRODUCTS = /*[[${productsLite}]]*/ [];
+    const STOCKS_FLAT = /*[[${stocksFlat}]]*/ []; // [{warehouseId, productId, quantity}]
+
+    // Map tồn: key = `${wid}:${pid}` -> số lượng
+    const stockMap = (() => {
+        const m = new Map();
+        (STOCKS_FLAT || []).forEach(s => {
+            const wid = Number(s.warehouseId);   // ép số
+            const pid = Number(s.productId);     // ép số
+            const qty = Number(s.quantity || 0); // BigDecimal -> Number
+            if (Number.isFinite(wid) && Number.isFinite(pid)) {
+                m.set(`${wid}:${pid}`, qty);
+            }
+        });
+        return m;
+    })();
+
+    // Từ tên -> sản phẩm (case-insensitive)
+    function norm(s) {
+        return (s || '').toString().toLowerCase().trim().replace(/\s+/g, ' ')
+    }
+
+    function findProductSmart(input) {
+        if (!input) return null;
+        const raw = String(input);
+        const n = norm(raw);
+        const codeInParen = (raw.match(/\(([^)]+)\)/) || [])[1]?.trim(); // lấy mã trong ngoặc nếu có
+
+        // exact theo name
+        let p = PRODUCTS.find(x => norm(x.name) === n);
+        if (p) return p;
+
+        // exact theo code / code trong ngoặc
+        p = PRODUCTS.find(x => norm(x.code) === n);
+        if (p) return p;
+        if (codeInParen) {
+            p = PRODUCTS.find(x => norm(x.code) === norm(codeInParen));
+            if (p) return p;
+        }
+
+        // dạng "name (code)" / "code — name"
+        p = PRODUCTS.find(x => n === `${norm(x.name)} (${norm(x.code)})`);
+        if (p) return p;
+        p = PRODUCTS.find(x => n === `${norm(x.code)} — ${norm(x.name)}`);
+        if (p) return p;
+
+        // startsWith/includes hai chiều
+        p = PRODUCTS.find(x => norm(x.name).startsWith(n) || n.startsWith(norm(x.name)));
+        if (p) return p;
+        p = PRODUCTS.find(x => norm(x.name).includes(n) || n.includes(norm(x.name)));
+        if (p) return p;
+
+        // fallback theo code
+        p = PRODUCTS.find(x => norm(x.code).includes(n) || n.includes(norm(x.code)));
+        if (p) return p;
+
+        return null;
+    }
+
+    function getStock(fromWid, pid) {
+        if (!fromWid || !pid) return 0;
+        const k = `${String(fromWid)}:${String(pid)}`;
+        return Number(stockMap.get(k) || 0);
+    }
+
+    function clampQuantityInput(qtyEl, maxStock) {
+        let val = Number(qtyEl.value || 0);
+        if (isNaN(val) || val <= 0) val = 0.01;
+        if (Number.isFinite(maxStock) && maxStock > 0 && val > maxStock) {
+            val = maxStock;
+        }
+        qtyEl.value = String(val);
+    }
+
+    function reindexRows() {
+        const body = document.getElementById('itemBody');
+        const rows = body.querySelectorAll('tr');
+        rows.forEach((tr, i) => {
+            // Field product.id
+            const pid = tr.querySelector('.product-id');
+            if (pid && pid.name) pid.name = pid.name.replace(/\[\d+]/, `[${i}]`);
+            // Field quantity
+            const qty = tr.querySelector('.quantity');
+            if (qty && qty.name) qty.name = qty.name.replace(/\[\d+]/, `[${i}]`);
+            // Field unitName
+            const unit = tr.querySelector('.unit-name');
+            if (unit && unit.name) unit.name = unit.name.replace(/\[\d+]/, `[${i}]`);
+        });
+    }
+
+    function attachRowEvents(tr) {
+        const nameEl = tr.querySelector('.product-name');
+        const idEl = tr.querySelector('.product-id');
+        const unitEl = tr.querySelector('.unit-name');
+        const stockBadge = tr.querySelector('.stock-badge');
+        const qtyEl = tr.querySelector('.quantity');
+
+        function refreshStockAndValidate() {
+            const fromWid = Number(document.getElementById('fromWarehouseSelect')?.value || 0);
+            const pid = Number(idEl.value || 0);
+            const stock = getStock(fromWid, pid);
+            if (stockBadge) stockBadge.textContent = Number.isFinite(stock) ? stock.toLocaleString('vi-VN') : '-';
+            if (qtyEl) {
+                qtyEl.max = String(stock);
+                clampQuantityInput(qtyEl, stock);
+                // style cảnh báo
+                if (Number(qtyEl.value || 0) > stock) {
+                    qtyEl.classList.add('border-red-500', 'bg-red-50');
+                } else {
+                    qtyEl.classList.remove('border-red-500', 'bg-red-50');
+                }
+            }
+        }
+
+        // Khi người dùng chọn/nhập tên sản phẩm
+        const onNameChosen = () => {
+            const p = findProductSmart(nameEl.value);
+            if (p) {
+                idEl.value = p.id;
+                unitEl.value = p.unitName || '';
+            } else {
+                idEl.value = '';
+                unitEl.value = '';
+                if (stockBadge) stockBadge.textContent = '-';
+            }
+            refreshStockAndValidate();
+        };
+
+
+        nameEl.addEventListener('change', onNameChosen);
+        nameEl.addEventListener('blur', onNameChosen);
+        nameEl.addEventListener('input', () => {
+            // clear id/unit khi người dùng tiếp tục gõ
+            idEl.value = '';
+            unitEl.value = '';
+            stockBadge.textContent = '-';
+        });
+
+        qtyEl.addEventListener('input', () => {
+            const stock = Number(qtyEl.max || 0);
+            clampQuantityInput(qtyEl, stock);
+            if (Number(qtyEl.value || 0) > stock) {
+                qtyEl.classList.add('border-red-500', 'bg-red-50');
+            } else {
+                qtyEl.classList.remove('border-red-500', 'bg-red-50');
+            }
+        });
+
+        // Nút xoá
+        tr.querySelector('.btn-remove')?.addEventListener('click', () => {
+            tr.remove();
+            reindexRows();
+        });
+
+        // Khởi tạo lần đầu (nếu row có sẵn giá trị từ server)
+        onNameChosen();
+    }
+
+    function addEmptyRow() {
+        const body = document.getElementById('itemBody');
+        const idx = body.querySelectorAll('tr').length;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+      <td class="px-3 py-2">
+        <input type="text" class="w-72 border rounded px-2 py-1 product-name"
+               list="productList" placeholder="Nhập tên sản phẩm (không phân biệt hoa/thường)">
+        <input type="hidden" name="items[${idx}].product.id" class="product-id"/>
+      </td>
+      <td class="px-3 py-2 text-center">
+        <span class="inline-block min-w-[60px] px-2 py-1 rounded border bg-white stock-badge">-</span>
+      </td>
+      <td class="px-3 py-2 text-center">
+        <input type="number" step="0.01" min="0.01" class="w-28 border rounded px-2 py-1 quantity"
+               name="items[${idx}].quantity" placeholder="0.00">
+      </td>
+      <td class="px-3 py-2">
+        <input type="text" class="w-40 border rounded px-2 py-1 bg-gray-50 unit-name" readonly
+               name="items[${idx}].unitName" placeholder="Tự set theo sản phẩm">
+      </td>
+      <td class="px-3 py-2 text-center">
+        <button type="button" class="px-2 py-1 border rounded hover:bg-gray-50 btn-remove">X</button>
+      </td>`;
+        body.appendChild(tr);
+        attachRowEvents(tr);
+        reindexRows();
+    }
+
+    // Bootstrap
+    document.addEventListener('DOMContentLoaded', () => {
+        // gắn event cho các dòng được render sẵn từ server
+        document.querySelectorAll('#itemBody > tr').forEach(tr => attachRowEvents(tr));
+
+        // thêm dòng
+        document.getElementById('btnAddRow')?.addEventListener('click', addEmptyRow);
+
+        // đổi kho nguồn -> cập nhật tồn & validate tất cả dòng
+        document.getElementById('fromWarehouseSelect')?.addEventListener('change', () => {
+            document.querySelectorAll('#itemBody > tr').forEach(tr => {
+                const idEl = tr.querySelector('.product-id');
+                const stockBadge = tr.querySelector('.stock-badge');
+                const qtyEl = tr.querySelector('.quantity');
+                const fromWid = Number(document.getElementById('fromWarehouseSelect')?.value || 0);
+                const pid = Number(idEl?.value || 0);
+                const stock = getStock(fromWid, pid);
+                if (stockBadge) stockBadge.textContent = Number.isFinite(stock) ? stock.toLocaleString('vi-VN') : '-';
+                if (qtyEl) {
+                    qtyEl.max = String(stock);
+                    clampQuantityInput(qtyEl, stock);
+                    if (Number(qtyEl.value || 0) > stock) {
+                        qtyEl.classList.add('border-red-500', 'bg-red-50');
+                    } else {
+                        qtyEl.classList.remove('border-red-500', 'bg-red-50');
+                    }
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>

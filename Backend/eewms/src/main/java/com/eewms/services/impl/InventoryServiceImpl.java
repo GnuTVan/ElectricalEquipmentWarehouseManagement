@@ -12,11 +12,11 @@ import com.eewms.services.IInventoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -65,7 +65,7 @@ public class InventoryServiceImpl implements IInventoryService {
      * Tồn on-hand của 1 sản phẩm tại 1 kho (Optional).
      */
     @Override
-    public Optional<Integer> getOnHand(Long productId, Integer warehouseId) {
+    public Optional<BigDecimal> getOnHand(Long productId, Integer warehouseId) {
         Product product = productRepo.findById(Math.toIntExact(productId))
                 .orElseThrow(() -> new NoSuchElementException("Product not found: " + productId));
         Warehouse warehouse = warehouseRepo.findById(warehouseId)
@@ -74,6 +74,8 @@ public class InventoryServiceImpl implements IInventoryService {
         return pwsRepo.findByProductAndWarehouse(product, warehouse)
                 .map(pws -> nz(pws.getQuantity()));
     }
+
+
 
     // ----------------- Mappers -----------------
 
@@ -100,5 +102,5 @@ public class InventoryServiceImpl implements IInventoryService {
     // ----------------- Helpers -----------------
 
     private static String nz(String s) { return s == null ? "" : s; }
-    private static Integer nz(Integer i) { return i == null ? 0 : i; }
+    private static BigDecimal nz(BigDecimal i) { return i == null ? BigDecimal.valueOf(0) : i; }
 }

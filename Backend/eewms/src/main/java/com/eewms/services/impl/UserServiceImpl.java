@@ -7,6 +7,7 @@
     import com.eewms.entities.User;
     import com.eewms.repository.RoleRepository;
     import com.eewms.repository.UserRepository;
+    import com.eewms.security.SecurityUtils;
     import com.eewms.services.IEmailService;
     import com.eewms.services.IUserService;
     import com.eewms.services.IVerificationTokenService;
@@ -184,5 +185,32 @@
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
             user.setPassword(passwordEncoder.encode(rawPassword));
             userRepository.save(user);
+        }
+
+        @Override
+        public User getCurrentUser() {
+            Long id = SecurityUtils.getCurrentUserId();
+            if (id != null) {
+                return userRepository.findById(id).orElse(null);
+            }
+            // fallback nếu chưa dùng CustomUserDetails có id:
+            String username = SecurityUtils.getCurrentUsername();
+            if (username == null) return null;
+            return userRepository.findByUsername(username).orElse(null);
+        }
+
+        @Override
+        public Long getCurrentUserId() {
+            Long id = SecurityUtils.getCurrentUserId();
+            if (id != null) return id;
+            // fallback: map từ username -> id
+            String username = SecurityUtils.getCurrentUsername();
+            if (username == null) return null;
+            return userRepository.findByUsername(username).map(User::getId).orElse(null);
+        }
+
+        @Override
+        public boolean hasRole(String role) {
+            return SecurityUtils.hasRole(role);
         }
     }

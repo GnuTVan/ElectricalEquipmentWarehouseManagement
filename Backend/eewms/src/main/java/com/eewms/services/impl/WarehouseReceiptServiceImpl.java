@@ -16,6 +16,7 @@ import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -143,9 +144,9 @@ public class WarehouseReceiptServiceImpl implements IWarehouseReceiptService {
                     .orElse(ProductWarehouseStock.builder()
                             .product(product)
                             .warehouse(warehouse)
-                            .quantity(0)
+                            .quantity(BigDecimal.valueOf(0))
                             .build());
-            stock.setQuantity(stock.getQuantity() + deliver);
+            stock.setQuantity(BigDecimal.valueOf(Integer.parseInt(String.valueOf(stock.getQuantity())) + deliver));
             stockRepo.save(stock);
 
             // cập nhật actual lũy kế trên POItem

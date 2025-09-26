@@ -66,8 +66,8 @@ class WarehouseReceiptServiceImplTest {
         po.setStatus(PurchaseOrderStatus.CHO_GIAO_HANG);
         po.setItems(List.of(poi1, poi2));
 
-        s1 = new ProductWarehouseStock(); s1.setProduct(p1); s1.setWarehouse(wh); s1.setQuantity(0);
-        s2 = new ProductWarehouseStock(); s2.setProduct(p2); s2.setWarehouse(wh); s2.setQuantity(0);
+        s1 = new ProductWarehouseStock(); s1.setProduct(p1); s1.setWarehouse(wh); s1.setQuantity(BigDecimal.valueOf(0));
+        s2 = new ProductWarehouseStock(); s2.setProduct(p2); s2.setWarehouse(wh); s2.setQuantity(BigDecimal.valueOf(0));
     }
 
     private static void setWarehouseOnDto(WarehouseReceiptDTO dto, Long wid) {

@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 /**
  * Chi tiết "kho -> số lượng" của MỘT sản phẩm qua CÁC kho.
  * Dùng cho trang: /admin/inventory/products/{id}/stock
@@ -15,5 +17,5 @@ public class WarehouseStockDetailDTO {
     private Integer warehouseId;
     private String warehouseCode;
     private String warehouseName;
-    private Integer quantity;
+    private BigDecimal quantity;
 }

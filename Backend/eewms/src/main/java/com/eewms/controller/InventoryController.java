@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 @Controller
 @RequestMapping("/inventory")
@@ -72,8 +73,11 @@ public class InventoryController {
 
         // Tính tổng on-hand (không sort/loc ở controller)
         int totalOnHand = details.stream()
-                .map(dto -> dto.getQuantity() == null ? 0 : dto.getQuantity())
-                .reduce(0, Integer::sum);
+                .map(WarehouseStockDetailDTO::getQuantity)   // Number hoặc Integer
+                .filter(Objects::nonNull)
+                .mapToInt(Number::intValue)                   // ép kiểu an toàn
+                .sum();
+
 
         model.addAttribute("product", product);
         model.addAttribute("details", details);

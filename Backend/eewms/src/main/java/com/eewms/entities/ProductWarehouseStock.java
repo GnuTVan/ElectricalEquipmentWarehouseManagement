@@ -3,6 +3,8 @@ package com.eewms.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "product_warehouse_stock", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"product_id", "warehouse_id"})
@@ -23,5 +25,5 @@ public class ProductWarehouseStock {
     @ManyToOne
     private Warehouse warehouse;
 
-    private Integer quantity;
+    private BigDecimal quantity;
 }

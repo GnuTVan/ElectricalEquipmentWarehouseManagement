@@ -73,10 +73,17 @@ public class StockLookupServiceImpl implements IStockLookupService {
     public Map<Integer, Integer> getStockByProductAtWarehouse(Integer warehouseId) {
         if (warehouseId == null) return Collections.emptyMap();
         var page = pwsRepository.pageCatalogWithStockAtWarehouse(warehouseId, null, Pageable.unpaged());
-        return page.getContent().stream().collect(Collectors.toMap(
-                WarehouseStockRowDTO::getProductId,
-                dto -> dto.getQuantity() == null ? 0 : dto.getQuantity()
-        ));
+        return page.getContent().stream()
+                .collect(Collectors.toMap(
+                        WarehouseStockRowDTO::getProductId,
+                        dto -> {
+                            Number q = dto.getQuantity();
+                            return q == null ? 0 : q.intValue();      // chuẩn hoá về Integer
+                        },
+                        Integer::sum,                                 // nếu trùng productId thì cộng dồn
+                        LinkedHashMap::new                            // giữ thứ tự (tuỳ chọn)
+                ));
+
     }
 
     @Override

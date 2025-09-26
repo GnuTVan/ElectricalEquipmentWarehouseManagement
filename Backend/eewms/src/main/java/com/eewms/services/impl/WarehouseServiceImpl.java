@@ -139,4 +139,45 @@ public class WarehouseServiceImpl implements IWarehouseService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user id=" + id));
     }
 
+    @Override
+    public Long findPrimaryWarehouseIdByUser(Long userId) {
+        if (userId == null) return null;
+
+        // Ưu tiên: user là Staff của kho nào
+        for (Warehouse w : getAll()) {
+            List<Integer> staffIds = listStaffIds(w.getId());
+            if (staffIds != null && staffIds.contains(userId.intValue())) {
+                return w.getId().longValue();
+            }
+        }
+        // Fallback: user là Supervisor của kho nào
+        for (Warehouse w : getAll()) {
+            Long sup = getSupervisorId(w.getId());
+            if (sup != null && sup.equals(userId)) {
+                return w.getId().longValue();
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Warehouse findWarehouseByUser(Long userId) {
+        if (userId == null) return null;
+
+        // Ưu tiên: staff membership
+        for (Warehouse w : getAll()) {
+            var staffIds = listStaffIds(w.getId());
+            if (staffIds != null && staffIds.contains(userId.intValue())) {
+                return w;
+            }
+        }
+        // Fallback: supervisor
+        for (Warehouse w : getAll()) {
+            Long supId = getSupervisorId(w.getId());
+            if (supId != null && supId.equals(userId)) {
+                return w;
+            }
+        }
+        return null;
+    }
 }
