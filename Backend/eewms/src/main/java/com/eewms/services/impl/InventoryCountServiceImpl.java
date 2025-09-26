@@ -21,20 +21,34 @@ public  class InventoryCountServiceImpl implements IInventoryCountService {
     private final UserRepository userRepo;
     private final WarehouseStaffRepository warehouseStaffRepo;
     private final ProductWarehouseStockRepository stockRepo;
+    private final WarehouseRepository warehouseRepo;
 
     @Override
     @Transactional
-    public InventoryCountDTO create(Integer staffId, String note) {
+    public InventoryCountDTO create(Integer warehouseId, Integer staffId, String note, User currentManager) {
+        Warehouse warehouse = warehouseRepo.findById(warehouseId)
+                .orElseThrow(() -> new RuntimeException("Kho không tồn tại"));
+
+        // kiểm tra manager có quyền với kho này
+        if (warehouse.getSupervisor() == null || !warehouse.getSupervisor().getId().equals(currentManager.getId())) {
+            throw new RuntimeException("Bạn không có quyền tạo phiếu cho kho này");
+        }
+
+        // kiểm tra staff có trong kho
+        boolean staffInWarehouse = warehouseStaffRepo.existsByWarehouse_IdAndUser_Id(warehouseId, Long.valueOf(staffId));
+        if (!staffInWarehouse) {
+            throw new RuntimeException("Nhân viên không thuộc kho này");
+        }
+
+        // lấy thông tin staff
         User staff = userRepo.findById(Long.valueOf(staffId))
-                .orElseThrow(() -> new RuntimeException("Staff không tồn tại"));
+                .orElseThrow(() -> new RuntimeException("Nhân viên không tồn tại"));
+        boolean isStaff = staff.getRoles().stream().anyMatch(r -> "ROLE_STAFF".equals(r.getName()));
+        if (!isStaff) {
+            throw new RuntimeException("Người được chọn không hợp lệ");
+        }
 
-        // lấy warehouse mà staff thuộc về
-        WarehouseStaff ws = warehouseStaffRepo.findByUser_Id(Long.valueOf(staffId))
-                .stream().findFirst()
-                .orElseThrow(() -> new RuntimeException("Staff chưa được assign vào kho"));
-
-        Warehouse warehouse = ws.getWarehouse();
-
+        // tạo phiếu
         InventoryCount count = InventoryCount.builder()
                 .code(generateCode())
                 .warehouse(warehouse)
@@ -60,6 +74,7 @@ public  class InventoryCountServiceImpl implements IInventoryCountService {
         InventoryCount saved = countRepo.save(count);
         return InventoryCountMapper.toDTO(saved);
     }
+
 
     @Override
     public InventoryCountDTO getById(Integer id) {

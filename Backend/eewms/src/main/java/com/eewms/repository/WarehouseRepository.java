@@ -29,4 +29,6 @@ LEFT JOIN WarehouseStaff ws ON ws.warehouse.id = w.id
 WHERE w.supervisor.id = :userId OR ws.user.id = :userId
 """)
     List<Warehouse> findAccessibleByUserId(@Param("userId") Long userId);
+
+
 }

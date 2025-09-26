@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -30,4 +31,20 @@ WHERE
     Optional<User> findByEmail(String email);
     Optional<User> findByPhone(String phone);
 
+    //Query để lấy List<User> theo warehouseId và chỉ lấy ROLE_STAFF
+    @Query("""
+        SELECT DISTINCT u
+        FROM User u
+        JOIN u.roles r
+        WHERE r.name = 'ROLE_STAFF'
+          AND u.enabled = true
+          AND EXISTS (
+              SELECT 1
+              FROM WarehouseStaff ws
+              WHERE ws.user = u
+                AND ws.warehouse.id = :warehouseId
+          )
+        ORDER BY u.fullName ASC
+    """)
+    List<User> findStaffByWarehouseId(@Param("warehouseId") Integer warehouseId);
 }
