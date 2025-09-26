@@ -163,22 +163,15 @@ public class PurchaseRequestController {
     }
 
     @GetMapping("/collect")
-    public String collectAllOpen(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
-            Model model,
-            RedirectAttributes ra) {
-
-        var items = prService.collectShortagesForAllOpen(start, end);
+    public String collectAllOpen(Model model, RedirectAttributes ra) {
+        var items = prService.collectShortagesForAllOpen();
         if (items.isEmpty()) {
-            ra.addFlashAttribute("message", "Không có sản phẩm thiếu ở các đơn đang mở.");
+            ra.addFlashAttribute("message", "Không có sản phẩm thiếu ở các đơn bán.");
             return "redirect:/admin/purchase-requests";
         }
         model.addAttribute("collectedItems", items);
         model.addAttribute("allowedSuppliers", buildAllowedSuppliersMap(items));
-        model.addAttribute("start", start);
-        model.addAttribute("end", end);
-        return "purchase-request-collect"; // NEW view
+        return "purchase-request-collect"; // view preview
     }
 
     // Xác nhận tạo PR từ danh sách đã thu thập trên preview

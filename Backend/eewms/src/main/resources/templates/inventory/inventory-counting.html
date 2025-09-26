@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="vi" xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
 <head th:replace="~{fragments/common-head :: commonHead('Kiểm kê – Nhập số lượng')}"></head>
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
@@ -17,11 +17,13 @@
                 <div>
                     <h2 class="text-xl font-semibold">Kiểm kê – Nhập số lượng</h2>
                     <p class="text-gray-500 text-sm">
-                        Mã phiếu: <span class="font-mono bg-gray-100 px-2 py-0.5 rounded">INV-202509-0001</span>
+                        Mã phiếu:
+                        <span class="font-mono bg-gray-100 px-2 py-0.5 rounded"
+                              th:text="${count.code}">INV-XXXX</span>
                         <span class="mx-2">•</span>
-                        Kho: <strong>Kho A</strong>
+                        Kho: <strong th:text="${count.warehouseName}">Kho A</strong>
                         <span class="mx-2">•</span>
-                        Staff: <strong>Nguyễn Văn A</strong>
+                        Staff: <strong th:text="${count.staffName}">Nguyễn Văn A</strong>
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -29,156 +31,86 @@
                             class="px-3 py-2 rounded border bg-white hover:bg-gray-50">
                         Quay lại
                     </button>
-                    <button id="btnSaveDraft" type="button"
+                </div>
+            </div>
+            <div class="ml-auto text-sm text-gray-500">
+                <span class="inline-block px-2 py-0.5 rounded bg-red-100 text-red-700">Thiếu</span>
+                <span class="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 ml-1">Thừa</span>
+                <span class="inline-block px-2 py-0.5 rounded bg-amber-100 text-amber-700 ml-1">Vượt ngưỡng</span>
+            </div>
+            <!-- Form -->
+            <form th:action="@{'/inventory/count/' + ${count.id} + '/submit'}" method="post" id="countForm">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-100">
+                            <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">#</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">Mã</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">Tên sản phẩm</th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600">Tồn hệ thống</th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600">Thực đếm</th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600">Chênh lệch</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">Ghi chú</th>
+                            </tr>
+                            </thead>
+                            <tbody id="countBody" class="divide-y divide-gray-100 text-sm">
+                            <tr th:each="item,iterStat : ${count.items}" th:data-code="${item.productCode}">
+                                <td class="px-4 py-2" th:text="${iterStat.count}">1</td>
+                                <td class="px-4 py-2 font-mono" th:text="${item.productCode}">PRD-0001</td>
+                                <td class="px-4 py-2" th:text="${item.productName}">Tên SP</td>
+                                <td class="px-4 py-2 text-right">
+                                    <span class="expected" th:text="${item.expectedQty}">0</span>
+                                </td>
+                                <td class="px-4 py-2 text-right">
+                                    <input type="number" min="0" step="1"
+                                           th:value="${item.countedQty}"
+                                           name="countedQtys"
+                                           class="counted w-24 text-right rounded-lg border-gray-300 px-2 py-1">
+                                </td>
+                                <td class="px-4 py-2 text-right">
+                                    <span class="delta"
+                                          th:text="${item.variance}">0</span>
+                                </td>
+                                <td class="px-4 py-2">
+                                    <input type="text" name="notes"
+                                           th:value="${item.note}"
+                                           class="note w-full rounded-lg border-gray-300 px-2 py-1"
+                                           placeholder="Ghi chú…">
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Footer bar -->
+                    <div class="flex items-center justify-between px-4 py-3 bg-gray-50">
+                        <div class="text-sm text-gray-600">
+                            <span>Tổng dòng: <strong id="ftLines">0</strong></span>
+                            <span class="mx-2">•</span>
+                            <span>Đã nhập: <strong id="ftFilled">0</strong></span>
+                            <span class="mx-2">•</span>
+                            <span>Chênh lệch tổng: <strong id="ftDelta">0</strong></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm text-gray-600">Xác nhận đã kiểm: </label>
+                            <input id="confirmChk" type="checkbox" class="w-4 h-4">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="flex justify-end gap-2 mt-4">
+                    <button type="submit" formaction="#" id="btnSaveDraft"
                             class="px-3 py-2 rounded border border-amber-600 text-amber-700 hover:bg-amber-50">
                         <i class="ri-save-3-line mr-1"></i>Lưu nháp
                     </button>
-                    <button id="btnSubmit" type="button"
+                    <button type="submit" id="btnSubmit"
                             class="px-4 py-2 rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-50">
                         <i class="ri-check-line mr-1"></i>Nộp kết quả
                     </button>
                 </div>
-            </div>
-
-            <!-- Tools row -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                <!-- Scan / Quick input -->
-                <div class="bg-white rounded-2xl border border-gray-100 p-4">
-                    <div class="flex items-center justify-between">
-                        <h3 class="font-medium">Scan / Nhập nhanh</h3>
-                        <span class="text-xs text-gray-400">Dummy</span>
-                    </div>
-                    <div class="mt-3 flex gap-2">
-                        <input id="quickCode" type="text" placeholder="Quét/nhập mã sản phẩm…"
-                               class="flex-1 rounded-lg border-gray-300 px-3 py-2">
-                        <input id="quickQty" type="number" min="0" step="1" placeholder="SL"
-                               class="w-24 rounded-lg border-gray-300 px-3 py-2">
-                        <button id="quickAdd" type="button"
-                                class="px-3 py-2 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50">
-                            <i class="ri-add-line"></i>
-                        </button>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-2">Gõ mã (vd: <span class="font-mono">PRD-0001</span>) rồi nhập SL → nhấn + để điền vào bảng.</p>
-                </div>
-
-                <!-- Filters -->
-                <div class="bg-white rounded-2xl border border-gray-100 p-4">
-                    <h3 class="font-medium">Bộ lọc</h3>
-                    <div class="mt-3 grid grid-cols-2 gap-2">
-                        <input type="text" placeholder="Tìm mã/tên…" class="rounded-lg border-gray-300 px-3 py-2 col-span-2">
-                        <select class="rounded-lg border-gray-300 px-2 py-2">
-                            <option>Tất cả danh mục</option>
-                            <option>CB – Cầu dao</option>
-                            <option>Dây điện</option>
-                        </select>
-                        <select class="rounded-lg border-gray-300 px-2 py-2">
-                            <option>Tất cả kệ/bin</option>
-                            <option>Kệ A1</option>
-                            <option>Kệ B2</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Summary -->
-                <div class="bg-white rounded-2xl border border-gray-100 p-4">
-                    <h3 class="font-medium">Tổng quan</h3>
-                    <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
-                        <div class="p-3 rounded-lg bg-gray-50">
-                            <div class="text-gray-500">Số dòng</div>
-                            <div id="statLines" class="text-lg font-semibold">0</div>
-                        </div>
-                        <div class="p-3 rounded-lg bg-gray-50">
-                            <div class="text-gray-500">Đã nhập</div>
-                            <div id="statFilled" class="text-lg font-semibold">0</div>
-                        </div>
-                        <div class="p-3 rounded-lg bg-gray-50">
-                            <div class="text-gray-500">Chênh lệch (+/–)</div>
-                            <div id="statDelta" class="text-lg font-semibold">0</div>
-                        </div>
-                        <div class="p-3 rounded-lg bg-gray-50">
-                            <div class="text-gray-500">Cập nhật</div>
-                            <div class="text-lg font-semibold">2025-09-21</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Table -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-100">
-                        <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">#</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">Mã</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">Tên sản phẩm</th>
-                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600">Tồn hệ thống</th>
-                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600">Thực đếm</th>
-                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600">Chênh lệch</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">Ghi chú</th>
-                        </tr>
-                        </thead>
-                        <tbody id="countBody" class="divide-y divide-gray-100 text-sm">
-                        <!-- DUMMY ROWS -->
-                        <tr data-code="PRD-0001">
-                            <td class="px-4 py-2">1</td>
-                            <td class="px-4 py-2 font-mono">PRD-0001</td>
-                            <td class="px-4 py-2">CB tép 1P 6A</td>
-                            <td class="px-4 py-2 text-right"><span class="expected">120</span></td>
-                            <td class="px-4 py-2 text-right">
-                                <input type="number" min="0" step="1" class="counted w-24 text-right rounded-lg border-gray-300 px-2 py-1" placeholder="0">
-                            </td>
-                            <td class="px-4 py-2 text-right"><span class="delta">0</span></td>
-                            <td class="px-4 py-2">
-                                <input type="text" class="note w-full rounded-lg border-gray-300 px-2 py-1" placeholder="Ghi chú…">
-                            </td>
-                        </tr>
-                        <tr data-code="PRD-0002">
-                            <td class="px-4 py-2">2</td>
-                            <td class="px-4 py-2 font-mono">PRD-0002</td>
-                            <td class="px-4 py-2">CB tép 1P 10A</td>
-                            <td class="px-4 py-2 text-right"><span class="expected">75</span></td>
-                            <td class="px-4 py-2 text-right">
-                                <input type="number" min="0" step="1" class="counted w-24 text-right rounded-lg border-gray-300 px-2 py-1" placeholder="0">
-                            </td>
-                            <td class="px-4 py-2 text-right"><span class="delta">0</span></td>
-                            <td class="px-4 py-2">
-                                <input type="text" class="note w-full rounded-lg border-gray-300 px-2 py-1" placeholder="Ghi chú…">
-                            </td>
-                        </tr>
-                        <tr data-code="PRD-0101">
-                            <td class="px-4 py-2">3</td>
-                            <td class="px-4 py-2 font-mono">PRD-0101</td>
-                            <td class="px-4 py-2">Dây điện VCm 2.5</td>
-                            <td class="px-4 py-2 text-right"><span class="expected">200</span></td>
-                            <td class="px-4 py-2 text-right">
-                                <input type="number" min="0" step="1" class="counted w-24 text-right rounded-lg border-gray-300 px-2 py-1" placeholder="0">
-                            </td>
-                            <td class="px-4 py-2 text-right"><span class="delta">0</span></td>
-                            <td class="px-4 py-2">
-                                <input type="text" class="note w-full rounded-lg border-gray-300 px-2 py-1" placeholder="Ghi chú…">
-                            </td>
-                        </tr>
-                        <!-- /DUMMY ROWS -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Footer bar -->
-                <div class="flex items-center justify-between px-4 py-3 bg-gray-50">
-                    <div class="text-sm text-gray-600">
-                        <span>Tổng dòng: <strong id="ftLines">0</strong></span>
-                        <span class="mx-2">•</span>
-                        <span>Đã nhập: <strong id="ftFilled">0</strong></span>
-                        <span class="mx-2">•</span>
-                        <span>Chênh lệch tổng: <strong id="ftDelta">0</strong></span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <label class="text-sm text-gray-600">Xác nhận đã kiểm: </label>
-                        <input id="confirmChk" type="checkbox" class="w-4 h-4">
-                    </div>
-                </div>
-            </div>
+            </form>
         </section>
 
         <div th:replace="~{fragments/footer :: footer}"></div>
@@ -202,50 +134,19 @@
                 if (countedEl.value !== '' && !isNaN(counted)) filled++;
                 const delta = (countedEl.value === '' ? 0 : counted - expected);
                 deltaEl.textContent = delta;
-                // highlight
                 tr.classList.toggle('bg-red-50', delta < 0);
                 tr.classList.toggle('bg-emerald-50', delta > 0);
                 if (countedEl.value !== '' && !isNaN(counted)) totalDelta += delta;
             });
-            document.getElementById('statLines').textContent = totalLines;
-            document.getElementById('statFilled').textContent = filled;
-            document.getElementById('statDelta').textContent = totalDelta;
             document.getElementById('ftLines').textContent = totalLines;
             document.getElementById('ftFilled').textContent = filled;
             document.getElementById('ftDelta').textContent = totalDelta;
         }
 
-        // events
         body.addEventListener('input', function (e) {
             if (e.target.classList.contains('counted')) recalc();
         });
 
-        // quick add
-        const qCode = document.getElementById('quickCode');
-        const qQty  = document.getElementById('quickQty');
-        document.getElementById('quickAdd').addEventListener('click', function () {
-            const code = (qCode.value || '').trim().toUpperCase();
-            const qty  = qQty.value.trim();
-            if (!code || qty === '') { if (typeof toastr !== 'undefined') toastr.warning('Nhập mã và số lượng'); return; }
-            const row = body.querySelector(`tr[data-code="${code}"]`);
-            if (!row) { if (typeof toastr !== 'undefined') toastr.error('Không tìm thấy mã: ' + code); return; }
-            row.querySelector('.counted').value = qty;
-            recalc();
-            qCode.value = ''; qQty.value = '';
-            if (typeof toastr !== 'undefined') toastr.success(`Đã cập nhật ${code} = ${qty}`);
-        });
-
-        // actions
-        document.getElementById('btnSaveDraft').addEventListener('click', function () {
-            if (typeof toastr !== 'undefined') toastr.info('Đã lưu nháp (dummy)');
-        });
-        document.getElementById('btnSubmit').addEventListener('click', function () {
-            const ok = document.getElementById('confirmChk').checked;
-            if (!ok) { if (typeof toastr !== 'undefined') toastr.warning('Vui lòng tick xác nhận đã kiểm'); return; }
-            if (typeof toastr !== 'undefined') toastr.success('Đã nộp kết quả (dummy)');
-        });
-
-        // init
         recalc();
     })();
 </script>

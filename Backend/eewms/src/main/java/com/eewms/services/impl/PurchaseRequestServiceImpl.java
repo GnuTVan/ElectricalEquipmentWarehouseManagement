@@ -253,9 +253,9 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PurchaseRequestItemDTO> collectShortagesForAllOpen(LocalDateTime start, LocalDateTime end) {
-        // Lấy tất cả SO đang mở theo khoảng ngày
-        List<SaleOrder> orders = saleOrderRepository.findOpenOrdersInRange(start, end);
+    public List<PurchaseRequestItemDTO> collectShortagesForAllOpen() {
+        // Lấy tất cả SO đang mở
+        List<SaleOrder> orders = saleOrderRepository.findAllOpenOrders();
 
         Map<Integer, Integer> shortageByProduct = new LinkedHashMap<>();
 
@@ -268,13 +268,9 @@ public class PurchaseRequestServiceImpl implements IPurchaseRequestService {
                         .sumIssuedQtyBySaleOrderAndProduct(so.getSoId(), pid);
                 int issuedQty = (issued == null ? 0 : issued);
 
-                // NEW: nếu user KHÔNG chọn start/end => KHÔNG trừ PR mở
-                int requestedQty = 0;
-                if (start != null || end != null) {
-                    Integer requestedOpen = prRepo
-                            .sumRequestedQtyOpenPRByProductInRange(pid, start, end);
-                    requestedQty = (requestedOpen == null ? 0 : requestedOpen);
-                }
+                // Luôn trừ đi PR mở (không còn check start/end)
+                Integer requestedOpen = prRepo.sumRequestedQtyOpenPRByProduct(pid);
+                int requestedQty = (requestedOpen == null ? 0 : requestedOpen);
 
                 int remaining = ordered - issuedQty - requestedQty;
                 if (remaining > 0) {

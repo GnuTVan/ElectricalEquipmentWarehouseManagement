@@ -17,13 +17,16 @@
                 <div>
                     <h2 class="text-xl font-semibold">Review & Approve – Phiếu kiểm kê</h2>
                     <p class="text-gray-500 text-sm">
-                        Mã phiếu: <span class="font-mono bg-gray-100 px-2 py-0.5 rounded">INV-202509-0002</span>
+                        Mã phiếu: <span class="font-mono bg-gray-100 px-2 py-0.5 rounded"
+                                        th:text="${count.code}"></span>
                         <span class="mx-2">•</span>
-                        Kho: <strong>Kho B</strong>
+                        Kho: <strong th:text="${count.warehouseName}"></strong>
                         <span class="mx-2">•</span>
-                        Staff: <strong>Trần Thị B</strong>
+                        Staff: <strong th:text="${count.staffName}"></strong>
                         <span class="mx-2">•</span>
-                        Trạng thái: <span class="inline-flex px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Review</span>
+                        Trạng thái:
+                        <span class="inline-flex px-2 py-0.5 rounded-full"
+                              th:text="${count.status.label}"></span>
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -31,14 +34,37 @@
                             class="px-3 py-2 rounded border bg-white hover:bg-gray-50">
                         Quay lại
                     </button>
-                    <button id="btnExport" type="button"
-                            class="px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50">
-                        <i class="ri-download-2-line mr-1"></i>Export (dummy)
-                    </button>
-                    <button id="btnApprove" type="button"
-                            class="px-4 py-2 rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-50">
-                        <i class="ri-check-line mr-1"></i>Duyệt & Tạo điều chỉnh
-                    </button>
+                    <!-- Nếu có chênh lệch -->
+                    <form th:if="${#authorization.expression('hasRole(''MANAGER'')')
+              and count.status.name() == 'SUBMITTED'
+              and count.totalVariance != 0}"
+                          th:action="@{'/inventory/count/' + ${count.id} + '/reopen'}"
+                          method="post"
+                          class="flex items-center gap-2">
+
+                        <input name="approveNote" type="hidden" value="Yêu cầu kiểm lại"/>
+                        <button type="submit"
+                                class="px-4 py-2 rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-50">
+                            <i class="ri-check-line mr-1"></i>Yêu cầu điều chỉnh.
+                        </button>
+                    </form>
+
+                    <!-- Nếu khớp hoàn toàn -->
+                    <form th:if="${#authorization.expression('hasRole(''MANAGER'')')
+              and count.status.name() == 'SUBMITTED'
+              and count.totalVariance == 0}"
+                          th:action="@{'/inventory/count/' + ${count.id} + '/approve'}"
+                          method="post"
+                          class="flex items-center gap-2">
+
+                        <input name="approveNote" type="hidden" value="Duyệt"/>
+                        <button type="submit"
+                                class="px-4 py-2 rounded-lg border border-blue-600 text-blue-700 hover:bg-blue-50">
+                            <i class="ri-check-line mr-1"></i>Duyệt
+                        </button>
+                    </form>
+
+
                 </div>
             </div>
 
@@ -65,19 +91,19 @@
             <!-- Threshold & actions -->
             <div class="rounded-2xl border border-gray-100 bg-white p-4">
                 <div class="flex flex-wrap items-center gap-3">
-                    <div class="flex items-center gap-2">
-                        <label class="text-sm text-gray-600">Ngưỡng cảnh báo (đơn vị):</label>
-                        <input id="threshold" type="number" step="1" min="0" class="w-24 rounded-lg border-gray-300 px-2 py-1" value="2">
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <label class="text-sm text-gray-600">Ngưỡng % (trên tồn hệ thống):</label>
-                        <input id="thresholdPct" type="number" step="1" min="0" class="w-24 rounded-lg border-gray-300 px-2 py-1" value="5">
-                        <span class="text-sm text-gray-400">(Áp dụng max(|delta|, %))</span>
-                    </div>
-                    <button id="btnRecalc" type="button"
-                            class="px-3 py-2 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50">
-                        <i class="ri-restart-line mr-1"></i>Tính lại
-                    </button>
+<!--                    <div class="flex items-center gap-2">-->
+<!--                        <label class="text-sm text-gray-600">Ngưỡng cảnh báo (đơn vị):</label>-->
+<!--                        <input id="threshold" type="number" step="1" min="0" class="w-24 rounded-lg border-gray-300 px-2 py-1" value="2">-->
+<!--                    </div>-->
+<!--                    <div class="flex items-center gap-2">-->
+<!--                        <label class="text-sm text-gray-600">Ngưỡng % (trên tồn hệ thống):</label>-->
+<!--                        <input id="thresholdPct" type="number" step="1" min="0" class="w-24 rounded-lg border-gray-300 px-2 py-1" value="5">-->
+<!--                        <span class="text-sm text-gray-400">(Áp dụng max(|delta|, %))</span>-->
+<!--                    </div>-->
+<!--                    <button id="btnRecalc" type="button"-->
+<!--                            class="px-3 py-2 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50">-->
+<!--                        <i class="ri-restart-line mr-1"></i>Tính lại-->
+<!--                    </button>-->
                     <div class="ml-auto text-sm text-gray-500">
                         <span class="inline-block px-2 py-0.5 rounded bg-red-100 text-red-700">Thiếu</span>
                         <span class="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 ml-1">Thừa</span>
@@ -103,50 +129,17 @@
                         </tr>
                         </thead>
                         <tbody id="reviewBody" class="divide-y divide-gray-100 text-sm">
-                        <!-- DUMMY ROWS (đồng bộ với counting page ví dụ) -->
-                        <tr data-code="PRD-0001">
-                            <td class="px-4 py-2">1</td>
-                            <td class="px-4 py-2 font-mono">PRD-0001</td>
-                            <td class="px-4 py-2">CB tép 1P 6A</td>
-                            <td class="px-4 py-2 text-right"><span class="expected">120</span></td>
-                            <td class="px-4 py-2 text-right"><span class="counted">118</span></td>
-                            <td class="px-4 py-2 text-right"><span class="delta">-2</span></td>
-                            <td class="px-4 py-2">Móp hộp, loại 2 sp</td>
+                        <tr th:each="item, iterStat : ${count.items}" th:data-code="${item.productCode}">
+                            <td class="px-4 py-2" th:text="${iterStat.index + 1}"></td>
+                            <td class="px-4 py-2 font-mono" th:text="${item.productCode}"></td>
+                            <td class="px-4 py-2" th:text="${item.productName}"></td>
+                            <td class="px-4 py-2 text-right"><span class="expected" th:text="${item.expectedQty}"></span></td>
+                            <td class="px-4 py-2 text-right"><span class="counted" th:text="${item.countedQty}"></span></td>
+                            <td class="px-4 py-2 text-right"><span class="delta" th:text="${item.variance}"></span></td>
+                            <td class="px-4 py-2" th:text="${item.note}"></td>
                             <td class="px-4 py-2 text-right">
-                                <button class="btnRecount px-3 py-1.5 rounded-lg border border-amber-600 text-amber-700 hover:bg-amber-50">
-                                    Yêu cầu đếm lại
-                                </button>
                             </td>
                         </tr>
-                        <tr data-code="PRD-0002">
-                            <td class="px-4 py-2">2</td>
-                            <td class="px-4 py-2 font-mono">PRD-0002</td>
-                            <td class="px-4 py-2">CB tép 1P 10A</td>
-                            <td class="px-4 py-2 text-right"><span class="expected">75</span></td>
-                            <td class="px-4 py-2 text-right"><span class="counted">80</span></td>
-                            <td class="px-4 py-2 text-right"><span class="delta">5</span></td>
-                            <td class="px-4 py-2">Nhập ký gửi chưa ghi nhận</td>
-                            <td class="px-4 py-2 text-right">
-                                <button class="btnRecount px-3 py-1.5 rounded-lg border border-amber-600 text-amber-700 hover:bg-amber-50">
-                                    Yêu cầu đếm lại
-                                </button>
-                            </td>
-                        </tr>
-                        <tr data-code="PRD-0101">
-                            <td class="px-4 py-2">3</td>
-                            <td class="px-4 py-2 font-mono">PRD-0101</td>
-                            <td class="px-4 py-2">Dây điện VCm 2.5</td>
-                            <td class="px-4 py-2 text-right"><span class="expected">200</span></td>
-                            <td class="px-4 py-2 text-right"><span class="counted">200</span></td>
-                            <td class="px-4 py-2 text-right"><span class="delta">0</span></td>
-                            <td class="px-4 py-2">OK</td>
-                            <td class="px-4 py-2 text-right">
-                                <button class="btnRecount px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50">
-                                    Đếm lại (tuỳ chọn)
-                                </button>
-                            </td>
-                        </tr>
-                        <!-- /DUMMY ROWS -->
                         </tbody>
                     </table>
                 </div>
@@ -163,8 +156,8 @@
                         <span>Dòng vượt ngưỡng: <strong id="ftOver">0</strong></span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <label class="text-sm text-gray-600">Ghi chú duyệt:</label>
-                        <input id="approveNote" type="text" class="w-64 rounded-lg border-gray-300 px-2 py-1" placeholder="Ví dụ: Duyệt tạo điều chỉnh">
+                        <label class="text-sm text-gray-600"></label>
+                        <input id="approveNote" type="hidden" class="w-64 rounded-lg border-gray-300 px-2 py-1" placeholder="Ví dụ: Duyệt tạo điều chỉnh">
                     </div>
                 </div>
             </div>

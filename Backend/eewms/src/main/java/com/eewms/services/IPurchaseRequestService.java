@@ -20,6 +20,6 @@ public interface IPurchaseRequestService {
     void generatePurchaseOrdersFromRequest(Long prId) throws Exception;
     Page<PurchaseRequestDTO> filter(String creator, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
     void cancel(Long id, String reason);
-    List<PurchaseRequestItemDTO> collectShortagesForAllOpen(LocalDateTime start, LocalDateTime end);
+    List<PurchaseRequestItemDTO> collectShortagesForAllOpen();
     PurchaseRequestDTO createFromCollected(List<PurchaseRequestItemDTO> items, String createdBy);
 }
